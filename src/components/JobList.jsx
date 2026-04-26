@@ -1,7 +1,7 @@
 import JobCard from './JobCard';
 
 const JobList = ({ jobs }) => {
-  const jobsToShow = (jobs || []).slice(0, 5);
+  const jobsToShow = jobs || [];
 
   if (jobsToShow.length === 0) {
     return (
