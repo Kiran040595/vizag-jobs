@@ -17,12 +17,17 @@ export default function ItJobsInVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
-      // First, try to load from sessionStorage
-      const cachedJobs = sessionStorage.getItem('vizagJobs');
-      if (cachedJobs) {
+      // First, try to load from sessionStorage (expires after 5 minutes)
+      const cachedData = sessionStorage.getItem('vizagJobs');
+      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+      if (cachedData) {
         try {
-          const jobs = JSON.parse(cachedJobs);
-          if (jobs.length > 0) {
+          const { jobs, timestamp } = JSON.parse(cachedData);
+          const now = Date.now();
+
+          // Check if cache is still valid (less than 5 minutes old)
+          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
             setAllJobs(jobs);
             setIsLoading(false);
             return;
@@ -32,14 +37,19 @@ export default function ItJobsInVizagPage() {
         }
       }
 
-      // If no cache or empty, fetch from API
+      // If no cache, expired cache, or empty cache, fetch from API
       try {
         const jobs = await fetchJobsFromGoogleSheets();
         if (!isMounted) return;
 
         if (jobs.length > 0) {
           setAllJobs(jobs);
-          sessionStorage.setItem('vizagJobs', JSON.stringify(jobs));
+          // Cache with timestamp
+          const cacheData = {
+            jobs,
+            timestamp: Date.now()
+          };
+          sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
           setLoadError('');
           return;
         }
