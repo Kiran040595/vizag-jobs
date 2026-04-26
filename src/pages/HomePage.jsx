@@ -7,12 +7,11 @@ import StatsSection from '../components/StatsSection';
 import CTASection from '../components/CTASection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
-import { fallbackJobs } from '../data/fallbackJobs';
 import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [allJobs, setAllJobs] = useState(fallbackJobs);
+  const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -20,20 +19,37 @@ export default function HomePage() {
     let isMounted = true;
 
     const loadJobs = async () => {
+      // First, try to load from sessionStorage
+      const cachedJobs = sessionStorage.getItem('vizagJobs');
+      if (cachedJobs) {
+        try {
+          const jobs = JSON.parse(cachedJobs);
+          if (jobs.length > 0) {
+            setAllJobs(jobs);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing cached jobs:', error);
+        }
+      }
+
+      // If no cache or empty, fetch from API
       try {
         const jobs = await fetchJobsFromGoogleSheets();
         if (!isMounted) return;
 
         if (jobs.length > 0) {
           setAllJobs(jobs);
+          sessionStorage.setItem('vizagJobs', JSON.stringify(jobs));
           setLoadError('');
           return;
         }
 
-        setLoadError('No rows found in Google Sheets. Showing fallback jobs.');
+        setLoadError('No jobs found. Please check back later.');
       } catch {
         if (!isMounted) return;
-        setLoadError('Could not load jobs from Google Sheets. Showing fallback jobs.');
+        setLoadError('Could not load jobs. Please check your connection.');
       } finally {
         if (isMounted) {
           setIsLoading(false);

@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
-import { fallbackJobs } from '../data/fallbackJobs';
 import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
 
 const splitCommaValues = (value) =>
@@ -14,23 +13,43 @@ const splitCommaValues = (value) =>
 
 export default function JobDetailsPage() {
   const { jobId } = useParams();
-  const [allJobs, setAllJobs] = useState(fallbackJobs);
+  const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadJobs = async () => {
+      // First, try to load from sessionStorage
+      const cachedJobs = sessionStorage.getItem('vizagJobs');
+      if (cachedJobs) {
+        try {
+          const jobs = JSON.parse(cachedJobs);
+          if (jobs.length > 0) {
+            setAllJobs(jobs);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing cached jobs:', error);
+        }
+      }
+
+      // If no cache or empty, fetch from API
       try {
         const jobs = await fetchJobsFromGoogleSheets();
         if (!isMounted) return;
-        if (jobs.length > 0) setAllJobs(jobs);
+        if (jobs.length > 0) {
+          setAllJobs(jobs);
+          sessionStorage.setItem('vizagJobs', JSON.stringify(jobs));
+        }
       } finally {
         if (isMounted) setIsLoading(false);
       }
     };
 
     loadJobs();
+
     return () => {
       isMounted = false;
     };
