@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
 
 const splitCommaValues = (value) =>
@@ -55,6 +56,11 @@ export default function JobDetailsPage() {
     };
   }, []);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const job = useMemo(
     () => allJobs.find((item) => String(item.id) === String(jobId)),
     [allJobs, jobId]
@@ -81,9 +87,7 @@ export default function JobDetailsPage() {
         </Link>
 
         {isLoading ? (
-          <p className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-            Loading job details...
-          </p>
+          <LoadingSpinner message="Loading job details..." />
         ) : null}
 
         {!isLoading && !job ? (
