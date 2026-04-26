@@ -24,10 +24,11 @@ const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => {
   }
 };
 
-export const fetchJobsFromGoogleSheets = async (forceRefresh = false) => {
+export const fetchJobsFromGoogleSheets = async (forceRefresh = false, limit = null) => {
   // Return cached processed data if available and not forcing refresh
   if (!forceRefresh && processedJobsCache && (Date.now() - lastProcessedTimestamp) < 60000) { // 1 minute cache
-    return processedJobsCache;
+    const cachedJobs = limit ? processedJobsCache.slice(0, limit) : processedJobsCache;
+    return cachedJobs;
   }
 
   const fetchWithRetry = async () => {
@@ -106,5 +107,6 @@ export const fetchJobsFromGoogleSheets = async (forceRefresh = false) => {
   processedJobsCache = processedJobs;
   lastProcessedTimestamp = Date.now();
 
-  return processedJobs;
+  // Return limited results if specified
+  return limit ? processedJobs.slice(0, limit) : processedJobs;
 };
