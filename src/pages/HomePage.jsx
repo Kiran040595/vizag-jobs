@@ -14,6 +14,7 @@ export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function HomePage() {
       // First, try to load from sessionStorage (expires after 5 minutes)
       const cachedData = sessionStorage.getItem('vizagJobs');
       const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+      let hasValidCache = false;
 
       if (cachedData) {
         try {
@@ -33,6 +35,12 @@ export default function HomePage() {
           if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
             setAllJobs(jobs);
             setIsLoading(false);
+            hasValidCache = true;
+
+            // Start background refresh if cache is getting old (older than 4 minutes)
+            if ((now - timestamp) > (4 * 60 * 1000)) {
+              refreshJobsInBackground();
+            }
             return;
           }
         } catch (error) {
@@ -40,7 +48,11 @@ export default function HomePage() {
         }
       }
 
-      // If no cache, expired cache, or empty cache, fetch from API
+      // If no valid cache, fetch from API
+      await fetchFreshJobs();
+    };
+
+    const fetchFreshJobs = async () => {
       try {
         const jobs = await fetchJobsFromGoogleSheets();
         if (!isMounted) return;
@@ -58,12 +70,38 @@ export default function HomePage() {
         }
 
         setLoadError('No jobs found. Please check back later.');
-      } catch {
+      } catch (error) {
         if (!isMounted) return;
-        setLoadError('Could not load jobs. Please check your connection.');
+        console.error('Error fetching jobs:', error);
+        setLoadError('Failed to load jobs. Please try refreshing the page.');
       } finally {
         if (isMounted) {
           setIsLoading(false);
+        }
+      }
+    };
+
+    const refreshJobsInBackground = async () => {
+      setIsBackgroundRefreshing(true);
+      try {
+        const jobs = await fetchJobsFromGoogleSheets(true); // Force refresh
+        if (!isMounted) return;
+
+        if (jobs.length > 0) {
+          setAllJobs(jobs);
+          // Update cache with new timestamp
+          const cacheData = {
+            jobs,
+            timestamp: Date.now()
+          };
+          sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
+        }
+      } catch (error) {
+        // Silently fail background refresh - user still has cached data
+        console.warn('Background refresh failed:', error);
+      } finally {
+        if (isMounted) {
+          setIsBackgroundRefreshing(false);
         }
       }
     };
@@ -122,6 +160,15 @@ export default function HomePage() {
         ) : null}
         <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
           {filteredJobs.length} jobs match your search
+          {isBackgroundRefreshing && (
+            <span className="ml-2 inline-flex items-center text-xs text-blue-600">
+              <svg className="mr-1 h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Updating...
+            </span>
+          )}
         </p>
         <JobList jobs={filteredJobs} />
         <StatsSection />
