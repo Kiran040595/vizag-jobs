@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import vsp2Image from '../assets/VSP2.jpg';
 import vsp1Image from '../assets/VSP1.jpg';
 
@@ -13,6 +13,45 @@ const popularTags = [
 export default function HeroSection({ searchTerm, onSearch }) {
   const [category, setCategory] = useState('All Categories');
   const [location, setLocation] = useState('Visakhapatnam');
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !imagesLoaded) {
+            // Preload images when section comes into view
+            const img1 = new Image();
+            const img2 = new Image();
+
+            let loadedCount = 0;
+            const onImageLoad = () => {
+              loadedCount++;
+              if (loadedCount === 2) {
+                setImagesLoaded(true);
+              }
+            };
+
+            img1.onload = onImageLoad;
+            img2.onload = onImageLoad;
+
+            img1.src = vsp2Image;
+            img2.src = vsp1Image;
+
+            observer.disconnect(); // Stop observing once images start loading
+          }
+        });
+      },
+      { threshold: 0.1 } // Trigger when 10% of the section is visible
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [imagesLoaded]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -21,13 +60,14 @@ export default function HeroSection({ searchTerm, onSearch }) {
 
   return (
     <section
+      ref={sectionRef}
       className="relative overflow-hidden text-white"
-      style={{
+      style={imagesLoaded ? {
         backgroundImage: `url(${vsp2Image}), url(${vsp1Image})`,
         backgroundSize: 'cover, cover',
         backgroundPosition: 'center, center',
         backgroundRepeat: 'no-repeat, no-repeat'
-      }}
+      } : {}}
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/75 via-blue-950/65 to-blue-900/60" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.35),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.3),_transparent_35%)]" />

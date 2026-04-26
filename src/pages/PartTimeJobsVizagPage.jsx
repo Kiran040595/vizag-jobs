@@ -4,6 +4,7 @@ import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
 
 export default function PartTimeJobsVizagPage() {
@@ -100,9 +101,7 @@ export default function PartTimeJobsVizagPage() {
         <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
 
         {isLoading ? (
-          <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">
-            Loading jobs from Google Sheets...
-          </p>
+          <LoadingSpinner />
         ) : null}
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">
