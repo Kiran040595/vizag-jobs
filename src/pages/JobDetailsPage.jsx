@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 import { fallbackJobs } from '../data/fallbackJobs';
 import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
 
@@ -44,8 +45,16 @@ export default function JobDetailsPage() {
   const responsibilities = splitCommaValues(job?.responsibilities);
   const eligibility = splitCommaValues(job?.eligibility);
 
+  const jobTitle = job ? `${job.title} at ${job.company} - Vizag Jobs` : 'Job Details - Vizag Jobs';
+  const jobDescription = job ? `Apply for ${job.title} position at ${job.company} in ${job.location}. ${job.description || 'Find more job opportunities in Visakhapatnam.'}` : 'Job details and application information for positions in Visakhapatnam.';
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
+      <SEO
+        title={jobTitle}
+        description={jobDescription}
+        canonical={`/jobs/${jobId}`}
+      />
       <Navbar />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
         <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-700">

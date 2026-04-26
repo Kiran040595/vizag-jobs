@@ -6,6 +6,7 @@ import JobList from '../components/JobList';
 import StatsSection from '../components/StatsSection';
 import CTASection from '../components/CTASection';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 import { fallbackJobs } from '../data/fallbackJobs';
 import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
 
@@ -57,8 +58,28 @@ export default function HomePage() {
     [allJobs, searchTerm]
   );
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Vizag Jobs",
+    "url": "https://jobsinvizag.in",
+    "description": "Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://jobsinvizag.in/?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/30 to-white">
+      <SEO
+        title="Vizag Jobs | Latest Jobs in Visakhapatnam 2026"
+        description="Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam."
+        keywords="Vizag Jobs, Jobs in Vizag, Visakhapatnam Jobs, IT Jobs Vizag, Fresher Jobs Vizag"
+        canonical="/"
+        structuredData={structuredData}
+      />
       <Navbar />
       <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
 

@@ -26,7 +26,7 @@ const JobCard = ({
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-12 sm:w-12">
             {companyLogo ? (
-              <img src={companyLogo} alt={`${companyName} logo`} className="h-full w-full object-cover" />
+              <img src={companyLogo} alt={`${companyName} logo`} className="h-full w-full object-cover" loading="lazy" />
             ) : (
               <span className="text-sm font-bold text-slate-600">{fallbackLogoText}</span>
             )}
