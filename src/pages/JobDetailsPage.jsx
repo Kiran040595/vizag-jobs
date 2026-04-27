@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
+import { fetchJobs } from '../services/jobs';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -43,7 +43,7 @@ export default function JobDetailsPage() {
 
       // If no cache, expired cache, or empty cache, fetch from API
       try {
-        const jobs = await fetchJobsFromGoogleSheets();
+        const jobs = await fetchJobs();
         if (!isMounted) return;
         if (jobs.length > 0) {
           setAllJobs(jobs);

@@ -5,7 +5,7 @@ import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
+import { fetchJobs } from '../services/jobs';
 
 export default function PartTimeJobsVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +39,7 @@ export default function PartTimeJobsVizagPage() {
 
       // If no cache, expired cache, or empty cache, fetch from API
       try {
-        const jobs = await fetchJobsFromGoogleSheets();
+        const jobs = await fetchJobs();
         if (!isMounted) return;
 
         if (jobs.length > 0) {
