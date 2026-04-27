@@ -16,6 +16,7 @@ export default function JobDetailsPage() {
   const { jobId } = useParams();
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -54,6 +55,11 @@ export default function JobDetailsPage() {
           };
           sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
         }
+        setLoadError('');
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Error fetching job details:', error);
+        setLoadError(error instanceof Error ? error.message : 'Failed to load job details.');
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -98,6 +104,12 @@ export default function JobDetailsPage() {
 
         {isLoading ? (
           <LoadingSpinner message="Loading job details..." />
+        ) : null}
+
+        {!isLoading && loadError ? (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm">
+            {loadError}
+          </section>
         ) : null}
 
         {!isLoading && !job ? (

@@ -55,9 +55,9 @@ export default function FresherJobsInVizagPage() {
         }
 
         setLoadError('No jobs found. Please check back later.');
-      } catch {
+      } catch (error) {
         if (!isMounted) return;
-        setLoadError('Could not load jobs. Please check your connection.');
+        setLoadError(error instanceof Error ? error.message : 'Could not load jobs. Please check your connection.');
       } finally {
         if (isMounted) {
           setIsLoading(false);

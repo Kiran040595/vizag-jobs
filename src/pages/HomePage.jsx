@@ -90,7 +90,7 @@ export default function HomePage() {
       } catch (error) {
         if (!isMounted) return;
         console.error('Error fetching jobs:', error);
-        setLoadError('Failed to load jobs. Please try refreshing the page.');
+        setLoadError(error instanceof Error ? error.message : 'Failed to load jobs. Please try refreshing the page.');
       } finally {
         if (isMounted) {
           setIsLoading(false);
