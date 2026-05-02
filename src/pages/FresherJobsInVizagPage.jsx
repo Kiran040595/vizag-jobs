@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { toAbsoluteUrl } from '../lib/site';
 
 export default function FresherJobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +88,7 @@ export default function FresherJobsInVizagPage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Fresher Jobs in Vizag",
-    "url": "https://jobsinvizag.in/fresher-jobs-in-vizag",
+    "url": toAbsoluteUrl('/jobs/fresher'),
     "description": "Find fresher jobs and entry-level positions in Visakhapatnam for recent graduates and beginners."
   };
 
@@ -97,7 +98,7 @@ export default function FresherJobsInVizagPage() {
         title="Fresher Jobs in Vizag | Entry-Level Jobs in Visakhapatnam 2026"
         description="Discover fresher jobs and entry-level opportunities in Vizag for recent graduates. Start your career in Visakhapatnam."
         keywords="Fresher Jobs Vizag, Entry Level Jobs Visakhapatnam, Beginner Jobs Vizag, Graduate Jobs Vizag"
-        canonical="/fresher-jobs-in-vizag"
+        canonical="/jobs/fresher"
         structuredData={structuredData}
       />
       <Navbar />

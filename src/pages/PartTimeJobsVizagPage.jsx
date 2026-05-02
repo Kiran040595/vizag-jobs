@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { toAbsoluteUrl } from '../lib/site';
 
 export default function PartTimeJobsVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +88,7 @@ export default function PartTimeJobsVizagPage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Part-time Jobs in Vizag",
-    "url": "https://jobsinvizag.in/part-time-jobs-vizag",
+    "url": toAbsoluteUrl('/jobs/part-time'),
     "description": "Find part-time jobs and flexible work opportunities in Visakhapatnam for students and working professionals."
   };
 
@@ -97,7 +98,7 @@ export default function PartTimeJobsVizagPage() {
         title="Part-time Jobs in Vizag | Flexible Work Opportunities in Visakhapatnam 2026"
         description="Discover part-time jobs in Vizag for students, freelancers, and working professionals. Find flexible work opportunities in Visakhapatnam."
         keywords="Part-time Jobs Vizag, Flexible Jobs Visakhapatnam, Student Jobs Vizag, Freelance Work Vizag"
-        canonical="/part-time-jobs-vizag"
+        canonical="/jobs/part-time"
         structuredData={structuredData}
       />
       <Navbar />

@@ -85,7 +85,7 @@ const JobCard = ({
 
       <div className="mt-auto">
         <Link
-          to={`/jobs/${jobId}`}
+          to={`/job/${jobId}`}
           className="block w-full rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
         >
           Full Job Details

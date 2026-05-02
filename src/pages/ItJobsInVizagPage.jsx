@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { toAbsoluteUrl } from '../lib/site';
 
 export default function ItJobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +88,7 @@ export default function ItJobsInVizagPage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "IT Jobs in Vizag",
-    "url": "https://jobsinvizag.in/it-jobs-in-vizag",
+    "url": toAbsoluteUrl('/jobs/it'),
     "description": "Find IT jobs in Visakhapatnam including software development, data analysis, and tech positions."
   };
 
@@ -97,7 +98,7 @@ export default function ItJobsInVizagPage() {
         title="IT Jobs in Vizag | Software & Tech Jobs in Visakhapatnam 2026"
         description="Discover IT jobs in Vizag including software engineering, data analysis, web development and tech positions in Visakhapatnam."
         keywords="IT Jobs Vizag, Software Jobs Vizag, Tech Jobs Visakhapatnam, IT Careers Vizag"
-        canonical="/it-jobs-in-vizag"
+        canonical="/jobs/it"
         structuredData={structuredData}
       />
       <Navbar />

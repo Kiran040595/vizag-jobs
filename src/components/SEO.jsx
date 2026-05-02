@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async'
+import { SITE_URL, toAbsoluteUrl } from '../lib/site'
 
 const SEO = ({
   title,
@@ -18,15 +19,14 @@ const SEO = ({
   const defaultTitle = 'Vizag Jobs | Latest Jobs in Visakhapatnam'
   const defaultDescription = 'Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.'
   const defaultKeywords = 'Vizag Jobs, Jobs in Vizag, Visakhapatnam Jobs, IT Jobs Vizag, Fresher Jobs Vizag'
-  const baseUrl = 'https://jobsinvizag.in'
 
   const finalTitle = title || defaultTitle
   const finalDescription = description || defaultDescription
   const finalKeywords = keywords || defaultKeywords
-  const finalCanonical = canonical ? `${baseUrl}${canonical}` : baseUrl
+  const finalCanonical = canonical ? toAbsoluteUrl(canonical) : SITE_URL
   const finalOgTitle = ogTitle || finalTitle
   const finalOgDescription = ogDescription || finalDescription
-  const finalOgUrl = ogUrl ? `${baseUrl}${ogUrl}` : finalCanonical
+  const finalOgUrl = ogUrl ? toAbsoluteUrl(ogUrl) : finalCanonical
   const finalTwitterTitle = twitterTitle || finalOgTitle
   const finalTwitterDescription = twitterDescription || finalOgDescription
 

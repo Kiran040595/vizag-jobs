@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { toAbsoluteUrl } from '../lib/site';
 
 export default function JobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,7 +87,7 @@ export default function JobsInVizagPage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Jobs in Vizag",
-    "url": "https://jobsinvizag.in/jobs-in-vizag",
+    "url": toAbsoluteUrl('/jobs'),
     "description": "Browse all available jobs in Visakhapatnam including IT, fresher, part-time and experienced positions."
   };
 
@@ -96,7 +97,7 @@ export default function JobsInVizagPage() {
         title="Jobs in Vizag | All Job Opportunities in Visakhapatnam 2026"
         description="Browse all job opportunities in Vizag. Find IT jobs, fresher jobs, part-time jobs and experienced positions in Visakhapatnam."
         keywords="Jobs in Vizag, Visakhapatnam Jobs, All Jobs Vizag, Job Opportunities Vizag"
-        canonical="/jobs-in-vizag"
+        canonical="/jobs"
         structuredData={structuredData}
       />
       <Navbar />

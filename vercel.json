@@ -1,0 +1,40 @@
+{
+  "redirects": [
+    {
+      "source": "/jobs-in-vizag",
+      "destination": "/jobs",
+      "permanent": true
+    },
+    {
+      "source": "/it-jobs-in-vizag",
+      "destination": "/jobs/it",
+      "permanent": true
+    },
+    {
+      "source": "/fresher-jobs-in-vizag",
+      "destination": "/jobs/fresher",
+      "permanent": true
+    },
+    {
+      "source": "/part-time-jobs-vizag",
+      "destination": "/jobs/part-time",
+      "permanent": true
+    },
+    {
+      "source": "/jobs/:jobId",
+      "destination": "/job/:jobId",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.jobsinvizag.in"
+        }
+      ],
+      "destination": "https://jobsinvizag.in/:path*",
+      "permanent": true
+    }
+  ]
+}
