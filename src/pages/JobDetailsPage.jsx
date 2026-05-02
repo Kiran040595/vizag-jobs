@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -13,7 +13,8 @@ const splitCommaValues = (value) =>
     .filter(Boolean);
 
 export default function JobDetailsPage() {
-  const { jobId } = useParams();
+  const { jobId, jobSlug } = useParams();
+  const navigate = useNavigate();
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -77,10 +78,25 @@ export default function JobDetailsPage() {
     window.scrollTo(0, 0);
   }, []);
 
+  const routeJobIdentifier = jobSlug || jobId || '';
+
   const job = useMemo(
-    () => allJobs.find((item) => String(item.id) === String(jobId)),
-    [allJobs, jobId]
+    () =>
+      allJobs.find(
+        (item) =>
+          String(item.slug) === String(routeJobIdentifier) ||
+          String(item.id) === String(routeJobIdentifier)
+      ),
+    [allJobs, routeJobIdentifier]
   );
+
+  useEffect(() => {
+    if (!job || !job.slug || routeJobIdentifier === job.slug) {
+      return;
+    }
+
+    navigate(`/job/${job.slug}`, { replace: true });
+  }, [job, navigate, routeJobIdentifier]);
 
   const skills = splitCommaValues(job?.skills);
   const responsibilities = splitCommaValues(job?.responsibilities);
@@ -94,7 +110,7 @@ export default function JobDetailsPage() {
       <SEO
         title={jobTitle}
         description={jobDescription}
-        canonical={`/job/${jobId}`}
+        canonical={`/job/${job?.slug || routeJobIdentifier}`}
       />
       <Navbar />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">

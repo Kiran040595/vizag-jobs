@@ -34,6 +34,7 @@ const JobList = ({ jobs }) => {
           <JobCard
             key={job.id}
             jobId={job.id}
+            jobSlug={job.slug}
             companyLogo={job.companyLogo}
             jobTitle={job.title}
             companyName={job.company}
