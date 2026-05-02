@@ -1,4 +1,5 @@
 import JobCard from './JobCard';
+import { getJobDetailPath } from '../lib/jobRoutes';
 
 const JobList = ({ jobs }) => {
   const jobsToShow = jobs || [];
@@ -33,8 +34,7 @@ const JobList = ({ jobs }) => {
         {jobsToShow.map((job) => (
           <JobCard
             key={job.id}
-            jobId={job.id}
-            jobSlug={job.slug}
+            jobPath={getJobDetailPath(job)}
             companyLogo={job.companyLogo}
             jobTitle={job.title}
             companyName={job.company}

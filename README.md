@@ -42,6 +42,8 @@ Detailed setup steps are in [docs/supabase-setup.md](./docs/supabase-setup.md).
 npm run build
 ```
 
+The build step auto-generates `public/sitemap.xml` from Supabase so published job detail pages are included alongside the main SEO landing pages.
+
 ## Preview Production Build
 
 ```bash

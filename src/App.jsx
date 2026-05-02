@@ -10,6 +10,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/jobs/:jobSegment/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/job/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />

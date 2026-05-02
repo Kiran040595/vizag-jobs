@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { getJobDetailPath } from '../lib/jobRoutes';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -13,7 +14,7 @@ const splitCommaValues = (value) =>
     .filter(Boolean);
 
 export default function JobDetailsPage() {
-  const { jobId, jobSlug } = useParams();
+  const { jobId, jobSlug, jobSegment } = useParams();
   const navigate = useNavigate();
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +80,7 @@ export default function JobDetailsPage() {
   }, []);
 
   const routeJobIdentifier = jobSlug || jobId || '';
+  const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
 
   const job = useMemo(
     () =>
@@ -91,12 +93,17 @@ export default function JobDetailsPage() {
   );
 
   useEffect(() => {
-    if (!job || !job.slug || routeJobIdentifier === job.slug) {
+    if (!job) {
       return;
     }
 
-    navigate(`/job/${job.slug}`, { replace: true });
-  }, [job, navigate, routeJobIdentifier]);
+    const canonicalPath = getJobDetailPath(job);
+    if (currentPath === canonicalPath) {
+      return;
+    }
+
+    navigate(canonicalPath, { replace: true });
+  }, [currentPath, job, navigate]);
 
   const skills = splitCommaValues(job?.skills);
   const responsibilities = splitCommaValues(job?.responsibilities);
@@ -110,7 +117,7 @@ export default function JobDetailsPage() {
       <SEO
         title={jobTitle}
         description={jobDescription}
-        canonical={`/job/${job?.slug || routeJobIdentifier}`}
+        canonical={job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`}
       />
       <Navbar />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
