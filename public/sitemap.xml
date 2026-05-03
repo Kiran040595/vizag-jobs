@@ -2,33 +2,87 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://jobsinvizag.in/</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/it</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/fresher</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/part-time</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/transaction-processing-associate-conduent-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/sales/sales-associate-adhoc-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/admission-counsellor-upgrad-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/executive-residence-gitam-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/customer-care-executive-mrt-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/electrician-technician-dmart-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/office-assistant-svl-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/valuation-engineer-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/work-from-home/software-engineer-fortified-remote-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/work-from-home/java-developer-remote-jugla-technologies-vizag-freshers</loc>
@@ -37,7 +91,49 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://jobsinvizag.in/jobs/logistics/delivery-boy-visakhapatnam</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/logistics/delivery-boy-gajuwaka</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/it/office-administrator-smr-software-services</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/general/enrollment-associate-quantean</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/teaching/computer-science-educator</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://jobsinvizag.in/jobs/sales/area-sales-manager-shreemsha</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/sales/assistant-sales-manager-honeyy</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/bank/sales-officer-hdfc</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -67,12 +163,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/teaching/computer-science-educator</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://jobsinvizag.in/jobs/hospital/nurse-practitioners</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
@@ -85,38 +175,14 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/logistics/delivery-boy-visakhapatnam</loc>
-    <lastmod>2026-04-28</lastmod>
+    <loc>https://jobsinvizag.in/jobs/fresher/personal-assistant-peram-group-1</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/logistics/delivery-boy-gajuwaka</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/it/office-administrator-smr-software-services</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/general/enrollment-associate-quantean</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/bank/sales-officer-hdfc</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/sales/assistant-sales-manager-honeyy</loc>
-    <lastmod>2026-04-28</lastmod>
+    <loc>https://jobsinvizag.in/jobs/sales/field-sales-executive-policybazaar</loc>
+    <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -128,36 +194,6 @@
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/it-fresher/java-spring-developer-atri-business-solutions</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/fresher/personal-assistant-peram-group-1</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/fresher/personal-assistant-peram-group-2</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/sales/bench-sales-recruiter-aspirax</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/bank-fresher/relationship-officer-axis-bank</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/sales/field-sales-executive-policybazaar</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -181,19 +217,25 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it/java-full-stack-developer-neeha-it-services-2026-04-21</loc>
+    <loc>https://jobsinvizag.in/jobs/sales/bench-sales-recruiter-aspirax</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it/java-with-kafka-professional-pradeepit-2026-04-16</loc>
+    <loc>https://jobsinvizag.in/jobs/fresher/personal-assistant-peram-group-2</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it-fresher/java-spring-developer-atri-business-solutions-2026-04-27</loc>
+    <loc>https://jobsinvizag.in/jobs/bank-fresher/relationship-officer-axis-bank</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/it/enovia-developer-leuwint-technologies-2024-08-23</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -223,7 +265,19 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it/enovia-developer-leuwint-technologies-2024-08-23</loc>
+    <loc>https://jobsinvizag.in/jobs/it/java-full-stack-developer-neeha-it-services-2026-04-21</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/it/java-with-kafka-professional-pradeepit-2026-04-16</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/it-fresher/java-spring-developer-atri-business-solutions-2026-04-27</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>

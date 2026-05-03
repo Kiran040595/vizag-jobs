@@ -7,7 +7,8 @@ This project now expects a Supabase table named `jobs` with snake_case column na
 1. Create a new project in Supabase.
 2. Open `SQL Editor`.
 3. Run [20260427_create_jobs_schema.sql](/D:/School%20Project/VIzagJobs/supabase/migrations/20260427_create_jobs_schema.sql).
-4. Optionally run [seed.sql](/D:/School%20Project/VIzagJobs/supabase/seed.sql) to add two sample jobs.
+4. Run [20260503_add_admin_jobs_policies.sql](/D:/School%20Project/VIzagJobs/supabase/migrations/20260503_add_admin_jobs_policies.sql) to add admin allowlisting and write policies.
+5. Optionally run [seed.sql](/D:/School%20Project/VIzagJobs/supabase/seed.sql) to add two sample jobs.
 
 ## 2. Add frontend env values
 
@@ -73,5 +74,11 @@ The frontend reads these database columns:
 ## 6. Notes
 
 - Public users can only read `published` jobs because RLS is enabled.
-- The app currently only reads jobs. It does not yet include an admin panel for creating or editing them.
-- If you want, the next step can be a simple admin page for adding jobs directly from your app.
+- The app now includes `/admin/login` and `/admin` for allowlisted admins.
+- Create the admin user in Supabase Auth first, then allowlist it in `public.admin_users`.
+- Example allowlist insert:
+
+```sql
+insert into public.admin_users (user_id)
+values ('your-auth-user-uuid');
+```
