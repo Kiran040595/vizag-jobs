@@ -22,11 +22,237 @@ const REQUIRED_DEFAULTS = {
   experience: 'Not specified',
 };
 
+const SUPPORTED_SQL_TABLE_PATTERN = /^insert\s+into\s+(?:public\.)?jobs\s*\(([\s\S]*?)\)\s*values\s*\(([\s\S]*?)\)\s*;?\s*$/i;
+const SUPPORTED_JOB_COLUMNS = new Set([
+  'slug',
+  'title',
+  'company',
+  'location',
+  'category',
+  'job_type',
+  'work_mode',
+  'experience',
+  'is_fresher',
+  'salary',
+  'apply_link',
+  'short_description',
+  'description',
+  'responsibilities',
+  'eligibility',
+  'warning',
+  'posted_at',
+  'expires_at',
+  'source_name',
+  'source_url',
+  'skills',
+  'company_logo_url',
+  'status',
+  'is_featured',
+]);
+
+const splitTopLevelCommaValues = (value, options = {}) => {
+  const {
+    bracketPairs = { '(': ')', '[': ']', '{': '}' },
+  } = options;
+
+  const values = [];
+  let currentValue = '';
+  let singleQuoteOpen = false;
+  let doubleQuoteOpen = false;
+  const stack = [];
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    const nextCharacter = value[index + 1];
+
+    if (singleQuoteOpen) {
+      currentValue += character;
+      if (character === "'" && nextCharacter === "'") {
+        currentValue += nextCharacter;
+        index += 1;
+        continue;
+      }
+      if (character === "'") {
+        singleQuoteOpen = false;
+      }
+      continue;
+    }
+
+    if (doubleQuoteOpen) {
+      currentValue += character;
+      if (character === '"' && nextCharacter === '"') {
+        currentValue += nextCharacter;
+        index += 1;
+        continue;
+      }
+      if (character === '"') {
+        doubleQuoteOpen = false;
+      }
+      continue;
+    }
+
+    if (character === "'") {
+      singleQuoteOpen = true;
+      currentValue += character;
+      continue;
+    }
+
+    if (character === '"') {
+      doubleQuoteOpen = true;
+      currentValue += character;
+      continue;
+    }
+
+    if (bracketPairs[character]) {
+      stack.push(bracketPairs[character]);
+      currentValue += character;
+      continue;
+    }
+
+    if (stack.length > 0 && character === stack[stack.length - 1]) {
+      stack.pop();
+      currentValue += character;
+      continue;
+    }
+
+    if (character === ',' && stack.length === 0) {
+      values.push(currentValue.trim());
+      currentValue = '';
+      continue;
+    }
+
+    currentValue += character;
+  }
+
+  if (singleQuoteOpen || doubleQuoteOpen || stack.length > 0) {
+    throw new Error('The SQL query has unclosed quotes or brackets.');
+  }
+
+  if (currentValue.trim()) {
+    values.push(currentValue.trim());
+  }
+
+  return values;
+};
+
+const unquoteSqlString = (value) => {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue.startsWith("'") || !trimmedValue.endsWith("'")) {
+    return trimmedValue;
+  }
+
+  return trimmedValue.slice(1, -1).replaceAll("''", "'");
+};
+
+const parsePgArrayLiteral = (value) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue.startsWith('{') || !trimmedValue.endsWith('}')) {
+    return [];
+  }
+
+  const innerValue = trimmedValue.slice(1, -1).trim();
+  if (!innerValue) {
+    return [];
+  }
+
+  return splitTopLevelCommaValues(innerValue, { bracketPairs: {} }).map((item) => {
+    const trimmedItem = item.trim();
+
+    if (trimmedItem.startsWith('"') && trimmedItem.endsWith('"')) {
+      return trimmedItem.slice(1, -1).replaceAll('""', '"');
+    }
+
+    return trimmedItem;
+  });
+};
+
+const parseSqlLiteral = (token) => {
+  const trimmedToken = token.trim();
+  const normalizedToken = trimmedToken.toLowerCase();
+
+  if (!trimmedToken) {
+    return null;
+  }
+
+  if (normalizedToken === 'null') {
+    return null;
+  }
+
+  if (normalizedToken === 'true') {
+    return true;
+  }
+
+  if (normalizedToken === 'false') {
+    return false;
+  }
+
+  if (/^array\s*\[/i.test(trimmedToken) && trimmedToken.endsWith(']')) {
+    const innerValue = trimmedToken.replace(/^array\s*\[/i, '').slice(0, -1);
+    if (!innerValue.trim()) {
+      return [];
+    }
+
+    return splitTopLevelCommaValues(innerValue).map((item) => {
+      const parsedItem = parseSqlLiteral(item);
+      return parsedItem === null ? '' : String(parsedItem);
+    });
+  }
+
+  if (trimmedToken.startsWith("'") && trimmedToken.endsWith("'")) {
+    const stringValue = unquoteSqlString(trimmedToken);
+    if (stringValue.startsWith('{') && stringValue.endsWith('}')) {
+      return parsePgArrayLiteral(stringValue);
+    }
+
+    return stringValue;
+  }
+
+  if (/^-?\d+(\.\d+)?$/.test(trimmedToken)) {
+    return Number(trimmedToken);
+  }
+
+  return trimmedToken;
+};
+
+const parseSqlInsertToRecord = (sqlQuery) => {
+  const normalizedSql = String(sqlQuery || '').trim();
+  const matchedSql = normalizedSql.match(SUPPORTED_SQL_TABLE_PATTERN);
+
+  if (!matchedSql) {
+    throw new Error('Use a single INSERT INTO public.jobs (...) VALUES (...) query.');
+  }
+
+  const [, rawColumns, rawValues] = matchedSql;
+  const columns = splitTopLevelCommaValues(rawColumns, { bracketPairs: {} }).map((column) =>
+    column.trim().replace(/^"|"$/g, '').toLowerCase()
+  );
+  const values = splitTopLevelCommaValues(rawValues);
+
+  if (columns.length !== values.length) {
+    throw new Error('The number of SQL columns does not match the number of values.');
+  }
+
+  const parsedRecord = {};
+
+  columns.forEach((column, index) => {
+    if (!SUPPORTED_JOB_COLUMNS.has(column)) {
+      throw new Error(`The SQL column "${column}" is not supported in this importer.`);
+    }
+
+    parsedRecord[column] = parseSqlLiteral(values[index]);
+  });
+
+  return parsedRecord;
+};
+
 const normalizeLineItems = (value) =>
-  String(value || '')
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  Array.isArray(value)
+    ? value.map((item) => String(item || '').trim()).filter(Boolean)
+    : String(value || '')
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean);
 
 const normalizeText = (value) => String(value || '').trim();
 
@@ -45,7 +271,14 @@ const toIsoString = (value) => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
-const toBoolean = (value) => Boolean(value);
+const toBoolean = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  const normalizedValue = String(value || '').trim().toLowerCase();
+  return ['true', 't', '1', 'yes'].includes(normalizedValue);
+};
 
 const slugify = (value) =>
   normalizeText(value)
@@ -208,6 +441,23 @@ export const createAdminJob = async (values, statusOverride) => {
 
   if (error) {
     throw mapError(error, 'Could not create the job.');
+  }
+
+  invalidatePublicJobCache();
+  return data;
+};
+
+export const createAdminJobFromSql = async (sqlQuery) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const parsedRecord = parseSqlInsertToRecord(sqlQuery);
+  const payload = serializeJobForm(parsedRecord, parsedRecord.status || undefined);
+  const { data, error } = await supabase.from(JOBS_TABLE).insert(payload).select('*').single();
+
+  if (error) {
+    throw mapError(error, 'Could not create the job from SQL.');
   }
 
   invalidatePublicJobCache();
