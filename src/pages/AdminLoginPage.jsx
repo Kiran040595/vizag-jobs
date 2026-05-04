@@ -1,15 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 
+const ADMIN_LOGIN_DRAFT_KEY = 'vizagjobs:admin-login-draft';
+
+const getStoredLoginDraft = () => {
+  try {
+    const storedValue = sessionStorage.getItem(ADMIN_LOGIN_DRAFT_KEY);
+
+    if (!storedValue) {
+      return { email: '', password: '' };
+    }
+
+    const parsedValue = JSON.parse(storedValue);
+    return {
+      email: typeof parsedValue.email === 'string' ? parsedValue.email : '',
+      password: typeof parsedValue.password === 'string' ? parsedValue.password : '',
+    };
+  } catch {
+    return { email: '', password: '' };
+  }
+};
+
 export default function AdminLoginPage() {
   const { authError, isAdmin, isLoading, isSupabaseConfigured, session, signIn, signOut, user } = useAdminAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(() => getStoredLoginDraft().email);
+  const [password, setPassword] = useState(() => getStoredLoginDraft().password);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (email.trim() || password) {
+        sessionStorage.setItem(
+          ADMIN_LOGIN_DRAFT_KEY,
+          JSON.stringify({
+            email,
+            password,
+          })
+        );
+        return;
+      }
+
+      sessionStorage.removeItem(ADMIN_LOGIN_DRAFT_KEY);
+    } catch {
+      // Ignore storage failures and keep the form usable.
+    }
+  }, [email, password]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -47,6 +86,7 @@ export default function AdminLoginPage() {
 
     try {
       await signIn({ email, password });
+      sessionStorage.removeItem(ADMIN_LOGIN_DRAFT_KEY);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not sign in.');
     } finally {
@@ -124,6 +164,8 @@ export default function AdminLoginPage() {
               <span className="text-sm font-semibold text-slate-700">Email</span>
               <input
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
@@ -136,6 +178,8 @@ export default function AdminLoginPage() {
               <span className="text-sm font-semibold text-slate-700">Password</span>
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
@@ -151,6 +195,10 @@ export default function AdminLoginPage() {
             {authError ? (
               <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{authError}</p>
             ) : null}
+
+            <p className="text-xs leading-5 text-slate-500">
+              If this tab remounts or reloads, your typed login draft is restored for this browser tab.
+            </p>
 
             <button
               type="submit"

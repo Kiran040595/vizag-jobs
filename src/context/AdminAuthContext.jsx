@@ -2,6 +2,56 @@ import { useEffect, useState } from 'react';
 import { AdminAuthContext } from './adminAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
+const ADMIN_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
+const ADMIN_ACCESS_CACHE_KEY = 'vizagjobs:admin-access-cache';
+
+const readAdminAccessCache = () => {
+  try {
+    const rawValue = sessionStorage.getItem(ADMIN_ACCESS_CACHE_KEY);
+    return rawValue ? JSON.parse(rawValue) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeAdminAccessCache = (userId, isAdmin) => {
+  try {
+    sessionStorage.setItem(
+      ADMIN_ACCESS_CACHE_KEY,
+      JSON.stringify({
+        userId,
+        isAdmin,
+        expiresAt: Date.now() + ADMIN_ACCESS_CACHE_TTL_MS,
+      })
+    );
+  } catch {
+    // Ignore cache write failures and keep auth usable.
+  }
+};
+
+const clearAdminAccessCache = () => {
+  try {
+    sessionStorage.removeItem(ADMIN_ACCESS_CACHE_KEY);
+  } catch {
+    // Ignore cache clear failures and keep auth usable.
+  }
+};
+
+const getCachedAdminAccess = (userId) => {
+  const cachedValue = readAdminAccessCache();
+
+  if (!cachedValue || cachedValue.userId !== userId) {
+    return null;
+  }
+
+  if (typeof cachedValue.expiresAt !== 'number' || cachedValue.expiresAt <= Date.now()) {
+    clearAdminAccessCache();
+    return null;
+  }
+
+  return Boolean(cachedValue.isAdmin);
+};
+
 const getAdminMembership = async (userId) => {
   if (!supabase || !userId) {
     return false;
@@ -33,28 +83,42 @@ export function AdminAuthProvider({ children }) {
 
     let isMounted = true;
 
-    const syncSession = async (nextSession) => {
+    const syncSession = async (nextSession, options = {}) => {
+      const { showLoader = false } = options;
+
       if (!isMounted) {
         return;
       }
 
-      setIsLoading(true);
+      if (showLoader) {
+        setIsLoading(true);
+      }
+
       setAuthError('');
       setSession(nextSession);
 
       if (!nextSession?.user) {
         setIsAdmin(false);
-        setIsLoading(false);
+        clearAdminAccessCache();
+        if (showLoader) {
+          setIsLoading(false);
+        }
         return;
       }
 
       try {
-        const adminAccess = await getAdminMembership(nextSession.user.id);
+        const cachedAdminAccess = getCachedAdminAccess(nextSession.user.id);
+        const adminAccess =
+          cachedAdminAccess !== null
+            ? cachedAdminAccess
+            : await getAdminMembership(nextSession.user.id);
+
         if (!isMounted) {
           return;
         }
 
         setIsAdmin(adminAccess);
+        writeAdminAccessCache(nextSession.user.id, adminAccess);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -63,7 +127,7 @@ export function AdminAuthProvider({ children }) {
         setIsAdmin(false);
         setAuthError(error instanceof Error ? error.message : 'Could not verify admin access.');
       } finally {
-        if (isMounted) {
+        if (isMounted && showLoader) {
           setIsLoading(false);
         }
       }
@@ -80,13 +144,19 @@ export function AdminAuthProvider({ children }) {
         return;
       }
 
-      syncSession(data.session);
+      syncSession(data.session, { showLoader: true });
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      syncSession(nextSession);
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const shouldShowLoader =
+        event === 'SIGNED_IN' ||
+        event === 'SIGNED_OUT' ||
+        event === 'USER_UPDATED' ||
+        event === 'PASSWORD_RECOVERY';
+
+      syncSession(nextSession, { showLoader: shouldShowLoader });
     });
 
     return () => {
@@ -115,6 +185,8 @@ export function AdminAuthProvider({ children }) {
     if (error) {
       throw error;
     }
+
+    clearAdminAccessCache();
   };
 
   return (

@@ -176,6 +176,28 @@ export const fetchAdminJobs = async () => {
   return data || [];
 };
 
+export const fetchAdminJobById = async (jobId) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .select('*')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (error) {
+    throw mapError(error, 'Could not load the selected job.');
+  }
+
+  if (!data) {
+    throw new Error('Job not found.');
+  }
+
+  return data;
+};
+
 export const createAdminJob = async (values, statusOverride) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
