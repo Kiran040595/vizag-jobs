@@ -134,7 +134,9 @@ export default function AdminNewJobPage() {
 
           <p className="mt-3 text-xs leading-5 text-slate-500">
             Supported format: one `INSERT INTO public.jobs (...) VALUES (...)` statement for a single job. Arrays can
-            use Postgres literals like `{"React","JavaScript"}` inside single quotes.
+            use Postgres literals like `{'{'}
+            "React","JavaScript"
+            {'}'}` inside single quotes.
           </p>
         </section>
         <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
