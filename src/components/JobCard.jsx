@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { isJobFresh } from '../lib/jobFreshness';
+import NewBadge from './NewBadge';
 
 const JobCard = ({
   jobPath,
@@ -9,7 +11,8 @@ const JobCard = ({
   experience,
   salary,
   description,
-  tags = []
+  tags = [],
+  postedAt
 }) => {
   const fallbackLogoText = companyName
     ? companyName
@@ -32,7 +35,10 @@ const JobCard = ({
             )}
           </div>
           <div>
-            <h3 className="text-[15px] font-bold leading-snug text-slate-900 sm:text-base">{jobTitle}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-[15px] font-bold leading-snug text-slate-900 sm:text-base">{jobTitle}</h3>
+              {isJobFresh(postedAt) && <NewBadge />}
+            </div>
             <p className="text-xs text-slate-600 sm:text-sm">{companyName}</p>
           </div>
         </div>

@@ -6,6 +6,8 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
 import { getJobDetailPath } from '../lib/jobRoutes';
+import { isJobFresh } from '../lib/jobFreshness';
+import NewBadge from '../components/NewBadge';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -148,7 +150,10 @@ export default function JobDetailsPage() {
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">{job.title}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">{job.title}</h1>
+                  {isJobFresh(job.postedAt) && <NewBadge />}
+                </div>
                 <p className="mt-1 text-sm text-slate-600 sm:text-base">
                   {job.company} · {job.location}
                 </p>

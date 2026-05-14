@@ -43,6 +43,7 @@ const JobList = ({ jobs }) => {
             salary={job.salary}
             description={job.description}
             tags={job.tags}
+            postedAt={job.postedAt}
           />
         ))}
       </div>
