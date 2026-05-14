@@ -4,6 +4,7 @@ import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
 import StatsSection from '../components/StatsSection';
 import CTASection from '../components/CTASection';
+import BlogTeaserSection from '../components/BlogTeaserSection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -163,6 +164,8 @@ export default function HomePage() {
           )}
         </p>
         <JobList jobs={filteredJobs} />
+
+        <BlogTeaserSection />
 
         <StatsSection />
         <CTASection />

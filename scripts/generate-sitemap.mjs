@@ -18,6 +18,7 @@ const staticRoutes = [
   { path: '/jobs/it', priority: '0.9' },
   { path: '/jobs/fresher', priority: '0.9' },
   { path: '/jobs/part-time', priority: '0.8' },
+  { path: '/blog', priority: '0.8' },
 ];
 
 const loadEnvFile = (filename) => {
@@ -59,6 +60,7 @@ const siteUrl = (env.VITE_SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, '');
 const supabaseUrl = env.VITE_SUPABASE_URL;
 const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
 const jobsTable = env.VITE_SUPABASE_JOBS_TABLE || DEFAULT_TABLE_NAME;
+const blogTable = env.VITE_SUPABASE_BLOG_TABLE || 'blog_posts';
 const sitemapPath = path.join(projectRoot, 'public', 'sitemap.xml');
 const generatedAt = new Date().toISOString().split('T')[0];
 
@@ -149,6 +151,51 @@ const fetchPublishedJobs = async () => {
   return jobs;
 };
 
+const fetchPublishedBlogPosts = async () => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Skipping blog sitemap generation because Supabase env vars are missing.');
+    return [];
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  const posts = [];
+  let page = 0;
+
+  while (true) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error } = await supabase
+      .from(blogTable)
+      .select('slug, published_at, updated_at, status')
+      .eq('status', 'published')
+      .not('slug', 'is', null)
+      .order('published_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      throw new Error(`Failed to fetch blog posts for sitemap: ${error.message}`);
+    }
+
+    const currentBatch = (data || []).filter((row) => row.slug);
+    posts.push(...currentBatch);
+
+    if (currentBatch.length < PAGE_SIZE) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return posts;
+};
+
 const buildSitemap = async () => {
   const staticEntries = staticRoutes.map((route) =>
     createUrlEntry({
@@ -159,6 +206,7 @@ const buildSitemap = async () => {
   );
 
   let jobEntries = [];
+  let blogEntries = [];
 
   try {
     const jobs = await fetchPublishedJobs();
@@ -176,8 +224,22 @@ const buildSitemap = async () => {
     return;
   }
 
-  writeSitemap([...staticEntries, ...jobEntries]);
-  console.log(`Generated sitemap with ${staticEntries.length + jobEntries.length} URLs.`);
+  try {
+    const posts = await fetchPublishedBlogPosts();
+    blogEntries = posts.map((post) =>
+      createUrlEntry({
+        path: `/blog/${post.slug}`,
+        lastmod: formatLastMod(post.updated_at || post.published_at),
+        priority: '0.65',
+        changefreq: 'weekly',
+      })
+    );
+  } catch (error) {
+    console.warn('Blog sitemap skipped:', error instanceof Error ? error.message : error);
+  }
+
+  writeSitemap([...staticEntries, ...jobEntries, ...blogEntries]);
+  console.log(`Generated sitemap with ${staticEntries.length + jobEntries.length + blogEntries.length} URLs.`);
 };
 
 await buildSitemap();

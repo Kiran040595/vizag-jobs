@@ -9,6 +9,11 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import AdminNewJobPage from './pages/AdminNewJobPage';
 import AdminJobsPage from './pages/AdminJobsPage';
 import AdminEditJobPage from './pages/AdminEditJobPage';
+import AdminBlogListPage from './pages/AdminBlogListPage';
+import AdminNewBlogPage from './pages/AdminNewBlogPage';
+import AdminEditBlogPage from './pages/AdminEditBlogPage';
+import BlogListPage from './pages/BlogListPage';
+import BlogPostPage from './pages/BlogPostPage';
 import AdminRoute from './components/admin/AdminRoute';
 
 function App() {
@@ -48,6 +53,32 @@ function App() {
           </AdminRoute>
         )}
       />
+      <Route
+        path="/admin/blog"
+        element={(
+          <AdminRoute>
+            <AdminBlogListPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/blog/new"
+        element={(
+          <AdminRoute>
+            <AdminNewBlogPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/blog/:postId/edit"
+        element={(
+          <AdminRoute>
+            <AdminEditBlogPage />
+          </AdminRoute>
+        )}
+      />
+      <Route path="/blog" element={<BlogListPage />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/jobs/:jobSegment/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/job/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/jobs/:jobId" element={<JobDetailsPage />} />

@@ -4,6 +4,8 @@ import { useAdminAuth } from '../../hooks/useAdminAuth';
 const navItems = [
   { label: 'New Job', to: '/admin/new' },
   { label: 'Existing Jobs', to: '/admin/jobs' },
+  { label: 'Blog posts', to: '/admin/blog' },
+  { label: 'New post', to: '/admin/blog/new' },
 ];
 
 export default function AdminShell({ children, title, description }) {
