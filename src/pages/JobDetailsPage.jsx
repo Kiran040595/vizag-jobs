@@ -178,7 +178,7 @@ export default function JobDetailsPage() {
               <p><span className="font-semibold text-slate-900">Fresher:</span> {job.isFresher || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Salary:</span> {job.salary || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Source:</span> {job.source || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Posted At:</span> {job.postedAt || 'N/A'}</p>
+              <p><span className="font-semibold text-slate-900">Posted At:</span> {job.postedAt ? new Date(job.postedAt).toLocaleDateString() : 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Status:</span> {job.status || 'N/A'}</p>
             </div>
 
