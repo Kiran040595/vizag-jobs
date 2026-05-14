@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { toAbsoluteUrl } from '../lib/site';
 
 export default function PartTimeJobsVizagPage() {
@@ -29,9 +30,12 @@ export default function PartTimeJobsVizagPage() {
 
           // Check if cache is still valid (less than 5 minutes old)
           if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
-            setAllJobs(jobs);
-            setIsLoading(false);
-            return;
+            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+            if (visibleJobs.length > 0) {
+              setAllJobs(visibleJobs);
+              setIsLoading(false);
+              return;
+            }
           }
         } catch (error) {
           console.error('Error parsing cached jobs:', error);

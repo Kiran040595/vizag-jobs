@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 
 const CACHE_DURATION = 60000;
 const DEFAULT_TABLE_NAME = 'jobs';
@@ -95,6 +96,7 @@ const buildSupabaseQuery = (filters = {}) => {
     .from(jobsTable)
     .select('*')
     .eq('status', 'published')
+    .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
     .order('posted_at', { ascending: false })
     .order('created_at', { ascending: false });
 

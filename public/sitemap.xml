@@ -397,12 +397,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/fresher/electrician-technician-dmart-vizag</loc>
-    <lastmod>2026-05-02</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://jobsinvizag.in/jobs/fresher/executive-residence-gitam-vizag</loc>
     <lastmod>2026-05-02</lastmod>
     <changefreq>daily</changefreq>
@@ -451,13 +445,19 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/electrician-technician-dmart-vizag</loc>
+    <lastmod>2026-05-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://jobsinvizag.in/jobs/work-from-home/java-developer-remote-jugla-technologies-vizag-freshers</loc>
     <lastmod>2026-04-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/general/enrollment-associate-quantean</loc>
+    <loc>https://jobsinvizag.in/jobs/sales/assistant-sales-manager-honeyy</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -523,13 +523,13 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/sales/assistant-sales-manager-honeyy</loc>
+    <loc>https://jobsinvizag.in/jobs/sales/area-sales-manager-shreemsha</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/sales/area-sales-manager-shreemsha</loc>
+    <loc>https://jobsinvizag.in/jobs/general/enrollment-associate-quantean</loc>
     <lastmod>2026-04-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -589,19 +589,13 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it-fresher/web-developer-balasundaram-santosh</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://jobsinvizag.in/jobs/it-fresher/java-spring-developer-atri-business-solutions</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it-fresher/java-full-stack-developer-fresher-shvintech-india-2026-04-27</loc>
+    <loc>https://jobsinvizag.in/jobs/it/java-developer-sails-software-solutions-2026-04-26</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -625,7 +619,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it/enovia-developer-leuwint-technologies-2024-08-23</loc>
+    <loc>https://jobsinvizag.in/jobs/it-fresher/java-full-stack-developer-fresher-shvintech-india-2026-04-27</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -637,15 +631,15 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it/java-developer-sails-software-solutions-2026-04-26</loc>
+    <loc>https://jobsinvizag.in/jobs/it/dotnet-technical-project-manager-gms-2026-04-24</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/it/dotnet-technical-project-manager-gms-2026-04-24</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
+    <loc>https://jobsinvizag.in/blog/why-vizag-is-becoming-indias-next-data-center-hub</loc>
+    <lastmod>2026-05-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.65</priority>
   </url>
 </urlset>

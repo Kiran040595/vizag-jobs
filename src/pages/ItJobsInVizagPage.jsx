@@ -6,7 +6,25 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { isItRelatedJob } from '../lib/jobItMatch';
 import { toAbsoluteUrl } from '../lib/site';
+
+const jobMatchesSearchText = (job, raw) => {
+  const q = raw.trim().toLowerCase();
+  if (!q) return true;
+  const blob = [
+    job.title,
+    job.company,
+    job.skills,
+    job.description,
+    job.shortDescription,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return blob.includes(q);
+};
 
 export default function ItJobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,9 +47,12 @@ export default function ItJobsInVizagPage() {
 
           // Check if cache is still valid (less than 5 minutes old)
           if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
-            setAllJobs(jobs);
-            setIsLoading(false);
-            return;
+            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+            if (visibleJobs.length > 0) {
+              setAllJobs(visibleJobs);
+              setIsLoading(false);
+              return;
+            }
           }
         } catch (error) {
           console.error('Error parsing cached jobs:', error);
@@ -77,9 +98,7 @@ export default function ItJobsInVizagPage() {
     () =>
       allJobs.filter(
         (job) =>
-          job.tags.includes('IT') &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+          isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)
       ),
     [allJobs, searchTerm]
   );

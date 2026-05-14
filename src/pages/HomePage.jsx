@@ -9,9 +9,28 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobs } from '../services/jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { isItRelatedJob } from '../lib/jobItMatch';
+
+const jobMatchesSearchText = (job, raw) => {
+  const q = raw.trim().toLowerCase();
+  if (!q) return true;
+  const blob = [
+    job.title,
+    job.company,
+    job.skills,
+    job.description,
+    job.shortDescription,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return blob.includes(q);
+};
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [category, setCategory] = useState('All Categories');
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
@@ -53,14 +72,17 @@ export default function HomePage() {
 
           // Check if cache is still valid (less than 5 minutes old)
           if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
-            setAllJobs(jobs);
-            setIsLoading(false);
+            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+            if (visibleJobs.length > 0) {
+              setAllJobs(visibleJobs);
+              setIsLoading(false);
 
-            // Start background refresh if cache is getting old (older than 4 minutes)
-            if ((now - timestamp) > (4 * 60 * 1000)) {
-              refreshJobsInBackground();
+              // Start background refresh if cache is getting old (older than 4 minutes)
+              if ((now - timestamp) > (4 * 60 * 1000)) {
+                refreshJobsInBackground();
+              }
+              return;
             }
-            return;
           }
         } catch (error) {
           console.error('Error parsing cached jobs:', error);
@@ -106,15 +128,29 @@ export default function HomePage() {
     };
   }, [refreshJobsInBackground]);
 
-  const filteredJobs = useMemo(
-    () =>
-      allJobs.filter(
+  const filteredJobs = useMemo(() => {
+    let list = allJobs;
+
+    if (category === 'IT & Software') {
+      list = list.filter(isItRelatedJob);
+    } else if (category === 'Non-IT Jobs') {
+      list = list.filter((job) => !isItRelatedJob(job));
+    } else if (category === 'Fresher Jobs') {
+      list = list.filter(
         (job) =>
-          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [allJobs, searchTerm]
-  );
+          job.isFresher === 'Yes' ||
+          job.experience.toLowerCase().includes('fresher') ||
+          job.experience.includes('0')
+      );
+    } else if (category === 'Walk-in Interviews') {
+      list = list.filter((job) => {
+        const t = `${job.title} ${job.description} ${job.shortDescription}`.toLowerCase();
+        return t.includes('walk-in') || t.includes('walk in') || t.includes('walkin');
+      });
+    }
+
+    return list.filter((job) => jobMatchesSearchText(job, searchTerm));
+  }, [allJobs, searchTerm, category]);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -139,7 +175,12 @@ export default function HomePage() {
         structuredData={structuredData}
       />
       <Navbar />
-      <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
+      <HeroSection
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        category={category}
+        onCategoryChange={setCategory}
+      />
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         {/* <CategoriesSection /> */}

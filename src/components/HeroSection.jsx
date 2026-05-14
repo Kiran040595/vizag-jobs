@@ -10,8 +10,9 @@ const popularTags = [
   'Fresher Jobs'
 ];
 
-export default function HeroSection({ searchTerm, onSearch }) {
-  const [category, setCategory] = useState('All Categories');
+export default function HeroSection({ searchTerm, onSearch, category: categoryProp, onCategoryChange }) {
+  const [localCategory, setLocalCategory] = useState('All Categories');
+  const category = onCategoryChange ? categoryProp ?? 'All Categories' : localCategory;
   const [location, setLocation] = useState('Visakhapatnam');
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const sectionRef = useRef(null);
@@ -95,7 +96,11 @@ export default function HeroSection({ searchTerm, onSearch }) {
 
             <select
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (onCategoryChange) onCategoryChange(next);
+                else setLocalCategory(next);
+              }}
               className="h-11 rounded-xl border border-slate-200 px-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4"
               aria-label="Select category"
             >
