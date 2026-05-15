@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmployerGoogleButton from '../components/employer/EmployerGoogleButton';
+import { ENABLE_GOOGLE_EMPLOYER_AUTH } from '../lib/employerAuthFeatures';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function EmployerLoginPage() {
+  const [searchParams] = useSearchParams();
+  const redirectAfterLogin = searchParams.get('redirect');
   const { authError, isEmployer, isLoading, isSupabaseConfigured, session, signIn } = useEmployerAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,12 +35,15 @@ export default function EmployerLoginPage() {
     );
   }
 
+  const postLoginPath =
+    redirectAfterLogin && redirectAfterLogin.startsWith('/') ? redirectAfterLogin : null;
+
   if (session && isEmployer) {
-    return <Navigate to="/employer/jobs" replace />;
+    return <Navigate to={postLoginPath || '/employer/jobs'} replace />;
   }
 
   if (session && !isEmployer) {
-    return <Navigate to="/employer/profile" replace />;
+    return <Navigate to={postLoginPath || '/employer/profile'} replace />;
   }
 
   const handleSubmit = async (event) => {
@@ -67,7 +74,24 @@ export default function EmployerLoginPage() {
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
           <h2 className="text-2xl font-black text-slate-950">Sign in</h2>
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+
+          {ENABLE_GOOGLE_EMPLOYER_AUTH ? (
+            <>
+              <div className="mt-8">
+                <EmployerGoogleButton label="Sign in with Google" />
+              </div>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                  <span className="bg-white px-3 text-slate-400">Or use email</span>
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          <form onSubmit={handleSubmit} className={`space-y-5 ${ENABLE_GOOGLE_EMPLOYER_AUTH ? '' : 'mt-8'}`}>
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">Email</span>
               <input

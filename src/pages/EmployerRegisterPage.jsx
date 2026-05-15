@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmployerGoogleButton from '../components/employer/EmployerGoogleButton';
+import { ENABLE_GOOGLE_EMPLOYER_AUTH, REQUIRE_EMAIL_CONFIRMATION } from '../lib/employerAuthFeatures';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function EmployerRegisterPage() {
@@ -48,7 +50,11 @@ export default function EmployerRegisterPage() {
       if (result?.session) {
         return;
       }
-      setNotice('Account created. Check your email to confirm, then sign in and complete your company profile.');
+      if (REQUIRE_EMAIL_CONFIRMATION) {
+        setNotice('Account created. Check your email to confirm, then sign in.');
+      } else {
+        setNotice('Account created. You can sign in now with your email and password.');
+      }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not create account.');
     } finally {
@@ -63,7 +69,7 @@ export default function EmployerRegisterPage() {
         <h1 className="text-3xl font-black text-slate-950">Create employer account</h1>
         <p className="mt-2 text-sm text-slate-600">Post jobs for your company after admin approval.</p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <div className="mt-8 space-y-5">
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Company name</span>
             <input
@@ -73,41 +79,72 @@ export default function EmployerRegisterPage() {
               className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
             />
           </label>
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-            />
-          </label>
-          {notice ? (
-            <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</p>
+
+          {ENABLE_GOOGLE_EMPLOYER_AUTH ? (
+            <>
+              <EmployerGoogleButton
+                companyName={companyName}
+                requireCompanyName
+                label="Sign up with Google"
+              />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                  <span className="bg-white px-3 text-slate-400">Or use email</span>
+                </div>
+              </div>
+            </>
           ) : null}
-          {submitError ? (
-            <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
-          >
-            {isSubmitting ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+              />
+            </label>
+            {notice ? (
+              <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {notice}
+                {!REQUIRE_EMAIL_CONFIRMATION ? (
+                  <>
+                    {' '}
+                    <Link to="/employer/login" className="font-semibold underline">
+                      Sign in
+                    </Link>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {submitError ? (
+              <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
+            >
+              {isSubmitting ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
+        </div>
         <p className="mt-6 text-sm text-slate-600">
           Already have an account?{' '}
           <Link to="/employer/login" className="font-semibold text-cyan-600">

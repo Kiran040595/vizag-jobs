@@ -21,12 +21,14 @@ import EmployerProfilePage from './pages/EmployerProfilePage';
 import EmployerJobsListPage from './pages/EmployerJobsListPage';
 import EmployerNewJobPage from './pages/EmployerNewJobPage';
 import EmployerEditJobPage from './pages/EmployerEditJobPage';
+import OAuthConsentPage from './pages/OAuthConsentPage';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/employer/login" element={<EmployerLoginPage />} />
       <Route path="/employer/register" element={<EmployerRegisterPage />} />
       <Route path="/employer" element={<Navigate to="/employer/jobs" replace />} />

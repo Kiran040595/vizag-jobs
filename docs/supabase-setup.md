@@ -88,7 +88,7 @@ Email confirmation links use Supabase **URL Configuration**, not only your app c
    - `https://www.jobsinvizag.in/**` (if you use www)
    - `http://localhost:5173/**` (local dev only)
 4. Enable the **Email** provider in `Authentication -> Providers`.
-5. For production, enable **Confirm email** so only verified employers can sign in.
+5. **Confirm email** (optional for now): leave **disabled** in Supabase so employers can sign in immediately after register. Set `VITE_REQUIRE_EMAIL_CONFIRMATION=true` in the app only if you turn confirm email on later.
 
 If **Site URL** is still `http://localhost:5173`, confirmation emails will keep redirecting to localhost even when users register on production.
 
@@ -103,6 +103,28 @@ VITE_SITE_URL=https://jobsinvizag.in
 The employer sign-up flow passes `emailRedirectTo` using this value so confirmation links target `/employer/login` on your live domain.
 
 After changing Supabase URL settings or env vars, **redeploy** the frontend and register a **new** test user (old emails still contain old links).
+
+### Google sign-in for employers (Sign in with Google)
+
+This is **not** the same as **Authentication → OAuth Server** in the dashboard. Use **Providers → Google** for employer login.
+
+1. **Authentication → URL Configuration**
+   - Site URL: `https://jobsinvizag.in`
+   - Redirect URLs: `https://jobsinvizag.in/**`, `http://localhost:5173/**`
+2. In [Google Cloud Console](https://console.cloud.google.com/), create OAuth credentials (Web application).
+3. Add **Authorized JavaScript origins**: `https://jobsinvizag.in`, `http://localhost:5173`
+4. Add **Authorized redirect URI** (from Supabase **Providers → Google**):  
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+5. **Authentication → Providers → Google**: enable, paste Client ID and Client Secret.
+6. Vercel env (optional): `VITE_ENABLE_GOOGLE_EMPLOYER_AUTH=false` only if you need to hide Google buttons.
+
+Google buttons are **on by default** on `/employer/login` and `/employer/register`.
+
+### Supabase OAuth Server (`/oauth/consent`)
+
+If you enabled **Authentication → OAuth Server** with authorization path `/oauth/consent` and Site URL `https://jobsinvizag.in`, the app serves that page at [https://jobsinvizag.in/oauth/consent](https://jobsinvizag.in/oauth/consent).
+
+Users sign in (employer account) then approve or deny third-party OAuth clients. When `@supabase/supabase-js` exposes `auth.oauth.*` in your installed version, approve/deny works automatically after deploy.
 
 ### Self-service employer signup
 

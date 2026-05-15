@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { EmployerAuthContext } from './employerAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { setPendingEmployerCompanyName, takePendingEmployerCompanyName } from '../lib/employerOAuth';
 import { getAuthRedirectUrl } from '../lib/site';
+import { upsertEmployerProfile } from '../services/employerJobs';
 
 const EMPLOYER_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const EMPLOYER_ACCESS_CACHE_KEY = 'vizagjobs:employer-access-cache';
@@ -55,6 +57,31 @@ const getCachedEmployerAccess = (userId) => {
     isEmployer: Boolean(cachedValue.isEmployer),
     profile: cachedValue.profile ?? null,
   };
+};
+
+const applyPendingCompanyFromOAuth = async (user) => {
+  if (!supabase || !user) {
+    return;
+  }
+
+  const pendingCompany = takePendingEmployerCompanyName();
+  if (!pendingCompany) {
+    return;
+  }
+
+  const { data: existing } = await supabase
+    .from('employer_profiles')
+    .select('company_name')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!existing || existing.company_name === 'Your company') {
+    await upsertEmployerProfile({
+      company_name: pendingCompany,
+      contact_email: user.email,
+      contact_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+    });
+  }
 };
 
 const getEmployerProfile = async (userId) => {
@@ -123,6 +150,8 @@ export function EmployerAuthProvider({ children }) {
       }
 
       try {
+        await applyPendingCompanyFromOAuth(nextSession.user);
+
         const cached = getCachedEmployerAccess(nextSession.user.id);
         const access =
           cached !== null
@@ -221,6 +250,28 @@ export function EmployerAuthProvider({ children }) {
     return data;
   };
 
+  const signInWithGoogle = async ({ companyName } = {}) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    setPendingEmployerCompanyName(companyName);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: getAuthRedirectUrl('/employer/login'),
+        queryParams: {
+          prompt: 'select_account',
+        },
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     if (!supabase) {
       return;
@@ -245,6 +296,7 @@ export function EmployerAuthProvider({ children }) {
         refreshEmployerAccess,
         session,
         signIn,
+        signInWithGoogle,
         signOut,
         signUp,
         user: session?.user ?? null,
