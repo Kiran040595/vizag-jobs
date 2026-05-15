@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerGoogleButton from '../components/employer/EmployerGoogleButton';
-import { ENABLE_GOOGLE_EMPLOYER_AUTH, REQUIRE_EMAIL_CONFIRMATION } from '../lib/employerAuthFeatures';
+import { REQUIRE_EMAIL_CONFIRMATION } from '../lib/employerAuthFeatures';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function EmployerRegisterPage() {
@@ -80,9 +80,7 @@ export default function EmployerRegisterPage() {
             />
           </label>
 
-          {ENABLE_GOOGLE_EMPLOYER_AUTH ? (
-            <>
-              <EmployerGoogleButton
+          <EmployerGoogleButton
                 companyName={companyName}
                 requireCompanyName
                 label="Sign up with Google"
@@ -95,8 +93,6 @@ export default function EmployerRegisterPage() {
                   <span className="bg-white px-3 text-slate-400">Or use email</span>
                 </div>
               </div>
-            </>
-          ) : null}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <label className="block">

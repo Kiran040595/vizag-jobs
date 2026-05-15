@@ -116,9 +116,7 @@ This is **not** the same as **Authentication → OAuth Server** in the dashboard
 4. Add **Authorized redirect URI** (from Supabase **Providers → Google**):  
    `https://<your-project-ref>.supabase.co/auth/v1/callback`
 5. **Authentication → Providers → Google**: enable, paste Client ID and Client Secret.
-6. Vercel env (optional): `VITE_ENABLE_GOOGLE_EMPLOYER_AUTH=false` only if you need to hide Google buttons.
-
-Google buttons are **on by default** on `/employer/login` and `/employer/register`.
+6. **Sign in with Google** appears on `/employer/login` and `/employer/register` (no env flag required).
 
 ### Supabase OAuth Server (`/oauth/consent`)
 
