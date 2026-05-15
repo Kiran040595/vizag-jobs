@@ -15,12 +15,25 @@ import AdminEditBlogPage from './pages/AdminEditBlogPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
 import AdminRoute from './components/admin/AdminRoute';
+import EmployerLoginPage from './pages/EmployerLoginPage';
+import EmployerRegisterPage from './pages/EmployerRegisterPage';
+import EmployerProfilePage from './pages/EmployerProfilePage';
+import EmployerJobsListPage from './pages/EmployerJobsListPage';
+import EmployerNewJobPage from './pages/EmployerNewJobPage';
+import EmployerEditJobPage from './pages/EmployerEditJobPage';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/employer/login" element={<EmployerLoginPage />} />
+      <Route path="/employer/register" element={<EmployerRegisterPage />} />
+      <Route path="/employer" element={<Navigate to="/employer/jobs" replace />} />
+      <Route path="/employer/profile" element={<EmployerProfilePage />} />
+      <Route path="/employer/jobs" element={<EmployerJobsListPage />} />
+      <Route path="/employer/jobs/new" element={<EmployerNewJobPage />} />
+      <Route path="/employer/jobs/:jobId/edit" element={<EmployerEditJobPage />} />
       <Route
         path="/admin"
         element={(

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import NavbarPostJobLink from './NavbarPostJobLink';
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -40,6 +41,9 @@ export default function Navbar() {
           >
             Browse jobs
           </Link>
+          <NavbarPostJobLink
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          />
           <Link
             to="/admin/login"
             className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
@@ -86,6 +90,10 @@ export default function Navbar() {
             >
               Browse jobs
             </Link>
+            <NavbarPostJobLink
+              onClick={() => setIsOpen(false)}
+              className="rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            />
             <Link
               to="/admin/login"
               onClick={() => setIsOpen(false)}

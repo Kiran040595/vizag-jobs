@@ -6,15 +6,18 @@ import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.jsx'
 import { AdminAuthProvider } from './context/AdminAuthContext.jsx'
+import { EmployerAuthProvider } from './context/EmployerAuthContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AdminAuthProvider>
-        <HelmetProvider>
-          <App />
-          <Analytics />
-        </HelmetProvider>
+        <EmployerAuthProvider>
+          <HelmetProvider>
+            <App />
+            <Analytics />
+          </HelmetProvider>
+        </EmployerAuthProvider>
       </AdminAuthProvider>
     </BrowserRouter>
   </StrictMode>,

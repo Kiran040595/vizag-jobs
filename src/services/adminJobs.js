@@ -505,6 +505,75 @@ export const updateAdminJobStatus = async (jobId, status) => {
   return data;
 };
 
+export const approveAdminJob = async (jobId) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be signed in as an admin.');
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update({
+      status: 'published',
+      posted_at: now,
+      reviewed_at: now,
+      reviewed_by: user.id,
+      rejection_reason: null,
+    })
+    .eq('id', jobId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw mapError(error, 'Could not approve the job.');
+  }
+
+  invalidatePublicJobCache();
+  return data;
+};
+
+export const rejectAdminJob = async (jobId, rejectionReason = '') => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be signed in as an admin.');
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update({
+      status: 'archived',
+      reviewed_at: now,
+      reviewed_by: user.id,
+      rejection_reason: normalizeOptionalText(rejectionReason),
+    })
+    .eq('id', jobId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw mapError(error, 'Could not reject the job.');
+  }
+
+  invalidatePublicJobCache();
+  return data;
+};
+
 export const toggleAdminJobFeatured = async (jobId, isFeatured) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
