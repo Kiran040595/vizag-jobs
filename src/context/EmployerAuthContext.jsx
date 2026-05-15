@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EmployerAuthContext } from './employerAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { getAuthRedirectUrl } from '../lib/site';
 
 const EMPLOYER_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const EMPLOYER_ACCESS_CACHE_KEY = 'vizagjobs:employer-access-cache';
@@ -205,6 +206,7 @@ export function EmployerAuthProvider({ children }) {
         data: {
           company_name: companyName,
         },
+        emailRedirectTo: getAuthRedirectUrl('/employer/login'),
       },
     });
 

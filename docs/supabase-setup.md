@@ -76,12 +76,33 @@ The frontend reads these database columns:
 
 Employers can sign up at `/employer/register`, complete their company profile, and submit jobs as `pending`. Admins review submissions at `/admin/jobs` and use **Approve** (publishes to the portal) or **Reject** (archives with an optional reason).
 
-### Supabase Auth settings
+### Supabase Auth settings (fixes localhost redirects in production)
 
-1. Enable the **Email** provider in `Authentication -> Providers`.
-2. Set **Site URL** to your production URL (for example `https://jobsinvizag.in`).
-3. Add redirect URLs for `/employer/login` and `/employer/register` if you use email confirmation.
-4. For production, enable **Confirm email** so only verified employers can sign in.
+Email confirmation links use Supabase **URL Configuration**, not only your app code.
+
+1. Open **Authentication -> URL Configuration** in the Supabase dashboard.
+2. Set **Site URL** to your live site (not localhost):
+   - `https://jobsinvizag.in`
+3. Under **Redirect URLs**, add every URL Supabase may send users to (wildcards allowed):
+   - `https://jobsinvizag.in/**`
+   - `https://www.jobsinvizag.in/**` (if you use www)
+   - `http://localhost:5173/**` (local dev only)
+4. Enable the **Email** provider in `Authentication -> Providers`.
+5. For production, enable **Confirm email** so only verified employers can sign in.
+
+If **Site URL** is still `http://localhost:5173`, confirmation emails will keep redirecting to localhost even when users register on production.
+
+### Vercel / production env
+
+Set in Vercel (or your host) **before** redeploying:
+
+```env
+VITE_SITE_URL=https://jobsinvizag.in
+```
+
+The employer sign-up flow passes `emailRedirectTo` using this value so confirmation links target `/employer/login` on your live domain.
+
+After changing Supabase URL settings or env vars, **redeploy** the frontend and register a **new** test user (old emails still contain old links).
 
 ### Self-service employer signup
 
