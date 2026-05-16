@@ -142,7 +142,62 @@ set company_name = excluded.company_name,
     is_active = true;
 ```
 
-## 7. Notes
+## 7. External job fetch (Edge Function)
+
+The admin **Existing Jobs** page includes **Fetch external jobs**, which calls a Supabase Edge Function at `fetch-external-jobs`. It uses **Firecrawl** (preferred) or **Scrapfly**, and optionally **Google Gemini** to turn crawled text into structured JSON. Results are **preview-only** (nothing is written to `jobs`).
+
+### Deploy the function
+
+From the repo root (with [Supabase CLI](https://supabase.com/docs/guides/cli) logged in):
+
+```bash
+supabase functions deploy fetch-external-jobs --no-verify-jwt
+```
+
+(`verify_jwt` is disabled in [`supabase/config.toml`](../supabase/config.toml) because the function validates either an admin session JWT or an optional cron secret.)
+
+### Secrets (Dashboard → Edge Functions → Secrets, or CLI)
+
+| Secret | Purpose |
+|--------|---------|
+| `SUPABASE_SERVICE_ROLE_KEY` | Usually injected automatically on hosted Supabase; required for `auth.getUser` + `admin_users` checks if missing locally. |
+| `FIRECRAWL_API_KEY` | Enable Firecrawl search/scrape (recommended). |
+| `SCRAPFLY_API_KEY` | Fallback if Firecrawl is not set; requires `SCRAPFLY_SCRAPE_URLS` (comma-separated URLs to scrape). |
+| `SCRAPFLY_SCRAPE_URLS` | e.g. `https://example.com/jobs-vizag,https://other.com/listings` |
+| `GEMINI_API_KEY` | Optional; improves structured extraction. Without it, the function returns a simple row per search/scrape hit. |
+| `GEMINI_MODEL` | Optional override (default `gemini-2.0-flash`). |
+| `FETCH_JOB_SEARCH_QUERIES` | Optional comma-separated Firecrawl queries (defaults to Vizag-focused searches). |
+| `FETCH_JOB_SEARCH_LIMIT` | Optional max results per query (default `6`). |
+| `FETCH_JOBS_CRON_SECRET` | Optional long random string for scheduled runs (see below). |
+
+### Frontend env
+
+No secrets in Vite. Optionally set `VITE_SUPABASE_FUNCTIONS_URL` if your functions base URL differs from `{VITE_SUPABASE_URL}/functions/v1/fetch-external-jobs`.
+
+### Scheduled runs (optional)
+
+If `FETCH_JOBS_CRON_SECRET` is set, automation can call the same endpoint **without** an admin user JWT:
+
+- Send header `x-fetch-jobs-cron-secret: <same value>` **or** `Authorization: Bearer <same value>`.
+- Always include your public `apikey` header (anon key) like normal Supabase Edge Function calls.
+
+Example:
+
+```bash
+curl -sS -X POST "$SUPABASE_URL/functions/v1/fetch-external-jobs" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $FETCH_JOBS_CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq .
+```
+
+Persisting snapshots (e.g. private Storage or email) is not implemented in-repo; pipe or store the JSON in your scheduler.
+
+### Compliance
+
+Respect third-party site terms and robots rules; prefer licensed APIs or feeds where possible.
+
+## 8. Notes
 
 - Public users can only read `published` jobs because RLS is enabled.
 - Employer submissions stay hidden until an admin approves them (`pending` -> `published`).

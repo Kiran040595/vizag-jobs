@@ -1,8 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   approveAdminJob,
   fetchAdminJobs,
@@ -10,6 +11,7 @@ import {
   toggleAdminJobFeatured,
   updateAdminJobStatus,
 } from '../services/adminJobs';
+import { fetchExternalJobs } from '../services/externalJobFetch';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -69,6 +71,8 @@ const formatDateTime = (value) => {
 
 export default function AdminJobsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { session, isSupabaseConfigured } = useAdminAuth();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -78,6 +82,17 @@ export default function AdminJobsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [externalFetchLoading, setExternalFetchLoading] = useState(false);
+  const [externalFetchError, setExternalFetchError] = useState('');
+  const [externalFetchPayload, setExternalFetchPayload] = useState(null);
+
+  useEffect(() => {
+    if (location.pathname === '/admin/jobs' && location.hash === '#external-fetch') {
+      queueMicrotask(() => {
+        document.getElementById('external-fetch')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }, [location.pathname, location.hash]);
 
   useEffect(() => {
     let ignore = false;
@@ -185,6 +200,58 @@ export default function AdminJobsPage() {
     }
   };
 
+  const handleExternalFetch = async () => {
+    setExternalFetchError('');
+    setExternalFetchLoading(true);
+    try {
+      const token = session?.access_token;
+      const data = await fetchExternalJobs(token);
+      setExternalFetchPayload(data);
+    } catch (error) {
+      setExternalFetchPayload(null);
+      setExternalFetchError(error instanceof Error ? error.message : 'Could not fetch external listings.');
+    } finally {
+      setExternalFetchLoading(false);
+    }
+  };
+
+  const externalFetchJson = useMemo(() => {
+    if (!externalFetchPayload) {
+      return '';
+    }
+    try {
+      return JSON.stringify(externalFetchPayload, null, 2);
+    } catch {
+      return '';
+    }
+  }, [externalFetchPayload]);
+
+  const handleCopyExternalJson = async () => {
+    if (!externalFetchJson) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(externalFetchJson);
+      setNotice('JSON copied to clipboard.');
+    } catch {
+      setLoadError('Clipboard copy failed. Select the text manually.');
+    }
+  };
+
+  const handleDownloadExternalJson = () => {
+    if (!externalFetchJson) {
+      return;
+    }
+    const blob = new Blob([externalFetchJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `vizag-external-jobs-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setNotice('JSON download started.');
+  };
+
   const handleFeaturedToggle = async (job) => {
     setBusyJobId(job.id);
     setLoadError('');
@@ -207,6 +274,89 @@ export default function AdminJobsPage() {
       description="Review employer submissions, approve jobs for the public portal, or reject listings."
     >
       <SEO title="Existing Jobs | Vizag Jobs Admin" description="Manage existing Vizag Jobs listings." canonical="/admin/jobs" />
+
+      <section
+        id="external-fetch"
+        className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">External discovery</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">Fetch recent Vizag listings</h2>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">
+              Runs the hosted Edge Function (Firecrawl or Scrapfly, plus optional Gemini) and returns structured JSON for
+              review. Nothing is saved to your jobs table. Dates within the last 24 hours are best-effort based on what
+              sources publish.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={
+              !isSupabaseConfigured || externalFetchLoading || !session?.access_token
+            }
+            onClick={handleExternalFetch}
+            className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {externalFetchLoading ? 'Fetching…' : 'Fetch external jobs'}
+          </button>
+        </div>
+
+        {!session?.access_token ? (
+          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Sign in as an admin to run a fetch.
+          </p>
+        ) : null}
+
+        {externalFetchError ? (
+          <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {externalFetchError}
+          </p>
+        ) : null}
+
+        {externalFetchPayload?.summary ? (
+          <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-slate-600">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+              Provider: {externalFetchPayload.provider_used}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+              Gemini: {externalFetchPayload.gemini_used ? 'yes' : 'no'}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+              Total jobs: {externalFetchPayload.summary.total}
+            </span>
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-800">
+              Posted within 24h (dated): {externalFetchPayload.summary.with_posted_at_within_24h}
+            </span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+              No usable date: {externalFetchPayload.summary.without_usable_date}
+            </span>
+          </div>
+        ) : null}
+
+        {externalFetchJson ? (
+          <div className="mt-5 space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleCopyExternalJson}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Copy JSON
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadExternalJson}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Download .json
+              </button>
+            </div>
+            <pre className="max-h-[28rem] overflow-auto rounded-2xl border border-slate-200 bg-slate-950 p-4 text-xs leading-relaxed text-emerald-100">
+              {externalFetchJson}
+            </pre>
+          </div>
+        ) : null}
+      </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
         <div className="flex flex-wrap items-center justify-between gap-3">

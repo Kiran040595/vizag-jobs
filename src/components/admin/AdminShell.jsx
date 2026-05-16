@@ -4,6 +4,7 @@ import { useAdminAuth } from '../../hooks/useAdminAuth';
 const navItems = [
   { label: 'New Job', to: '/admin/new' },
   { label: 'Existing Jobs', to: '/admin/jobs' },
+  { label: 'Fetch listings', to: '/admin/jobs#external-fetch' },
   { label: 'Blog posts', to: '/admin/blog' },
   { label: 'New post', to: '/admin/blog/new' },
 ];
