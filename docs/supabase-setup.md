@@ -144,9 +144,24 @@ set company_name = excluded.company_name,
 
 ## 7. External job fetch (Edge Function)
 
-The admin **Existing Jobs** page includes **Fetch external jobs**, which calls a Supabase Edge Function named **`fetch-external-jobs`**. It uses **Firecrawl** (preferred) or **Scrapfly**, and optionally **Google Gemini** to turn crawled text into structured JSON. Results are **preview-only** (nothing is written to `jobs`).
+The admin **Existing Jobs** page includes **Fetch external jobs**, which calls a Supabase Edge Function named **`fetch-external-jobs`**.
 
-Source code for this function lives in the repo at [`supabase/functions/fetch-external-jobs/index.ts`](../supabase/functions/fetch-external-jobs/index.ts).
+**Current behaviour (pipeline):**
+
+- **Mode:** `extraction_mode: per_url_scrape` — discover individual job URLs, then **Firecrawl scrape each URL** (no Gemini required).
+- **Sources:** Only **`linkedin.com`** and **`naukri.com`** detail URLs (LinkedIn `/jobs/view/`, Naukri `job-listings-…` slugs; city hub pages are skipped).
+- **Area:** Rows are kept when title/company/location/summary/URL mention **Visakhapatnam / Vizag / Andhra Pradesh** (or “Andhra”), or the URL is already a verified detail link.
+- **`jobs` array:** **All successfully scraped jobs** (primary preview). One object per URL with `title`, `company`, `experience`, `location`, `apply_url`, `source_url`, optional `description_markdown`, `posted_at`.
+- **`jobs_last_24h`:** Subset of `jobs` where `posted_at` parses as within the last 24 hours (often empty when boards hide dates).
+- **Diagnostics:** `detail_job_urls_discovered`, `scrape_stats`, `scrape_failed_urls`, `sources_scraped`, `gemini_status` (`skipped` | `ok` | `failed`), optional `gemini_error`.
+- **`jobs_undated`:** Jobs without a `posted_at` in the last 24 hours (undated or older).
+- **Optional:** Set `FETCH_JOB_DETAIL_SCRAPE_LIMIT` (default **24**, max **45**) to control how many URLs are scraped per run.
+- **Optional Gemini:** Set `FETCH_JOB_USE_GEMINI=true` and `GEMINI_API_KEY` to enrich weak fields (title, company, experience, location, `posted_at`, summary) after scrape (default off). The admin UI shows `gemini_status` (`skipped` | `ok` | `failed`) on each fetch.
+- **Admin review:** Fetched jobs are **not** inserted automatically. On **Existing Jobs → Fetch external jobs**, review each card (full schema preview), then **Approve & publish** or **Save as draft**. Both use the same `createAdminJob` insert path as the manual form. **Edit** opens **New Job** with the form prefilled.
+
+**Secrets:** `FIRECRAWL_API_KEY` is **required**. `GEMINI_API_KEY` is optional (enrichment only when `FETCH_JOB_USE_GEMINI=true`).
+
+Source code: [`supabase/functions/fetch-external-jobs/index.ts`](../supabase/functions/fetch-external-jobs/index.ts).
 
 ### Step 1 — Confirm the function exists in the Dashboard
 
@@ -196,12 +211,13 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `FIRECRAWL_API_KEY` | Enable Firecrawl search/scrape (recommended). |
 | `SCRAPFLY_API_KEY` | Fallback if Firecrawl is not set; requires `SCRAPFLY_SCRAPE_URLS` (comma-separated URLs to scrape). |
 | `SCRAPFLY_SCRAPE_URLS` | e.g. `https://example.com/jobs-vizag,https://other.com/listings` |
-| `GEMINI_API_KEY` | Optional; improves structured extraction. Without it, the function returns a simple row per search/scrape hit. |
+| `GEMINI_API_KEY` | Optional; used only when `FETCH_JOB_USE_GEMINI=true` to enrich scraped rows. |
 | `GEMINI_MODEL` | Optional override (default `gemini-2.0-flash`). |
-| `FETCH_JOB_SEARCH_QUERIES` | Optional comma-separated Firecrawl queries (defaults to Vizag-focused searches). |
+| `FETCH_JOB_USE_GEMINI` | Set to `true` to run Gemini enrichment after per-URL scrape (default off). |
+| `FETCH_JOB_SEARCH_QUERIES` | Optional comma-separated Firecrawl queries (defaults to **LinkedIn + Naukri** Vizag/Visakhapatnam `site:` searches only). |
 | `FETCH_JOB_SEARCH_LIMIT` | Optional max results per query (default `6`). |
-| `FETCH_JOB_SCRAPE_PAGE_LIMIT` | Optional max listing URLs to **fully scrape** for markdown per request (default `10`, max `20`). Higher = more individual roles parsed, slower and more Firecrawl usage. |
-| `FETCH_JOB_MAX_GEMINI_CHUNKS` | Optional max Gemini calls per request when context is split into chunks (default `4`, max `8`). |
+| `FETCH_JOB_SCRAPE_PAGE_LIMIT` | Optional max **hub / SERP** URLs to fully scrape before mining for detail links (default `10`, max `20`). |
+| `FETCH_JOB_DETAIL_SCRAPE_LIMIT` | Max individual job detail URLs to scrape per run (default `24`, max `45`). |
 | `FETCH_JOBS_CRON_SECRET` | Optional long random string for scheduled runs (see below). |
 
 ### Frontend env

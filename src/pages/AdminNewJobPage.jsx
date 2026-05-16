@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import AdminShell from '../components/admin/AdminShell';
 import AdminJobForm from '../components/admin/AdminJobForm';
-import { createAdminJobFromSql } from '../services/adminJobs';
+import { createAdminJobFromSql, deserializeJobForForm } from '../services/adminJobs';
 
 const SQL_EXAMPLE = `INSERT INTO public.jobs (
   slug,
@@ -59,6 +59,21 @@ const SQL_EXAMPLE = `INSERT INTO public.jobs (
 
 export default function AdminNewJobPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefillValues = useMemo(() => {
+    if (!location.state?.prefill) {
+      return null;
+    }
+    return deserializeJobForForm(location.state.prefill);
+  }, [location.state?.prefill]);
+
+  useEffect(() => {
+    if (!location.state?.prefill) {
+      return;
+    }
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state?.prefill, navigate]);
+
   const [sqlQuery, setSqlQuery] = useState(SQL_EXAMPLE);
   const [sqlNotice, setSqlNotice] = useState('');
   const [sqlError, setSqlError] = useState('');
@@ -87,9 +102,15 @@ export default function AdminNewJobPage() {
     >
       <SEO title="New Job | Vizag Jobs Admin" description="Create a new Vizag Jobs listing." canonical="/admin/new" />
       <div className="mx-auto max-w-4xl">
+        {prefillValues ? (
+          <p className="mb-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+            Form prefilled from an external job fetch. Review fields, then save as draft or publish.
+          </p>
+        ) : null}
         <AdminJobForm
           mode="create"
-          draftStorageKey="vizagjobs:admin-new-job-draft"
+          initialValues={prefillValues || undefined}
+          draftStorageKey={prefillValues ? undefined : 'vizagjobs:admin-new-job-draft'}
           onSaved={() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
