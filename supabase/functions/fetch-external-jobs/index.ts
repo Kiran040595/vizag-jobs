@@ -28,8 +28,10 @@ type FetchSummary = {
 
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers':
     'authorization, x-client-info, apikey, content-type, x-fetch-jobs-cron-secret',
+  'Access-Control-Max-Age': '86400',
 };
 
 const FIRECRAWL_SEARCH_URL = 'https://api.firecrawl.dev/v1/search';
