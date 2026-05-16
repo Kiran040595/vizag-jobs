@@ -144,15 +144,47 @@ set company_name = excluded.company_name,
 
 ## 7. External job fetch (Edge Function)
 
-The admin **Existing Jobs** page includes **Fetch external jobs**, which calls a Supabase Edge Function at `fetch-external-jobs`. It uses **Firecrawl** (preferred) or **Scrapfly**, and optionally **Google Gemini** to turn crawled text into structured JSON. Results are **preview-only** (nothing is written to `jobs`).
+The admin **Existing Jobs** page includes **Fetch external jobs**, which calls a Supabase Edge Function named **`fetch-external-jobs`**. It uses **Firecrawl** (preferred) or **Scrapfly**, and optionally **Google Gemini** to turn crawled text into structured JSON. Results are **preview-only** (nothing is written to `jobs`).
 
-### Deploy the function
+Source code for this function lives in the repo at [`supabase/functions/fetch-external-jobs/index.ts`](../supabase/functions/fetch-external-jobs/index.ts).
 
-From the repo root (with [Supabase CLI](https://supabase.com/docs/guides/cli) logged in):
+### Step 1 — Confirm the function exists in the Dashboard
+
+Before debugging Firecrawl or Gemini, make sure Supabase actually has this Edge Function deployed.
+
+1. Open the [Supabase Dashboard](https://supabase.com/dashboard) and select **your project** (the same project whose URL and anon key you put in `.env`).
+2. In the left sidebar, open **Edge Functions**.
+3. Look at the list of functions.
+
+**What you should see**
+
+| Dashboard list | Meaning |
+|----------------|---------|
+| **`fetch-external-jobs` appears** | Deploy succeeded (or someone deployed it already). Continue with secrets below and retry **Fetch external jobs** in the admin UI. |
+| **It does not appear / list is empty** | Nothing has been deployed yet (this matches errors such as **404** or “could not reach” from the admin panel). Go to **Step 2** and deploy from your PC. |
+
+The slug **must** be exactly `fetch-external-jobs` (hyphens, lowercase). That matches the folder name under `supabase/functions/` and the URL path `/functions/v1/fetch-external-jobs`.
+
+### Step 2 — Deploy `fetch-external-jobs` from your computer
+
+Do this once per project (and again whenever you change the function code).
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) if you don’t have it.
+2. In a terminal, log in and link **this** project (replace `YOUR_PROJECT_REF` with **Project ID / reference** from Supabase → **Settings → General**):
+
+```bash
+supabase login
+cd path/to/VIzagJobs
+supabase link --project-ref YOUR_PROJECT_REF
+```
+
+3. Deploy the function:
 
 ```bash
 supabase functions deploy fetch-external-jobs --no-verify-jwt
 ```
+
+4. **Verify again:** Dashboard → **Edge Functions** → you should now see **`fetch-external-jobs`** in the list. Open it if you want to check logs after calling **Fetch external jobs** from the admin site.
 
 (`verify_jwt` is disabled in [`supabase/config.toml`](../supabase/config.toml) because the function validates either an admin session JWT or an optional cron secret.)
 
@@ -168,6 +200,8 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `GEMINI_MODEL` | Optional override (default `gemini-2.0-flash`). |
 | `FETCH_JOB_SEARCH_QUERIES` | Optional comma-separated Firecrawl queries (defaults to Vizag-focused searches). |
 | `FETCH_JOB_SEARCH_LIMIT` | Optional max results per query (default `6`). |
+| `FETCH_JOB_SCRAPE_PAGE_LIMIT` | Optional max listing URLs to **fully scrape** for markdown per request (default `10`, max `20`). Higher = more individual roles parsed, slower and more Firecrawl usage. |
+| `FETCH_JOB_MAX_GEMINI_CHUNKS` | Optional max Gemini calls per request when context is split into chunks (default `4`, max `8`). |
 | `FETCH_JOBS_CRON_SECRET` | Optional long random string for scheduled runs (see below). |
 
 ### Frontend env

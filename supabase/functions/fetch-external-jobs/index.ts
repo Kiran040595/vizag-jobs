@@ -43,8 +43,11 @@ const DEFAULT_SEARCH_QUERIES = [
   'IT jobs Visakhapatnam',
 ];
 
-const MAX_GEMINI_INPUT_CHARS = 96_000;
-const MAX_SEARCH_HITS_FOR_SCRAPE = 4;
+const MAX_GEMINI_CHUNK_CHARS = 36_000;
+/** Max listing URLs to fully scrape (full markdown beats SERP snippets for extracting individual roles). */
+const DEFAULT_SCRAPE_PAGE_LIMIT = 10;
+/** Max Gemini calls per request (each processes one chunk of pages). */
+const DEFAULT_MAX_GEMINI_CHUNKS = 4;
 const MS_24H = 24 * 60 * 60 * 1000;
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -254,6 +257,10 @@ function parseScrapflyUrlsEnv(): string[] {
 async function collectViaFirecrawl(apiKey: string): Promise<{ hits: RawHit[]; provider: 'firecrawl' }> {
   const queries = parseQueriesEnv();
   const limitPerQuery = Number(Deno.env.get('FETCH_JOB_SEARCH_LIMIT') ?? '6') || 6;
+  const scrapeLimit = Math.min(
+    Math.max(1, Number(Deno.env.get('FETCH_JOB_SCRAPE_PAGE_LIMIT') ?? String(DEFAULT_SCRAPE_PAGE_LIMIT)) || DEFAULT_SCRAPE_PAGE_LIMIT),
+    20,
+  );
 
   const merged = new Map<string, RawHit>();
   for (const query of queries) {
@@ -265,21 +272,26 @@ async function collectViaFirecrawl(apiKey: string): Promise<{ hits: RawHit[]; pr
     }
   }
 
-  const hits = [...merged.values()];
+  const ordered = [...merged.values()];
+  const enriched: RawHit[] = [];
 
-  const enrichCount = Math.min(MAX_SEARCH_HITS_FOR_SCRAPE, hits.length);
-  for (let i = 0; i < enrichCount; i += 1) {
-    const hit = hits[i];
-    if (hit.markdown || hit.content) {
-      continue;
-    }
-    const md = await firecrawlScrapeUrl(hit.url, apiKey);
-    if (md) {
-      hits[i] = { ...hit, markdown: md };
+  for (let i = 0; i < ordered.length; i += 1) {
+    const hit = ordered[i];
+    if (i < scrapeLimit) {
+      const md = await firecrawlScrapeUrl(hit.url, apiKey);
+      enriched.push({
+        ...hit,
+        markdown: md || hit.markdown || hit.content || hit.description || '',
+      });
+    } else {
+      enriched.push({
+        ...hit,
+        markdown: hit.markdown ?? hit.content ?? hit.description ?? '',
+      });
     }
   }
 
-  return { hits, provider: 'firecrawl' };
+  return { hits: enriched, provider: 'firecrawl' };
 }
 
 async function collectViaScrapfly(apiKey: string): Promise<{ hits: RawHit[]; provider: 'scrapfly' }> {
@@ -303,17 +315,80 @@ async function collectViaScrapfly(apiKey: string): Promise<{ hits: RawHit[]; pro
   return { hits, provider: 'scrapfly' };
 }
 
-function hitsToContextBlob(hits: RawHit[]): string {
+function hitsToContextBlob(hits: RawHit[], startIndex = 0): string {
   const chunks = hits.map((hit, index) => {
     const head = [hit.title, hit.description].filter(Boolean).join('\n');
     const body = hit.markdown ?? hit.content ?? '';
-    return `--- SOURCE ${index + 1} ---\nURL: ${hit.url}\n${head}\n\n${body}`;
+    return `--- SOURCE ${startIndex + index + 1} ---\nPAGE_URL: ${hit.url}\n${head}\n\n${body}`;
   });
-  const blob = chunks.join('\n\n');
-  if (blob.length <= MAX_GEMINI_INPUT_CHARS) {
-    return blob;
+  return chunks.join('\n\n');
+}
+
+/** Split scraped pages into chunks so each Gemini call stays within limits and focuses on fewer URLs at once. */
+function chunkHitsForGemini(hits: RawHit[], maxCharsPerChunk: number): RawHit[][] {
+  const chunks: RawHit[][] = [];
+  let current: RawHit[] = [];
+  let size = 0;
+
+  for (const hit of hits) {
+    const one = hitsToContextBlob([hit], 0);
+    const needBreak = current.length > 0 && size + one.length > maxCharsPerChunk;
+    if (needBreak) {
+      chunks.push(current);
+      current = [];
+      size = 0;
+    }
+    current.push(hit);
+    size += one.length;
   }
-  return blob.slice(0, MAX_GEMINI_INPUT_CHARS) + '\n\n[TRUNCATED]';
+  if (current.length > 0) {
+    chunks.push(current);
+  }
+  return chunks.length > 0 ? chunks : [[]];
+}
+
+function dedupeJobs(jobs: ExtractedJob[]): ExtractedJob[] {
+  const seen = new Set<string>();
+  const out: ExtractedJob[] = [];
+  for (const j of jobs) {
+    const title = j.title.trim().toLowerCase();
+    const company = (j.company ?? '').trim().toLowerCase();
+    const link = (j.apply_url ?? j.source_url ?? '').trim().toLowerCase();
+    const key = `${title}|${company}|${link}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    out.push(j);
+  }
+  return out;
+}
+
+/** One row per SERP homepage (e.g. "2328 Vacancies | Naukri") — not what admins want as final jobs list. */
+function isLikelyPortalAggregate(job: ExtractedJob): boolean {
+  const t = job.title;
+  const lower = t.toLowerCase();
+  if (/\|\s*(indeed|naukri\.com|linkedin|glassdoor|olx|apna(\.co)?)\s*$/i.test(t)) {
+    return true;
+  }
+  if (/^\d+\s+job vacancies\b/i.test(lower)) {
+    return true;
+  }
+  if (/vacancies in visakhapatnam.*\|/i.test(lower)) {
+    return true;
+  }
+  if (/jobs in visakhapatnam:\s*latest/i.test(lower)) {
+    return true;
+  }
+  if (/^\d+\s+visakhapatnam jobs\b/i.test(lower)) {
+    return true;
+  }
+  return false;
+}
+
+function filterAggregatePortalJobs(jobs: ExtractedJob[]): { kept: ExtractedJob[]; removed_count: number } {
+  const kept = jobs.filter((j) => !isLikelyPortalAggregate(j));
+  return { kept, removed_count: jobs.length - kept.length };
 }
 
 function fallbackJobsFromHits(hits: RawHit[]): ExtractedJob[] {
@@ -334,10 +409,21 @@ async function geminiExtractJobs(markdown: string, apiKey: string): Promise<Extr
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const instruction =
-    `You extract job postings relevant to Visakhapatnam (Vizag), Andhra Pradesh, India from the provided web crawl text.\n` +
-    `Return ONLY JSON matching the schema. Use ISO 8601 for posted_at when the page states a date; otherwise null.\n` +
-    `Deduplicate by source_url. Prefer listings that mention Vizag, Visakhapatnam, or Andhra Pradesh.\n` +
-    `If apply URL is missing, use the source page URL as apply_url.\n\n` +
+    `You are extracting INDIVIDUAL job openings (one employee role at one employer) from web page text crawled from Indian job sites.\n` +
+    `GEOGRAPHY: Prefer roles tied to Visakhapatnam / Vizag / Andhra Pradesh when location appears.\n\n` +
+    `CRITICAL RULES:\n` +
+    `- Output ONE JSON object per SINGLE job posting (e.g. "Warehouse loader" at "Vaaradhi Manpower", "Software Engineer" at "Dr. Reddy's").\n` +
+    `- Do NOT output a row for an entire portal landing page. Examples of INVALID rows (never emit these):\n` +
+    `  titles like "2328 Job Vacancies In Visakhapatnam - Naukri.com", "700 Job Vacancies ... | Indeed", "472 Visakhapatnam jobs - LinkedIn", search-results headings with only counts.\n` +
+    `- If the text only describes a portal without listing separate roles, return an empty jobs array rather than inventing one aggregate row.\n` +
+    `- Parse bullet lists, cards, and lines like "Role · Company" or "Role — Company" into separate jobs.\n` +
+    `- company = hiring employer / brand when stated (NOT "Unknown" when the employer name appears beside the role). Only use Unknown if no employer is visible.\n` +
+    `- title = job title / role name only (short), not the whole page heading.\n` +
+    `- source_url = PAGE_URL of THIS chunk section where the role appeared (copy from PAGE_URL line).\n` +
+    `- apply_url = absolute URL to apply or job detail if present in markdown links; else null (NOT the generic PAGE_URL unless it is clearly that single job's page).\n` +
+    `- posted_at = ISO 8601 only when an explicit date for THAT posting appears; else null.\n` +
+    `- summary = one line (skills, salary snippet, or location) when available.\n\n` +
+    `Return ONLY JSON matching the schema.\n\n` +
     `--- CONTENT ---\n${markdown}`;
 
   const body = {
@@ -400,19 +486,43 @@ async function geminiExtractJobs(markdown: string, apiKey: string): Promise<Extr
     const jobs = Array.isArray(parsed.jobs) ? parsed.jobs : [];
     return jobs
       .filter((j) => j && typeof j.title === 'string' && typeof j.source_url === 'string')
-      .map((j) => ({
-        title: String(j.title),
-        company: typeof j.company === 'string' && j.company.trim() ? j.company : 'Unknown',
-        location: j.location ?? null,
-        apply_url: j.apply_url ?? j.source_url,
-        posted_at: j.posted_at ?? null,
-        summary: j.summary ?? null,
-        source_url: String(j.source_url),
-        source_name: j.source_name ?? null,
-      }));
+      .map((j) => {
+        const applyRaw = typeof j.apply_url === 'string' ? j.apply_url.trim() : '';
+        return {
+          title: String(j.title),
+          company: typeof j.company === 'string' && j.company.trim() ? j.company : 'Unknown',
+          location: j.location ?? null,
+          apply_url: applyRaw.length > 0 ? applyRaw : null,
+          posted_at: j.posted_at ?? null,
+          summary: j.summary ?? null,
+          source_url: String(j.source_url),
+          source_name: j.source_name ?? null,
+        };
+      });
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function geminiExtractJobsChunked(hits: RawHit[], apiKey: string): Promise<ExtractedJob[]> {
+  const maxChunks = Math.min(
+    Math.max(1, Number(Deno.env.get('FETCH_JOB_MAX_GEMINI_CHUNKS') ?? String(DEFAULT_MAX_GEMINI_CHUNKS)) ||
+      DEFAULT_MAX_GEMINI_CHUNKS),
+    8,
+  );
+  const chunks = chunkHitsForGemini(hits, MAX_GEMINI_CHUNK_CHARS).slice(0, maxChunks);
+  const merged: ExtractedJob[] = [];
+
+  for (const chunk of chunks) {
+    if (chunk.length === 0) {
+      continue;
+    }
+    const blob = hitsToContextBlob(chunk, 0);
+    const extracted = await geminiExtractJobs(blob, apiKey);
+    merged.push(...extracted);
+  }
+
+  return dedupeJobs(merged);
 }
 
 Deno.serve(async (req) => {
@@ -463,13 +573,17 @@ Deno.serve(async (req) => {
     }
 
     let jobs: ExtractedJob[];
+    let portal_rows_removed = 0;
 
     if (geminiKey) {
-      const contextBlob = hitsToContextBlob(hits);
       try {
-        jobs = await geminiExtractJobs(contextBlob, geminiKey);
+        jobs = await geminiExtractJobsChunked(hits, geminiKey);
+        const filtered = filterAggregatePortalJobs(jobs);
+        portal_rows_removed = filtered.removed_count;
+        jobs = filtered.kept;
         if (jobs.length === 0) {
           jobs = fallbackJobsFromHits(hits);
+          portal_rows_removed = 0;
         }
       } catch {
         jobs = fallbackJobsFromHits(hits);
@@ -493,6 +607,9 @@ Deno.serve(async (req) => {
       provider_used: provider,
       gemini_used: Boolean(geminiKey),
       location_focus: 'Visakhapatnam / Vizag',
+      extraction_hint:
+        'jobs[] aims for one object per role; portal landing-page rows are dropped when individual roles are found. If every row still looks like a homepage, increase FETCH_JOB_SCRAPE_PAGE_LIMIT and tune FETCH_JOB_SEARCH_QUERIES.',
+      portal_aggregate_rows_removed: portal_rows_removed,
       jobs,
       jobs_within_24h,
       jobs_without_usable_posted_at,
