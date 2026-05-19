@@ -67,9 +67,12 @@ function ExternalJobCard({
   isDuplicate,
   duplicateReason,
   isBusy,
+  isSeoBusy,
   errorMessage,
+  seoErrorMessage,
   isSelected,
   onToggleSelect,
+  onMakeSeo,
   onPublish,
   onSaveDraft,
   onSkip,
@@ -78,6 +81,13 @@ function ExternalJobCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const jobKey = getExternalJobKey(job);
+  const applyLinkUrl = (() => {
+    const raw = String(job?.apply_link || job?.source_url || '').trim();
+    if (!raw || !/^https?:\/\//i.test(raw)) {
+      return null;
+    }
+    return raw;
+  })();
 
   return (
     <article
@@ -103,6 +113,25 @@ function ExternalJobCard({
                 Already in DB ({duplicateReason})
               </span>
             ) : null}
+            {job.source_kind === 'linkedin_post' ? (
+              <span className="rounded-full border border-sky-300 bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-900">
+                LinkedIn post
+              </span>
+            ) : null}
+            {job.needs_review ? (
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+                Review before SEO
+              </span>
+            ) : null}
+            {job.seo_optimized ? (
+              <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-800">
+                SEO ready
+              </span>
+            ) : (
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                SEO pending
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-slate-600">
             {job.company || 'Unknown company'} · {job.location || '—'} · {job.category || 'No category'}
@@ -119,15 +148,35 @@ function ExternalJobCard({
           </button>
           <button
             type="button"
-            disabled={isBusy}
+            disabled={isBusy || isSeoBusy}
             onClick={() => onEdit(job)}
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             Edit
           </button>
+          {applyLinkUrl ? (
+            <a
+              href={applyLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+            >
+              Check apply link
+            </a>
+          ) : null}
+          {onMakeSeo ? (
+            <button
+              type="button"
+              disabled={isBusy || isSeoBusy}
+              onClick={() => onMakeSeo(job)}
+              className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 hover:bg-violet-100 disabled:opacity-50"
+            >
+              {isSeoBusy ? 'SEO…' : job.seo_optimized ? 'Re-run SEO' : 'Make SEO'}
+            </button>
+          ) : null}
           <button
             type="button"
-            disabled={isBusy}
+            disabled={isBusy || isSeoBusy}
             onClick={() => onSkip(job)}
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
@@ -135,7 +184,7 @@ function ExternalJobCard({
           </button>
           <button
             type="button"
-            disabled={isBusy}
+            disabled={isBusy || isSeoBusy}
             onClick={() => onSaveDraft(job)}
             className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
           >
@@ -143,7 +192,7 @@ function ExternalJobCard({
           </button>
           <button
             type="button"
-            disabled={isBusy}
+            disabled={isBusy || isSeoBusy}
             onClick={() => onPublish(job)}
             className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:opacity-50"
           >
@@ -156,6 +205,34 @@ function ExternalJobCard({
         <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {errorMessage}
         </p>
+      ) : null}
+
+      {seoErrorMessage ? (
+        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {seoErrorMessage}
+        </p>
+      ) : null}
+
+      {job.source_kind === 'linkedin_post' && expanded ? (
+        <p className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+          This came from a LinkedIn feed post (not the Jobs tab). Confirm it is a real hiring post for Vizag, then
+          run <strong>Make SEO</strong> to turn it into a clean portal listing.
+        </p>
+      ) : null}
+
+      {!job.seo_optimized && expanded && job.source_kind !== 'linkedin_post' ? (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Run Make SEO before publish for best Google ranking on Vizag job searches.
+        </p>
+      ) : null}
+
+      {job.linkedin_post_text ? (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Original LinkedIn post</p>
+          <pre className="mt-2 max-h-56 overflow-y-auto whitespace-pre-wrap font-sans text-sm leading-6 text-slate-800">
+            {job.linkedin_post_text}
+          </pre>
+        </div>
       ) : null}
 
       {job.short_description ? (
@@ -206,7 +283,10 @@ export default function ExternalJobReviewPanel({
   existingSlugs,
   existingApplyLinks,
   busyImportKey,
+  busySeoKey = '',
   importErrors,
+  seoErrors = {},
+  onMakeSeo,
   onPublish,
   onSaveDraft,
   onSkip,
@@ -259,7 +339,8 @@ export default function ExternalJobReviewPanel({
         <div>
           <h3 className="text-lg font-black text-slate-950">Review fetched jobs</h3>
           <p className="mt-1 text-sm text-slate-600">
-            Nothing is saved until you approve or save as draft. {jobs.length} job(s) waiting.
+            Nothing is saved until you approve. Use <strong>Make SEO</strong> per job, then publish. {jobs.length}{' '}
+            job(s) waiting.
           </p>
         </div>
         {showBulk && selectedJobs.length > 0 ? (
@@ -293,9 +374,12 @@ export default function ExternalJobReviewPanel({
               isDuplicate={dup.isDuplicate}
               duplicateReason={dup.reason}
               isBusy={busyImportKey === key}
+              isSeoBusy={busySeoKey === key}
               errorMessage={importErrors[key]}
+              seoErrorMessage={seoErrors[key]}
               isSelected={selectedKeys.has(key)}
               onToggleSelect={() => toggleSelect(job)}
+              onMakeSeo={onMakeSeo}
               onPublish={onPublish}
               onSaveDraft={onSaveDraft}
               onSkip={onSkip}

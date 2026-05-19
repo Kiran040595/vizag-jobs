@@ -8,6 +8,7 @@ import PartTimeJobsVizagPage from './pages/PartTimeJobsVizagPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminNewJobPage from './pages/AdminNewJobPage';
 import AdminJobsPage from './pages/AdminJobsPage';
+import AdminExternalFetchPage from './pages/AdminExternalFetchPage';
 import AdminEditJobPage from './pages/AdminEditJobPage';
 import AdminBlogListPage from './pages/AdminBlogListPage';
 import AdminNewBlogPage from './pages/AdminNewBlogPage';
@@ -57,6 +58,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminJobsPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/fetch"
+        element={(
+          <AdminRoute>
+            <AdminExternalFetchPage />
           </AdminRoute>
         )}
       />

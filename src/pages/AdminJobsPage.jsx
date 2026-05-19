@@ -1,39 +1,16 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
-import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/ExternalJobReviewPanel';
 import {
   approveAdminJob,
-  createAdminJob,
-  deserializeJobForForm,
   fetchAdminJobs,
   rejectAdminJob,
   toggleAdminJobFeatured,
   updateAdminJobStatus,
 } from '../services/adminJobs';
-import { fetchExternalJobs } from '../services/externalJobFetch';
-
-const BULK_IMPORT_CONCURRENCY = 3;
-
-async function runWithConcurrency(items, limit, worker) {
-  const results = [];
-  let index = 0;
-
-  async function runNext() {
-    while (index < items.length) {
-      const currentIndex = index;
-      index += 1;
-      results[currentIndex] = await worker(items[currentIndex], currentIndex);
-    }
-  }
-
-  const runners = Array.from({ length: Math.min(limit, items.length) }, () => runNext());
-  await Promise.all(runners);
-  return results;
-}
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -93,8 +70,7 @@ const formatDateTime = (value) => {
 
 export default function AdminJobsPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { session, isSupabaseConfigured } = useAdminAuth();
+  useAdminAuth();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -104,22 +80,6 @@ export default function AdminJobsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [externalFetchLoading, setExternalFetchLoading] = useState(false);
-  const [externalFetchError, setExternalFetchError] = useState('');
-  const [externalFetchPayload, setExternalFetchPayload] = useState(null);
-  const [reviewJobs, setReviewJobs] = useState([]);
-  const [skippedKeys, setSkippedKeys] = useState(() => new Set());
-  const [busyImportKey, setBusyImportKey] = useState('');
-  const [importErrors, setImportErrors] = useState({});
-
-  useEffect(() => {
-    if (location.pathname === '/admin/jobs' && location.hash === '#external-fetch') {
-      queueMicrotask(() => {
-        document.getElementById('external-fetch')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-  }, [location.pathname, location.hash]);
-
   useEffect(() => {
     let ignore = false;
 
@@ -171,21 +131,6 @@ export default function AdminJobsPage() {
   }, [deferredSearchTerm, jobs, statusFilter]);
 
   const pendingCount = useMemo(() => jobs.filter((job) => job.status === 'pending').length, [jobs]);
-
-  const existingSlugs = useMemo(
-    () => new Set(jobs.map((job) => String(job.slug || '').toLowerCase()).filter(Boolean)),
-    [jobs],
-  );
-
-  const existingApplyLinks = useMemo(
-    () => new Set(jobs.map((job) => String(job.apply_link || '').toLowerCase()).filter(Boolean)),
-    [jobs],
-  );
-
-  const visibleReviewJobs = useMemo(
-    () => reviewJobs.filter((job) => !skippedKeys.has(getExternalJobKey(job))),
-    [reviewJobs, skippedKeys],
-  );
 
   const handleStatusChange = async (jobId, status) => {
     setBusyJobId(jobId);
@@ -241,159 +186,6 @@ export default function AdminJobsPage() {
     }
   };
 
-  const handleExternalFetch = async () => {
-    setExternalFetchError('');
-    setExternalFetchLoading(true);
-    try {
-      const token = session?.access_token;
-      const data = await fetchExternalJobs(token);
-      setExternalFetchPayload(data);
-      setReviewJobs(Array.isArray(data.jobs) ? data.jobs : []);
-      setSkippedKeys(new Set());
-      setImportErrors({});
-    } catch (error) {
-      setExternalFetchPayload(null);
-      setReviewJobs([]);
-      setExternalFetchError(error instanceof Error ? error.message : 'Could not fetch external listings.');
-    } finally {
-      setExternalFetchLoading(false);
-    }
-  };
-
-  const removeReviewJob = (job) => {
-    const key = getExternalJobKey(job);
-    setReviewJobs((current) => current.filter((item) => getExternalJobKey(item) !== key));
-    setImportErrors((current) => {
-      if (!current[key]) {
-        return current;
-      }
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const handleSkipExternalJob = (job) => {
-    const key = getExternalJobKey(job);
-    setSkippedKeys((current) => new Set(current).add(key));
-    setImportErrors((current) => {
-      if (!current[key]) {
-        return current;
-      }
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-    setNotice('Job skipped from this review batch.');
-  };
-
-  const handleEditExternalJob = (job) => {
-    navigate('/admin/new', { state: { prefill: deserializeJobForForm(job) } });
-  };
-
-  const handleImportExternalJob = async (job, status) => {
-    const key = getExternalJobKey(job);
-    setBusyImportKey(key);
-    setLoadError('');
-    setImportErrors((current) => {
-      if (!current[key]) {
-        return current;
-      }
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-
-    try {
-      const savedJob = await createAdminJob(job, status);
-      setJobs((currentJobs) => upsertJob(currentJobs, savedJob));
-      removeReviewJob(job);
-      setNotice(
-        status === 'published'
-          ? `"${savedJob.title}" published on the portal.`
-          : `"${savedJob.title}" saved as draft.`,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not save the job.';
-      setImportErrors((current) => ({ ...current, [key]: message }));
-    } finally {
-      setBusyImportKey('');
-    }
-  };
-
-  const handleBulkImportExternalJobs = async (selectedJobs, status) => {
-    setLoadError('');
-    let successCount = 0;
-    let failureCount = 0;
-    const importedKeys = [];
-
-    await runWithConcurrency(selectedJobs, BULK_IMPORT_CONCURRENCY, async (job) => {
-      const key = getExternalJobKey(job);
-      try {
-        const savedJob = await createAdminJob(job, status);
-        setJobs((currentJobs) => upsertJob(currentJobs, savedJob));
-        importedKeys.push(key);
-        successCount += 1;
-      } catch (error) {
-        failureCount += 1;
-        const message = error instanceof Error ? error.message : 'Could not save the job.';
-        setImportErrors((current) => ({ ...current, [key]: message }));
-      }
-    });
-
-    if (importedKeys.length > 0) {
-      const keysToRemove = new Set(importedKeys);
-      setReviewJobs((current) => current.filter((item) => !keysToRemove.has(getExternalJobKey(item))));
-    }
-
-    if (successCount > 0) {
-      setNotice(
-        status === 'published'
-          ? `Published ${successCount} job(s)${failureCount > 0 ? `; ${failureCount} failed.` : '.'}`
-          : `Saved ${successCount} job(s) as draft${failureCount > 0 ? `; ${failureCount} failed.` : '.'}`,
-      );
-    } else if (failureCount > 0) {
-      setLoadError('Bulk import failed for all selected jobs. Check errors on each card.');
-    }
-  };
-
-  const externalFetchJson = useMemo(() => {
-    if (!externalFetchPayload) {
-      return '';
-    }
-    try {
-      return JSON.stringify(externalFetchPayload, null, 2);
-    } catch {
-      return '';
-    }
-  }, [externalFetchPayload]);
-
-  const handleCopyExternalJson = async () => {
-    if (!externalFetchJson) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(externalFetchJson);
-      setNotice('JSON copied to clipboard.');
-    } catch {
-      setLoadError('Clipboard copy failed. Select the text manually.');
-    }
-  };
-
-  const handleDownloadExternalJson = () => {
-    if (!externalFetchJson) {
-      return;
-    }
-    const blob = new Blob([externalFetchJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `vizag-external-jobs-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setNotice('JSON download started.');
-  };
-
   const handleFeaturedToggle = async (job) => {
     setBusyJobId(job.id);
     setLoadError('');
@@ -417,146 +209,18 @@ export default function AdminJobsPage() {
     >
       <SEO title="Existing Jobs | Vizag Jobs Admin" description="Manage existing Vizag Jobs listings." canonical="/admin/jobs" />
 
-      <section
-        id="external-fetch"
-        className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">External discovery</p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">Fetch recent Vizag listings</h2>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Discovers LinkedIn and Naukri job URLs, scrapes each page with Firecrawl, and maps each listing to your
-              jobs schema. Review the results below, then approve to publish or save as draft. Optional Gemini enrichment
-              runs on the server when configured.
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={
-              !isSupabaseConfigured || externalFetchLoading || !session?.access_token
-            }
-            onClick={handleExternalFetch}
-            className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {externalFetchLoading ? 'Fetching…' : 'Fetch external jobs'}
-          </button>
-        </div>
-
-        {!session?.access_token ? (
-          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Sign in as an admin to run a fetch.
-          </p>
-        ) : null}
-
-        {externalFetchError ? (
-          <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {externalFetchError}
-          </p>
-        ) : null}
-
-        {externalFetchPayload?.ok && !externalFetchPayload?.parser_version ? (
-          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Edge Function response is missing <code className="font-mono text-xs">parser_version</code> — an
-            older build is still running. Redeploy{' '}
-            <code className="font-mono text-xs">fetch-external-jobs</code>, wait ~1 minute, hard-refresh this
-            page, and fetch again.
-          </p>
-        ) : null}
-
-        {(externalFetchPayload?.extraction_debug?.naukri_bad_title ?? 0) > 0 ||
-        (externalFetchPayload?.extraction_debug?.linkedin_unknown_company ?? 0) > 8 ? (
-          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Extraction quality check failed (generic titles or unknown companies). Confirm the Parser chip
-            shows <strong>site-record-v1</strong> and inspect{' '}
-            <code className="font-mono text-xs">extraction_debug.sample</code> in the JSON below.
-          </p>
-        ) : null}
-
-        {externalFetchPayload?.summary ? (
-          <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-slate-600">
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-              Provider: {externalFetchPayload.provider_used}
-            </span>
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-800">
-              Jobs scraped: {Array.isArray(externalFetchPayload.jobs) ? externalFetchPayload.jobs.length : 0}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-              URLs discovered: {externalFetchPayload.detail_job_urls_discovered ?? '—'}
-            </span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-              Posted within 24h: {externalFetchPayload.summary?.with_posted_at_within_24h ?? 0}
-            </span>
-            {externalFetchPayload.parser_version ? (
-              <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-cyan-800">
-                Parser: {externalFetchPayload.parser_version}
-              </span>
-            ) : null}
-            {externalFetchPayload.extraction_debug?.naukri_bad_title != null ? (
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                Bad Naukri titles: {externalFetchPayload.extraction_debug.naukri_bad_title}
-              </span>
-            ) : null}
-            {externalFetchPayload.gemini_status ? (
-              <span
-                className={`rounded-full border px-3 py-1 ${
-                  externalFetchPayload.gemini_status === 'ok'
-                    ? 'border-violet-200 bg-violet-50 text-violet-800'
-                    : externalFetchPayload.gemini_status === 'failed'
-                      ? 'border-rose-200 bg-rose-50 text-rose-700'
-                      : 'border-slate-200 bg-slate-50 text-slate-600'
-                }`}
-                title={externalFetchPayload.gemini_error || undefined}
-              >
-                Gemini: {externalFetchPayload.gemini_status}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-
-        {externalFetchPayload?.gemini_status === 'failed' && externalFetchPayload?.gemini_error ? (
-          <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            Gemini enrichment failed: {externalFetchPayload.gemini_error}
-          </p>
-        ) : null}
-
-        <ExternalJobReviewPanel
-          jobs={visibleReviewJobs}
-          existingSlugs={existingSlugs}
-          existingApplyLinks={existingApplyLinks}
-          busyImportKey={busyImportKey}
-          importErrors={importErrors}
-          onPublish={(job) => handleImportExternalJob(job, 'published')}
-          onSaveDraft={(job) => handleImportExternalJob(job, 'draft')}
-          onSkip={handleSkipExternalJob}
-          onEdit={handleEditExternalJob}
-          onBulkPublish={(selected) => handleBulkImportExternalJobs(selected, 'published')}
-          onBulkSaveDraft={(selected) => handleBulkImportExternalJobs(selected, 'draft')}
-        />
-
-        {externalFetchJson ? (
-          <div className="mt-5 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleCopyExternalJson}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Copy JSON
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadExternalJson}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Download .json
-              </button>
-            </div>
-            <pre className="max-h-[28rem] overflow-auto rounded-2xl border border-slate-200 bg-slate-950 p-4 text-xs leading-relaxed text-emerald-100">
-              {externalFetchJson}
-            </pre>
-          </div>
-        ) : null}
+      <section className="mb-8 rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-6 shadow-lg shadow-cyan-100/40">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-700">External jobs</p>
+        <h2 className="mt-2 text-xl font-black text-slate-950">Fetch from LinkedIn, Naukri, Indeed, and more</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          Use the dedicated fetch page to pull one source at a time, review listings, run Make SEO, then publish.
+        </p>
+        <Link
+          to="/admin/fetch"
+          className="mt-4 inline-flex rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400"
+        >
+          Open fetch page →
+        </Link>
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">

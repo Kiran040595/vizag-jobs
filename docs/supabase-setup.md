@@ -144,24 +144,39 @@ set company_name = excluded.company_name,
 
 ## 7. External job fetch (Edge Function)
 
-The admin **Existing Jobs** page includes **Fetch external jobs**, which calls a Supabase Edge Function named **`fetch-external-jobs`**.
+The admin **Fetch external jobs** page (`/admin/fetch`) calls the Supabase Edge Function **`fetch-external-jobs`** with one source per button.
 
-**Current behaviour (pipeline):**
+**Per-source fetch** — `POST` with `{ "mode": "fetch", "fetch_channel": "naukri" }` (or `linkedin_jobs`, `linkedin_posts`, `vizag_it`, `indeed`). Only that source runs. Use channel-specific secrets (below) to spread API load across keys.
 
-- **Mode:** `extraction_mode: per_url_scrape` — discover individual job URLs, then **Firecrawl scrape each URL** (no Gemini required).
-- **Sources:** Only **`linkedin.com`** and **`naukri.com`** detail URLs (LinkedIn `/jobs/view/`, Naukri `job-listings-…` slugs; city hub pages are skipped).
-- **Area:** Rows are kept when title/company/location/summary/URL mention **Visakhapatnam / Vizag / Andhra Pradesh** (or “Andhra”), or the URL is already a verified detail link.
-- **`jobs` array:** **All successfully scraped jobs** (primary preview). One object per URL with `title`, `company`, `experience`, `location`, `apply_url`, `source_url`, optional `description_markdown`, `posted_at`.
-- **`jobs_last_24h`:** Subset of `jobs` where `posted_at` parses as within the last 24 hours (often empty when boards hide dates).
-- **Diagnostics:** `detail_job_urls_discovered`, `scrape_stats`, `scrape_failed_urls`, `sources_scraped`, `gemini_status` (`skipped` | `ok` | `failed`), optional `gemini_error`.
-- **`jobs_undated`:** Jobs without a `posted_at` in the last 24 hours (undated or older).
-- **Optional:** Set `FETCH_JOB_DETAIL_SCRAPE_LIMIT` (default **24**, max **45**) to control how many URLs are scraped per run.
-- **Optional Gemini:** Set `FETCH_JOB_USE_GEMINI=true` and `GEMINI_API_KEY` to enrich weak fields (title, company, experience, location, `posted_at`, summary) after scrape (default off). The admin UI shows `gemini_status` (`skipped` | `ok` | `failed`) on each fetch.
-- **Admin review:** Fetched jobs are **not** inserted automatically. On **Existing Jobs → Fetch external jobs**, review each card (full schema preview), then **Approve & publish** or **Save as draft**. Both use the same `createAdminJob` insert path as the manual form. **Edit** opens **New Job** with the form prefilled.
+The **Existing Jobs** page links to `/admin/fetch` for discovery; manage published listings stays on `/admin/jobs`.
 
-**Secrets:** `FIRECRAWL_API_KEY` is **required**. `GEMINI_API_KEY` is optional (enrichment only when `FETCH_JOB_USE_GEMINI=true`).
+**Admin workflow (two steps):**
 
-Source code: [`supabase/functions/fetch-external-jobs/index.ts`](../supabase/functions/fetch-external-jobs/index.ts).
+1. **Fetch external jobs** — `POST` with `{ "mode": "fetch" }` (default). **Apify** (when `APIFY_API_TOKEN` is set) fetches LinkedIn [jobs in Vishakhapatnam, past 24h](https://in.linkedin.com/jobs/jobs-in-vishakhapatnam?keywords=&location=Vishakhapatnam&geoId=106055329&distance=25&f_TPR=r86400&position=1&pageNum=0) and [Vizag content posts, past 24h](https://www.linkedin.com/search/results/content/?keywords=vizag&origin=CLUSTER_EXPANSION&datePosted=%5B%22past-24h%22%5D). Posts are parsed with **Gemini** when `GEMINI_API_KEY` is set. Naukri still uses **Firecrawl**. Each job has `seo_optimized: false` until step 2.
+2. **Make SEO** (per card in admin) — `POST` with `{ "mode": "seo", "job": { ... }, "seo_source_context": "..." }`. One Gemini call per job for portal-ready SEO copy. Requires **`GEMINI_API_KEY`** (optional **`GEMINI_API_KEYS`** for failover).
+3. **Approve & publish** — inserts via `createAdminJob` (same as manual form). Publishing without SEO shows a warning only (not blocked).
+
+**Fetch pipeline details:**
+
+- **LinkedIn (Apify):** Default when `APIFY_API_TOKEN` is set. Runs two Store actors (IDs configurable): jobs listing URL + content search URL. Response includes `linkedin_provider: "apify"`, `apify_jobs_count`, `apify_posts_count`. Set **`FETCH_JOB_SOURCES=linkedin`** for LinkedIn-only.
+- **LinkedIn (Firecrawl fallback):** Set `FETCH_LINKEDIN_PROVIDER=firecrawl` or `FETCH_LINKEDIN_FALLBACK_FIRECRAWL=true` when Apify returns nothing.
+- **Naukri:** Unchanged — Firecrawl only (`FETCH_JOB_SOURCES=both` requires `FIRECRAWL_API_KEY`).
+- **Naukri:** Firecrawl `site:naukri.com/job-listings` search — only **single job detail** pages are kept (search/hub SERP pages are skipped; embedded listings on a SERP are scraped instead).
+- **`jobs[]`:** By default only roles with **`posted_at` within the last 24 hours** (`FETCH_REQUIRE_POSTED_WITHIN_24H=true`). Undated roles go to `jobs_undated`.
+- **`FETCH_JOB_SOURCES`:** Set to `linkedin` to fetch **LinkedIn only** (no Naukri). Values: `linkedin`, `naukri`, `both` (default).
+- **Sources:** **`linkedin.com`** and **`naukri.com`** detail URLs only.
+- **Area:** Visakhapatnam / Vizag / Andhra context, or verified detail apply URLs.
+- **`jobs` array:** Scraped + mapped listings (raw copy until you run Make SEO).
+- **Diagnostics:** `detail_job_urls_discovered`, `scrape_stats`, `gemini_status: "skipped"` on fetch.
+- **Optional:** `FETCH_JOB_DETAIL_SCRAPE_LIMIT` (default **12**, max **20**).
+
+**Secrets (recommended):** `APIFY_API_TOKEN` (LinkedIn), `GEMINI_API_KEY` (post parsing + Make SEO). For Naukri or fallback: `FIRECRAWL_API_KEY`.
+
+**Apify setup:** Create an account at [apify.com](https://apify.com), copy your **API token** from Integrations → API, and add it as `APIFY_API_TOKEN`. Each fetch runs up to **two** actor runs (jobs + posts); cost depends on your chosen Store actors (typically a few cents per run on free/paid plans).
+
+**Multiple Gemini accounts (quota failover):** Set `GEMINI_API_KEY` to your primary key. Add extra keys from other Google accounts as comma-separated values in `GEMINI_API_KEYS` (e.g. `AIza...account2,AIza...account3`). Make SEO tries key 1, then key 2, etc., and within each key tries fallback models on quota errors. Remove `GEMINI_SEO_MODEL` if it is set to a depleted model like `gemini-2.0-flash-lite`.
+
+Source code: [`supabase/functions/fetch-external-jobs/index.ts`](../supabase/functions/fetch-external-jobs/index.ts), [`apify-linkedin.ts`](../supabase/functions/fetch-external-jobs/apify-linkedin.ts).
 
 ### Step 1 — Confirm the function exists in the Dashboard
 
@@ -208,12 +223,63 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | Secret | Purpose |
 |--------|---------|
 | `SUPABASE_SERVICE_ROLE_KEY` | Usually injected automatically on hosted Supabase; required for `auth.getUser` + `admin_users` checks if missing locally. |
-| `FIRECRAWL_API_KEY` | Enable Firecrawl search/scrape (recommended). |
+| `APIFY_API_TOKEN` | **LinkedIn fetch (recommended).** Apify API token from [Apify Console → Integrations](https://console.apify.com/account/integrations). |
+| `APIFY_API_TOKEN_LINKEDIN_JOBS` | Optional. Apify token used only for **LinkedIn Jobs** channel (`fetch_channel=linkedin_jobs`). |
+| `APIFY_API_TOKEN_LINKEDIN_POSTS` | Optional. Apify token used only for **LinkedIn Posts** channel. |
+| `FIRECRAWL_API_KEY_NAUKRI` | Optional. Firecrawl key for **Naukri** channel only. |
+| `FIRECRAWL_API_KEY_LINKEDIN_JOBS` | Optional. Firecrawl fallback for LinkedIn jobs listing. |
+| `FIRECRAWL_API_KEY_LINKEDIN_POSTS` | Optional. Firecrawl fallback for LinkedIn posts. |
+| `FIRECRAWL_API_KEY_VIZAG_IT` | Optional. Firecrawl key for **Vizag IT companies** channel. |
+| `FIRECRAWL_API_KEY_INDEED` | Optional. Firecrawl key for **Indeed** channel. |
+| `GEMINI_API_KEY_LINKEDIN_POSTS` | Optional. Gemini key for parsing LinkedIn posts to jobs. |
+| `GEMINI_API_KEY_SEO` | Optional. Gemini key for **Make SEO** on review cards. |
+| `FETCH_LINKEDIN_PROVIDER` | `apify` (default if token set), `firecrawl`, or `apify_then_firecrawl`. |
+| `APIFY_LINKEDIN_JOBS_ACTOR` | Jobs actor (default `curious_coder~linkedin-jobs-scraper` — uses your Vizag jobs listing URL). |
+| `APIFY_LINKEDIN_JOBS_ACTOR_FALLBACK` | Second jobs actor if first fails (default `harvestapi~linkedin-job-search`). |
+| `APIFY_LINKEDIN_POSTS_ACTOR` | Posts actor (default **`harvestapi~linkedin-post-search`** — keyword search, past 24h, pay-per-result, no cookies). |
+| `APIFY_LINKEDIN_POSTS_ACTOR_FALLBACK` | Second posts actor (default `curious_coder~linkedin-post-search-scraper`; requires rental + often cookies). |
+| `APIFY_LINKEDIN_POSTS_COOKIE_JSON` | Only for **curious_coder** content-URL scraper. Not needed for harvestapi. |
+| `APIFY_LINKEDIN_USER_AGENT` | Optional browser user-agent string passed to the posts actor. |
+| `APIFY_LINKEDIN_JOBS_INPUT_JSON` | Optional full JSON input override for jobs actor. |
+| `FETCH_LINKEDIN_POSTS_ONLY` | Set `true` to skip formal `/jobs/view/` listing scrape and fetch **only** LinkedIn posts (vizag + past 24h content URLs). |
+| `FETCH_LINKEDIN_POSTS_PRIORITY` | Run posts actor before jobs listing (default **true**). |
+| `APIFY_LINKEDIN_POSTS_INPUT_JSON` | Optional full JSON input override for posts actor. |
+| `APIFY_SYNC_TIMEOUT_SEC` | Max wait per Apify sync run (default **60–90**). |
+| `FETCH_LINKEDIN_FALLBACK_FIRECRAWL` | If Apify returns 0 items, try Firecrawl LinkedIn scrape (default **true**). |
+| `FETCH_LINKEDIN_FALLBACK_FIRECRAWL_POSTS` | If Apify jobs OK but posts are 0, scrape content URLs via Firecrawl (default **true**). |
+| `FIRECRAWL_API_KEY` | Required for **Naukri** (`FETCH_JOB_SOURCES=both` or `naukri`). LinkedIn fallback. |
+| `FIRECRAWL_API_KEYS` | Optional. Extra Firecrawl keys (comma- or newline-separated). Each search/scrape picks a **random** key order; on 429/503/quota errors the next key is tried automatically. |
 | `SCRAPFLY_API_KEY` | Fallback if Firecrawl is not set; requires `SCRAPFLY_SCRAPE_URLS` (comma-separated URLs to scrape). |
 | `SCRAPFLY_SCRAPE_URLS` | e.g. `https://example.com/jobs-vizag,https://other.com/listings` |
-| `GEMINI_API_KEY` | Optional; used only when `FETCH_JOB_USE_GEMINI=true` to enrich scraped rows. |
-| `GEMINI_MODEL` | Optional override (default `gemini-2.0-flash`). |
-| `FETCH_JOB_USE_GEMINI` | Set to `true` to run Gemini enrichment after per-URL scrape (default off). |
+| `GEMINI_API_KEY` | **Required for Make SEO** (not for fetch). Primary Gemini API key. |
+| `GEMINI_API_KEYS` | Optional. Extra keys (comma- or newline-separated) from other Google accounts. **Shuffled per Make SEO request**; on 429/503/quota the next key and fallback model are tried. |
+| `FETCH_LINKEDIN_JOBS_LISTING_24H` | Scrape Vishakhapatnam jobs SERP with `f_TPR=r86400` (default **true**). |
+| `FETCH_LINKEDIN_JOBS_LISTING_URL` | Override jobs listing URL (default: `in.linkedin.com/jobs/jobs-in-vishakhapatnam?...f_TPR=r86400`). |
+| `FETCH_LINKEDIN_JOBS_LISTING_LIMIT` | Max jobs parsed from listing page (default **20**). |
+| `FETCH_LINKEDIN_CONTENT_24H` | Set `false` to disable LinkedIn content-search discovery (default **true**). |
+| `FETCH_LINKEDIN_CONTENT_KEYWORDS` | Comma-separated keywords for content search (default `vizag,visakhapatnam,jobs vizag`). |
+| `FETCH_LINKEDIN_CONTENT_PAGES` | Max content SERP pages to scrape per run (default **3**, max **5**). |
+| `FETCH_JOB_SOURCES` | `linkedin` (LinkedIn only), `naukri`, or `both` (default). |
+| `FETCH_REQUIRE_POSTED_WITHIN_24H` | Set `false` to include jobs without a parsed `posted_at` in `jobs[]` (default **true**). |
+| `FETCH_LINKEDIN_SCRAPE_WAIT_MS` | Extra wait for LinkedIn pages in Firecrawl (default **4000**). |
+| `FETCH_LINKEDIN_CONTENT_POSTS` | Set `false` to skip hiring-post extraction from the content feed (default **true**). |
+| `FETCH_LINKEDIN_CONTENT_POSTS_LIMIT` | Max hiring posts per fetch (default **12**). |
+| `FETCH_LINKEDIN_SEARCH_POSTS` | Firecrawl-only: web search for `site:linkedin.com/posts` when feed scrape is empty (default **false**; set `true` for Firecrawl path). |
+| `FETCH_LINKEDIN_SEARCH_LIMIT` | Results per hiring search query (default **5**). |
+| `FETCH_LINKEDIN_SKIP_JOB_VIEW_SCRAPE` | Skip `/jobs/view/` scrapes when posts were found (default **true**). |
+| `GEMINI_MODEL` | Optional override for batch/legacy paths (default **`gemini-2.5-flash`**). |
+| `GEMINI_SEO_MODEL` | Model for **Make SEO** (default **`gemini-2.5-flash`**). Do not set `gemini-2.0-flash-lite` unless that model still has quota. |
+| `GEMINI_SEO_FALLBACK_MODELS` | Comma-separated fallbacks if primary returns 429 quota (default `gemini-2.5-flash,gemini-2.0-flash`). |
+| `GEMINI_SEO_TRY_FALLBACK_MODELS` | Set `false` to disable model fallback on quota errors (default **true**). |
+| `GEMINI_SEO_TIMEOUT_MS` | Per-request Gemini timeout for Make SEO (default **72000** ms). |
+| `GEMINI_SEO_MAX_RETRIES` | Retries per model for Make SEO (default **1**). |
+| `GEMINI_MAX_RETRIES` | Retries for batch/legacy Gemini (default **4**). |
+| `FETCH_JOB_DETAIL_SCRAPE_LIMIT` | Max job URLs scraped per run (default **6**, max **20**). Lower this if you see HTTP **546**. |
+| `FETCH_JOB_SEO_LIMIT` | Max jobs sent to Gemini SEO (defaults to scrape limit). |
+| `FETCH_JOB_SEO_BATCH_SIZE` | Jobs per Gemini call (default **4**). Batching avoids timeouts. |
+| `FETCH_JOB_MAX_RUNTIME_MS` | Stop early before platform kill (default **110000** ms). |
+| `FETCH_JOB_FULL_DISCOVER` | Set `true` for slower hub crawl; default is fast search-only discovery. |
+| `FIRECRAWL_TIMEOUT_MS` | Per-request Firecrawl timeout (default **20000**). |
 | `FETCH_JOB_SEARCH_QUERIES` | Optional comma-separated Firecrawl queries (defaults to **LinkedIn + Naukri** Vizag/Visakhapatnam `site:` searches only). |
 | `FETCH_JOB_SEARCH_LIMIT` | Optional max results per query (default `6`). |
 | `FETCH_JOB_SCRAPE_PAGE_LIMIT` | Optional max **hub / SERP** URLs to fully scrape before mining for detail links (default `10`, max `20`). |
