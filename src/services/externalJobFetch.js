@@ -20,9 +20,61 @@ function looksLikeJwt(token) {
   return typeof token === 'string' && token.split('.').length >= 3;
 }
 
-async function callFetchExternalJobsEdge(accessToken, body) {
+/**
+ * Trim payload for Make SEO — LinkedIn posts often carry 8k+ chars of scrape context.
+ * @param {Record<string, unknown>} job
+ */
+function buildSeoJobPayload(job) {
+  const isLinkedInPost = job.source_kind === 'linkedin_post';
+  const postRaw =
+    (typeof job.linkedin_post_text === 'string' && job.linkedin_post_text.trim()) ||
+    (typeof job.description === 'string' && job.description.trim()) ||
+    (typeof job.short_description === 'string' && job.short_description.trim()) ||
+    '';
+  const postText = postRaw ? postRaw.slice(0, 3_500) : null;
+
+  return {
+    slug: job.slug,
+    title: job.title,
+    company: job.company,
+    location: job.location,
+    category: job.category,
+    job_type: job.job_type,
+    work_mode: job.work_mode,
+    experience: job.experience,
+    is_fresher: job.is_fresher,
+    salary: job.salary,
+    apply_link: job.apply_link,
+    source_url: job.source_url,
+    source_name: job.source_name,
+    source_kind: job.source_kind,
+    posted_at: job.posted_at,
+    short_description: isLinkedInPost
+      ? typeof job.short_description === 'string'
+        ? job.short_description.slice(0, 400)
+        : job.short_description
+      : typeof job.short_description === 'string'
+        ? job.short_description.slice(0, 600)
+        : job.short_description,
+    description: isLinkedInPost
+      ? undefined
+      : typeof job.description === 'string'
+        ? job.description.slice(0, 2_500)
+        : job.description,
+    responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.slice(0, 12) : [],
+    eligibility: Array.isArray(job.eligibility) ? job.eligibility.slice(0, 10) : [],
+    skills: Array.isArray(job.skills) ? job.skills.slice(0, 16) : [],
+    linkedin_post_text: postText,
+    needs_review: job.needs_review,
+    is_likely_hiring_post: job.is_likely_hiring_post,
+  };
+}
+
+async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
   const url = getFetchExternalJobsUrl();
   const anon = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+  const timeoutMs =
+    typeof options.timeoutMs === 'number' && options.timeoutMs > 0 ? options.timeoutMs : null;
 
   if (!url) {
     throw new Error('Missing VITE_SUPABASE_URL (set it to Project URL from Supabase → Settings → API).');
@@ -36,7 +88,7 @@ async function callFetchExternalJobsEdge(accessToken, body) {
 
   let res;
   try {
-    res = await fetch(url, {
+    const fetchOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,9 +96,21 @@ async function callFetchExternalJobsEdge(accessToken, body) {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(body),
-    });
+    };
+    if (timeoutMs && typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal) {
+      fetchOptions.signal = AbortSignal.timeout(timeoutMs);
+    }
+    res = await fetch(url, fetchOptions);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    const isAbort =
+      e instanceof Error &&
+      (e.name === 'AbortError' || e.name === 'TimeoutError' || msg.includes('aborted'));
+    if (isAbort && body?.mode === 'seo') {
+      throw new Error(
+        'Make SEO timed out in the browser. LinkedIn posts use a shorter prompt now — try again once. If it repeats, check Edge Function logs and GEMINI_API_KEY.',
+      );
+    }
     const isNetwork =
       e instanceof TypeError &&
       (msg === 'Failed to fetch' || msg.includes('fetch') || msg.includes('NetworkError'));
@@ -149,20 +213,68 @@ export async function fetchExternalJobsBySource(accessToken, fetchChannel) {
 }
 
 /**
+ * Prefer the post body for LinkedIn SEO — stale seo_source_context from fetch dedupe bugs confuses Gemini.
+ * @param {Record<string, unknown>} job
+ */
+function resolveSeoSourceContext(job) {
+  const isLinkedInPost = job.source_kind === 'linkedin_post';
+  const postText =
+    typeof job.linkedin_post_text === 'string' ? job.linkedin_post_text.trim() : '';
+  const ctxRaw =
+    typeof job.seo_source_context === 'string' ? job.seo_source_context.trim() : '';
+  const cap = isLinkedInPost ? 900 : 1_800;
+
+  if (!isLinkedInPost) {
+    return (ctxRaw || postText).slice(0, cap);
+  }
+  if (!postText) {
+    return ctxRaw.slice(0, cap);
+  }
+  if (!ctxRaw) {
+    return postText.slice(0, cap);
+  }
+  const probe = postText.slice(0, Math.min(60, postText.length)).toLowerCase();
+  if (probe.length > 20 && !ctxRaw.toLowerCase().includes(probe.slice(0, 40))) {
+    return postText.slice(0, cap);
+  }
+  return ctxRaw.slice(0, cap);
+}
+
+/**
  * Run Gemini Vizag SEO for one review job.
  * @param {string} accessToken
  * @param {Record<string, unknown>} job
  * @param {string} [seoSourceContext]
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext = '') {
-  const context =
-    seoSourceContext ||
-    (typeof job.seo_source_context === 'string' ? job.seo_source_context : '');
+function isSeoRateLimitError(message) {
+  return /429|rate limit|quota|retry in/i.test(message);
+}
 
-  return callFetchExternalJobsEdge(accessToken, {
+export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext = '') {
+  const isLinkedInPost = job.source_kind === 'linkedin_post';
+  const context =
+    seoSourceContext?.trim()
+      ? resolveSeoSourceContext({ ...job, seo_source_context: seoSourceContext })
+      : resolveSeoSourceContext(job);
+  const customInstructions =
+    typeof job.seo_custom_instructions === 'string' ? job.seo_custom_instructions.trim().slice(0, 1200) : '';
+  const body = {
     mode: 'seo',
-    job,
+    job: buildSeoJobPayload(job),
     seo_source_context: context,
-  });
+    seo_custom_instructions: customInstructions || undefined,
+  };
+  const timeoutMs = isLinkedInPost ? 100_000 : 130_000;
+
+  try {
+    return await callFetchExternalJobsEdge(accessToken, body, { timeoutMs });
+  } catch (firstError) {
+    const msg = firstError instanceof Error ? firstError.message : String(firstError);
+    if (!isSeoRateLimitError(msg)) {
+      throw firstError;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 3_500));
+    return callFetchExternalJobsEdge(accessToken, body, { timeoutMs });
+  }
 }

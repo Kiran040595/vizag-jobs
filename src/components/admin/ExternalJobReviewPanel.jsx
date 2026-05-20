@@ -1,7 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export function getExternalJobKey(job) {
-  const key = job?.slug || job?.apply_link || job?.source_url || '';
+  const sourceUrl = String(job?.source_url || '').trim().toLowerCase();
+  if (sourceUrl && (sourceUrl.includes('linkedin.com') || sourceUrl.includes('naukri.com'))) {
+    return sourceUrl;
+  }
+  const apply = String(job?.apply_link || '').trim();
+  const invalidApply = !apply || /^(null|undefined|none)$/i.test(apply);
+  const key =
+    (!invalidApply ? apply : '') ||
+    job?.slug ||
+    sourceUrl ||
+    (job?.linkedin_post_text ? job.linkedin_post_text.slice(0, 120) : '');
   return String(key).toLowerCase();
 }
 
@@ -62,6 +72,45 @@ function BulletList({ label, items }) {
   );
 }
 
+function SeoResultPreview({ job }) {
+  const meta = job.seo_meta && typeof job.seo_meta === 'object' ? job.seo_meta : null;
+  const model = meta?.gemini_model ? String(meta.gemini_model) : null;
+  const runtimeMs = typeof meta?.runtime_ms === 'number' ? meta.runtime_ms : null;
+
+  return (
+    <div className="mt-3 rounded-xl border-2 border-violet-300 bg-violet-50/80 p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-bold text-violet-950">SEO output — review before publish</p>
+        {model || runtimeMs ? (
+          <p className="text-xs text-violet-700">
+            {model ? `Model: ${model}` : ''}
+            {model && runtimeMs ? ' · ' : ''}
+            {runtimeMs ? `${runtimeMs} ms` : ''}
+          </p>
+        ) : null}
+      </div>
+      <dl className="mt-3 space-y-3">
+        <DetailRow label="SEO title" value={job.title} />
+        <DetailRow label="Slug" value={job.slug} mono />
+        <DetailRow label="Meta description" value={job.short_description} />
+        <DetailRow label="Category" value={job.category} />
+        <DetailRow label="Job type" value={job.job_type} />
+        <DetailRow label="Work mode" value={job.work_mode} />
+      </dl>
+      {job.description ? (
+        <div className="mt-3 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">SEO description</p>
+          <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-violet-200 bg-white p-3 text-sm leading-6 text-slate-800">
+            {job.description}
+          </div>
+        </div>
+      ) : null}
+      <BulletList label="Responsibilities" items={job.responsibilities} />
+      <BulletList label="Skills" items={job.skills} />
+    </div>
+  );
+}
+
 function ExternalJobCard({
   job,
   isDuplicate,
@@ -73,6 +122,7 @@ function ExternalJobCard({
   isSelected,
   onToggleSelect,
   onMakeSeo,
+  onSeoInstructionsChange,
   onPublish,
   onSaveDraft,
   onSkip,
@@ -80,13 +130,24 @@ function ExternalJobCard({
   showBulkSelect,
 }) {
   const [expanded, setExpanded] = useState(false);
+  const seoPreviewRef = useRef(null);
   const jobKey = getExternalJobKey(job);
+  const showSeoPreview = Boolean(job.seo_optimized && (job.seo_show_preview ?? true));
+
+  useEffect(() => {
+    if (showSeoPreview && seoPreviewRef.current) {
+      seoPreviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [showSeoPreview, job.title, job.description]);
   const applyLinkUrl = (() => {
     const raw = String(job?.apply_link || job?.source_url || '').trim();
-    if (!raw || !/^https?:\/\//i.test(raw)) {
+    if (!raw || /^(null|undefined|none)$/i.test(raw)) {
       return null;
     }
-    return raw;
+    if (/^https?:\/\//i.test(raw) || /^mailto:/i.test(raw)) {
+      return raw;
+    }
+    return null;
   })();
 
   return (
@@ -202,7 +263,8 @@ function ExternalJobCard({
       </div>
 
       {errorMessage ? (
-        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">
+          <span className="font-bold">Could not publish: </span>
           {errorMessage}
         </p>
       ) : null}
@@ -211,6 +273,40 @@ function ExternalJobCard({
         <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {seoErrorMessage}
         </p>
+      ) : null}
+
+      {onMakeSeo && onSeoInstructionsChange ? (
+        <div className="mt-3 rounded-xl border border-violet-100 bg-white p-3">
+          <label
+            htmlFor={`seo-instructions-${jobKey}`}
+            className="text-xs font-semibold uppercase tracking-wide text-violet-900"
+          >
+            Extra instructions for Gemini (optional)
+          </label>
+          <p className="mt-1 text-xs text-slate-600">
+            Not happy with SEO? Add notes here (tone, keywords, experience, apply method), then click{' '}
+            <strong>Re-run SEO</strong>.
+          </p>
+          <textarea
+            id={`seo-instructions-${jobKey}`}
+            rows={3}
+            maxLength={1200}
+            value={job.seo_custom_instructions ?? ''}
+            onChange={(e) => onSeoInstructionsChange(job, e.target.value)}
+            disabled={isBusy || isSeoBusy}
+            placeholder="e.g. Use formal tone. Emphasize 3+ years React. Mention Vizag office only. Include mailto apply from post. Add FAQ on WFO."
+            className="mt-2 w-full rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+          />
+          <p className="mt-1 text-right text-xs text-slate-500">
+            {(job.seo_custom_instructions ?? '').length}/1200
+          </p>
+        </div>
+      ) : null}
+
+      {showSeoPreview ? (
+        <div ref={seoPreviewRef}>
+          <SeoResultPreview job={job} />
+        </div>
       ) : null}
 
       {job.source_kind === 'linkedin_post' && expanded ? (
@@ -235,7 +331,7 @@ function ExternalJobCard({
         </div>
       ) : null}
 
-      {job.short_description ? (
+      {!showSeoPreview && job.short_description ? (
         <p className="mt-3 text-sm leading-6 text-slate-700">{job.short_description}</p>
       ) : null}
 
@@ -287,6 +383,7 @@ export default function ExternalJobReviewPanel({
   importErrors,
   seoErrors = {},
   onMakeSeo,
+  onSeoInstructionsChange,
   onPublish,
   onSaveDraft,
   onSkip,
@@ -301,7 +398,9 @@ export default function ExternalJobReviewPanel({
     for (const job of jobs) {
       const key = getExternalJobKey(job);
       const slug = String(job.slug || '').toLowerCase();
-      const apply = String(job.apply_link || '').toLowerCase();
+      const applyRaw = String(job.apply_link || '').trim().toLowerCase();
+      const apply =
+        applyRaw && !/^(null|undefined|none)$/.test(applyRaw) ? applyRaw : '';
       let reason = '';
       if (slug && existingSlugs.has(slug)) {
         reason = 'slug';
@@ -380,6 +479,7 @@ export default function ExternalJobReviewPanel({
               isSelected={selectedKeys.has(key)}
               onToggleSelect={() => toggleSelect(job)}
               onMakeSeo={onMakeSeo}
+              onSeoInstructionsChange={onSeoInstructionsChange}
               onPublish={onPublish}
               onSaveDraft={onSaveDraft}
               onSkip={onSkip}

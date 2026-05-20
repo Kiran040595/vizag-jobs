@@ -119,7 +119,15 @@ export default function AdminExternalFetchPage() {
 
   const removeReviewJob = (job) => {
     const key = getExternalJobKey(job);
-    setReviewJobs((current) => current.filter((item) => getExternalJobKey(item) !== key));
+    const sourceUrl = String(job.source_url || '').toLowerCase();
+    setReviewJobs((current) =>
+      current.filter((item) => {
+        if (sourceUrl && String(item.source_url || '').toLowerCase() === sourceUrl) {
+          return false;
+        }
+        return getExternalJobKey(item) !== key;
+      }),
+    );
   };
 
   const handleSkip = (job) => {
@@ -127,26 +135,74 @@ export default function AdminExternalFetchPage() {
     setNotice('Job skipped from this batch.');
   };
 
+  const clearKeyedError = (errors, job) => {
+    const key = getExternalJobKey(job);
+    const sourceUrl = String(job.source_url || '').toLowerCase();
+    const next = { ...errors };
+    delete next[key];
+    if (sourceUrl) {
+      for (const k of Object.keys(next)) {
+        if (k === sourceUrl || k.includes(sourceUrl) || sourceUrl.includes(k)) {
+          delete next[k];
+        }
+      }
+    }
+    return next;
+  };
+
+  const handleSeoInstructionsChange = (job, text) => {
+    const key = getExternalJobKey(job);
+    const sourceUrl = String(job.source_url || '').toLowerCase();
+    setReviewJobs((current) =>
+      current.map((item) => {
+        const match =
+          getExternalJobKey(item) === key ||
+          (sourceUrl && String(item.source_url || '').toLowerCase() === sourceUrl);
+        return match ? { ...item, seo_custom_instructions: text } : item;
+      }),
+    );
+  };
+
   const handleMakeSeo = async (job) => {
     const key = getExternalJobKey(job);
+    const sourceUrl = String(job.source_url || '').toLowerCase();
     setBusySeoKey(key);
-    setSeoErrors((current) => {
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
+    setSeoErrors((current) => clearKeyedError(current, job));
     try {
-      const data = await seoOptimizeExternalJob(session?.access_token, job, job.seo_source_context);
+      const data = await seoOptimizeExternalJob(session?.access_token, job);
       const optimized = data.job;
       if (!optimized) {
         throw new Error('SEO response did not include a job.');
       }
+      const matchesJob = (item) =>
+        getExternalJobKey(item) === key ||
+        (sourceUrl && String(item.source_url || '').toLowerCase() === sourceUrl);
       setReviewJobs((current) =>
         current.map((item) =>
-          getExternalJobKey(item) === key ? { ...optimized, seo_optimized: true } : item,
+          matchesJob(item)
+            ? {
+                ...optimized,
+                seo_optimized: true,
+                seo_show_preview: true,
+                seo_custom_instructions:
+                  optimized.seo_custom_instructions ?? item.seo_custom_instructions ?? '',
+                seo_meta:
+                  optimized.seo_meta ??
+                  (data.gemini_model || data.runtime_ms
+                    ? {
+                        gemini_model: data.gemini_model,
+                        runtime_ms: data.runtime_ms,
+                        seo_profile: data.seo_profile,
+                        had_custom_instructions: Boolean(job.seo_custom_instructions?.trim()),
+                      }
+                    : item.seo_meta),
+              }
+            : item,
         ),
       );
-      setNotice(`SEO optimized: "${optimized.title}".`);
+      setNotice(
+        `SEO ready: "${optimized.title}". Review the violet SEO output box below, then publish or add more instructions and Re-run SEO.`,
+      );
     } catch (error) {
       setSeoErrors((current) => ({
         ...current,
@@ -160,25 +216,25 @@ export default function AdminExternalFetchPage() {
   const handleImport = async (job, status) => {
     const key = getExternalJobKey(job);
     setBusyImportKey(key);
-    setImportErrors((current) => {
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
+    setImportErrors((current) => clearKeyedError(current, job));
     try {
       const saved = await createAdminJob(job, status);
       setExistingJobs((current) => [saved, ...current]);
       removeReviewJob(job);
+      const slugNote = saved.slug && saved.slug !== job.slug ? ` (slug: ${saved.slug})` : '';
       setNotice(
         status === 'published'
-          ? `"${saved.title}" published.${!job.seo_optimized ? ' Consider Make SEO next time.' : ''}`
-          : `"${saved.title}" saved as draft.`,
+          ? `"${saved.title}" published${slugNote}.${!job.seo_optimized ? ' Consider Make SEO next time.' : ''}`
+          : `"${saved.title}" saved as draft${slugNote}.`,
       );
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not save.';
       setImportErrors((current) => ({
         ...current,
-        [key]: error instanceof Error ? error.message : 'Could not save.',
+        [key]: message,
       }));
+      setNotice('');
+      console.error('Publish/import failed:', message, job);
     } finally {
       setBusyImportKey('');
     }
@@ -300,6 +356,7 @@ export default function AdminExternalFetchPage() {
         importErrors={importErrors}
         seoErrors={seoErrors}
         onMakeSeo={handleMakeSeo}
+        onSeoInstructionsChange={handleSeoInstructionsChange}
         onPublish={(job) => handleImport(job, 'published')}
         onSaveDraft={(job) => handleImport(job, 'draft')}
         onSkip={handleSkip}

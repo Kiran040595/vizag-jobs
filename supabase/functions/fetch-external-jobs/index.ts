@@ -305,17 +305,49 @@ function extractJsonStringArray(source: string, key: string): string[] {
   return items;
 }
 
+function fillSeoPayloadFromFallback(payload: SeoGeminiPayload, fallback: SiteJobRecord): SeoGeminiPayload {
+  const postBody = (fallback.linkedin_post_text ?? fallback.description ?? '').trim();
+  const title =
+    (typeof payload.title === 'string' && payload.title.trim()) || fallback.title?.trim() || 'Job opening';
+  const short_description =
+    (typeof payload.short_description === 'string' && payload.short_description.trim()) ||
+    fallback.short_description?.trim() ||
+    postBody.slice(0, 160);
+  const description =
+    (typeof payload.description === 'string' && payload.description.trim()) ||
+    fallback.description?.trim() ||
+    postBody.slice(0, 1_100);
+  return {
+    ...payload,
+    title,
+    short_description,
+    description,
+    responsibilities:
+      normalizeSeoStringList(payload.responsibilities).length > 0
+        ? normalizeSeoStringList(payload.responsibilities)
+        : fallback.responsibilities ?? [],
+    eligibility:
+      normalizeSeoStringList(payload.eligibility).length > 0
+        ? normalizeSeoStringList(payload.eligibility)
+        : fallback.eligibility ?? [],
+    skills:
+      normalizeSeoStringList(payload.skills).length > 0
+        ? normalizeSeoStringList(payload.skills)
+        : fallback.skills ?? [],
+  };
+}
+
 function parseSeoGeminiPayload(text: string, fallback: SiteJobRecord): SeoGeminiPayload {
   let parsed = tryParseJson<SeoGeminiPayload>(text, 'gemini_seo');
   if (parsed?.title?.trim()) {
-    return parsed;
+    return fillSeoPayloadFromFallback(parsed, fallback);
   }
 
   const repaired = tryRepairTruncatedJson(text);
   if (repaired) {
     parsed = tryParseJson<SeoGeminiPayload>(repaired, 'gemini_seo_repaired');
     if (parsed?.title?.trim()) {
-      return parsed;
+      return fillSeoPayloadFromFallback(parsed, fallback);
     }
   }
 
@@ -331,18 +363,41 @@ function parseSeoGeminiPayload(text: string, fallback: SiteJobRecord): SeoGemini
         preview: text.slice(0, 120),
       }),
     );
-    return {
-      title,
-      slug: extractJsonStringField(text, 'slug') ?? undefined,
-      short_description,
-      description,
-      responsibilities: extractJsonStringArray(text, 'responsibilities'),
-      eligibility: extractJsonStringArray(text, 'eligibility'),
-      skills: extractJsonStringArray(text, 'skills'),
-      category: extractJsonStringField(text, 'category') ?? undefined,
-      job_type: extractJsonStringField(text, 'job_type') ?? undefined,
-      work_mode: extractJsonStringField(text, 'work_mode') ?? undefined,
-    };
+    return fillSeoPayloadFromFallback(
+      {
+        title,
+        slug: extractJsonStringField(text, 'slug') ?? undefined,
+        short_description,
+        description,
+        responsibilities: extractJsonStringArray(text, 'responsibilities'),
+        eligibility: extractJsonStringArray(text, 'eligibility'),
+        skills: extractJsonStringArray(text, 'skills'),
+        category: extractJsonStringField(text, 'category') ?? undefined,
+        job_type: extractJsonStringField(text, 'job_type') ?? undefined,
+        work_mode: extractJsonStringField(text, 'work_mode') ?? undefined,
+      },
+      fallback,
+    );
+  }
+
+  const postBody = (fallback.linkedin_post_text ?? fallback.description ?? '').trim();
+  if (fallback.title?.trim() && postBody.length > 60) {
+    console.warn(
+      JSON.stringify({
+        event: 'gemini_seo_fallback_from_post',
+        title: fallback.title,
+        post_chars: postBody.length,
+      }),
+    );
+    return fillSeoPayloadFromFallback(
+      {
+        title: fallback.title,
+        slug: extractJsonStringField(text, 'slug') ?? undefined,
+        short_description: fallback.short_description ?? postBody.slice(0, 160),
+        description: fallback.description ?? postBody.slice(0, 1_100),
+      },
+      fallback,
+    );
   }
 
   throw new Error(
@@ -480,7 +535,7 @@ function normalizeJobSlug(slug: string): string {
     .replace(/^-|-$/g, '');
 }
 
-const PARSER_VERSION = 'site-record-v10-posted-at-source';
+const PARSER_VERSION = 'site-record-v12-linkedin-seo-keys';
 
 const DEFAULT_JOB_WARNING =
   'Verify job details on the employer site before sharing personal documents or payments. Never pay a fee to apply.';
@@ -585,19 +640,43 @@ const GEMINI_SEO_INTERNAL_LINKS = [
 ];
 
 /** Compact prompt for single-job SEO (faster than batch prompt). */
-function buildGeminiSeoSingleJobPrompt(jobInput: Record<string, unknown>): string {
-  const isLinkedInPost = jobInput.source_kind === 'linkedin_post';
-  const postNote = isLinkedInPost
-    ? `SOURCE: Casual LinkedIn hiring POST (not a formal /jobs/view/ listing). Extract role, company, locations, CTC/salary, experience, and apply method (WhatsApp/phone/link) from linkedin_post_text and scraped_source. If the post lists many cities, emphasize Visakhapatnam/Vizag only when mentioned.\n\n`
-    : '';
-  return (
+function buildGeminiSeoSingleJobPrompt(jobInput: Record<string, unknown>, customInstructions?: string): string {
+  const base =
     `SEO editor for jobsinvizag.in (Vizag/Visakhapatnam jobs only). Rewrite ONE job. Facts only — no invented salary/benefits.\n\n` +
-    postNote +
     `Output valid JSON only (escape newlines in strings as \\n). Fields: title, slug, short_description (150-160 chars), description (Markdown, max 1600 chars, sections: About the Role, Skills, Responsibilities, Who Can Apply, How to Apply, FAQs with 3 Q&As), responsibilities[], eligibility[], skills[], category, job_type, work_mode.\n\n` +
     `Title format: "[Role] Jobs in Vizag at [Company] | Fresher or Experienced | Apply Now". Slug: role-jobs-vizag-company (lowercase, no dates).\n` +
     `Use main_keyword + supporting_keywords naturally. Mention Vizag/Visakhapatnam 4-6 times total. Include 1-2 internal links: /it-jobs-in-vizag or /fresher-jobs-in-vizag or /jobs-in-vizag.\n\n` +
-    `INPUT:\n${JSON.stringify(jobInput)}`
+    `INPUT:\n${JSON.stringify(jobInput)}`;
+  return appendSeoCustomInstructions(base, customInstructions);
+}
+
+const MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS = 1_200;
+
+function appendSeoCustomInstructions(prompt: string, customInstructions?: string): string {
+  const trimmed = typeof customInstructions === 'string' ? customInstructions.trim().slice(0, MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS) : '';
+  if (!trimmed) {
+    return prompt;
+  }
+  return (
+    `${prompt}\n\nADMIN_EXTRA_INSTRUCTIONS (follow these in addition to all rules above):\n${trimmed}\n`
   );
+}
+
+/** Shorter prompt for LinkedIn hiring posts — avoids huge payloads and long Gemini runs. */
+function buildGeminiSeoLinkedInPostPrompt(
+  jobInput: Record<string, unknown>,
+  compact = false,
+  customInstructions?: string,
+): string {
+  const descCap = compact ? 750 : 1100;
+  const base =
+    `SEO editor for jobsinvizag.in. Input is a casual LinkedIn HIRING POST (not /jobs/view/). Extract facts from linkedin_post_text / scraped_source only.\n\n` +
+    `If the post lists many cities, write for Visakhapatnam/Vizag only when Vizag is mentioned; otherwise say "multiple locations" without inventing Vizag-only roles.\n` +
+    `Preserve apply_link (WhatsApp/phone/URL from post). Do not invent salary or benefits. Always return valid JSON with non-empty title, short_description, and description.\n\n` +
+    `JSON only. Fields: title, slug, short_description (~150 chars), description (Markdown, max ${descCap} chars: About the Role, Skills, Responsibilities, Who Can Apply, How to Apply, FAQs with 2 Q&As), responsibilities[], eligibility[], skills[], category, job_type, work_mode.\n` +
+    `Title: "[Role] Jobs in Vizag at [Company] | Fresher or Experienced | Apply Now" when Vizag-relevant; else "[Role] at [Company] | Apply Now". Slug: role-jobs-vizag-company (lowercase).\n\n` +
+    `INPUT:\n${JSON.stringify(jobInput)}`;
+  return appendSeoCustomInstructions(base, customInstructions);
 }
 
 function buildGeminiSeoEditorPrompt(jobsForPrompt: unknown): string {
@@ -1083,6 +1162,58 @@ function mergeLinkedInPosts(posts: LinkedInContentPost[], more: LinkedInContentP
   return out;
 }
 
+function isInvalidApplyToken(value: string | null | undefined): boolean {
+  if (!value?.trim()) {
+    return true;
+  }
+  return /^(null|undefined|none|n\/a|na)$/i.test(value.trim());
+}
+
+/** Gemini sometimes returns the literal string "null" for apply_url — never use that as a dedupe key. */
+function resolveApplyLinkForJob(
+  applyUrl: string | null | undefined,
+  sourceUrl: string | null | undefined,
+  postText?: string | null,
+): string {
+  const apply = applyUrl?.trim() ?? '';
+  if (apply && !isInvalidApplyToken(apply)) {
+    if (/^https?:\/\//i.test(apply) || /^mailto:/i.test(apply)) {
+      return apply;
+    }
+    if (apply.includes('@') && apply.includes('.')) {
+      return apply.startsWith('mailto:') ? apply : `mailto:${apply}`;
+    }
+    return apply;
+  }
+  const parsed = postText?.trim() ? parseLinkedInHiringPost(postText) : {};
+  if (parsed.apply_url?.trim()) {
+    return parsed.apply_url.trim();
+  }
+  const src = sourceUrl?.trim() ?? '';
+  return src || '';
+}
+
+function siteJobDedupeKey(job: SiteJobRecord): string {
+  const applyOrSource = resolveApplyLinkForJob(job.apply_link, job.source_url, job.linkedin_post_text);
+  if (applyOrSource && !/^mailto:$/i.test(applyOrSource)) {
+    return applyOrSource.toLowerCase();
+  }
+  if (job.source_kind === 'linkedin_post') {
+    const postUrl = job.source_url?.trim();
+    if (postUrl && postUrl.includes('linkedin.com')) {
+      return postUrl.toLowerCase();
+    }
+    const snippet = job.linkedin_post_text?.trim().slice(0, 220) ?? '';
+    if (snippet) {
+      return `li-post:${snippet.toLowerCase()}`;
+    }
+  }
+  if (job.source_url?.trim()) {
+    return job.source_url.trim().toLowerCase();
+  }
+  return job.slug.toLowerCase();
+}
+
 function normalizeWhatsAppApplyLink(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
   if (digits.length < 10 || digits.length > 13) {
@@ -1407,7 +1538,7 @@ async function geminiParseLinkedInPostBatch(
         : null) ?? resolveLinkedInPostPostedAt(post.post_text, scrapedAt, fromFeed24h);
     const sourceUrl = post.post_url ?? fallbackSearchUrl;
     const applyRaw = typeof row.apply_url === 'string' ? row.apply_url.trim() : '';
-    const applyUrl = applyRaw.length > 0 ? applyRaw : post.post_url ?? sourceUrl;
+    const applyUrl = resolveApplyLinkForJob(applyRaw, post.post_url ?? sourceUrl, post.post_text);
     const salary = typeof row.salary === 'string' && row.salary.trim() ? row.salary.trim() : null;
 
     out.push({
@@ -1488,8 +1619,18 @@ async function convertLinkedInPostsToJobs(
     try {
       const geminiJobs = await geminiParseLinkedInPosts(posts, fetchInstant, fallbackSearchUrl, fetchInstant);
       if (geminiJobs.length > 0) {
+        const within24h = geminiJobs.filter((j) => isPostedWithinCutoff(j.posted_at, cutoffMs));
+        const coveredUrls = new Set(
+          within24h.map((j) => (j.source_url ?? '').trim().toLowerCase()).filter(Boolean),
+        );
+        const regexExtras = posts
+          .map((post) => linkedInPostToExtractedJob(post, fetchInstant, fallbackSearchUrl))
+          .filter((j) => {
+            const key = (j.source_url ?? '').trim().toLowerCase();
+            return isPostedWithinCutoff(j.posted_at, cutoffMs) && key && !coveredUrls.has(key);
+          });
         return {
-          jobs: geminiJobs.filter((j) => isPostedWithinCutoff(j.posted_at, cutoffMs)),
+          jobs: dedupeJobs([...within24h, ...regexExtras]),
           parse_mode: 'gemini',
         };
       }
@@ -1839,7 +1980,11 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
     experience: raw.experience?.trim() || parsedPost?.experience?.trim() || 'Not specified',
     is_fresher: inferIsFresher(raw.experience ?? '', title, md),
     salary,
-    apply_link: raw.apply_url?.trim() || raw.source_url,
+    apply_link: resolveApplyLinkForJob(
+      raw.apply_url,
+      raw.source_url,
+      raw.linkedin_post_text ?? (isLinkedInPost ? md : null),
+    ),
     short_description: buildShortDescription(description, title),
     description,
     responsibilities: responsibilities.length > 0 ? responsibilities : [],
@@ -1864,7 +2009,7 @@ function dedupeSiteJobs(jobs: SiteJobRecord[]): SiteJobRecord[] {
   const seen = new Set<string>();
   const out: SiteJobRecord[] = [];
   for (const job of jobs) {
-    const key = (job.apply_link || job.source_url || job.slug).toLowerCase();
+    const key = siteJobDedupeKey(job);
     if (seen.has(key)) {
       continue;
     }
@@ -2325,9 +2470,9 @@ const MAX_SEO_SHORT_DESCRIPTION_CHARS = 320;
 const MAX_SEO_DESCRIPTION_CHARS = 8000;
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const DEFAULT_GEMINI_SEO_MODEL = 'gemini-2.5-flash';
-const DEFAULT_GEMINI_SEO_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-/** Tried last — often has no free-tier quota left. */
-const DEPRIORITIZED_SEO_MODELS = ['gemini-2.0-flash-lite'];
+const DEFAULT_GEMINI_SEO_FALLBACK_MODELS = ['gemini-2.5-flash'];
+/** Tried last — often has no free-tier quota left on new Google AI projects. */
+const DEPRIORITIZED_SEO_MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash'];
 const GEMINI_SEO_MAX_RETRIES = 1;
 const GEMINI_SEO_REQUEST_TIMEOUT_MS = 72_000;
 const GEMINI_SEO_HARD_CAP_MS = 118_000;
@@ -2344,17 +2489,29 @@ type FetchRequestBody = {
   debug_trace?: boolean;
   job?: SiteJobRecord & { seo_source_context?: string };
   seo_source_context?: string;
+  /** Admin-only hints appended to the Make SEO Gemini prompt (max ~1200 chars). */
+  seo_custom_instructions?: string;
 };
 
 type GeminiKeyChannel = 'linkedin_posts' | 'seo' | 'default';
 
 function stripClientReviewFields(
-  job: SiteJobRecord & { seo_source_context?: string; seo_optimized?: boolean },
-): SiteJobRecord {
-  const { seo_source_context: _ctx, seo_optimized: _opt, ...record } = job as SiteJobRecord & {
+  job: SiteJobRecord & {
     seo_source_context?: string;
     seo_optimized?: boolean;
-  };
+    seo_custom_instructions?: string | null;
+    seo_meta?: unknown;
+    seo_show_preview?: boolean;
+  },
+): SiteJobRecord {
+  const {
+    seo_source_context: _ctx,
+    seo_optimized: _opt,
+    seo_custom_instructions: _instr,
+    seo_meta: _meta,
+    seo_show_preview: _preview,
+    ...record
+  } = job;
   return record;
 }
 const DEFAULT_FUNCTION_BUDGET_MS = 110_000;
@@ -2427,6 +2584,17 @@ function getGeminiApiKeys(channel: GeminiKeyChannel = 'default'): string[] {
     }
   }
   return [...new Set(keys)];
+}
+
+/** Make SEO: SEO keys first, then LinkedIn-post keys when optimizing a hiring post. */
+function getGeminiApiKeysForMakeSeo(linkedInPost = false): string[] {
+  const merged: string[] = [];
+  merged.push(...getGeminiApiKeys('seo'));
+  if (linkedInPost) {
+    merged.push(...getGeminiApiKeys('linkedin_posts'));
+  }
+  merged.push(...getGeminiApiKeys('default'));
+  return [...new Set(merged)];
 }
 
 function isGeminiQuotaExhausted(message: string): boolean {
@@ -2610,17 +2778,29 @@ async function geminiGenerateContent(
   throw new Error(lastError);
 }
 
-async function geminiGenerateContentForSeo(body: unknown): Promise<GeminiSeoCallResult> {
-  const keys = shuffledCopy(getGeminiApiKeys('seo'));
+async function geminiGenerateContentForSeo(
+  body: unknown,
+  options?: { timeoutMs?: number; maxModels?: number; linkedInPost?: boolean },
+): Promise<GeminiSeoCallResult> {
+  const keys = shuffledCopy(getGeminiApiKeysForMakeSeo(options?.linkedInPost === true));
   if (keys.length === 0) {
-    throw new Error('GEMINI_API_KEY is required for Make SEO. Add it in Supabase Edge Function secrets.');
+    throw new Error(
+      options?.linkedInPost
+        ? 'Gemini API key required for Make SEO. Set GEMINI_API_KEY_SEO, GEMINI_API_KEY, or GEMINI_API_KEY_LINKEDIN_POSTS in Edge Function secrets.'
+        : 'GEMINI_API_KEY_SEO or GEMINI_API_KEY is required for Make SEO. Add keys in Edge Function secrets.',
+    );
   }
 
-  const models = shuffledCopy(getGeminiSeoModelCandidates());
+  const allModels = shuffledCopy(getGeminiSeoModelCandidates());
+  const models =
+    typeof options?.maxModels === 'number' && options.maxModels > 0
+      ? allModels.slice(0, options.maxModels)
+      : allModels;
   const seoTimeout = Math.min(
     90_000,
-    Number(Deno.env.get('GEMINI_SEO_TIMEOUT_MS') ?? String(GEMINI_SEO_REQUEST_TIMEOUT_MS)) ||
-      GEMINI_SEO_REQUEST_TIMEOUT_MS,
+    options?.timeoutMs ??
+      (Number(Deno.env.get('GEMINI_SEO_TIMEOUT_MS') ?? String(GEMINI_SEO_REQUEST_TIMEOUT_MS)) ||
+        GEMINI_SEO_REQUEST_TIMEOUT_MS),
   );
   const maxRetriesPerModel = Math.min(
     2,
@@ -2656,8 +2836,8 @@ async function geminiGenerateContentForSeo(body: unknown): Promise<GeminiSeoCall
         const hasMoreKeys = keyIndex < keys.length - 1;
 
         if (tryFallbackOnQuota && shouldTryNextSeoFallback(msg) && (hasMoreModels || hasMoreKeys)) {
-          if (isGeminiOverloadError(msg)) {
-            await sleep(400 + Math.floor(Math.random() * 600));
+          if (isGeminiOverloadError(msg) || isGemini429Error(msg)) {
+            await sleep(parseGeminiRetryDelayMs(msg, 0));
           }
           continue;
         }
@@ -2803,10 +2983,14 @@ function jobRecordForSeoPrompt(
   maxSourceChars = MAX_SEO_SOURCE_PER_JOB_IN_BATCH,
 ): Record<string, unknown> {
   const postText = record.linkedin_post_text?.trim();
-  const scraped =
-    record.source_kind === 'linkedin_post' && postText
-      ? `${postText}\n\n---\n${sourceContext}`.slice(0, maxSourceChars)
-      : sourceContext.slice(0, maxSourceChars);
+  let scraped = sourceContext.slice(0, maxSourceChars);
+  if (record.source_kind === 'linkedin_post' && postText) {
+    const extra = sourceContext.trim().slice(0, 500);
+    const duplicate =
+      extra.length > 40 &&
+      postText.toLowerCase().includes(extra.slice(0, Math.min(80, extra.length)).toLowerCase());
+    scraped = duplicate ? postText.slice(0, maxSourceChars) : `${postText}\n\n---\n${extra}`.slice(0, maxSourceChars);
+  }
   return {
     index,
     source_kind: record.source_kind,
@@ -2852,10 +3036,136 @@ const GEMINI_SEO_RESPONSE_SCHEMA = {
   required: ['title', 'slug', 'short_description', 'description'],
 };
 
+function buildLinkedInPostSeoInput(
+  record: SiteJobRecord,
+  sourceContext: string,
+): { jobInput: Record<string, unknown>; workingRecord: SiteJobRecord; compact: boolean } {
+  const postRaw = (record.linkedin_post_text ?? record.description ?? record.short_description ?? '').trim();
+  const compact = postRaw.length > 2_200;
+  const postText = postRaw.slice(0, compact ? 1_800 : 3_200);
+  const parsed = postText ? parseLinkedInHiringPost(postText) : {};
+  const title =
+    record.title && record.title !== 'Job opening'
+      ? record.title
+      : parsed.title?.trim() || record.title;
+  const company =
+    record.company && record.company !== 'Unknown'
+      ? record.company
+      : parsed.company?.trim() || record.company;
+
+  const workingRecord: SiteJobRecord = {
+    ...record,
+    title,
+    company,
+    linkedin_post_text: postText || record.linkedin_post_text,
+    description: postText.slice(0, 1_200),
+    short_description: record.short_description?.slice(0, 400) ?? record.short_description,
+  };
+
+  const trimmedContext = sourceContext.slice(0, compact ? 500 : 900);
+  const jobInput = jobRecordForSeoPrompt(workingRecord, 0, trimmedContext, compact ? 1_800 : 3_200);
+  return { jobInput, workingRecord, compact };
+}
+
+function extractGeminiSeoResponseText(payload: Record<string, unknown>): string {
+  const blockReason = (payload.promptFeedback as { blockReason?: string } | undefined)?.blockReason;
+  if (blockReason) {
+    throw new Error(
+      `Gemini blocked this job content (${blockReason}). Edit the post text or skip Make SEO for this listing.`,
+    );
+  }
+  const candidates = payload.candidates as Array<{
+    content?: { parts?: Array<{ text?: string }> };
+    finishReason?: string;
+  }> | undefined;
+  const first = candidates?.[0];
+  const text = first?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+  if (!text.trim() && first?.finishReason === 'SAFETY') {
+    throw new Error('Gemini safety filter blocked SEO for this post. Skip or edit sensitive wording, then retry.');
+  }
+  return text;
+}
+
+async function geminiSeoOptimizeLinkedInPost(
+  record: SiteJobRecord,
+  sourceContext: string,
+  customInstructions?: string,
+): Promise<{ record: SiteJobRecord; usedKeyIndex: number; model: string }> {
+  const { jobInput, workingRecord, compact } = buildLinkedInPostSeoInput(record, sourceContext);
+  const instruction = buildGeminiSeoLinkedInPostPrompt(jobInput, compact, customInstructions);
+  const maxOutputTokens = Math.min(
+    compact ? 3_072 : 4_096,
+    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_MAX_OUTPUT_TOKENS') ?? (compact ? '3072' : '4096')) ||
+      (compact ? 3072 : 4096),
+  );
+  const seoTimeout = Math.min(
+    58_000,
+    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS') ?? '58000') || 58_000,
+  );
+  const geminiOpts = {
+    timeoutMs: seoTimeout,
+    maxModels: 3,
+    linkedInPost: true as const,
+  };
+
+  let lastError: Error | null = null;
+
+  for (const useSchema of [true, false]) {
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: instruction }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens,
+        responseMimeType: 'application/json',
+        ...(useSchema ? { responseSchema: GEMINI_SEO_RESPONSE_SCHEMA } : {}),
+      },
+    };
+
+    try {
+      const { payload, usedKeyIndex, model } = await geminiGenerateContentForSeo(body, geminiOpts);
+      const text = extractGeminiSeoResponseText(payload);
+      if (!text.trim()) {
+        throw new Error('Gemini SEO returned no text for this LinkedIn post.');
+      }
+
+      const parsed = parseSeoGeminiPayload(text, workingRecord);
+      return {
+        record: applySeoPayload(
+          {
+            ...workingRecord,
+            linkedin_post_text: record.linkedin_post_text ?? workingRecord.linkedin_post_text,
+          },
+          parsed,
+        ),
+        usedKeyIndex,
+        model,
+      };
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (!useSchema) {
+        break;
+      }
+      console.warn(
+        JSON.stringify({
+          event: 'gemini_seo_linkedin_retry_plain_json',
+          message: lastError.message.slice(0, 200),
+        }),
+      );
+    }
+  }
+
+  throw lastError ?? new Error('LinkedIn post SEO failed.');
+}
+
 async function geminiSeoOptimizeSiteJob(
   record: SiteJobRecord,
   sourceContext: string,
+  customInstructions?: string,
 ): Promise<{ record: SiteJobRecord; usedKeyIndex: number; model: string }> {
+  if (record.source_kind === 'linkedin_post') {
+    return geminiSeoOptimizeLinkedInPost(record, sourceContext, customInstructions);
+  }
+
   const trimmedContext = sourceContext.slice(0, MAX_SEO_SOURCE_FOR_SINGLE_JOB);
   const compactRecord = {
     ...record,
@@ -2863,7 +3173,7 @@ async function geminiSeoOptimizeSiteJob(
     linkedin_post_text: record.linkedin_post_text?.slice(0, 3_000) ?? record.linkedin_post_text,
   };
   const jobInput = jobRecordForSeoPrompt(compactRecord, 0, trimmedContext, MAX_SEO_SOURCE_FOR_SINGLE_JOB);
-  const instruction = buildGeminiSeoSingleJobPrompt(jobInput);
+  const instruction = buildGeminiSeoSingleJobPrompt(jobInput, customInstructions);
 
   const body = {
     contents: [{ role: 'user', parts: [{ text: instruction }] }],
@@ -2878,17 +3188,14 @@ async function geminiSeoOptimizeSiteJob(
     },
   };
 
-  const { payload, usedKeyIndex, model } = await geminiGenerateContentForSeo(body);
+  const { payload, usedKeyIndex, model } = await geminiGenerateContentForSeo(body, { linkedInPost: false });
 
-  const candidates = payload.candidates as Array<{
-    content?: { parts?: Array<{ text?: string }> };
-    finishReason?: string;
-  }> | undefined;
-  const text = candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+  const text = extractGeminiSeoResponseText(payload);
   if (!text.trim()) {
     throw new Error('Gemini SEO returned no text.');
   }
 
+  const candidates = payload.candidates as Array<{ finishReason?: string }> | undefined;
   const finishReason = candidates?.[0]?.finishReason ?? '';
   if (finishReason === 'MAX_TOKENS') {
     console.warn(JSON.stringify({ event: 'gemini_seo_max_tokens', model }));
@@ -4801,39 +5108,88 @@ Deno.serve(async (req) => {
 
   if (mode === 'seo') {
     try {
-      if (getGeminiApiKeys('seo').length === 0) {
+      const rawJob = requestBody.job;
+      if (!rawJob) {
+        return jsonResponse({ ok: false, error: 'Missing job payload for SEO mode.' }, 400);
+      }
+
+      const isLinkedInPost = rawJob.source_kind === 'linkedin_post';
+      if (getGeminiApiKeysForMakeSeo(isLinkedInPost).length === 0) {
         return jsonResponse(
           {
             ok: false,
-            error:
-              'GEMINI_API_KEY_SEO or GEMINI_API_KEY is required for Make SEO. Add keys in Edge Function secrets.',
+            error: isLinkedInPost
+              ? 'Gemini API key required for Make SEO. Set GEMINI_API_KEY_SEO, GEMINI_API_KEY, or GEMINI_API_KEY_LINKEDIN_POSTS in Edge Function secrets.'
+              : 'GEMINI_API_KEY_SEO or GEMINI_API_KEY is required for Make SEO. Add keys in Edge Function secrets.',
           },
           502,
         );
       }
-
-      const rawJob = requestBody.job;
-      if (!rawJob || typeof rawJob.title !== 'string' || !rawJob.title.trim()) {
-        return jsonResponse({ ok: false, error: 'Missing job payload for SEO mode.' }, 400);
+      const postText = [
+        typeof rawJob.linkedin_post_text === 'string' ? rawJob.linkedin_post_text.trim() : '',
+        typeof rawJob.description === 'string' ? rawJob.description.trim() : '',
+        typeof rawJob.short_description === 'string' ? rawJob.short_description.trim() : '',
+      ].find((s) => s.length > 0) ?? '';
+      const titleOk = typeof rawJob.title === 'string' && rawJob.title.trim().length > 0;
+      if (!titleOk && postText.length < 40) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              'Missing job title and post text for SEO. Re-fetch this job or paste linkedin_post_text before Make SEO.',
+          },
+          400,
+        );
       }
 
       const sourceContext =
         (typeof requestBody.seo_source_context === 'string' && requestBody.seo_source_context) ||
         (typeof rawJob.seo_source_context === 'string' && rawJob.seo_source_context) ||
-        '';
+        postText;
 
-      const record = stripClientReviewFields(rawJob);
+      const record = stripClientReviewFields({
+        ...rawJob,
+        title: titleOk ? rawJob.title.trim() : 'Job opening',
+        source_kind: isLinkedInPost ? 'linkedin_post' : rawJob.source_kind,
+        linkedin_post_text: isLinkedInPost
+          ? postText || rawJob.linkedin_post_text
+          : rawJob.linkedin_post_text,
+        description: postText || rawJob.description,
+      });
       const seoStarted = Date.now();
       const hardCapMs = Math.min(
-        125_000,
+        isLinkedInPost ? 98_000 : 125_000,
         Number(Deno.env.get('GEMINI_SEO_HARD_CAP_MS') ?? String(GEMINI_SEO_HARD_CAP_MS)) || GEMINI_SEO_HARD_CAP_MS,
       );
 
+      const customInstructions =
+        (typeof requestBody.seo_custom_instructions === 'string' && requestBody.seo_custom_instructions.trim()) ||
+        (typeof rawJob.seo_custom_instructions === 'string' && rawJob.seo_custom_instructions.trim()) ||
+        '';
+
+      console.log(
+        JSON.stringify({
+          event: 'gemini_seo_start',
+          source_kind: record.source_kind,
+          title: record.title,
+          post_chars: postText.length,
+          context_chars: sourceContext.length,
+          custom_instructions_chars: customInstructions.length,
+        }),
+      );
+
       const seoResult = await Promise.race([
-        geminiSeoOptimizeSiteJob(record, sourceContext),
+        geminiSeoOptimizeSiteJob(record, sourceContext, customInstructions || undefined),
         new Promise<{ record: SiteJobRecord; usedKeyIndex: number; model: string }>((_, reject) => {
           setTimeout(
-            () => reject(new Error('SEO optimization exceeded the server time limit. Retry or use a shorter job description.')),
+            () =>
+              reject(
+                new Error(
+                  isLinkedInPost
+                    ? 'LinkedIn post SEO timed out on the server. Retry once; if it repeats, check GEMINI_API_KEY and Edge logs.'
+                    : 'SEO optimization exceeded the server time limit. Retry or use a shorter job description.',
+                ),
+              ),
             hardCapMs,
           );
         }),
@@ -4846,26 +5202,54 @@ Deno.serve(async (req) => {
         is_likely_hiring_post?: boolean;
       };
 
+      const contextCap = isLinkedInPost ? 900 : MAX_SEO_SOURCE_FOR_SINGLE_JOB;
+      const runtimeMs = Date.now() - seoStarted;
+
       return jsonResponse({
         ok: true,
         mode: 'seo',
         job: {
           ...seoResult.record,
-          seo_source_context: sourceContext.slice(0, MAX_SEO_SOURCE_FOR_SINGLE_JOB),
+          seo_source_context: sourceContext.slice(0, contextCap),
           seo_optimized: true,
-          source_kind: incoming.source_kind ?? seoResult.record.source_kind,
+          seo_show_preview: true,
+          seo_custom_instructions: customInstructions.slice(0, MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS) || null,
+          seo_meta: {
+            gemini_model: seoResult.model,
+            gemini_key_index: seoResult.usedKeyIndex,
+            runtime_ms: runtimeMs,
+            seo_profile: isLinkedInPost ? 'linkedin_post' : 'standard',
+            had_custom_instructions: customInstructions.length > 0,
+          },
+          source_kind: incoming.source_kind ?? seoResult.record.source_kind ?? 'linkedin_post',
           linkedin_post_text: incoming.linkedin_post_text ?? seoResult.record.linkedin_post_text ?? null,
           needs_review: false,
           is_likely_hiring_post: incoming.is_likely_hiring_post ?? seoResult.record.is_likely_hiring_post,
         },
+        seo_preview: {
+          title: seoResult.record.title,
+          slug: seoResult.record.slug,
+          short_description: seoResult.record.short_description,
+          description: seoResult.record.description,
+          responsibilities: seoResult.record.responsibilities,
+          eligibility: seoResult.record.eligibility,
+          skills: seoResult.record.skills,
+          category: seoResult.record.category,
+          job_type: seoResult.record.job_type,
+          work_mode: seoResult.record.work_mode,
+        },
         gemini_status: 'ok',
         gemini_model: seoResult.model,
         gemini_key_index: seoResult.usedKeyIndex,
-        runtime_ms: Date.now() - seoStarted,
+        runtime_ms: runtimeMs,
+        seo_profile: isLinkedInPost ? 'linkedin_post' : 'standard',
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : 'SEO optimization failed.';
-      return jsonResponse({ ok: false, error: message, mode: 'seo' }, 502);
+      const hint = isGemini429Error(message)
+        ? ' Wait a few seconds between jobs, or add more keys in GEMINI_API_KEYS.'
+        : '';
+      return jsonResponse({ ok: false, error: `${message}${hint}`, mode: 'seo' }, 502);
     }
   }
 
@@ -5124,27 +5508,38 @@ Deno.serve(async (req) => {
       };
     }
 
-    jobs = jobs.filter(
-      (j) =>
+    jobs = jobs.filter((j) => {
+      if (j.source_kind === 'linkedin_post' && fetchChannel === 'linkedin_posts') {
+        return true;
+      }
+      return (
         mentionsVizagContext(j) ||
         looksLikeIndividualJobApplyUrl(j.apply_url ?? j.source_url ?? '') ||
-        (fetchChannel === 'indeed' && isIndeedUrl(j.apply_url ?? j.source_url ?? '')),
-    );
+        (fetchChannel === 'indeed' && isIndeedUrl(j.apply_url ?? j.source_url ?? ''))
+      );
+    });
+
+    if (fetchChannel === 'linkedin_posts' && linkedinPostJobs.length > 0) {
+      jobs = dedupeJobs([...linkedinPostJobs, ...jobs]);
+    }
 
     if (fetchChannel === 'vizag_it') {
       jobs = jobs.filter((j) => looksLikeVizagItRole(j));
     }
 
     const rawJobs = jobs;
-    const mappedJobs = dedupeSiteJobs(rawJobs.map((j) => toSiteJobRecord(j, fetchInstant)));
+    const mappedBeforeDedupe = rawJobs.map((j) => toSiteJobRecord(j, fetchInstant));
+    const mappedJobs = dedupeSiteJobs(mappedBeforeDedupe);
     const sourceContextMap = buildSourceContextMap(rawJobs);
 
     markPhase('map_done');
     let siteJobs = mappedJobs.map((job) => {
-      const raw = rawJobs.find(
-        (r) =>
-          (r.apply_url ?? r.source_url).toLowerCase() === (job.apply_link || job.source_url).toLowerCase(),
-      );
+      const raw = rawJobs.find((r) => {
+        const rawKey = siteJobDedupeKey(
+          toSiteJobRecord(r, fetchInstant),
+        );
+        return rawKey === siteJobDedupeKey(job);
+      });
       let posted_at = job.posted_at;
       if (
         job.source_name === 'linkedin.com' &&
@@ -5160,7 +5555,10 @@ Deno.serve(async (req) => {
       return {
         ...job,
         posted_at,
-        seo_source_context: lookupSourceContext(job, sourceContextMap),
+        seo_source_context:
+          raw?.source_kind === 'linkedin_post'
+            ? (raw.linkedin_post_text ?? job.linkedin_post_text ?? '').slice(0, 2_000)
+            : lookupSourceContext(job, sourceContextMap),
         seo_optimized: false,
         source_kind:
           raw?.source_kind ??
@@ -5247,6 +5645,9 @@ Deno.serve(async (req) => {
       linkedin_content_scrape_chars: linkedinDiscoverMeta?.linkedin_content_scrape_chars ?? [],
       linkedin_content_login_wall_pages: linkedinDiscoverMeta?.linkedin_content_login_wall_pages ?? 0,
       linkedin_posts_in_jobs: rawJobs.filter((j) => j.source_kind === 'linkedin_post').length,
+      linkedin_posts_mapped_before_dedupe: mappedBeforeDedupe.filter((j) => j.source_kind === 'linkedin_post')
+        .length,
+      linkedin_posts_after_site_dedupe: mappedJobs.filter((j) => j.source_kind === 'linkedin_post').length,
       linkedin_post_parse_mode: linkedinPostParseMode,
       linkedin_primary_content_url: LINKEDIN_VIZAG_24H_CONTENT_URL,
       linkedin_jobs_listing_url:

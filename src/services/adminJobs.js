@@ -303,9 +303,68 @@ const invalidatePublicJobCache = () => {
   sessionStorage.removeItem('vizagJobs');
 };
 
+const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;
+
+const isInvalidApplyLink = (value) => {
+  const trimmed = normalizeText(value);
+  return !trimmed || INVALID_APPLY_TOKENS.test(trimmed);
+};
+
+/** Normalize fetched / SEO jobs before insert (stable slug, required fields, valid apply link). */
+export const sanitizeExternalJobForInsert = (values) => {
+  const title = normalizeText(values?.title) || 'Job opening';
+  const company = normalizeText(values?.company) || 'Unknown';
+  const postedAt = values?.posted_at;
+  let slug = normalizeText(values?.slug);
+  if (!slug) {
+    slug = createSuggestedSlug({ title, company, postedAt });
+  }
+  if (!slug) {
+    slug = slugify(`${title}-${company}`);
+  }
+
+  let applyLink = normalizeText(values?.apply_link);
+  if (isInvalidApplyLink(applyLink)) {
+    applyLink = normalizeText(values?.source_url) || '';
+  }
+
+  const {
+    seo_source_context: _seoCtx,
+    seo_optimized: _seoOpt,
+    seo_custom_instructions: _seoInstr,
+    seo_meta: _seoMeta,
+    seo_show_preview: _seoPreview,
+    linkedin_post_text: _post,
+    needs_review: _review,
+    is_likely_hiring_post: _hiring,
+    source_kind: _kind,
+    ...rest
+  } = values ?? {};
+
+  return {
+    ...rest,
+    title,
+    company,
+    slug,
+    apply_link: applyLink || null,
+    location: normalizeText(values?.location) || REQUIRED_DEFAULTS.location,
+    category: normalizeText(values?.category) || 'General',
+    job_type: normalizeText(values?.job_type) || 'Full-time',
+    experience: normalizeText(values?.experience) || REQUIRED_DEFAULTS.experience,
+    warning:
+      normalizeText(values?.warning) ||
+      'Verify job details on the employer site before sharing personal documents or payments. Never pay a fee to apply.',
+  };
+};
+
 const mapError = (error, fallbackMessage) => {
   if (error?.code === '23505' || error?.message?.toLowerCase().includes('duplicate key')) {
     return new Error('That slug already exists. Please adjust the slug and try again.');
+  }
+  if (error?.code === '23502') {
+    return new Error(
+      `Missing required field: ${error?.message || 'check title, company, category, and job type.'}`,
+    );
   }
 
   return new Error(error?.message || fallbackMessage);
@@ -436,8 +495,26 @@ export const createAdminJob = async (values, statusOverride) => {
     throw new Error('Supabase is not configured.');
   }
 
-  const payload = serializeJobForm(values, statusOverride);
-  const { data, error } = await supabase.from(JOBS_TABLE).insert(payload).select('*').single();
+  const sanitized = sanitizeExternalJobForInsert(values);
+  let payload = serializeJobForm(sanitized, statusOverride);
+
+  if (!payload.title || !payload.company || !payload.slug) {
+    throw new Error('Missing title, company, or slug. Edit the job or re-run Make SEO, then publish again.');
+  }
+  if (!payload.category || !payload.job_type) {
+    throw new Error('Missing category or job type. Edit the job before publishing.');
+  }
+
+  const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();
+
+  let { data, error } = await insertOnce(payload);
+
+  if (error?.code === '23505' && payload.slug) {
+    const suffix = Date.now().toString(36).slice(-5);
+    const nextSlug = `${payload.slug}-${suffix}`.replace(/-+/g, '-').slice(0, 160);
+    payload = { ...payload, slug: nextSlug };
+    ({ data, error } = await insertOnce(payload));
+  }
 
   if (error) {
     throw mapError(error, 'Could not create the job.');
