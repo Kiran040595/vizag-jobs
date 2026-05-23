@@ -9,6 +9,11 @@ import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { isJobFresh } from '../lib/jobFreshness';
 import NewBadge from '../components/NewBadge';
+import JobDescriptionContent from '../components/JobDescriptionContent';
+import {
+  looksLikeStructuredJobDescription,
+  stripMarkdownForPlainText,
+} from '../lib/jobDescriptionDisplay';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -114,9 +119,16 @@ export default function JobDetailsPage() {
   const skills = splitCommaValues(job?.skills);
   const responsibilities = splitCommaValues(job?.responsibilities);
   const eligibility = splitCommaValues(job?.eligibility);
+  const structuredDescription = looksLikeStructuredJobDescription(job?.description);
+  const showSeparateSections = !structuredDescription;
 
   const jobTitle = job ? `${job.title} at ${job.company} - Vizag Jobs` : 'Job Details - Vizag Jobs';
-  const jobDescription = job ? `Apply for ${job.title} position at ${job.company} in ${job.location}. ${job.description || 'Find more job opportunities in Visakhapatnam.'}` : 'Job details and application information for positions in Visakhapatnam.';
+  const jobDescription = job
+    ? `Apply for ${job.title} position at ${job.company} in ${job.location}. ${
+        stripMarkdownForPlainText(job.shortDescription || job.description, 200) ||
+        'Find more job opportunities in Visakhapatnam.'
+      }`
+    : 'Job details and application information for positions in Visakhapatnam.';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
@@ -181,26 +193,26 @@ export default function JobDetailsPage() {
               <p><span className="font-semibold text-slate-900">Experience:</span> {job.experience || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Fresher:</span> {job.isFresher || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Salary:</span> {job.salary || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Source:</span> {job.source || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Posted At:</span> {job.postedAt ? new Date(job.postedAt).toLocaleDateString() : 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Status:</span> {job.status || 'N/A'}</p>
             </div>
 
-            {job.shortDescription ? (
+            {job.shortDescription && !structuredDescription ? (
               <div className="mt-6">
-                <h2 className="text-lg font-bold text-slate-900">Short Description</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-700">{job.shortDescription}</p>
+                <h2 className="text-lg font-bold text-slate-900">Overview</h2>
+                <p className="mt-2 text-sm leading-7 text-slate-700">{job.shortDescription}</p>
               </div>
             ) : null}
 
             {job.description ? (
               <div className="mt-6">
-                <h2 className="text-lg font-bold text-slate-900">Full Description</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-700">{job.description}</p>
+                <h2 className="text-lg font-bold text-slate-900">Job Details</h2>
+                <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:p-5">
+                  <JobDescriptionContent markdown={job.description} />
+                </div>
               </div>
             ) : null}
 
-            {skills.length > 0 ? (
+            {showSeparateSections && skills.length > 0 ? (
               <div className="mt-6">
                 <h2 className="text-lg font-bold text-slate-900">Skills</h2>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -216,7 +228,7 @@ export default function JobDetailsPage() {
               </div>
             ) : null}
 
-            {responsibilities.length > 0 ? (
+            {showSeparateSections && responsibilities.length > 0 ? (
               <div className="mt-6">
                 <h2 className="text-lg font-bold text-slate-900">Responsibilities</h2>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
@@ -227,7 +239,7 @@ export default function JobDetailsPage() {
               </div>
             ) : null}
 
-            {eligibility.length > 0 ? (
+            {showSeparateSections && eligibility.length > 0 ? (
               <div className="mt-6">
                 <h2 className="text-lg font-bold text-slate-900">Eligibility</h2>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">

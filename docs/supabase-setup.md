@@ -155,7 +155,7 @@ The **Existing Jobs** page links to `/admin/fetch` for discovery; manage publish
 **Admin workflow (two steps):**
 
 1. **Fetch external jobs** — `POST` with `{ "mode": "fetch" }` (default). **Apify** (when `APIFY_API_TOKEN` is set) fetches LinkedIn [jobs in Vishakhapatnam, past 24h](https://in.linkedin.com/jobs/jobs-in-vishakhapatnam?keywords=&location=Vishakhapatnam&geoId=106055329&distance=25&f_TPR=r86400&position=1&pageNum=0) and [Vizag content posts, past 24h](https://www.linkedin.com/search/results/content/?keywords=vizag&origin=CLUSTER_EXPANSION&datePosted=%5B%22past-24h%22%5D). Posts are parsed with **Gemini** when `GEMINI_API_KEY` is set. Naukri still uses **Firecrawl**. Each job has `seo_optimized: false` until step 2.
-2. **Make SEO** (per card in admin) — `POST` with `{ "mode": "seo", "job": { ... }, "seo_source_context": "..." }`. One Gemini call per job for portal-ready SEO copy. Requires **`GEMINI_API_KEY`** (optional **`GEMINI_API_KEYS`** for failover).
+2. **Make SEO** (per card in admin) — `POST` with `{ "mode": "seo", "job": { ... }, "seo_source_context": "..." }`. One Gemini call per job using the **8-task Vizag SEO prompt** (title, meta, slug, Markdown description + FAQs, JSON-LD JobPosting, hashtags, keyword density). Output extras appear in `seo_meta` on the review card. Requires **`GEMINI_API_KEY`** (optional **`GEMINI_API_KEYS`** for failover).
 3. **Approve & publish** — inserts via `createAdminJob` (same as manual form). Publishing without SEO shows a warning only (not blocked).
 
 **Fetch pipeline details:**
@@ -286,7 +286,7 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `GEMINI_SEO_FALLBACK_MODELS` | Comma-separated fallbacks if primary returns 429 quota (default `gemini-2.5-flash,gemini-2.0-flash`). |
 | `GEMINI_SEO_TRY_FALLBACK_MODELS` | Set `false` to disable model fallback on quota errors (default **true**). |
 | `GEMINI_SEO_TIMEOUT_MS` | Per-request Gemini timeout for Make SEO (default **72000** ms). |
-| `GEMINI_SEO_MAX_RETRIES` | Retries per model for Make SEO (default **1**). |
+| `GEMINI_SEO_MAX_RETRIES` | Retries per key+model on 429/overload before trying the next key (default **2** = 3 attempts with backoff). |
 | `GEMINI_MAX_RETRIES` | Retries for batch/legacy Gemini (default **4**). |
 | `FETCH_JOB_DETAIL_SCRAPE_LIMIT` | Max job URLs scraped per run (default **6**, max **20**). Lower this if you see HTTP **546**. |
 | `FETCH_JOB_SEO_LIMIT` | Max jobs sent to Gemini SEO (defaults to scrape limit). |

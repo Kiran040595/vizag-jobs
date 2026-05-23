@@ -1,5 +1,6 @@
 import JobCard from './JobCard';
 import { getJobDetailPath } from '../lib/jobRoutes';
+import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 
 const JobList = ({ jobs }) => {
   const jobsToShow = jobs || [];
@@ -41,7 +42,10 @@ const JobList = ({ jobs }) => {
             location={job.location}
             experience={job.experience}
             salary={job.salary}
-            description={job.description}
+            description={
+              job.shortDescription ||
+              stripMarkdownForPlainText(job.description, 160)
+            }
             tags={job.tags}
             postedAt={job.postedAt}
           />
