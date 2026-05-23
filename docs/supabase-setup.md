@@ -148,6 +148,8 @@ The admin **Fetch external jobs** page (`/admin/fetch`) calls the Supabase Edge 
 
 **Per-source fetch** — `POST` with `{ "mode": "fetch", "fetch_channel": "naukri" }` (or `linkedin_jobs`, `linkedin_posts`, `vizag_it`, `indeed`). Only that source runs. Use channel-specific secrets (below) to spread API load across keys.
 
+**LinkedIn Posts presets** — for `fetch_channel: "linkedin_posts"`, add `linkedin_post_preset`: `general` (default), `it`, `bank`, or `custom`. For `custom`, also send `linkedin_custom_search_url` (full LinkedIn content search URL with past-24h filter). The admin fetch page uses a single **LinkedIn Posts** card with a preset dropdown. Response `filters_applied` includes `linkedin_post_preset`, `linkedin_post_preset_label`, and `linkedin_search_queries_used`; each job may carry the same preset fields for review badges.
+
 The **Existing Jobs** page links to `/admin/fetch` for discovery; manage published listings stays on `/admin/jobs`.
 
 **Admin workflow (two steps):**
@@ -236,7 +238,15 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `FETCH_LINKEDIN_PROVIDER` | `apify` (default if token set), `firecrawl`, or `apify_then_firecrawl`. |
 | `APIFY_LINKEDIN_JOBS_ACTOR` | Jobs actor (default `curious_coder~linkedin-jobs-scraper` — uses your Vizag jobs listing URL). |
 | `APIFY_LINKEDIN_JOBS_ACTOR_FALLBACK` | Second jobs actor if first fails (default `harvestapi~linkedin-job-search`). |
-| `APIFY_LINKEDIN_POSTS_ACTOR` | Posts actor (default **`harvestapi~linkedin-post-search`** — keyword search, past 24h, pay-per-result, no cookies). |
+| `APIFY_LINKEDIN_VIZAG_POSTS_ACTOR` | LinkedIn **Posts** actor slug (default **`harvestapi~linkedin-post-search`**). Sync API: `POST https://api.apify.com/v2/acts/harvestapi~linkedin-post-search/run-sync-get-dataset-items`. Console actor id: [buIWk2uOUzTmcLsuB](https://console.apify.com/actors/buIWk2uOUzTmcLsuB). |
+| `APIFY_LINKEDIN_POSTS_ACTOR` | Optional override — use **`harvestapi~linkedin-post-search`** only. Do **not** use `curious_coder~linkedin-post-search-scraper` (`urls` input). |
+| `FETCH_LINKEDIN_POST_SEARCH_QUERIES` | Comma-separated searches for harvestapi posts actor (general default: **`jobs in vizag,#VizagJobs`**). |
+| `FETCH_LINKEDIN_POST_SEARCH` | Override with a **single** search string (replaces the query list). |
+| `FETCH_LINKEDIN_CONTENT_POSTS_LIMIT` | Max posts to map and parse after Apify (default **20**). `maxPosts` per search query is half of this (e.g. **10** × 2 queries ≈ 20 raw items). |
+| `FETCH_LINKEDIN_POST_SEARCH_PAGE` | `startPage` for harvestapi actor (default **1**). |
+| `FETCH_LINKEDIN_POSTS_EXTRA_ACTORS` | Set `true` to allow fallback actors after `buIWk2uOUzTmcLsuB` on general preset (default **false** — avoids duplicate runs with 50+ unrelated posts). |
+| `FETCH_LINKEDIN_POST_SEARCH_PAGE` | Page number for Vizag posts actor (default **1**). |
+| `APIFY_LINKEDIN_POSTS_ACTOR` | Override posts actor for all presets. If unset, general uses `APIFY_LINKEDIN_VIZAG_POSTS_ACTOR`, then falls back to **`harvestapi~linkedin-post-search`**. |
 | `APIFY_LINKEDIN_POSTS_ACTOR_FALLBACK` | Second posts actor (default `curious_coder~linkedin-post-search-scraper`; requires rental + often cookies). |
 | `APIFY_LINKEDIN_POSTS_COOKIE_JSON` | Only for **curious_coder** content-URL scraper. Not needed for harvestapi. |
 | `APIFY_LINKEDIN_USER_AGENT` | Optional browser user-agent string passed to the posts actor. |
@@ -246,7 +256,7 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `APIFY_LINKEDIN_POSTS_INPUT_JSON` | Optional full JSON input override for posts actor. |
 | `APIFY_SYNC_TIMEOUT_SEC` | Max wait per Apify sync run (default **60–90**). |
 | `FETCH_LINKEDIN_FALLBACK_FIRECRAWL` | If Apify returns 0 items, try Firecrawl LinkedIn scrape (default **true**). |
-| `FETCH_LINKEDIN_FALLBACK_FIRECRAWL_POSTS` | If Apify jobs OK but posts are 0, scrape content URLs via Firecrawl (default **true**). |
+| `FETCH_LINKEDIN_FALLBACK_FIRECRAWL_POSTS` | If Apify posts are 0, try Firecrawl content URLs. Default **false** when `APIFY_API_TOKEN_LINKEDIN_POSTS` is set (Firecrawl blocks linkedin.com). Set `true` only to opt in. |
 | `FIRECRAWL_API_KEY` | Required for **Naukri** (`FETCH_JOB_SOURCES=both` or `naukri`). LinkedIn fallback. |
 | `FIRECRAWL_API_KEYS` | Optional. Extra Firecrawl keys (comma- or newline-separated). Each search/scrape picks a **random** key order; on 429/503/quota errors the next key is tried automatically. |
 | `SCRAPFLY_API_KEY` | Fallback if Firecrawl is not set; requires `SCRAPFLY_SCRAPE_URLS` (comma-separated URLs to scrape). |
@@ -258,12 +268,16 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `FETCH_LINKEDIN_JOBS_LISTING_LIMIT` | Max jobs parsed from listing page (default **20**). |
 | `FETCH_LINKEDIN_CONTENT_24H` | Set `false` to disable LinkedIn content-search discovery (default **true**). |
 | `FETCH_LINKEDIN_CONTENT_KEYWORDS` | Comma-separated keywords for content search (default `vizag,visakhapatnam,jobs vizag`). |
+| `FETCH_LINKEDIN_CONTENT_URL` | Override general preset content-search URL (same as built-in Vizag 24h URL). |
+| `FETCH_LINKEDIN_POST_PRESET_IT_URL` | Optional full LinkedIn content SERP URL for **IT** preset (admin dropdown). |
+| `FETCH_LINKEDIN_POST_PRESET_BANK_URL` | Optional full LinkedIn content SERP URL for **Bank** preset. |
+| `FETCH_LINKEDIN_POST_PRESETS_JSON` | Optional JSON map to override preset `keywords`, `urls`, `label`, or `categoryDefault` per id (`general`, `it`, `bank`). |
 | `FETCH_LINKEDIN_CONTENT_PAGES` | Max content SERP pages to scrape per run (default **3**, max **5**). |
 | `FETCH_JOB_SOURCES` | `linkedin` (LinkedIn only), `naukri`, or `both` (default). |
 | `FETCH_REQUIRE_POSTED_WITHIN_24H` | Set `false` to include jobs without a parsed `posted_at` in `jobs[]` (default **true**). |
 | `FETCH_LINKEDIN_SCRAPE_WAIT_MS` | Extra wait for LinkedIn pages in Firecrawl (default **4000**). |
 | `FETCH_LINKEDIN_CONTENT_POSTS` | Set `false` to skip hiring-post extraction from the content feed (default **true**). |
-| `FETCH_LINKEDIN_CONTENT_POSTS_LIMIT` | Max hiring posts per fetch (default **12**). |
+| `FETCH_LINKEDIN_CONTENT_POSTS_LIMIT` | Max hiring posts per fetch (default **20**). Response includes `apify_posts_raw_count` (dataset items) and `apify_posts_count` (after Vizag/hiring filters). |
 | `FETCH_LINKEDIN_SEARCH_POSTS` | Firecrawl-only: web search for `site:linkedin.com/posts` when feed scrape is empty (default **false**; set `true` for Firecrawl path). |
 | `FETCH_LINKEDIN_SEARCH_LIMIT` | Results per hiring search query (default **5**). |
 | `FETCH_LINKEDIN_SKIP_JOB_VIEW_SCRAPE` | Skip `/jobs/view/` scrapes when posts were found (default **true**). |

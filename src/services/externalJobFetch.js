@@ -200,16 +200,31 @@ export async function fetchExternalJobs(accessToken) {
 }
 
 /**
+ * @typedef {object} LinkedInPostsFetchOptions
+ * @property {'general' | 'it' | 'bank' | 'custom'} [preset]
+ * @property {string} [customSearchUrl] Required when preset is custom
+ */
+
+/**
  * Fetch from a single source channel (admin fetch page buttons).
  * @param {string} accessToken
  * @param {ExternalFetchChannel} fetchChannel
+ * @param {LinkedInPostsFetchOptions} [options] LinkedIn Posts preset (linkedin_posts only)
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function fetchExternalJobsBySource(accessToken, fetchChannel) {
-  return callFetchExternalJobsEdge(accessToken, {
+export async function fetchExternalJobsBySource(accessToken, fetchChannel, options = {}) {
+  const body = {
     mode: 'fetch',
     fetch_channel: fetchChannel,
-  });
+  };
+  if (fetchChannel === 'linkedin_posts') {
+    const preset = options.preset || 'general';
+    body.linkedin_post_preset = preset;
+    if (preset === 'custom' && options.customSearchUrl?.trim()) {
+      body.linkedin_custom_search_url = options.customSearchUrl.trim();
+    }
+  }
+  return callFetchExternalJobsEdge(accessToken, body);
 }
 
 /**

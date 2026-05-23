@@ -23,7 +23,7 @@ export const EXTERNAL_FETCH_SOURCES = [
     title: 'LinkedIn Posts',
     description: 'Hiring posts from LinkedIn feed search (vizag, past 24h). Apify harvestapi + optional Gemini parse.',
     providerHint: 'Apify + Gemini',
-    secretHint: 'APIFY_API_TOKEN_LINKEDIN_POSTS, GEMINI_API_KEY_LINKEDIN_POSTS',
+    secretHint: 'APIFY_API_TOKEN (or APIFY_API_TOKEN_LINKEDIN_POSTS), GEMINI_API_KEY_LINKEDIN_POSTS',
     accent: 'border-indigo-200 bg-indigo-50 hover:border-indigo-300',
   },
   {

@@ -4,12 +4,21 @@ import {
   discoverLinkedInViaApify,
   getApifyToken,
   getApifyTokenForRole,
+  getLinkedInContentSearchUrls,
   getLinkedInProvider,
   isApifyRentOrMissingError,
   linkedInApifyFallbackEnabled,
   linkedInApifyPostsFallbackEnabled,
+  linkedInContentPostsLimit,
+  resolvePostSearchQueries,
+  shouldUseFirecrawlLinkedInPostsFallback,
   validateApifyEnvJsonSecrets,
 } from './apify-linkedin.ts';
+import {
+  LINKEDIN_VIZAG_24H_CONTENT_URL,
+  resolveLinkedInPostPreset,
+  type ResolvedLinkedInPostPreset,
+} from './linkedin-post-presets.ts';
 import {
   channelLabel,
   type FetchChannel,
@@ -47,6 +56,9 @@ type ExtractedJob = {
   linkedin_post_text?: string | null;
   needs_review?: boolean;
   is_likely_hiring_post?: boolean;
+  linkedin_post_preset?: string | null;
+  linkedin_post_preset_label?: string | null;
+  category?: string | null;
 };
 
 type LinkedInContentPost = {
@@ -94,6 +106,8 @@ type SiteJobRecord = {
   linkedin_post_text?: string | null;
   needs_review?: boolean;
   is_likely_hiring_post?: boolean;
+  linkedin_post_preset?: string | null;
+  linkedin_post_preset_label?: string | null;
 };
 
 const corsHeaders: Record<string, string> = {
@@ -138,10 +152,6 @@ const NAUKRI_VIZAG_HUB_URL = 'https://www.naukri.com/jobs-in-visakhapatnam';
 const DEFAULT_NAUKRI_SCRAPE_LIMIT = 20;
 
 const DETAIL_SEARCH_QUERIES = [...LINKEDIN_DETAIL_SEARCH_QUERIES, ...NAUKRI_DETAIL_SEARCH_QUERIES];
-
-/** Default LinkedIn content search — Vizag, past 24 hours (matches LinkedIn UI filter). */
-const LINKEDIN_VIZAG_24H_CONTENT_URL =
-  'https://www.linkedin.com/search/results/content/?keywords=vizag&origin=CLUSTER_EXPANSION&datePosted=%5B%22past-24h%22%5D';
 
 /** LinkedIn Jobs SERP — Vishakhapatnam, past 24 hours (f_TPR=r86400). */
 const LINKEDIN_VIZAG_24H_JOBS_LISTING_URL =
@@ -799,29 +809,6 @@ function isPostedWithinCutoff(postedAt: string | null | undefined, cutoffMs: num
   return ts !== null && ts >= cutoffMs;
 }
 
-/** LinkedIn content results: keywords + past-24h filter (matches UI “Past 24 hours”). */
-function buildLinkedInContentSearchUrl(keywords: string): string {
-  const params = new URLSearchParams({
-    keywords,
-    origin: 'CLUSTER_EXPANSION',
-    datePosted: '["past-24h"]',
-  });
-  return `https://www.linkedin.com/search/results/content/?${params.toString()}`;
-}
-
-function getLinkedInContentSearchUrls(): string[] {
-  const overrideUrl = Deno.env.get('FETCH_LINKEDIN_CONTENT_URL')?.trim();
-  if (overrideUrl) {
-    return [overrideUrl];
-  }
-  const raw = Deno.env.get('FETCH_LINKEDIN_CONTENT_KEYWORDS');
-  if (raw?.trim()) {
-    const keywords = raw.split(',').map((k) => k.trim()).filter(Boolean);
-    return keywords.map(buildLinkedInContentSearchUrl);
-  }
-  return [LINKEDIN_VIZAG_24H_CONTENT_URL];
-}
-
 const LINKEDIN_HIRING_SIGNAL_RE =
   /\b(we are hiring|we're hiring|#hiring|hiring now|urgent hiring|walk[- ]?in|walkin|job opening|vacancies|immediate hiring|hiring for|join our team)\b/i;
 const LINKEDIN_JOB_DETAIL_SIGNAL_RE =
@@ -1428,10 +1415,7 @@ function linkedinSearchFallbackEnabled(): boolean {
 }
 
 function defaultLinkedInContentPostsLimit(): number {
-  return Math.min(
-    20,
-    Math.max(10, Number(Deno.env.get('FETCH_LINKEDIN_CONTENT_POSTS_LIMIT') ?? '15') || 15),
-  );
+  return linkedInContentPostsLimit();
 }
 
 async function geminiParseLinkedInPostBatch(
@@ -1603,6 +1587,18 @@ async function geminiParseLinkedInPosts(
   }
 
   return results;
+}
+
+function applyLinkedInPostPresetToJobs(
+  jobs: ExtractedJob[],
+  preset: ResolvedLinkedInPostPreset,
+): ExtractedJob[] {
+  return jobs.map((job) => ({
+    ...job,
+    linkedin_post_preset: preset.id,
+    linkedin_post_preset_label: preset.label,
+    category: preset.categoryDefault,
+  }));
 }
 
 async function convertLinkedInPostsToJobs(
@@ -1974,7 +1970,8 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
     title,
     company,
     location: raw.location?.trim() || parsedPost?.location?.trim() || 'Visakhapatnam',
-    category: isLinkedInPost ? 'General' : inferCategory(md),
+    category:
+      raw.category?.trim() || (isLinkedInPost ? 'General' : inferCategory(md)),
     job_type: inferJobType(md),
     work_mode: isLinkedInPost ? null : inferWorkMode(md),
     experience: raw.experience?.trim() || parsedPost?.experience?.trim() || 'Not specified',
@@ -2002,6 +1999,8 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
     linkedin_post_text: raw.linkedin_post_text ?? (isLinkedInPost ? md : null),
     needs_review: raw.needs_review ?? isLinkedInPost,
     is_likely_hiring_post: raw.is_likely_hiring_post ?? isLinkedInPost,
+    linkedin_post_preset: raw.linkedin_post_preset ?? null,
+    linkedin_post_preset_label: raw.linkedin_post_preset_label ?? null,
   };
 }
 
@@ -2491,6 +2490,10 @@ type FetchRequestBody = {
   seo_source_context?: string;
   /** Admin-only hints appended to the Make SEO Gemini prompt (max ~1200 chars). */
   seo_custom_instructions?: string;
+  /** linkedin_posts only: general | it | bank | custom */
+  linkedin_post_preset?: string;
+  /** Required when linkedin_post_preset is custom */
+  linkedin_custom_search_url?: string;
 };
 
 type GeminiKeyChannel = 'linkedin_posts' | 'seo' | 'default';
@@ -3494,6 +3497,7 @@ async function discoverLinkedInPostsFromSearch(
 async function discoverLinkedInContent(
   firecrawlApiKeys: string[],
   budget?: FetchBudget,
+  postPreset?: ResolvedLinkedInPostPreset,
 ): Promise<{
   job_urls: string[];
   posts: LinkedInContentPost[];
@@ -3503,7 +3507,8 @@ async function discoverLinkedInContent(
   content_login_wall_pages: number;
   search_posts_added: number;
 }> {
-  const searchUrls = getLinkedInContentSearchUrls();
+  const preset = postPreset ?? resolveLinkedInPostPreset('general');
+  const searchUrls = getLinkedInContentSearchUrls(preset);
   const maxPages = Math.min(
     3,
     Math.max(1, Number(Deno.env.get('FETCH_LINKEDIN_CONTENT_PAGES') ?? '1') || 1),
@@ -3590,9 +3595,13 @@ type DiscoverDetailResult = {
   apify_jobs_run_id: string | null;
   apify_posts_run_id: string | null;
   apify_jobs_count: number;
+  apify_posts_raw_count: number;
   apify_posts_count: number;
   apify_jobs_error: string | null;
   apify_posts_error: string | null;
+  linkedin_post_preset: string | null;
+  linkedin_post_preset_label: string | null;
+  linkedin_search_queries_used: string[];
 };
 
 async function discoverLinkedInViaFirecrawl(
@@ -3710,6 +3719,7 @@ async function discoverLinkedInViaFirecrawl(
 async function discoverDetailUrlsForChannel(
   channel: FetchChannel,
   budget?: FetchBudget,
+  linkedInPostPreset?: ResolvedLinkedInPostPreset,
 ): Promise<DiscoverDetailResult> {
   const firecrawlApiKeys = getFirecrawlApiKeys(channel);
   const fetchInstant = new Date().toISOString();
@@ -3733,9 +3743,13 @@ async function discoverDetailUrlsForChannel(
     apify_jobs_run_id: null as string | null,
     apify_posts_run_id: null as string | null,
     apify_jobs_count: 0,
+    apify_posts_raw_count: 0,
     apify_posts_count: 0,
     apify_jobs_error: null as string | null,
     apify_posts_error: null as string | null,
+    linkedin_post_preset: null as string | null,
+    linkedin_post_preset_label: null as string | null,
+    linkedin_search_queries_used: [] as string[],
   };
 
   if (channel === 'naukri') {
@@ -3859,6 +3873,7 @@ async function discoverDetailUrlsForChannel(
   }
 
   if (channel === 'linkedin_posts') {
+    const preset = linkedInPostPreset ?? resolveLinkedInPostPreset('general');
     const linkedinProviderMode = getLinkedInProvider();
     const useApify =
       linkedinProviderMode === 'apify' || linkedinProviderMode === 'apify_then_firecrawl';
@@ -3866,15 +3881,20 @@ async function discoverDetailUrlsForChannel(
 
     let meta = {
       ...emptyMeta,
-      linkedin_content_search_urls: getLinkedInContentSearchUrls(),
+      linkedin_content_search_urls: getLinkedInContentSearchUrls(preset),
+      linkedin_post_preset: preset.id,
+      linkedin_post_preset_label: preset.label,
+      linkedin_search_queries_used: resolvePostSearchQueries(preset),
     };
     let linkedinContentPosts: LinkedInContentPost[] = [];
+    let apify_posts_raw_count = 0;
     let apify_posts_count = 0;
 
     if (useApify && postsToken) {
       validateApifyEnvJsonSecrets();
-      const apifyResult = await discoverLinkedInViaApify(budget, fetchInstant, 'posts_only');
+      const apifyResult = await discoverLinkedInViaApify(budget, fetchInstant, 'posts_only', preset);
       linkedinContentPosts = apifyResult.posts as LinkedInContentPost[];
+      apify_posts_raw_count = apifyResult.apify_posts_raw_count;
       apify_posts_count = apifyResult.apify_posts_count;
       meta = {
         ...meta,
@@ -3883,36 +3903,31 @@ async function discoverDetailUrlsForChannel(
         linkedin_content_posts: linkedinContentPosts,
         linkedin_content_posts_found: linkedinContentPosts.length,
         apify_posts_run_id: apifyResult.apify_posts_run_id,
+        apify_posts_raw_count,
         apify_posts_count,
         apify_posts_error: apifyResult.apify_posts_error,
+        linkedin_search_queries_used: resolvePostSearchQueries(preset),
       };
     }
 
-    if (linkedinContentPosts.length === 0 && firecrawlApiKeys.length > 0 && linkedInApifyPostsFallbackEnabled()) {
-      const content = await discoverLinkedInContent(firecrawlApiKeys, budget);
-      linkedinContentPosts = content.posts;
+    if (linkedinContentPosts.length === 0) {
+      const postsErr = meta.apify_posts_error;
       meta = {
         ...meta,
-        linkedin_provider: useApify && postsToken ? 'apify_firecrawl_posts_fallback' : 'firecrawl',
-        linkedin_content_pages_scraped: content.content_pages_scraped,
-        linkedin_content_search_urls: content.search_urls,
-        linkedin_content_scrape_chars: content.content_scrape_chars,
-        linkedin_content_login_wall_pages: content.content_login_wall_pages,
-        linkedin_search_posts_added: content.search_posts_added,
-        linkedin_content_posts: linkedinContentPosts,
-        linkedin_content_posts_found: linkedinContentPosts.length,
+        apify_posts_error: !postsToken
+          ? 'Set APIFY_API_TOKEN (or APIFY_API_TOKEN_LINKEDIN_POSTS) for LinkedIn posts. Firecrawl cannot scrape linkedin.com (403).'
+          : postsErr ??
+            'Apify returned 0 posts for this preset. Check the actor run in Apify console, try another preset, or verify APIFY_LINKEDIN_VIZAG_POSTS_ACTOR (default: harvestapi~linkedin-post-search).',
       };
-      for (const u of content.job_urls) {
-        found.add(u);
-      }
     }
 
-    if (!postsToken && firecrawlApiKeys.length === 0) {
+    if (!postsToken) {
       return {
         urls: [],
         ...meta,
         apify_posts_error:
-          'Set APIFY_API_TOKEN_LINKEDIN_POSTS or FIRECRAWL_API_KEY_LINKEDIN_POSTS (or FIRECRAWL_API_KEYS)',
+          meta.apify_posts_error ??
+          'Set APIFY_API_TOKEN (or APIFY_API_TOKEN_LINKEDIN_POSTS) for LinkedIn posts. Firecrawl cannot scrape linkedin.com (403).',
       };
     }
 
@@ -3964,6 +3979,7 @@ async function discoverDetailUrlsForFetch(
   let apify_jobs_run_id: string | null = null;
   let apify_posts_run_id: string | null = null;
   let apify_jobs_count = 0;
+  let apify_posts_raw_count = 0;
   let apify_posts_count = 0;
   let apify_jobs_error: string | null = null;
   let apify_posts_error: string | null = null;
@@ -3980,6 +3996,7 @@ async function discoverDetailUrlsForFetch(
     apify_jobs_run_id = apifyResult.apify_jobs_run_id;
     apify_posts_run_id = apifyResult.apify_posts_run_id;
     apify_jobs_count = apifyResult.apify_jobs_count;
+    apify_posts_raw_count = apifyResult.apify_posts_raw_count;
     apify_posts_count = apifyResult.apify_posts_count;
     apify_jobs_error = apifyResult.apify_jobs_error;
     apify_posts_error = apifyResult.apify_posts_error;
@@ -3989,11 +4006,12 @@ async function discoverDetailUrlsForFetch(
     apifySucceeded = apifyResult.apify_jobs_count > 0 || apifyResult.apify_posts_count > 0;
   }
 
+  const postsApifyToken = getApifyTokenForRole('posts');
   const shouldRunFirecrawlPostsOnly =
     firecrawlApiKeys.length > 0 &&
     useApify &&
     apify_posts_count === 0 &&
-    linkedInApifyPostsFallbackEnabled() &&
+    shouldUseFirecrawlLinkedInPostsFallback(Boolean(postsApifyToken)) &&
     (Deno.env.get('FETCH_LINKEDIN_CONTENT_24H') ?? 'true').toLowerCase() !== 'false';
 
   if (shouldRunFirecrawlPostsOnly) {
@@ -4079,6 +4097,7 @@ async function discoverDetailUrlsForFetch(
     apify_jobs_run_id,
     apify_posts_run_id,
     apify_jobs_count,
+    apify_posts_raw_count,
     apify_posts_count,
     apify_jobs_error,
     apify_posts_error,
@@ -5346,9 +5365,20 @@ Deno.serve(async (req) => {
     let linkedinPostJobs: ExtractedJob[] = [];
     let linkedinListingJobs: ExtractedJob[] = [];
     let linkedinPostParseMode: 'gemini' | 'regex' | 'none' = 'none';
+    const linkedInPostPreset =
+      fetchChannel === 'linkedin_posts'
+        ? resolveLinkedInPostPreset(
+            requestBody.linkedin_post_preset,
+            requestBody.linkedin_custom_search_url,
+          )
+        : null;
 
     if (fetchChannel) {
-      linkedinDiscoverMeta = await discoverDetailUrlsForChannel(fetchChannel, budget);
+      linkedinDiscoverMeta = await discoverDetailUrlsForChannel(
+        fetchChannel,
+        budget,
+        linkedInPostPreset ?? undefined,
+      );
       detailUrls = linkedinDiscoverMeta.urls;
       for (const u of linkedinDiscoverMeta.linkedin_content_urls) {
         linkedinContent24hUrlSet.add(u);
@@ -5362,7 +5392,10 @@ Deno.serve(async (req) => {
           fallbackSearch,
           cutoff,
         );
-        linkedinPostJobs = converted.jobs;
+        linkedinPostJobs = applyLinkedInPostPresetToJobs(
+          converted.jobs,
+          linkedInPostPreset ?? resolveLinkedInPostPreset('general'),
+        );
         linkedinPostParseMode = converted.parse_mode;
       }
       if (fetchChannel === 'linkedin_jobs') {
@@ -5659,6 +5692,7 @@ Deno.serve(async (req) => {
       apify_jobs_run_id: linkedinDiscoverMeta?.apify_jobs_run_id ?? null,
       apify_posts_run_id: linkedinDiscoverMeta?.apify_posts_run_id ?? null,
       apify_jobs_count: linkedinDiscoverMeta?.apify_jobs_count ?? 0,
+      apify_posts_raw_count: linkedinDiscoverMeta?.apify_posts_raw_count ?? 0,
       apify_posts_count: linkedinDiscoverMeta?.apify_posts_count ?? 0,
       apify_jobs_error: linkedinDiscoverMeta?.apify_jobs_error ?? null,
       apify_posts_error: linkedinDiscoverMeta?.apify_posts_error ?? null,
@@ -5818,7 +5852,15 @@ Deno.serve(async (req) => {
         linkedin_post_parse_mode: linkedinPostParseMode,
         linkedin_provider: linkedinDiscoverMeta?.linkedin_provider ?? null,
         apify_jobs_count: linkedinDiscoverMeta?.apify_jobs_count ?? 0,
+        apify_posts_raw_count: linkedinDiscoverMeta?.apify_posts_raw_count ?? 0,
         apify_posts_count: linkedinDiscoverMeta?.apify_posts_count ?? 0,
+        linkedin_post_preset: linkedinDiscoverMeta?.linkedin_post_preset ?? null,
+        linkedin_post_preset_label: linkedinDiscoverMeta?.linkedin_post_preset_label ?? null,
+        linkedin_search_queries_used: linkedinDiscoverMeta?.linkedin_search_queries_used ?? [],
+        linkedin_custom_search_url:
+          linkedInPostPreset?.id === 'custom'
+            ? linkedInPostPreset.urls[0] ?? null
+            : null,
       },
       linkedin_content_pages_scraped: linkedinDiscoverMeta?.linkedin_content_pages_scraped ?? 0,
       linkedin_content_posts_found: linkedinDiscoverMeta?.linkedin_content_posts_found ?? 0,
