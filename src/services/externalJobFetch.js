@@ -263,7 +263,23 @@ function resolveSeoSourceContext(job) {
  * @returns {Promise<Record<string, unknown>>}
  */
 function isSeoRateLimitError(message) {
-  return /429|rate limit|quota|retry in/i.test(message);
+  return /429|rate limit|quota|retry in|Wait ~\d+s/i.test(message);
+}
+
+function parseSeoRateLimitWaitMs(message) {
+  const retryIn = message.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
+  if (retryIn) {
+    return Math.ceil(Number(retryIn[1]) * 1000) + 1000;
+  }
+  const waitTilde = message.match(/Wait ~(\d+)s/i);
+  if (waitTilde) {
+    return Number(waitTilde[1]) * 1000 + 1000;
+  }
+  return 20_000;
+}
+
+function sleepMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext = '') {
@@ -281,15 +297,22 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
     seo_custom_instructions: customInstructions || undefined,
   };
   const timeoutMs = isLinkedInPost ? 100_000 : 130_000;
+  const maxAttempts = 3;
 
-  try {
-    return await callFetchExternalJobsEdge(accessToken, body, { timeoutMs });
-  } catch (firstError) {
-    const msg = firstError instanceof Error ? firstError.message : String(firstError);
-    if (!isSeoRateLimitError(msg)) {
-      throw firstError;
+  let lastError = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await callFetchExternalJobsEdge(accessToken, body, { timeoutMs });
+    } catch (error) {
+      lastError = error;
+      const msg = error instanceof Error ? error.message : String(error);
+      const canRetry = isSeoRateLimitError(msg) && attempt < maxAttempts - 1;
+      if (!canRetry) {
+        throw error;
+      }
+      await sleepMs(parseSeoRateLimitWaitMs(msg));
     }
-    await new Promise((resolve) => setTimeout(resolve, 3_500));
-    return callFetchExternalJobsEdge(accessToken, body, { timeoutMs });
   }
+
+  throw lastError ?? new Error('SEO optimization failed after rate-limit retries.');
 }

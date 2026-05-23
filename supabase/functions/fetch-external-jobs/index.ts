@@ -27,6 +27,15 @@ import {
   parseFetchChannel,
   VIZAG_IT_SEARCH_QUERIES,
 } from './fetch-channels.ts';
+import {
+  buildGeminiSeoEditorPrompt,
+  buildGeminiSeoLinkedInPostPrompt,
+  buildGeminiSeoSingleJobPrompt,
+  extractSeoExtrasFromPayload,
+  GEMINI_SEO_RESPONSE_SCHEMA,
+  MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS,
+  type SeoGeminiPayload,
+} from './gemini-seo-prompt.ts';
 
 type RawHit = {
   url: string;
@@ -648,73 +657,6 @@ const GEMINI_SEO_INTERNAL_LINKS = [
   { label: 'IT Jobs in Vizag', path: '/it-jobs-in-vizag' },
   { label: 'Part-time Jobs in Vizag', path: '/jobs/part-time' },
 ];
-
-/** Compact prompt for single-job SEO (faster than batch prompt). */
-function buildGeminiSeoSingleJobPrompt(jobInput: Record<string, unknown>, customInstructions?: string): string {
-  const base =
-    `SEO editor for jobsinvizag.in (Vizag/Visakhapatnam jobs only). Rewrite ONE job. Facts only — no invented salary/benefits.\n\n` +
-    `Output valid JSON only (escape newlines in strings as \\n). Fields: title, slug, short_description (150-160 chars), description (Markdown, max 1600 chars, sections: About the Role, Skills, Responsibilities, Who Can Apply, How to Apply, FAQs with 3 Q&As), responsibilities[], eligibility[], skills[], category, job_type, work_mode.\n\n` +
-    `Title format: "[Role] Jobs in Vizag at [Company] | Fresher or Experienced | Apply Now". Slug: role-jobs-vizag-company (lowercase, no dates).\n` +
-    `Use main_keyword + supporting_keywords naturally. Mention Vizag/Visakhapatnam 4-6 times total. Include 1-2 internal links: /it-jobs-in-vizag or /fresher-jobs-in-vizag or /jobs-in-vizag.\n\n` +
-    `INPUT:\n${JSON.stringify(jobInput)}`;
-  return appendSeoCustomInstructions(base, customInstructions);
-}
-
-const MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS = 1_200;
-
-function appendSeoCustomInstructions(prompt: string, customInstructions?: string): string {
-  const trimmed = typeof customInstructions === 'string' ? customInstructions.trim().slice(0, MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS) : '';
-  if (!trimmed) {
-    return prompt;
-  }
-  return (
-    `${prompt}\n\nADMIN_EXTRA_INSTRUCTIONS (follow these in addition to all rules above):\n${trimmed}\n`
-  );
-}
-
-/** Shorter prompt for LinkedIn hiring posts — avoids huge payloads and long Gemini runs. */
-function buildGeminiSeoLinkedInPostPrompt(
-  jobInput: Record<string, unknown>,
-  compact = false,
-  customInstructions?: string,
-): string {
-  const descCap = compact ? 750 : 1100;
-  const base =
-    `SEO editor for jobsinvizag.in. Input is a casual LinkedIn HIRING POST (not /jobs/view/). Extract facts from linkedin_post_text / scraped_source only.\n\n` +
-    `If the post lists many cities, write for Visakhapatnam/Vizag only when Vizag is mentioned; otherwise say "multiple locations" without inventing Vizag-only roles.\n` +
-    `Preserve apply_link (WhatsApp/phone/URL from post). Do not invent salary or benefits. Always return valid JSON with non-empty title, short_description, and description.\n\n` +
-    `JSON only. Fields: title, slug, short_description (~150 chars), description (Markdown, max ${descCap} chars: About the Role, Skills, Responsibilities, Who Can Apply, How to Apply, FAQs with 2 Q&As), responsibilities[], eligibility[], skills[], category, job_type, work_mode.\n` +
-    `Title: "[Role] Jobs in Vizag at [Company] | Fresher or Experienced | Apply Now" when Vizag-relevant; else "[Role] at [Company] | Apply Now". Slug: role-jobs-vizag-company (lowercase).\n\n` +
-    `INPUT:\n${JSON.stringify(jobInput)}`;
-  return appendSeoCustomInstructions(base, customInstructions);
-}
-
-function buildGeminiSeoEditorPrompt(jobsForPrompt: unknown): string {
-  return (
-    `You are an SEO expert writing job posts for Jobs in Vizag (https://jobsinvizag.in), a localized job portal for Visakhapatnam (Vizag), Andhra Pradesh, India.\n\n` +
-    `STRATEGY: Target local + job-intent keywords. Do NOT optimize for generic national keywords alone (e.g. bare "software jobs"). Prioritize Vizag-focused phrases.\n\n` +
-    `HIGH-VALUE KEYWORD THEMES (use naturally, 1 main + 3–5 supporting per job):\n` +
-    `- jobs in vizag, latest jobs in vizag, fresher jobs in vizag, jobs in visakhapatnam\n` +
-    `- it jobs in vizag, software jobs in vizag, bpo jobs in vizag, private jobs in vizag\n` +
-    `- walkin jobs in vizag, today jobs in vizag, night shift jobs in vizag\n` +
-    `- Long-tail: "[role] jobs in vizag", "[company] jobs in vizag" when factual\n\n` +
-    `EACH JOB OUTPUT MUST FOLLOW:\n` +
-    `1) title — format: "[Role] Jobs in Vizag at [Company] | Fresher or Experienced | Apply Now" (use Fresher/Experienced based on is_fresher/experience; omit company if Unknown)\n` +
-    `2) slug — lowercase hyphenated, pattern: role-jobs-vizag-company (NO dates, NO random IDs, NO uppercase)\n` +
-    `3) short_description — meta description ~150–160 chars: role, company, Vizag, eligibility hint, "latest jobs in vizag" style phrasing\n` +
-    `4) description — unique Markdown (NOT copied LinkedIn/Naukri text). Use ## headings:\n` +
-    `   ## About the Role\n   ## Skills Required\n   ## Key Responsibilities\n   ## Who Can Apply\n   ## Why Join\n   ## How to Apply\n   ## FAQs\n` +
-    `   Mention Vizag or Visakhapatnam naturally 5–8 times across title+description+short_description total (no stuffing).\n` +
-    `   Short paragraphs. Include 2–3 internal links as Markdown, e.g. [IT Jobs in Vizag](/it-jobs-in-vizag), [Fresher Jobs in Vizag](/fresher-jobs-in-vizag), [Latest Jobs in Vizag](/jobs-in-vizag) where relevant.\n` +
-    `   FAQs: 3–4 Q&As (work mode, freshers, salary if known, office location in Vizag) — facts only.\n` +
-    `5) responsibilities, eligibility, skills — bullet strings (max 10 each), keyword-aware but readable\n` +
-    `6) category, job_type, work_mode — normalize if weak\n\n` +
-    `FACT RULES: Do NOT invent salary, benefits, or requirements. Preserve apply_link, source_url, company (unless Unknown), posted_at, location.\n` +
-    `TONE: Professional, simple, human-readable, useful enough to rank on Google.\n\n` +
-    `Each input job includes suggested main_keyword and supporting_keywords — use them as guidance.\n\n` +
-    `INPUT_JOBS:\n${JSON.stringify(jobsForPrompt)}`
-  );
-}
 
 function parseRelativePostedAt(phrase: string | null | undefined, referenceIso: string): string | null {
   if (!phrase?.trim()) {
@@ -2469,10 +2411,10 @@ const MAX_SEO_SHORT_DESCRIPTION_CHARS = 320;
 const MAX_SEO_DESCRIPTION_CHARS = 8000;
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const DEFAULT_GEMINI_SEO_MODEL = 'gemini-2.5-flash';
-const DEFAULT_GEMINI_SEO_FALLBACK_MODELS = ['gemini-2.5-flash'];
+const DEFAULT_GEMINI_SEO_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 /** Tried last — often has no free-tier quota left on new Google AI projects. */
-const DEPRIORITIZED_SEO_MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash'];
-const GEMINI_SEO_MAX_RETRIES = 1;
+const DEPRIORITIZED_SEO_MODELS = ['gemini-2.0-flash-lite'];
+const GEMINI_SEO_MAX_RETRIES = 2;
 const GEMINI_SEO_REQUEST_TIMEOUT_MS = 72_000;
 const GEMINI_SEO_HARD_CAP_MS = 118_000;
 const MAX_SEO_SOURCE_FOR_SINGLE_JOB = 1_800;
@@ -2618,7 +2560,7 @@ function formatGeminiUserError(status: number, apiMessage: string, model: string
   const retryMatch = apiMessage.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
   if (retryMatch) {
     const sec = Math.ceil(Number(retryMatch[1]));
-    return `${label}: rate limited on "${model}". Wait ~${sec}s, then click Make SEO again.`;
+    return `${label}: rate limited on "${model}" (~${sec}s backoff before retry).`;
   }
   return `${label} failed (429) on "${model}": ${apiMessage.slice(0, 280)}`;
 }
@@ -2672,6 +2614,12 @@ function formatSeoGeminiFailure(
   if (errors.some(isGeminiOverloadError)) {
     return `${last} Tried ${keysAttempted} shuffled API key(s) and ${modelsTried.length} model(s). Add more keys in GEMINI_API_KEYS or retry in a minute.`;
   }
+  if (errors.some(isGemini429Error)) {
+    return (
+      `${last} Auto-retried with backoff across ${keysAttempted} key(s) and ${modelsTried.length} model(s). ` +
+      'Wait 30–60s before the next job, spread keys across different Google accounts, or enable billing.'
+    );
+  }
   return last;
 }
 
@@ -2706,9 +2654,13 @@ function shuffledCopy<T>(items: T[]): T[] {
 function parseGeminiRetryDelayMs(message: string, attempt: number): number {
   const retryMatch = message.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
   if (retryMatch) {
-    return Math.ceil(Number(retryMatch[1]) * 1000) + 250;
+    return Math.ceil(Number(retryMatch[1]) * 1000) + 750;
   }
-  return Math.min(32_000, 1200 * 2 ** attempt);
+  const waitMatch = message.match(/Wait ~(\d+)s/i);
+  if (waitMatch) {
+    return Number(waitMatch[1]) * 1000 + 750;
+  }
+  return Math.min(32_000, 1500 * 2 ** attempt);
 }
 
 function isRetryableGeminiHttpStatus(status: number): boolean {
@@ -2806,7 +2758,7 @@ async function geminiGenerateContentForSeo(
         GEMINI_SEO_REQUEST_TIMEOUT_MS),
   );
   const maxRetriesPerModel = Math.min(
-    2,
+    4,
     Number(Deno.env.get('GEMINI_SEO_MAX_RETRIES') ?? GEMINI_SEO_MAX_RETRIES) || GEMINI_SEO_MAX_RETRIES,
   );
   const tryFallbackOnQuota =
@@ -2827,7 +2779,7 @@ async function geminiGenerateContentForSeo(
       try {
         const payload = await geminiGenerateContent(body, apiKey, 'Gemini SEO', {
           model,
-          maxRetries: tryFallbackOnQuota ? 0 : maxRetriesPerModel,
+          maxRetries: maxRetriesPerModel,
           timeoutMs: seoTimeout,
         });
         return { payload, usedKeyIndex: keyIndex + 1, model };
@@ -2837,9 +2789,10 @@ async function geminiGenerateContentForSeo(
 
         const hasMoreModels = modelIndex < models.length - 1;
         const hasMoreKeys = keyIndex < keys.length - 1;
+        const quotaDead = isGeminiQuotaExhausted(msg);
 
         if (tryFallbackOnQuota && shouldTryNextSeoFallback(msg) && (hasMoreModels || hasMoreKeys)) {
-          if (isGeminiOverloadError(msg) || isGemini429Error(msg)) {
+          if (!quotaDead && (isGeminiOverloadError(msg) || isGemini429Error(msg))) {
             await sleep(parseGeminiRetryDelayMs(msg, 0));
           }
           continue;
@@ -2857,17 +2810,14 @@ async function geminiGenerateContentForSeo(
   );
 }
 
-type SeoGeminiPayload = {
-  title?: string;
-  slug?: string;
-  short_description?: string;
-  description?: string;
-  responsibilities?: string[];
-  eligibility?: string[];
-  skills?: string[];
-  category?: string;
-  job_type?: string;
-  work_mode?: string | null;
+const MAX_SEO_TITLE_CHARS = 60;
+const MAX_SEO_SLUG_CHARS = 60;
+
+type GeminiSeoOptimizeResult = {
+  record: SiteJobRecord;
+  usedKeyIndex: number;
+  model: string;
+  seoExtras: ReturnType<typeof extractSeoExtrasFromPayload>;
 };
 
 function clampText(value: string, maxLen: number): string {
@@ -2919,10 +2869,11 @@ function lookupSourceContext(record: SiteJobRecord, contextMap: Map<string, stri
 }
 
 function applySeoPayload(record: SiteJobRecord, payload: SeoGeminiPayload): SiteJobRecord {
-  const title = typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : record.title;
+  const rawTitle = typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : record.title;
+  const title = clampText(rawTitle, MAX_SEO_TITLE_CHARS);
   const shortDescription =
     typeof payload.short_description === 'string' && payload.short_description.trim()
-      ? clampText(payload.short_description, MAX_SEO_SHORT_DESCRIPTION_CHARS)
+      ? clampText(payload.short_description, 160)
       : record.short_description;
   const description =
     typeof payload.description === 'string' && payload.description.trim()
@@ -2949,7 +2900,7 @@ function applySeoPayload(record: SiteJobRecord, payload: SeoGeminiPayload): Site
     ...record,
     title,
     company,
-    slug: normalizeSeoSlug(payload.slug, title, company),
+    slug: normalizeSeoSlug(payload.slug, title, company).slice(0, MAX_SEO_SLUG_CHARS),
     short_description: shortDescription ?? record.short_description,
     description: description ?? record.description,
     responsibilities: responsibilities.length > 0 ? responsibilities : record.responsibilities,
@@ -3022,23 +2973,6 @@ function jobRecordForSeoPrompt(
   };
 }
 
-const GEMINI_SEO_RESPONSE_SCHEMA = {
-  type: 'OBJECT',
-  properties: {
-    title: { type: 'STRING' },
-    slug: { type: 'STRING' },
-    short_description: { type: 'STRING' },
-    description: { type: 'STRING' },
-    responsibilities: { type: 'ARRAY', items: { type: 'STRING' } },
-    eligibility: { type: 'ARRAY', items: { type: 'STRING' } },
-    skills: { type: 'ARRAY', items: { type: 'STRING' } },
-    category: { type: 'STRING' },
-    job_type: { type: 'STRING' },
-    work_mode: { type: 'STRING' },
-  },
-  required: ['title', 'slug', 'short_description', 'description'],
-};
-
 function buildLinkedInPostSeoInput(
   record: SiteJobRecord,
   sourceContext: string,
@@ -3093,13 +3027,13 @@ async function geminiSeoOptimizeLinkedInPost(
   record: SiteJobRecord,
   sourceContext: string,
   customInstructions?: string,
-): Promise<{ record: SiteJobRecord; usedKeyIndex: number; model: string }> {
+): Promise<GeminiSeoOptimizeResult> {
   const { jobInput, workingRecord, compact } = buildLinkedInPostSeoInput(record, sourceContext);
   const instruction = buildGeminiSeoLinkedInPostPrompt(jobInput, compact, customInstructions);
   const maxOutputTokens = Math.min(
-    compact ? 3_072 : 4_096,
-    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_MAX_OUTPUT_TOKENS') ?? (compact ? '3072' : '4096')) ||
-      (compact ? 3072 : 4096),
+    8_192,
+    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_MAX_OUTPUT_TOKENS') ?? (compact ? '5120' : '6144')) ||
+      (compact ? 5120 : 6144),
   );
   const seoTimeout = Math.min(
     58_000,
@@ -3142,6 +3076,7 @@ async function geminiSeoOptimizeLinkedInPost(
         ),
         usedKeyIndex,
         model,
+        seoExtras: extractSeoExtrasFromPayload(parsed),
       };
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
@@ -3164,7 +3099,7 @@ async function geminiSeoOptimizeSiteJob(
   record: SiteJobRecord,
   sourceContext: string,
   customInstructions?: string,
-): Promise<{ record: SiteJobRecord; usedKeyIndex: number; model: string }> {
+): Promise<GeminiSeoOptimizeResult> {
   if (record.source_kind === 'linkedin_post') {
     return geminiSeoOptimizeLinkedInPost(record, sourceContext, customInstructions);
   }
@@ -3184,7 +3119,7 @@ async function geminiSeoOptimizeSiteJob(
       temperature: 0.3,
       maxOutputTokens: Math.min(
         8192,
-        Number(Deno.env.get('GEMINI_SEO_MAX_OUTPUT_TOKENS') ?? '6144') || 6144,
+        Number(Deno.env.get('GEMINI_SEO_MAX_OUTPUT_TOKENS') ?? '8192') || 8192,
       ),
       responseMimeType: 'application/json',
       responseSchema: GEMINI_SEO_RESPONSE_SCHEMA,
@@ -3205,7 +3140,12 @@ async function geminiSeoOptimizeSiteJob(
   }
 
   const parsed = parseSeoGeminiPayload(text, record);
-  return { record: applySeoPayload(record, parsed), usedKeyIndex, model };
+  return {
+    record: applySeoPayload(record, parsed),
+    usedKeyIndex,
+    model,
+    seoExtras: extractSeoExtrasFromPayload(parsed),
+  };
 }
 
 async function runWithConcurrency<T, R>(
@@ -3249,35 +3189,32 @@ async function geminiSeoOptimizeBatch(
     jobRecordForSeoPrompt(record, index, lookupSourceContext(record, sourceContextMap)),
   );
 
-  const instruction = `${buildGeminiSeoEditorPrompt(jobsPayload)}\n\nReturn JSON: { "jobs": [ { "index": number, ...fields } ] } with one object per input index.`;
+  const instruction = buildGeminiSeoEditorPrompt(jobsPayload);
+
+  const batchJobSchema = {
+    type: 'OBJECT',
+    properties: {
+      index: { type: 'NUMBER' },
+      ...GEMINI_SEO_RESPONSE_SCHEMA.properties,
+    },
+    required: ['index', ...GEMINI_SEO_RESPONSE_SCHEMA.required],
+  };
 
   const body = {
     contents: [{ role: 'user', parts: [{ text: instruction }] }],
     generationConfig: {
       temperature: 0.35,
+      maxOutputTokens: Math.min(
+        8192,
+        Number(Deno.env.get('GEMINI_SEO_MAX_OUTPUT_TOKENS') ?? '8192') || 8192,
+      ),
       responseMimeType: 'application/json',
       responseSchema: {
         type: 'OBJECT',
         properties: {
           jobs: {
             type: 'ARRAY',
-            items: {
-              type: 'OBJECT',
-              properties: {
-                index: { type: 'NUMBER' },
-                title: { type: 'STRING' },
-                slug: { type: 'STRING' },
-                short_description: { type: 'STRING' },
-                description: { type: 'STRING' },
-                responsibilities: { type: 'ARRAY', items: { type: 'STRING' } },
-                eligibility: { type: 'ARRAY', items: { type: 'STRING' } },
-                skills: { type: 'ARRAY', items: { type: 'STRING' } },
-                category: { type: 'STRING' },
-                job_type: { type: 'STRING' },
-                work_mode: { type: 'STRING' },
-              },
-              required: ['index', 'title', 'slug', 'short_description', 'description'],
-            },
+            items: batchJobSchema,
           },
         },
         required: ['jobs'],
@@ -5199,7 +5136,7 @@ Deno.serve(async (req) => {
 
       const seoResult = await Promise.race([
         geminiSeoOptimizeSiteJob(record, sourceContext, customInstructions || undefined),
-        new Promise<{ record: SiteJobRecord; usedKeyIndex: number; model: string }>((_, reject) => {
+        new Promise<GeminiSeoOptimizeResult>((_, reject) => {
           setTimeout(
             () =>
               reject(
@@ -5239,6 +5176,10 @@ Deno.serve(async (req) => {
             runtime_ms: runtimeMs,
             seo_profile: isLinkedInPost ? 'linkedin_post' : 'standard',
             had_custom_instructions: customInstructions.length > 0,
+            prompt_version: 'vizag_tasks_1_8',
+            json_ld: seoResult.seoExtras.json_ld,
+            hashtags: seoResult.seoExtras.hashtags,
+            keyword_density: seoResult.seoExtras.keyword_density,
           },
           source_kind: incoming.source_kind ?? seoResult.record.source_kind ?? 'linkedin_post',
           linkedin_post_text: incoming.linkedin_post_text ?? seoResult.record.linkedin_post_text ?? null,
@@ -5256,6 +5197,9 @@ Deno.serve(async (req) => {
           category: seoResult.record.category,
           job_type: seoResult.record.job_type,
           work_mode: seoResult.record.work_mode,
+          json_ld: seoResult.seoExtras.json_ld,
+          hashtags: seoResult.seoExtras.hashtags,
+          keyword_density: seoResult.seoExtras.keyword_density,
         },
         gemini_status: 'ok',
         gemini_model: seoResult.model,

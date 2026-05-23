@@ -59,7 +59,6 @@ const processJobData = (job, index) => {
   const jobType = normalizeText(job.job_type);
   const isFresher = normalizeFresherValue(job.is_fresher);
   const fresherTag = isFresher === 'Yes' ? 'Fresher' : 'Experienced';
-  const sourceTag = normalizeText(job.source_name);
 
   return {
     id: job.id || `supabase-job-${index + 1}`,
@@ -81,11 +80,11 @@ const processJobData = (job, index) => {
     warning: normalizeText(job.warning),
     postedAt: normalizeText(job.posted_at),
     status: normalizeText(job.status),
-    source: sourceTag,
+    source: normalizeText(job.source_name),
     sourceUrl: normalizeText(job.source_url),
     skills: joinList(job.skills),
     companyLogo: normalizeText(job.company_logo_url),
-    tags: [category, jobType, fresherTag, sourceTag].filter(Boolean),
+    tags: [category, jobType, fresherTag].filter(Boolean),
   };
 };
 

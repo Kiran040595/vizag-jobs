@@ -76,6 +76,9 @@ function SeoResultPreview({ job }) {
   const meta = job.seo_meta && typeof job.seo_meta === 'object' ? job.seo_meta : null;
   const model = meta?.gemini_model ? String(meta.gemini_model) : null;
   const runtimeMs = typeof meta?.runtime_ms === 'number' ? meta.runtime_ms : null;
+  const hashtags = Array.isArray(meta?.hashtags) ? meta.hashtags : [];
+  const keywordDensity = Array.isArray(meta?.keyword_density) ? meta.keyword_density : [];
+  const jsonLd = meta?.json_ld && typeof meta.json_ld === 'object' ? meta.json_ld : null;
 
   return (
     <div className="mt-3 rounded-xl border-2 border-violet-300 bg-violet-50/80 p-4 shadow-sm">
@@ -107,6 +110,32 @@ function SeoResultPreview({ job }) {
       ) : null}
       <BulletList label="Responsibilities" items={job.responsibilities} />
       <BulletList label="Skills" items={job.skills} />
+      {hashtags.length > 0 ? (
+        <div className="mt-3 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">Hashtags (Task 7)</p>
+          <p className="text-sm leading-6 text-slate-800">{hashtags.join(' ')}</p>
+        </div>
+      ) : null}
+      {keywordDensity.length > 0 ? (
+        <div className="mt-3 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">Keyword density (Task 8)</p>
+          <ul className="list-inside list-disc text-sm text-slate-800">
+            {keywordDensity.map((row) => (
+              <li key={`${row.keyword}-${row.count}`}>
+                {row.keyword}: {row.count}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {jsonLd ? (
+        <div className="mt-3 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">JSON-LD JobPosting (Task 6)</p>
+          <pre className="max-h-48 overflow-auto rounded-lg border border-violet-200 bg-white p-3 text-xs text-slate-800">
+            {JSON.stringify(jsonLd, null, 2)}
+          </pre>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -289,8 +318,9 @@ function ExternalJobCard({
             Extra instructions for Gemini (optional)
           </label>
           <p className="mt-1 text-xs text-slate-600">
-            Not happy with SEO? Add notes here (tone, keywords, experience, apply method), then click{' '}
-            <strong>Re-run SEO</strong>.
+            Not happy with SEO? Add notes here, then click <strong>Re-run SEO</strong>. If JSON-LD or location
+            counts are missing, paste a follow-up such as: &quot;You skipped Task 6. Now give me the complete
+            JSON-LD schema code block only.&quot;
           </p>
           <textarea
             id={`seo-instructions-${jobKey}`}
@@ -299,7 +329,7 @@ function ExternalJobCard({
             value={job.seo_custom_instructions ?? ''}
             onChange={(e) => onSeoInstructionsChange(job, e.target.value)}
             disabled={isBusy || isSeoBusy}
-            placeholder="e.g. Use formal tone. Emphasize 3+ years React. Mention Vizag office only. Include mailto apply from post. Add FAQ on WFO."
+            placeholder="e.g. Rewrite with Vizag and Visakhapatnam 5+ times each. Add 5 more mechanical/ECE FAQ questions for Vizag."
             className="mt-2 w-full rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
           />
           <p className="mt-1 text-right text-xs text-slate-500">
