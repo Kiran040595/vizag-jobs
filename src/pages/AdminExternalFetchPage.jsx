@@ -8,6 +8,7 @@ import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/E
 import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../services/adminJobs';
 import { fetchExternalJobsBySource, seoOptimizeExternalJob } from '../services/externalJobFetch';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
+import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
 
 const BULK_IMPORT_CONCURRENCY = 3;
 
@@ -44,6 +45,8 @@ export default function AdminExternalFetchPage() {
   const [busySeoKey, setBusySeoKey] = useState('');
   const [importErrors, setImportErrors] = useState({});
   const [seoErrors, setSeoErrors] = useState({});
+  const [linkedInPostPreset, setLinkedInPostPreset] = useState('general');
+  const [linkedInCustomSearchUrl, setLinkedInCustomSearchUrl] = useState('');
 
   useEffect(() => {
     let ignore = false;
@@ -93,12 +96,24 @@ export default function AdminExternalFetchPage() {
   }, [fetchPayload]);
 
   const handleFetch = async (sourceId) => {
+    if (sourceId === 'linkedin_posts' && linkedInPostPreset === 'custom' && !linkedInCustomSearchUrl.trim()) {
+      setFetchError('Paste a LinkedIn content search URL (past 24h) or choose another preset.');
+      return;
+    }
+
     setFetchError('');
     setNotice('');
     setActiveSource(sourceId);
     setFetchLoading(true);
     try {
-      const data = await fetchExternalJobsBySource(session?.access_token, sourceId);
+      const fetchOptions =
+        sourceId === 'linkedin_posts'
+          ? {
+              preset: linkedInPostPreset,
+              customSearchUrl: linkedInCustomSearchUrl,
+            }
+          : {};
+      const data = await fetchExternalJobsBySource(session?.access_token, sourceId, fetchOptions);
       setFetchPayload(data);
       setReviewJobs(
         Array.isArray(data.jobs)
@@ -291,6 +306,71 @@ export default function AdminExternalFetchPage() {
         {EXTERNAL_FETCH_SOURCES.map((source) => {
           const isActive = activeSource === source.id && fetchLoading;
           const isLast = activeSource === source.id && fetchPayload && !fetchLoading;
+          const isLinkedInPosts = source.id === 'linkedin_posts';
+          const presetMeta = LINKEDIN_POST_PRESET_OPTIONS.find((p) => p.id === linkedInPostPreset);
+
+          if (isLinkedInPosts) {
+            return (
+              <div
+                key={source.id}
+                className={`rounded-[1.5rem] border p-5 ${source.accent} ${
+                  isLast ? 'ring-2 ring-cyan-500 ring-offset-2' : ''
+                }`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{source.providerHint}</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-950">{source.title}</h2>
+                <p className="mt-2 text-sm text-slate-600">{source.description}</p>
+                <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
+                <label className="mt-4 block text-xs font-semibold text-slate-700" htmlFor="linkedin-post-preset">
+                  Search preset
+                </label>
+                <select
+                  id="linkedin-post-preset"
+                  value={linkedInPostPreset}
+                  disabled={fetchLoading || !session?.access_token}
+                  onChange={(e) => setLinkedInPostPreset(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                >
+                  {LINKEDIN_POST_PRESET_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                {presetMeta?.description ? (
+                  <p className="mt-2 text-xs text-slate-600">{presetMeta.description}</p>
+                ) : null}
+                {linkedInPostPreset === 'custom' ? (
+                  <>
+                    <label
+                      className="mt-3 block text-xs font-semibold text-slate-700"
+                      htmlFor="linkedin-custom-search-url"
+                    >
+                      LinkedIn content search URL
+                    </label>
+                    <input
+                      id="linkedin-custom-search-url"
+                      type="url"
+                      value={linkedInCustomSearchUrl}
+                      disabled={fetchLoading || !session?.access_token}
+                      onChange={(e) => setLinkedInCustomSearchUrl(e.target.value)}
+                      placeholder="https://www.linkedin.com/search/results/content/?keywords=..."
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
+                    />
+                  </>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={!isSupabaseConfigured || fetchLoading || !session?.access_token}
+                  onClick={() => handleFetch(source.id)}
+                  className="mt-4 text-sm font-semibold text-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isActive ? 'Fetching…' : 'Fetch LinkedIn posts →'}
+                </button>
+              </div>
+            );
+          }
+
           return (
             <button
               key={source.id}
@@ -402,6 +482,11 @@ function FetchSummaryBar({ payload, activeMeta }) {
       {payload.parser_version ? (
         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
           Parser: {payload.parser_version}
+        </span>
+      ) : null}
+      {payload.filters_applied?.linkedin_post_preset_label ? (
+        <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-indigo-900">
+          Preset: {payload.filters_applied.linkedin_post_preset_label}
         </span>
       ) : null}
     </div>

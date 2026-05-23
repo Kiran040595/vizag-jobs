@@ -338,6 +338,8 @@ export const sanitizeExternalJobForInsert = (values) => {
     needs_review: _review,
     is_likely_hiring_post: _hiring,
     source_kind: _kind,
+    linkedin_post_preset: _liPreset,
+    linkedin_post_preset_label: _liPresetLabel,
     ...rest
   } = values ?? {};
 

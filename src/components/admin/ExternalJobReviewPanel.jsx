@@ -179,6 +179,11 @@ function ExternalJobCard({
                 LinkedIn post
               </span>
             ) : null}
+            {job.linkedin_post_preset_label ? (
+              <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-900">
+                {job.linkedin_post_preset_label}
+              </span>
+            ) : null}
             {job.needs_review ? (
               <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
                 Review before SEO

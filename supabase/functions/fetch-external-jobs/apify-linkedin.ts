@@ -3,16 +3,15 @@
  * Actor IDs and input JSON are overridable via Edge Function secrets.
  */
 
-/** Vizag content search, past 24h, newest first (required for scrapeUntilDate on posts actor). */
-export const LINKEDIN_VIZAG_24H_CONTENT_URL =
-  'https://www.linkedin.com/search/results/content/?keywords=vizag&origin=CLUSTER_EXPANSION&datePosted=%5B%22past-24h%22%5D&sortBy=%5B%22date_posted%22%5D';
+import {
+  buildLinkedInContentSearchUrl,
+  getLinkedInContentSearchUrlsForPreset,
+  LINKEDIN_VIZAG_24H_CONTENT_URL,
+  resolveLinkedInPostPreset,
+  type ResolvedLinkedInPostPreset,
+} from './linkedin-post-presets.ts';
 
-const DEFAULT_CONTENT_KEYWORDS = [
-  'vizag',
-  'visakhapatnam hiring',
-  'jobs vizag',
-  'hiring vizag',
-];
+export { LINKEDIN_VIZAG_24H_CONTENT_URL };
 
 export const LINKEDIN_VIZAG_24H_JOBS_LISTING_URL =
   'https://in.linkedin.com/jobs/jobs-in-vishakhapatnam?keywords=&location=Vishakhapatnam&geoId=106055329&distance=25&f_TPR=r86400&position=1&pageNum=0';
@@ -22,8 +21,10 @@ const MS_24H = 24 * 60 * 60 * 1000;
 /** Pay-per-event; accepts Vizag jobs search URL in `urls`. */
 const DEFAULT_JOBS_ACTOR = 'curious_coder~linkedin-jobs-scraper';
 const FALLBACK_JOBS_ACTOR = 'harvestapi~linkedin-job-search';
-/** Keyword search, past 24h, pay-per-result — no monthly rental (unlike curious_coder post scraper). */
-const DEFAULT_POSTS_ACTOR = 'harvestapi~linkedin-post-search';
+/** harvestapi linkedin-post-search — API: /v2/acts/harvestapi~linkedin-post-search/run-sync-get-dataset-items (same actor as Console id buIWk2uOUzTmcLsuB). */
+export const HARVESTAPI_LINKEDIN_POST_SEARCH_ACTOR = 'harvestapi~linkedin-post-search';
+export const DEFAULT_VIZAG_POSTS_ACTOR = HARVESTAPI_LINKEDIN_POST_SEARCH_ACTOR;
+const DEFAULT_POSTS_ACTOR = HARVESTAPI_LINKEDIN_POST_SEARCH_ACTOR;
 /** Content-SERP scraper; often requires Apify rental + APIFY_LINKEDIN_POSTS_COOKIE_JSON. */
 const FALLBACK_POSTS_ACTOR = 'curious_coder~linkedin-post-search-scraper';
 
@@ -64,10 +65,18 @@ export type ApifyLinkedInDiscoverResult = {
   apify_jobs_run_id: string | null;
   apify_posts_run_id: string | null;
   apify_jobs_count: number;
+  /** Raw dataset items from the posts actor (before Vizag/hiring filters). */
+  apify_posts_raw_count: number;
   apify_posts_count: number;
   apify_jobs_error: string | null;
   apify_posts_error: string | null;
 };
+
+/** Max posts to map/parse after Apify (align with ~10 per searchQueries × 2 queries). */
+export function linkedInContentPostsLimit(): number {
+  const n = Number(Deno.env.get('FETCH_LINKEDIN_CONTENT_POSTS_LIMIT') ?? '20') || 20;
+  return Math.min(30, Math.max(5, n));
+}
 
 type FetchBudgetLike = {
   hasTime(ms: number): boolean;
@@ -191,6 +200,17 @@ export function linkedInApifyPostsFallbackEnabled(): boolean {
     'true').toLowerCase() !== 'false';
 }
 
+/**
+ * Firecrawl returns 403 for linkedin.com. When an Apify posts token is configured, default to
+ * Apify-only unless FETCH_LINKEDIN_FALLBACK_FIRECRAWL_POSTS=true (opt-in).
+ */
+export function shouldUseFirecrawlLinkedInPostsFallback(hasPostsApifyToken: boolean): boolean {
+  if (hasPostsApifyToken) {
+    return (Deno.env.get('FETCH_LINKEDIN_FALLBACK_FIRECRAWL_POSTS') ?? 'false').toLowerCase() === 'true';
+  }
+  return linkedInApifyPostsFallbackEnabled();
+}
+
 function isHarvestApiJobsActor(actorId: string): boolean {
   const n = normalizeActorId(actorId).toLowerCase();
   return n.includes('harvestapi') && n.includes('linkedin-job-search');
@@ -201,9 +221,21 @@ function isCuriousCoderJobsActor(actorId: string): boolean {
   return n.includes('curious_coder') && n.includes('linkedin-jobs-scraper');
 }
 
-function isHarvestApiPostsActor(actorId: string): boolean {
+/** harvestapi linkedin-post-search — actor id buIWk2uOUzTmcLsuB or username~name form. */
+function isHarvestStylePostsActor(actorId: string): boolean {
   const n = normalizeActorId(actorId).toLowerCase();
+  if (n === 'buiwk2uouztmcslsub') {
+    return true;
+  }
   return n.includes('harvestapi') && n.includes('linkedin-post-search');
+}
+
+function isVizagPostSearchActor(actorId: string): boolean {
+  return isHarvestStylePostsActor(actorId);
+}
+
+function isHarvestApiPostsActor(actorId: string): boolean {
+  return isHarvestStylePostsActor(actorId);
 }
 
 function isCuriousCoderPostsActor(actorId: string): boolean {
@@ -212,7 +244,15 @@ function isCuriousCoderPostsActor(actorId: string): boolean {
 }
 
 function normalizeActorId(actorId: string): string {
-  return actorId.includes('~') ? actorId : actorId.replace('/', '~');
+  const trimmed = actorId.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    lower === 'buiwk2uouztmcslsub' ||
+    (lower.includes('harvestapi') && lower.includes('linkedin-post-search'))
+  ) {
+    return HARVESTAPI_LINKEDIN_POST_SEARCH_ACTOR;
+  }
+  return trimmed.includes('~') ? trimmed : trimmed.replace('/', '~');
 }
 
 function apifySyncTimeoutSec(budget?: FetchBudgetLike): number {
@@ -412,30 +452,11 @@ export function apifyItemsToLinkedInJobs(
   return jobs;
 }
 
-function buildLinkedInContentSearchUrl(keywords: string): string {
-  const params = new URLSearchParams({
-    keywords,
-    origin: 'CLUSTER_EXPANSION',
-    datePosted: '["past-24h"]',
-    sortBy: '["date_posted"]',
-  });
-  return `https://www.linkedin.com/search/results/content/?${params.toString()}`;
-}
-
-export function getLinkedInContentSearchUrls(): string[] {
-  const single = Deno.env.get('FETCH_LINKEDIN_CONTENT_URL')?.trim();
-  if (single) {
-    return [single];
-  }
-  const raw = Deno.env.get('FETCH_LINKEDIN_CONTENT_KEYWORDS');
-  const keywords = raw?.trim()
-    ? raw.split(',').map((k) => k.trim()).filter(Boolean)
-    : DEFAULT_CONTENT_KEYWORDS;
-  const maxUrls = Math.min(
-    5,
-    Math.max(1, Number(Deno.env.get('FETCH_LINKEDIN_CONTENT_SEARCH_URLS') ?? '3') || 3),
-  );
-  return keywords.slice(0, maxUrls).map(buildLinkedInContentSearchUrl);
+export function getLinkedInContentSearchUrls(
+  preset?: ResolvedLinkedInPostPreset,
+): string[] {
+  const resolved = preset ?? resolveLinkedInPostPreset('general');
+  return getLinkedInContentSearchUrlsForPreset(resolved);
 }
 
 function mentionsVizagInText(text: string): boolean {
@@ -450,19 +471,39 @@ function looksLikeHiringPost(text: string): boolean {
   );
 }
 
-/** Keep posts from past-24h content SERP: Vizag mention or clear hiring post. */
+function isJobSeekerProfilePost(text: string): boolean {
+  return /\b(#jobsearch|applying for:|preferred locations:\s*#|dear hr manager|enclosed for your review|warm regards,\s*\n[^\n]+@gmail)/i.test(
+    text,
+  );
+}
+
+function hasHarvestHiringSignal(text: string): boolean {
+  return /\b(#hiring|#wearehiring|#vizagjobs|we are hiring|we're hiring|hiring alert|hiring now|job opening|walk[- ]?in|vacanc|immediate hiring|share (your )?resume|send (your )?(cv|resume)|apply (now|with|via)|open positions?|#cfbr)\b/i.test(
+    text,
+  );
+}
+
+/** Keep posts from harvestapi linkedin-post-search (Vizag hiring queries). */
 function shouldIncludeApifyPost(text: string): boolean {
-  if (!text || text.length < 40) {
+  if (!text || text.length < 25) {
     return false;
   }
+  if (isJobSeekerProfilePost(text)) {
+    return false;
+  }
+  if (hasHarvestHiringSignal(text)) {
+    return true;
+  }
   if (mentionsVizagInText(text)) {
-    return /\b(hiring|jobs?|vacanc|opening|recruit|apply|ctc|lpa|position|role|whatsapp)\b/i.test(text);
+    return /\b(hiring|jobs?|vacanc|opening|recruit|apply|ctc|lpa|position|role|whatsapp|experience|years)\b/i.test(
+      text,
+    );
   }
   if (looksLikeHiringPost(text)) {
     return true;
   }
   return (
-    text.length >= 100 &&
+    text.length >= 80 &&
     /\b(hiring|walk[- ]?in|vacanc|opening|recruit|whatsapp|ctc|lpa)\b/i.test(text)
   );
 }
@@ -475,19 +516,32 @@ function extractPostTextFromApifyItem(item: Record<string, unknown>): string {
     }
   };
 
-  add(
-    firstString(item, [
-      'text',
-      'content',
-      'commentary',
-      'postText',
-      'post_text',
-      'description',
-      'body',
-      'shareCommentary',
-      'articleBody',
-    ]),
-  );
+  const outer = firstString(item, [
+    'text',
+    'content',
+    'commentary',
+    'postText',
+    'post_text',
+    'description',
+    'body',
+    'shareCommentary',
+    'articleBody',
+  ]);
+
+  let repostBody: string | null = null;
+  if (item.repost && typeof item.repost === 'object') {
+    const repost = item.repost as Record<string, unknown>;
+    repostBody = firstString(repost, ['content', 'text', 'commentary', 'description']);
+  }
+
+  if (repostBody && (!outer || outer.length < 140)) {
+    add(repostBody);
+    add(outer);
+  } else {
+    add(outer);
+    add(repostBody);
+  }
+
   add(firstString(item, ['headline', 'title', 'postTitle', 'name']));
   add(firstString(item, ['summary', 'snippet']));
 
@@ -508,12 +562,13 @@ function extractPostedPhraseFromApifyItem(item: Record<string, unknown>): string
   const postedAt = item.postedAt;
   if (postedAt && typeof postedAt === 'object') {
     const o = postedAt as Record<string, unknown>;
-    return (
-      firstString(o, ['postedAgoShort', 'postedAgoText', 'date']) ??
-      (typeof o.timestamp === 'number'
-        ? new Date(o.timestamp).toISOString()
-        : null)
-    );
+    if (typeof o.date === 'string' && o.date.trim()) {
+      return o.date.trim();
+    }
+    if (typeof o.timestamp === 'number' && Number.isFinite(o.timestamp)) {
+      return new Date(o.timestamp).toISOString();
+    }
+    return firstString(o, ['postedAgoShort', 'postedAgoText']);
   }
   return firstString(item, [
     'postedAt',
@@ -554,12 +609,13 @@ export function apifyItemsToLinkedInPosts(
 ): ApifyLinkedInContentPost[] {
   const posts: ApifyLinkedInContentPost[] = [];
   const seen = new Set<string>();
-  const maxPosts = Math.min(
-    25,
-    Math.max(5, Number(Deno.env.get('FETCH_LINKEDIN_CONTENT_POSTS_LIMIT') ?? '15') || 15),
-  );
+  const maxPosts = linkedInContentPostsLimit();
 
   for (const item of items) {
+    const itemType = typeof item.type === 'string' ? item.type.toLowerCase() : '';
+    if (itemType && itemType !== 'post') {
+      continue;
+    }
     const post_text = extractPostTextFromApifyItem(item);
     if (!shouldIncludeApifyPost(post_text)) {
       continue;
@@ -645,10 +701,50 @@ function buildJobsActorInput(actorId: string): Record<string, unknown> {
 }
 
 function postsFetchLimit(): number {
-  return Math.min(
-    25,
-    Math.max(5, Number(Deno.env.get('FETCH_LINKEDIN_CONTENT_POSTS_LIMIT') ?? '15') || 15),
-  );
+  return Math.min(15, Math.max(5, Math.ceil(linkedInContentPostsLimit() / 2)));
+}
+
+/** Search strings sent to harvestapi linkedin-post-search (buIWk2uOUzTmcLsuB). */
+export function resolvePostSearchQueries(preset: ResolvedLinkedInPostPreset): string[] {
+  const envList = Deno.env.get('FETCH_LINKEDIN_POST_SEARCH_QUERIES')?.trim();
+  if (envList) {
+    const split = envList.split(',').map((s) => s.trim()).filter(Boolean);
+    if (split.length > 0) {
+      return split.slice(0, 5);
+    }
+  }
+  const single = Deno.env.get('FETCH_LINKEDIN_POST_SEARCH')?.trim();
+  if (single) {
+    return [single];
+  }
+  if (preset.id === 'general') {
+    return ['jobs in vizag', '#VizagJobs'];
+  }
+  if (preset.id === 'it') {
+    return ['software jobs vizag', 'IT hiring visakhapatnam'];
+  }
+  if (preset.id === 'bank') {
+    return ['bank jobs vizag', 'banking jobs visakhapatnam'];
+  }
+  return [resolvePostSearchQuery(preset)];
+}
+
+/** harvestapi linkedin-post-search — must match Apify Console input for buIWk2uOUzTmcLsuB. */
+function buildHarvestStylePostsInput(preset: ResolvedLinkedInPostPreset): Record<string, unknown> {
+  return {
+    maxPosts: postsFetchLimit(),
+    postNestedComments: false,
+    postNestedReactions: false,
+    postedLimit: '24h',
+    scrapeComments: false,
+    scrapeReactions: false,
+    searchQueries: resolvePostSearchQueries(preset),
+    sortBy: 'date',
+    profileScraperMode: 'short',
+    startPage: Math.min(3, Math.max(1, Number(Deno.env.get('FETCH_LINKEDIN_POST_SEARCH_PAGE') ?? '1') || 1)),
+    reactionsProfileScraperMode: 'short',
+    commentsProfileScraperMode: 'short',
+  };
 }
 
 function linkedInPostsOnlyMode(): boolean {
@@ -666,36 +762,54 @@ function linkedInPostsEnabled(): boolean {
   return (Deno.env.get('FETCH_LINKEDIN_CONTENT_24H') ?? 'true').toLowerCase() !== 'false';
 }
 
-function buildHarvestApiPostsInput(): Record<string, unknown> {
-  const raw = Deno.env.get('FETCH_LINKEDIN_CONTENT_KEYWORDS');
-  const keywords = raw?.trim()
-    ? raw.split(',').map((k) => k.trim()).filter(Boolean)
-    : DEFAULT_CONTENT_KEYWORDS;
-  const maxPosts = postsFetchLimit();
-  return {
-    searchQueries: keywords.slice(0, 5),
-    maxPosts,
-    postedLimit: '24h',
-    sortBy: 'date',
-    scrapeReactions: false,
-    scrapeComments: false,
-  };
+export function resolvePostSearchQuery(preset: ResolvedLinkedInPostPreset): string {
+  const envSearch = Deno.env.get('FETCH_LINKEDIN_POST_SEARCH')?.trim();
+  if (envSearch) {
+    return envSearch;
+  }
+  if (preset.id === 'general') {
+    return preset.keywords[0] || 'jobs in vizag';
+  }
+  if (preset.id === 'it') {
+    return preset.keywords[0] || 'software jobs vizag';
+  }
+  if (preset.id === 'bank') {
+    return preset.keywords[0] || 'bank jobs vizag';
+  }
+  return preset.keywords[0] || 'jobs in vizag';
 }
 
-function buildPostsActorInput(actorId: string): Record<string, unknown> {
-  const maxPosts = postsFetchLimit();
+function buildHarvestApiPostsInput(preset: ResolvedLinkedInPostPreset): Record<string, unknown> {
+  return buildHarvestStylePostsInput(preset);
+}
+
+function buildPostsActorInput(
+  actorId: string,
+  preset: ResolvedLinkedInPostPreset,
+): Record<string, unknown> {
   const override = Deno.env.get('APIFY_LINKEDIN_POSTS_INPUT_JSON')?.trim();
   if (override) {
-    return parseEnvJsonOverride('APIFY_LINKEDIN_POSTS_INPUT_JSON', override);
+    const parsed = parseEnvJsonOverride('APIFY_LINKEDIN_POSTS_INPUT_JSON', override);
+    if (preset.id !== 'custom' && 'urls' in parsed && !('searchQueries' in parsed)) {
+      console.warn(
+        JSON.stringify({
+          event: 'apify_posts_input_json_ignored_urls',
+          preset: preset.id,
+          hint: 'APIFY_LINKEDIN_POSTS_INPUT_JSON uses urls scraper; use searchQueries for buIWk2uOUzTmcLsuB or remove this secret.',
+        }),
+      );
+      return buildHarvestStylePostsInput(preset);
+    }
+    return parsed;
   }
 
-  if (isHarvestApiPostsActor(actorId)) {
-    return buildHarvestApiPostsInput();
+  if (isHarvestStylePostsActor(actorId) || preset.id !== 'custom') {
+    return buildHarvestStylePostsInput(preset);
   }
 
-  const searchUrls = getLinkedInContentSearchUrls();
+  const maxPosts = postsFetchLimit();
+  const searchUrls = getLinkedInContentSearchUrls(preset);
   const perSource = Math.max(3, Math.ceil(maxPosts / Math.max(1, searchUrls.length)));
-
   const scrapeUntil = new Date(Date.now() - MS_24H).toISOString().slice(0, 10);
 
   const input: Record<string, unknown> = {
@@ -721,16 +835,39 @@ function buildPostsActorInput(actorId: string): Record<string, unknown> {
   return input;
 }
 
-function getPostsActorCandidates(): string[] {
-  const primary = Deno.env.get('APIFY_LINKEDIN_POSTS_ACTOR')?.trim() || DEFAULT_POSTS_ACTOR;
-  const fallback =
-    Deno.env.get('APIFY_LINKEDIN_POSTS_ACTOR_FALLBACK')?.trim() || FALLBACK_POSTS_ACTOR;
-  return [...new Set([primary, fallback].map(normalizeActorId))];
+function resolveHarvestPostsActorId(): string {
+  const fromEnv =
+    Deno.env.get('APIFY_LINKEDIN_VIZAG_POSTS_ACTOR')?.trim() ||
+    Deno.env.get('APIFY_LINKEDIN_POSTS_ACTOR')?.trim();
+  if (fromEnv && isHarvestStylePostsActor(fromEnv)) {
+    return normalizeActorId(fromEnv);
+  }
+  if (fromEnv && isCuriousCoderPostsActor(fromEnv)) {
+    console.warn(
+      JSON.stringify({
+        event: 'apify_posts_actor_curious_coder_ignored',
+        configured: fromEnv,
+        using: DEFAULT_VIZAG_POSTS_ACTOR,
+        hint: 'Set APIFY_LINKEDIN_POSTS_ACTOR=harvestapi~linkedin-post-search, not curious_coder URL scraper.',
+      }),
+    );
+  }
+  return normalizeActorId(DEFAULT_VIZAG_POSTS_ACTOR);
+}
+
+function getPostsActorCandidates(preset: ResolvedLinkedInPostPreset): string[] {
+  if (preset.id === 'custom' && preset.urls.length > 0) {
+    const urlActor =
+      Deno.env.get('APIFY_LINKEDIN_POSTS_URL_ACTOR')?.trim() || FALLBACK_POSTS_ACTOR;
+    return [normalizeActorId(urlActor)];
+  }
+  return [resolveHarvestPostsActorId()];
 }
 
 async function runPostsActors(
   token: string,
   budget: FetchBudgetLike | undefined,
+  preset: ResolvedLinkedInPostPreset,
 ): Promise<{
   posts: ApifyLinkedInContentPost[];
   runId: string | null;
@@ -738,26 +875,39 @@ async function runPostsActors(
   actorUsed: string | null;
   rawItems: number;
   searchUrls: string[];
+  searchQueries: string[];
 }> {
-  const actors = getPostsActorCandidates();
-  const searchUrls = getLinkedInContentSearchUrls();
+  const actors = getPostsActorCandidates(preset);
+  const searchUrls = getLinkedInContentSearchUrls(preset);
+  const searchQueries = resolvePostSearchQueries(preset);
   let lastError: string | null = null;
   let lastRunId: string | null = null;
   let lastRaw = 0;
 
   for (const actorId of actors) {
-    const input = buildPostsActorInput(actorId);
+    if (preset.id !== 'custom' && !isHarvestStylePostsActor(actorId)) {
+      continue;
+    }
+    const input = buildPostsActorInput(actorId, preset);
     const run = await apifyRunActor(actorId, input, token, budget);
     lastRunId = run.runId;
     lastError = run.error;
     lastRaw = run.items.length;
     const posts = apifyItemsToLinkedInPosts(run.items);
+    const isHarvestStyle = isHarvestStylePostsActor(actorId);
     console.log(
       JSON.stringify({
         event: 'apify_linkedin_posts',
         actor: actorId,
+        preset: preset.id,
         run_id: run.runId,
+        input_mode: isHarvestStyle ? 'searchQueries' : 'urls',
+        input_search_queries: isHarvestStyle
+          ? (input.searchQueries as string[] | undefined)
+          : undefined,
+        input_max_posts: isHarvestStyle ? input.maxPosts : undefined,
         search_urls: searchUrls,
+        search_queries: searchQueries,
         raw_items: run.items.length,
         mapped_posts: posts.length,
         error: run.error,
@@ -772,6 +922,20 @@ async function runPostsActors(
         actorUsed: actorId,
         rawItems: run.items.length,
         searchUrls,
+        searchQueries,
+      };
+    }
+    if (isHarvestStyle && run.items.length > 0) {
+      return {
+        posts: [],
+        runId: run.runId,
+        error:
+          `Actor returned ${run.items.length} posts but none matched Vizag hiring filters. ` +
+          `Search used: "${searchQueries[0]}". Try FETCH_LINKEDIN_POST_SEARCH=jobs in vizag or loosen filters.`,
+        actorUsed: actorId,
+        rawItems: run.items.length,
+        searchUrls,
+        searchQueries,
       };
     }
     if (run.error && !/403|404|rent|not found|cookie/i.test(run.error)) {
@@ -799,6 +963,7 @@ async function runPostsActors(
     actorUsed: null,
     rawItems: lastRaw,
     searchUrls,
+    searchQueries,
   };
 }
 
@@ -994,6 +1159,7 @@ export async function discoverLinkedInViaApify(
   budget?: FetchBudgetLike,
   scrapedAt?: string,
   mode: ApifyDiscoverMode = 'both',
+  postPreset?: ResolvedLinkedInPostPreset,
 ): Promise<ApifyLinkedInDiscoverResult> {
   const jobsToken = getApifyTokenForRole('jobs');
   const postsToken = getApifyTokenForRole('posts');
@@ -1007,6 +1173,7 @@ export async function discoverLinkedInViaApify(
     apify_jobs_run_id: null,
     apify_posts_run_id: null,
     apify_jobs_count: 0,
+    apify_posts_raw_count: 0,
     apify_posts_count: 0,
     apify_jobs_error: token ? null : 'APIFY_API_TOKEN not set',
     apify_posts_error: token ? null : 'APIFY_API_TOKEN not set',
@@ -1019,7 +1186,8 @@ export async function discoverLinkedInViaApify(
   validateApifyEnvJsonSecrets();
 
   const instant = scrapedAt ?? new Date().toISOString();
-  const contentSearchUrls = getLinkedInContentSearchUrls();
+  const preset = postPreset ?? resolveLinkedInPostPreset('general');
+  const contentSearchUrls = getLinkedInContentSearchUrls(preset);
 
   let jobs: ApifyExtractedJob[] = [];
   let posts: ApifyLinkedInContentPost[] = [];
@@ -1027,6 +1195,7 @@ export async function discoverLinkedInViaApify(
   let apify_posts_run_id: string | null = null;
   let apify_jobs_error: string | null = null;
   let apify_posts_error: string | null = null;
+  let apify_posts_raw_count = 0;
 
   const jobsEnabled = mode !== 'posts_only' && linkedInJobsListingEnabled();
   const postsEnabled = mode !== 'jobs_only' && linkedInPostsEnabled();
@@ -1042,9 +1211,10 @@ export async function discoverLinkedInViaApify(
       apify_posts_error = 'Skipped posts actor — insufficient time budget';
       return;
     }
-    const postsResult = await runPostsActors(postsToken ?? token, budget);
+    const postsResult = await runPostsActors(postsToken ?? token, budget, preset);
     apify_posts_run_id = postsResult.runId;
     apify_posts_error = postsResult.error;
+    apify_posts_raw_count = postsResult.rawItems;
     posts = postsResult.posts;
     if (postsResult.posts.length > 0) {
       apify_posts_error = null;
@@ -1092,6 +1262,7 @@ export async function discoverLinkedInViaApify(
     apify_jobs_run_id,
     apify_posts_run_id,
     apify_jobs_count: jobs.length,
+    apify_posts_raw_count,
     apify_posts_count: posts.length,
     apify_jobs_error,
     apify_posts_error,
