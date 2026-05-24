@@ -44,6 +44,14 @@ npm run build
 
 The build step auto-generates `public/sitemap.xml` from Supabase so published job detail pages are included alongside the main SEO landing pages.
 
+## Google Jobs Schema (JobPosting JSON-LD)
+
+Job detail pages emit `schema.org/JobPosting` structured data for Google for Jobs. See [docs/google-jobs-seo.md](./docs/google-jobs-seo.md) for:
+
+- Vercel edge middleware setup (`SUPABASE_URL`, `SUPABASE_ANON_KEY` env vars)
+- Database migration for `json_ld` / `seo_meta` columns
+- Post-deploy validation with Google Rich Results Test
+
 ## Preview Production Build
 
 ```bash

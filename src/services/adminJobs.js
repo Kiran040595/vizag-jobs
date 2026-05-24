@@ -48,6 +48,8 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'company_logo_url',
   'status',
   'is_featured',
+  'json_ld',
+  'seo_meta',
 ]);
 
 const splitTopLevelCommaValues = (value, options = {}) => {
@@ -328,6 +330,15 @@ export const sanitizeExternalJobForInsert = (values) => {
     applyLink = normalizeText(values?.source_url) || '';
   }
 
+  const incomingSeoMeta =
+    values?.seo_meta && typeof values.seo_meta === 'object' ? values.seo_meta : null;
+  const incomingJsonLd =
+    values?.json_ld && typeof values.json_ld === 'object'
+      ? values.json_ld
+      : incomingSeoMeta?.json_ld && typeof incomingSeoMeta.json_ld === 'object'
+        ? incomingSeoMeta.json_ld
+        : null;
+
   const {
     seo_source_context: _seoCtx,
     seo_optimized: _seoOpt,
@@ -356,6 +367,8 @@ export const sanitizeExternalJobForInsert = (values) => {
     warning:
       normalizeText(values?.warning) ||
       'Verify job details on the employer site before sharing personal documents or payments. Never pay a fee to apply.',
+    json_ld: incomingJsonLd,
+    seo_meta: incomingSeoMeta,
   };
 };
 
@@ -432,6 +445,14 @@ export const serializeJobForm = (values, statusOverride) => {
   MULTILINE_FIELDS.forEach((field) => {
     payload[field] = normalizeLineItems(values[field]);
   });
+
+  if (values.json_ld && typeof values.json_ld === 'object' && !Array.isArray(values.json_ld)) {
+    payload.json_ld = values.json_ld;
+  }
+
+  if (values.seo_meta && typeof values.seo_meta === 'object' && !Array.isArray(values.seo_meta)) {
+    payload.seo_meta = values.seo_meta;
+  }
 
   return payload;
 };

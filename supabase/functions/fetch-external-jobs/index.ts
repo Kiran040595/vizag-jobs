@@ -117,6 +117,16 @@ type SiteJobRecord = {
   is_likely_hiring_post?: boolean;
   linkedin_post_preset?: string | null;
   linkedin_post_preset_label?: string | null;
+  json_ld?: Record<string, unknown> | null;
+  seo_meta?: {
+    json_ld?: Record<string, unknown> | null;
+    hashtags?: string[];
+    keyword_density?: { keyword: string; count: number }[];
+    gemini_model?: string;
+    runtime_ms?: number;
+    seo_profile?: string;
+    had_custom_instructions?: boolean;
+  } | null;
 };
 
 const corsHeaders: Record<string, string> = {
@@ -3249,7 +3259,20 @@ async function geminiSeoOptimizeBatch(
 
   return records.map((record, index) => {
     const seo = byIndex.get(index);
-    return seo ? applySeoPayload(record, seo) : record;
+    if (!seo) {
+      return record;
+    }
+    const extras = extractSeoExtrasFromPayload(seo);
+    const updated = applySeoPayload(record, seo);
+    return {
+      ...updated,
+      json_ld: extras.json_ld,
+      seo_meta: {
+        json_ld: extras.json_ld,
+        hashtags: extras.hashtags,
+        keyword_density: extras.keyword_density,
+      },
+    };
   });
 }
 

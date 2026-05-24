@@ -9,7 +9,8 @@ This project now expects a Supabase table named `jobs` with snake_case column na
 3. Run [20260427_create_jobs_schema.sql](/D:/School%20Project/VIzagJobs/supabase/migrations/20260427_create_jobs_schema.sql).
 4. Run [20260503_add_admin_jobs_policies.sql](/D:/School%20Project/VIzagJobs/supabase/migrations/20260503_add_admin_jobs_policies.sql) to add admin allowlisting and write policies.
 5. Run [20260515_employer_job_posting.sql](/D:/School%20Project/VIzagJobs/supabase/migrations/20260515_employer_job_posting.sql) for employer profiles, pending job submissions, and employer RLS.
-6. Optionally run [seed.sql](/D:/School%20Project/VIzagJobs/supabase/seed.sql) to add two sample jobs.
+6. Run [20260524_add_jobs_json_ld_seo.sql](/D:/School%20Project/VIzagJobs/supabase/migrations/20260524_add_jobs_json_ld_seo.sql) for Gemini `JobPosting` JSON-LD and SEO metadata columns.
+7. Optionally run [seed.sql](/D:/School%20Project/VIzagJobs/supabase/seed.sql) to add two sample jobs.
 
 ## 2. Add frontend env values
 

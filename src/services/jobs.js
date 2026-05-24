@@ -84,6 +84,12 @@ const processJobData = (job, index) => {
     sourceUrl: normalizeText(job.source_url),
     skills: joinList(job.skills),
     companyLogo: normalizeText(job.company_logo_url),
+    companyLogoUrl: normalizeText(job.company_logo_url),
+    jsonLd:
+      job.json_ld && typeof job.json_ld === 'object' && !Array.isArray(job.json_ld)
+        ? job.json_ld
+        : null,
+    expiresAt: normalizeText(job.expires_at),
     tags: [category, jobType, fresherTag].filter(Boolean),
   };
 };

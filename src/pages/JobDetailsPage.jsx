@@ -14,6 +14,9 @@ import {
   looksLikeStructuredJobDescription,
   stripMarkdownForPlainText,
 } from '../lib/jobDescriptionDisplay';
+import { buildJobPostingSchema } from '../lib/jobPostingSchema';
+import { buildBreadcrumbSchema } from '../lib/breadcrumbSchema';
+import { SITE_URL } from '../lib/site';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -130,12 +133,36 @@ export default function JobDetailsPage() {
       }`
     : 'Job details and application information for positions in Visakhapatnam.';
 
+  const structuredData = useMemo(() => {
+    if (!job) {
+      return undefined;
+    }
+
+    const jobPosting = buildJobPostingSchema(job, { siteUrl: SITE_URL });
+    const breadcrumb = buildBreadcrumbSchema(job, { siteUrl: SITE_URL });
+    const graph = [jobPosting, breadcrumb].filter(Boolean);
+
+    if (graph.length === 0) {
+      return undefined;
+    }
+
+    if (graph.length === 1) {
+      return graph[0];
+    }
+
+    return {
+      '@context': 'https://schema.org',
+      '@graph': graph,
+    };
+  }, [job]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
       <SEO
         title={jobTitle}
         description={jobDescription}
         canonical={job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`}
+        structuredData={structuredData}
       />
       <Navbar />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
