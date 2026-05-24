@@ -189,11 +189,19 @@ const buildListingPageHeadInjection = (path, { siteUrl }) => {
   });
 };
 
+const stripExistingHead = (html) =>
+  html
+    .replace(/<title>[\s\S]*?<\/title>/i, '')
+    .replace(/<meta\s[^>]*name=["']description["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*name=["']keywords["'][^>]*>/gi, '')
+    .replace(/<link\s[^>]*rel=["']canonical["'][^>]*>/gi, '');
+
 const injectIntoHtml = (html, injection) => {
-  if (html.includes('</head>')) {
-    return html.replace('</head>', `    ${injection}\n  </head>`);
+  const stripped = stripExistingHead(html);
+  if (stripped.includes('</head>')) {
+    return stripped.replace('</head>', `    ${injection}\n  </head>`);
   }
-  return `${injection}\n${html}`;
+  return `${injection}\n${stripped}`;
 };
 
 const fetchIndexShell = (request) => fetch(new URL('/index.html', request.url));
