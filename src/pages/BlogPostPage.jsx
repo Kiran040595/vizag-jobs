@@ -7,6 +7,8 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchPublishedPostBySlug } from '../services/blogs';
+import { buildBlogPostingSchema } from '../lib/blogPostingSchema';
+import { SITE_URL } from '../lib/site';
 
 const formatDate = (value) => {
   if (!value) return '';
@@ -96,6 +98,7 @@ export default function BlogPostPage() {
 
   const canonical = post ? `/blog/${post.slug}` : '/blog';
   const description = post?.excerpt || post?.title || 'Vizag Jobs blog';
+  const blogPostingSchema = post ? buildBlogPostingSchema(post, { siteUrl: SITE_URL }) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/30 to-white">
@@ -104,6 +107,7 @@ export default function BlogPostPage() {
         description={description}
         canonical={canonical}
         ogUrl={canonical}
+        structuredData={blogPostingSchema}
       />
       <Navbar />
 

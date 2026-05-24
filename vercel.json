@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/|favicon\\.|robots\\.txt|sitemap\\.xml|manifest\\.|sw\\.js|workbox-|registerSW\\.|.*\\.(?:js|css|map|png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf|eot|json|xml|txt|webmanifest|html)).*)",
+      "destination": "/index.html"
+    }
+  ],
   "redirects": [
     {
       "source": "/jobs-in-vizag",
@@ -18,11 +24,6 @@
     {
       "source": "/part-time-jobs-vizag",
       "destination": "/jobs/part-time",
-      "permanent": true
-    },
-    {
-      "source": "/jobs/:jobId",
-      "destination": "/job/:jobId",
       "permanent": true
     },
     {
