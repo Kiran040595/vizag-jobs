@@ -78,13 +78,17 @@ export const buildCollectionPageSchema = (path, options = {}) => {
     inLanguage: 'en-IN',
     isPartOf: {
       '@type': 'WebSite',
-      name: 'Vizag Jobs',
-      url: siteUrl,
+      '@id': `${siteUrl}/#website`,
+      name: 'Jobs in Vizag',
+      alternateName: 'Vizag Jobs',
+      url: `${siteUrl}/`,
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Vizag Jobs',
-      url: siteUrl,
+      '@id': `${siteUrl}/#organization`,
+      name: 'Jobs in Vizag',
+      alternateName: 'Vizag Jobs',
+      url: `${siteUrl}/`,
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/icon-512x512.png`,

@@ -10,7 +10,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt', 'sitemap.xml'],
+      includeAssets: [
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'og-image.png',
+        'logo.png',
+        'robots.txt',
+        'sitemap.xml',
+      ],
       manifest: {
         name: 'Jobs in Vizag',
         short_name: 'Vizag Jobs',

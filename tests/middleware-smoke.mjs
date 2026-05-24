@@ -115,10 +115,16 @@ const countMatches = (html, re) => (html.match(re) || []).length;
 const expectInjected = async (response, asserts) => {
   assert.equal(response.status, 200, `expected 200, got ${response.status}`);
   const html = await response.text();
-  // Universal head-hygiene checks: exactly one of each tag.
+  // Universal head-hygiene checks: exactly one of each tag, site name present.
   assert.equal(countMatches(html, /<title>/gi), 1, 'duplicate <title> tags');
   assert.equal(countMatches(html, /<meta\s[^>]*name=["']description["']/gi), 1, 'duplicate description metas');
   assert.equal(countMatches(html, /<link\s[^>]*rel=["']canonical["']/gi), 1, 'duplicate canonical links');
+  assert.equal(countMatches(html, /<meta\s[^>]*property=["']og:site_name["']/gi), 1, 'duplicate og:site_name');
+  assert.equal(countMatches(html, /<meta\s[^>]*property=["']og:image["']\s+content=/gi), 1, 'duplicate og:image');
+  assert.ok(/og:site_name["']\s*content=["']Jobs in Vizag/.test(html), 'og:site_name should be "Jobs in Vizag"');
+  assert.ok(/application-name["']\s*content=["']Jobs in Vizag/.test(html), 'application-name should be "Jobs in Vizag"');
+  assert.ok(/og:image["']\s+content=["'][^"']*\/og-image\.png["']/.test(html), 'og:image should reference /og-image.png');
+  assert.ok(/twitter:image["']\s+content=["'][^"']*\/og-image\.png["']/.test(html), 'twitter:image should reference /og-image.png');
   for (const [label, predicate] of asserts) {
     assert.ok(predicate(html), `assertion failed: ${label}`);
   }

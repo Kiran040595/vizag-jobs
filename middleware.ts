@@ -5,6 +5,8 @@ import { buildBlogPostingSchema } from './src/lib/blogPostingSchema.js';
 import { buildListingHeadInjection, getListingMeta } from './src/lib/collectionPageSchema.js';
 
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
+const SITE_NAME = 'Jobs in Vizag';
+const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -126,24 +128,33 @@ const buildJobMetaDescription = (job) => {
     : `Apply for ${title} at ${company} in ${location}. Find more jobs in Vizag and Visakhapatnam.`.slice(0, 160);
 };
 
-const renderHead = ({ title, description, canonicalUrl, keywords, scripts = [], noindex = false, ogType = 'website' }) =>
-  [
+const renderHead = ({ title, description, canonicalUrl, keywords, scripts = [], noindex = false, ogType = 'website', siteUrl, ogImagePath = DEFAULT_OG_IMAGE_PATH }) => {
+  const ogImageUrl = `${String(siteUrl || '').replace(/\/+$/, '')}${ogImagePath.startsWith('/') ? ogImagePath : `/${ogImagePath}`}`;
+  return [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" />`,
     keywords ? `<meta name="keywords" content="${escapeHtml(keywords)}" />` : '',
+    `<meta name="application-name" content="${escapeHtml(SITE_NAME)}" />`,
     `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`,
+    `<meta property="og:site_name" content="${escapeHtml(SITE_NAME)}" />`,
     `<meta property="og:title" content="${escapeHtml(title)}" />`,
     `<meta property="og:description" content="${escapeHtml(description)}" />`,
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
     `<meta property="og:type" content="${ogType}" />`,
+    `<meta property="og:image" content="${escapeHtml(ogImageUrl)}" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:image:alt" content="${escapeHtml(SITE_NAME)} — Find Your Career in Vizag" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(description)}" />`,
+    `<meta name="twitter:image" content="${escapeHtml(ogImageUrl)}" />`,
     noindex ? '<meta name="robots" content="noindex, follow" />' : '',
     ...scripts,
   ]
     .filter(Boolean)
     .join('\n    ');
+};
 
 const buildJobHeadInjection = (job, { siteUrl, canonicalPath, noindex }) => {
   const canonicalUrl = `${siteUrl}${canonicalPath}`;
@@ -156,7 +167,7 @@ const buildJobHeadInjection = (job, { siteUrl, canonicalPath, noindex }) => {
   if (jobPosting) scripts.push(jsonLdScript(jobPosting));
   if (breadcrumb) scripts.push(jsonLdScript(breadcrumb));
 
-  return renderHead({ title, description, canonicalUrl, scripts, noindex });
+  return renderHead({ title, description, canonicalUrl, scripts, noindex, siteUrl });
 };
 
 const buildBlogPostHeadInjection = (post, { siteUrl }) => {
@@ -170,7 +181,7 @@ const buildBlogPostHeadInjection = (post, { siteUrl }) => {
   const scripts = [];
   if (blogPosting) scripts.push(jsonLdScript(blogPosting));
 
-  return renderHead({ title, description, canonicalUrl, scripts, ogType: 'article' });
+  return renderHead({ title, description, canonicalUrl, scripts, ogType: 'article', siteUrl });
 };
 
 const buildListingPageHeadInjection = (path, { siteUrl }) => {
@@ -186,6 +197,7 @@ const buildListingPageHeadInjection = (path, { siteUrl }) => {
     canonicalUrl: injection.canonicalUrl,
     keywords: injection.keywords,
     scripts,
+    siteUrl,
   });
 };
 
@@ -194,6 +206,14 @@ const stripExistingHead = (html) =>
     .replace(/<title>[\s\S]*?<\/title>/i, '')
     .replace(/<meta\s[^>]*name=["']description["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*name=["']keywords["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*name=["']application-name["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*name=["']twitter:[^"']+["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*property=["']og:site_name["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*property=["']og:title["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*property=["']og:description["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*property=["']og:url["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*property=["']og:type["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*property=["']og:image[^"']*["'][^>]*>/gi, '')
     .replace(/<link\s[^>]*rel=["']canonical["'][^>]*>/gi, '');
 
 const injectIntoHtml = (html, injection) => {

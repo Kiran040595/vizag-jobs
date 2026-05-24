@@ -79,13 +79,17 @@ export const buildBlogPostingSchema = (post, options = {}) => {
     url: canonicalUrl,
     author: {
       '@type': 'Organization',
-      name: 'Vizag Jobs',
-      url: siteUrl,
+      '@id': `${siteUrl}/#organization`,
+      name: 'Jobs in Vizag',
+      alternateName: 'Vizag Jobs',
+      url: `${siteUrl}/`,
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Vizag Jobs',
-      url: siteUrl,
+      '@id': `${siteUrl}/#organization`,
+      name: 'Jobs in Vizag',
+      alternateName: 'Vizag Jobs',
+      url: `${siteUrl}/`,
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/icon-512x512.png`,
@@ -93,7 +97,7 @@ export const buildBlogPostingSchema = (post, options = {}) => {
         height: 512,
       },
     },
-    image: [`${siteUrl}/icon-512x512.png`],
+    image: [`${siteUrl}/og-image.png`, `${siteUrl}/icon-512x512.png`],
   };
 
   if (articleBody) {
