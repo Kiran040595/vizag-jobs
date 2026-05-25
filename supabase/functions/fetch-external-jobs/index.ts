@@ -165,8 +165,32 @@ const NAUKRI_DETAIL_SEARCH_QUERIES = [
   'site:www.naukri.com/job-listings Andhra Pradesh Visakhapatnam',
 ];
 
-/** Naukri city hub — mined for extra job-listings URLs when search results are thin. */
+/** Naukri city hub — unfiltered fallback used only when the 24h hub returns nothing. */
 const NAUKRI_VIZAG_HUB_URL = 'https://www.naukri.com/jobs-in-visakhapatnam';
+
+/**
+ * Naukri Vizag jobs feed filtered server-side to **last 24 hours** (`jobAge=1`),
+ * Visakhapatnam city (`cityTypeGid=26`), active postings (`jobPostType=1`), and
+ * the curated set of functional areas the operator wants. This is the primary
+ * source for the Naukri channel — Naukri's own freshness filter is far more
+ * accurate than parsing relative phrases out of detail-page markdown.
+ */
+const NAUKRI_VIZAG_24H_HUB_URL =
+  'https://www.naukri.com/jobs-in-visakhapatnam?clusters=functionalAreaGid&functionAreaIdGid=1&functionAreaIdGid=2&functionAreaIdGid=3&functionAreaIdGid=5&functionAreaIdGid=6&functionAreaIdGid=7&functionAreaIdGid=8&functionAreaIdGid=11&functionAreaIdGid=13&functionAreaIdGid=14&functionAreaIdGid=18&functionAreaIdGid=24&functionAreaIdGid=25&functionAreaIdGid=36&functionAreaIdGid=37&cityTypeGid=26&jobPostType=1&jobAge=1';
+
+/** Add `&pageNo=N` for paginating the Naukri Vizag 24h hub. Page 1 stays as-is. */
+function naukriHubUrlForPage(baseUrl: string, page: number): string {
+  if (page <= 1) {
+    return baseUrl;
+  }
+  try {
+    const u = new URL(baseUrl);
+    u.searchParams.set('pageNo', String(page));
+    return u.toString();
+  } catch {
+    return baseUrl;
+  }
+}
 
 const DEFAULT_NAUKRI_SCRAPE_LIMIT = 20;
 
@@ -685,6 +709,21 @@ function parseRelativePostedAt(phrase: string | null | undefined, referenceIso: 
   if (/\byesterday\b/i.test(low)) {
     return new Date(ref.getTime() - msDay).toISOString();
   }
+
+  // ORDER MATTERS: month/year before day/week, otherwise "1 month ago"
+  // matches the day/week branch via the leading number on different patterns.
+  const years = low.match(/(\d+)\s*(?:y|yr|yrs|years?)\s*ago/i);
+  if (years) {
+    return new Date(ref.getTime() - Number(years[1]) * 365 * msDay).toISOString();
+  }
+  const months = low.match(/(\d+)\s*(?:mo|mos|months?)\s*ago/i);
+  if (months) {
+    return new Date(ref.getTime() - Number(months[1]) * 30 * msDay).toISOString();
+  }
+  if (/\b30\+\s*days?\s*ago\b/i.test(low) || /\bover\s+a\s+month\s*ago\b/i.test(low)) {
+    return new Date(ref.getTime() - 31 * msDay).toISOString();
+  }
+
   const days = low.match(/(\d+)\s*days?\s*ago/i);
   if (days) {
     return new Date(ref.getTime() - Number(days[1]) * msDay).toISOString();
@@ -1635,9 +1674,21 @@ function extractPostedPhrase(md: string, summary: string | null | undefined): st
       .match(/Posted:\s*([^O\n]+?)(?:Openings:|Applicants:|Register to apply|Continue with|$)/i)?.[1]
       ?.replace(/Openings$/i, '')
       .trim() ??
-    blob.match(/\bPosted:\s*(\d+\s+days?\s+ago|\d+\s+weeks?\s+ago|just\s+now|today|yesterday)\b/i)?.[1]?.trim() ??
+    // Explicit "Posted: <phrase>" — covers month/year wording Naukri actually uses.
+    blob
+      .match(
+        /\bPosted:\s*(\d+\s+(?:hours?|days?|weeks?|months?|mos?|years?|yrs?|y)\s+ago|just\s+now|today|yesterday|\d+\s*[hd]|over\s+a\s+month\s+ago|30\+\s+days?\s+ago)\b/i,
+      )
+      ?.[1]
+      ?.trim() ??
+    blob.match(/\b(\d+\s*(?:mo|mos|months?|y|yr|yrs|years?)\s*ago)\b/i)?.[1]?.trim() ??
     blob.match(/\b(\d+\s*(?:m|min|mins|minutes?|h|hr|hrs|hours?)\s*ago)\b/i)?.[1]?.trim() ??
-    blob.match(/\b(Just\s+now|Today|Yesterday|\d+\s*days?\s*ago|\d+\s*weeks?\s*ago)\b/i)?.[1]?.trim();
+    blob
+      .match(
+        /\b(Just\s+now|Today|Yesterday|\d+\s*days?\s*ago|\d+\s*weeks?\s*ago|over\s+a\s+month\s+ago|30\+\s*days?\s*ago)\b/i,
+      )
+      ?.[1]
+      ?.trim();
   return posted ?? null;
 }
 
@@ -3562,6 +3613,12 @@ type DiscoverDetailResult = {
   linkedin_post_preset: string | null;
   linkedin_post_preset_label: string | null;
   linkedin_search_queries_used: string[];
+  /** Naukri channel: hub URLs actually scraped (24h hub + any extra pages, plus legacy fallback when used). */
+  naukri_hub_urls_scraped?: string[];
+  /** Naukri channel: true when the legacy unfiltered hub had to be scraped because the 24h hub returned no URLs. */
+  naukri_used_legacy_hub_fallback?: boolean;
+  /** Naukri channel: true when the legacy `firecrawl search` queries were also run (opt-in, FETCH_NAUKRI_USE_SEARCH=true). */
+  naukri_used_search_fallback?: boolean;
 };
 
 async function discoverLinkedInViaFirecrawl(
@@ -3710,6 +3767,9 @@ async function discoverDetailUrlsForChannel(
     linkedin_post_preset: null as string | null,
     linkedin_post_preset_label: null as string | null,
     linkedin_search_queries_used: [] as string[],
+    naukri_hub_urls_scraped: [] as string[],
+    naukri_used_legacy_hub_fallback: false,
+    naukri_used_search_fallback: false,
   };
 
   if (channel === 'naukri') {
@@ -3720,16 +3780,25 @@ async function discoverDetailUrlsForChannel(
         apify_posts_error: 'FIRECRAWL_API_KEY_NAUKRI (or FIRECRAWL_API_KEY / FIRECRAWL_API_KEYS) not set',
       };
     }
-    const limitPerQuery = Math.min(
-      10,
-      Number(Deno.env.get('FETCH_JOB_DETAIL_SEARCH_LIMIT') ?? '8') || 8,
+
+    const hubPages = Math.min(
+      5,
+      Math.max(1, Number(Deno.env.get('FETCH_NAUKRI_HUB_PAGES') ?? '1') || 1),
     );
-    const fromNaukri = await firecrawlSearchQueries(NAUKRI_DETAIL_SEARCH_QUERIES, limitPerQuery, firecrawlApiKeys);
-    for (const u of fromNaukri) {
-      found.add(u);
+    const hubUrlsPlanned: string[] = [];
+    for (let page = 1; page <= hubPages; page += 1) {
+      hubUrlsPlanned.push(naukriHubUrlForPage(NAUKRI_VIZAG_24H_HUB_URL, page));
     }
-    if (!budget || budget.hasTime(28_000)) {
-      const hubMd = await firecrawlScrapeUrl(NAUKRI_VIZAG_HUB_URL, firecrawlApiKeys);
+    const hubUrlsScraped: string[] = [];
+
+    // Primary: scrape the curated 24h hub (one page by default, more via env).
+    // Naukri server-side filters to last 24h, so we don't need search at all.
+    for (const hubUrl of hubUrlsPlanned) {
+      if (budget && !budget.hasTime(20_000)) {
+        break;
+      }
+      const hubMd = await firecrawlScrapeUrl(hubUrl, firecrawlApiKeys);
+      hubUrlsScraped.push(hubUrl);
       if (hubMd.length > 200) {
         for (const u of extractIndividualJobUrlsFromText(hubMd)) {
           if (/naukri\.com/i.test(u) && looksLikeIndividualJobApplyUrl(u)) {
@@ -3738,7 +3807,49 @@ async function discoverDetailUrlsForChannel(
         }
       }
     }
-    return { urls: [...found], ...emptyMeta };
+
+    // Fallback: if the 24h hub gave us nothing (no recent jobs OR scrape blocked),
+    // try the unfiltered city hub so the run doesn't come back completely empty.
+    let usedLegacyHub = false;
+    if (found.size === 0 && (!budget || budget.hasTime(20_000))) {
+      const hubMd = await firecrawlScrapeUrl(NAUKRI_VIZAG_HUB_URL, firecrawlApiKeys);
+      hubUrlsScraped.push(NAUKRI_VIZAG_HUB_URL);
+      usedLegacyHub = true;
+      if (hubMd.length > 200) {
+        for (const u of extractIndividualJobUrlsFromText(hubMd)) {
+          if (/naukri\.com/i.test(u) && looksLikeIndividualJobApplyUrl(u)) {
+            found.add(u);
+          }
+        }
+      }
+    }
+
+    // Optional: legacy Firecrawl `search` queries. They don't honor jobAge=1, so
+    // they bring in stale jobs the 24h post-filter has to drop. Off by default.
+    const useSearch =
+      (Deno.env.get('FETCH_NAUKRI_USE_SEARCH') ?? 'false').toLowerCase() === 'true';
+    if (useSearch) {
+      const limitPerQuery = Math.min(
+        10,
+        Number(Deno.env.get('FETCH_JOB_DETAIL_SEARCH_LIMIT') ?? '8') || 8,
+      );
+      const fromNaukri = await firecrawlSearchQueries(
+        NAUKRI_DETAIL_SEARCH_QUERIES,
+        limitPerQuery,
+        firecrawlApiKeys,
+      );
+      for (const u of fromNaukri) {
+        found.add(u);
+      }
+    }
+
+    return {
+      urls: [...found],
+      ...emptyMeta,
+      naukri_hub_urls_scraped: hubUrlsScraped,
+      naukri_used_legacy_hub_fallback: usedLegacyHub,
+      naukri_used_search_fallback: useSearch,
+    };
   }
 
   if (channel === 'indeed') {
@@ -4397,12 +4508,22 @@ async function geminiExtractFromSearchSnippets(
   return geminiExtractJobs(instruction, apiKey, referenceTimeUtc);
 }
 
-/** Prefer posted date parsed from the scraped source; use fetch time only when none is available. */
+/**
+ * Prefer posted date parsed from the scraped source.
+ *
+ * - In **strict** mode (Naukri default), returns `null` when no date can be parsed,
+ *   so the downstream 24h filter drops the job. This avoids stamping undated
+ *   listings as "just posted" and leaking month/year-old jobs into results.
+ * - In **non-strict** mode, falls back to `fetchInstant` (legacy optimistic
+ *   behavior) — keep this for sources we trust to surface only fresh listings
+ *   (e.g. LinkedIn past-24h content feed).
+ */
 function resolvePostedAtFromSource(
   job: SiteJobRecord,
   raw: ExtractedJob | undefined,
   fetchInstant: string,
-): string {
+  options: { strict?: boolean } = {},
+): string | null {
   if (parsePostedAt(job.posted_at)) {
     return job.posted_at!;
   }
@@ -4415,7 +4536,7 @@ function resolvePostedAtFromSource(
   if (parsed) {
     return parsed;
   }
-  return fetchInstant;
+  return options.strict ? null : fetchInstant;
 }
 
 function buildNaukriFetchResponse(input: {
@@ -4437,6 +4558,9 @@ function buildNaukriFetchResponse(input: {
   scrapedBefore24hFilter: number;
   filteredOutOlderThan24h: number;
   requirePostedWithin24h: boolean;
+  naukriHubUrlsScraped: string[];
+  naukriUsedLegacyHubFallback: boolean;
+  naukriUsedSearchFallback: boolean;
 }): Record<string, unknown> {
   return {
     ok: true,
@@ -4449,15 +4573,19 @@ function buildNaukriFetchResponse(input: {
     provider_used: 'firecrawl',
     extraction_mode: 'per_url_scrape',
     extraction_hint:
-      'Naukri Vizag job-listings via Firecrawl search + Visakhapatnam hub. Review jobs, then run Make SEO before publish.',
+      'Naukri Vizag jobs via curated 24h hub (jobAge=1, cityTypeGid=26, functionAreaIdGid filters). Review jobs, then run Make SEO before publish.',
     extraction_debug: input.extractionDebug,
     filters_applied: {
       fetch_channel: 'naukri',
       sources: ['naukri.com'],
       location_context: ['Visakhapatnam', 'Vizag', 'Andhra Pradesh', 'Andhra'],
       require_posted_within_24h: input.requirePostedWithin24h,
-      naukri_hub_url: NAUKRI_VIZAG_HUB_URL,
-      search_queries: NAUKRI_DETAIL_SEARCH_QUERIES,
+      naukri_primary_hub_url: NAUKRI_VIZAG_24H_HUB_URL,
+      naukri_legacy_hub_url: NAUKRI_VIZAG_HUB_URL,
+      naukri_hub_urls_scraped: input.naukriHubUrlsScraped,
+      naukri_used_legacy_hub_fallback: input.naukriUsedLegacyHubFallback,
+      naukri_used_search_fallback: input.naukriUsedSearchFallback,
+      search_queries: input.naukriUsedSearchFallback ? NAUKRI_DETAIL_SEARCH_QUERIES : [],
     },
     discovery: {
       detail_urls_discovered: input.detailUrlsDiscovered,
@@ -5532,6 +5660,13 @@ Deno.serve(async (req) => {
     const mappedJobs = dedupeSiteJobs(mappedBeforeDedupe);
     const sourceContextMap = buildSourceContextMap(rawJobs);
 
+    // Strict-by-default for Naukri: drop listings whose posted date can't be parsed.
+    // Naukri pages sometimes hide the "Posted: X days ago" string or use month/year
+    // wording that older parsers missed, so the legacy fallback to `fetchInstant`
+    // would mis-stamp them as fresh and leak through the 24h filter.
+    const naukriStrictDates =
+      (Deno.env.get('FETCH_NAUKRI_STRICT_DATES') ?? 'true').toLowerCase() !== 'false';
+
     markPhase('map_done');
     let siteJobs = mappedJobs.map((job) => {
       const raw = rawJobs.find((r) => {
@@ -5540,7 +5675,7 @@ Deno.serve(async (req) => {
         );
         return rawKey === siteJobDedupeKey(job);
       });
-      let posted_at = job.posted_at;
+      let posted_at: string | null = job.posted_at ?? null;
       if (
         job.source_name === 'linkedin.com' &&
         raw?.source_kind !== 'linkedin_post' &&
@@ -5550,7 +5685,9 @@ Deno.serve(async (req) => {
         posted_at = fetchInstant;
       }
       if (job.source_name === 'naukri.com') {
-        posted_at = resolvePostedAtFromSource(job, raw, fetchInstant);
+        posted_at = resolvePostedAtFromSource(job, raw, fetchInstant, {
+          strict: naukriStrictDates,
+        });
       }
       return {
         ...job,
@@ -5622,6 +5759,11 @@ Deno.serve(async (req) => {
           (j.title === 'Job description' || j.title === 'Job opening'),
       ).length,
       naukri_urls_discovered: naukriUrls.length,
+      naukri_hub_urls_scraped: linkedinDiscoverMeta?.naukri_hub_urls_scraped ?? [],
+      naukri_used_legacy_hub_fallback:
+        linkedinDiscoverMeta?.naukri_used_legacy_hub_fallback ?? false,
+      naukri_used_search_fallback:
+        linkedinDiscoverMeta?.naukri_used_search_fallback ?? false,
       detail_urls_queued_for_scrape: urlsToScrape.length,
       scraped_before_24h_filter,
       filtered_out_older_than_24h: naukri_filtered_out_older_than_24h,
@@ -5776,6 +5918,11 @@ Deno.serve(async (req) => {
           filteredOutOlderThan24h: naukri_filtered_out_older_than_24h,
           requirePostedWithin24h:
             (Deno.env.get('FETCH_REQUIRE_POSTED_WITHIN_24H') ?? 'true').toLowerCase() !== 'false',
+          naukriHubUrlsScraped: linkedinDiscoverMeta?.naukri_hub_urls_scraped ?? [],
+          naukriUsedLegacyHubFallback:
+            linkedinDiscoverMeta?.naukri_used_legacy_hub_fallback ?? false,
+          naukriUsedSearchFallback:
+            linkedinDiscoverMeta?.naukri_used_search_fallback ?? false,
         }),
       );
     }

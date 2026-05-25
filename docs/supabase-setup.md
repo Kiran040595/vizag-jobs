@@ -163,8 +163,8 @@ The **Existing Jobs** page links to `/admin/fetch` for discovery; manage publish
 
 - **LinkedIn (Apify):** Default when `APIFY_API_TOKEN` is set. Runs two Store actors (IDs configurable): jobs listing URL + content search URL. Response includes `linkedin_provider: "apify"`, `apify_jobs_count`, `apify_posts_count`. Set **`FETCH_JOB_SOURCES=linkedin`** for LinkedIn-only.
 - **LinkedIn (Firecrawl fallback):** Set `FETCH_LINKEDIN_PROVIDER=firecrawl` or `FETCH_LINKEDIN_FALLBACK_FIRECRAWL=true` when Apify returns nothing.
-- **Naukri:** Unchanged — Firecrawl only (`FETCH_JOB_SOURCES=both` requires `FIRECRAWL_API_KEY`).
-- **Naukri:** Firecrawl `site:naukri.com/job-listings` search — only **single job detail** pages are kept (search/hub SERP pages are skipped; embedded listings on a SERP are scraped instead).
+- **Naukri:** Firecrawl only (`FETCH_JOB_SOURCES=both` requires `FIRECRAWL_API_KEY`).
+- **Naukri:** Primary discovery is the curated **Vizag 24h hub** — `https://www.naukri.com/jobs-in-visakhapatnam?...&cityTypeGid=26&jobPostType=1&jobAge=1` (server-side filters: last 24 hours, Visakhapatnam, active postings, curated `functionAreaIdGid` filters). The unfiltered city hub is used as a fallback when the 24h hub yields zero URLs. Legacy `firecrawl search` queries are off by default — set `FETCH_NAUKRI_USE_SEARCH=true` to also run them. Only **single job detail** pages survive the URL filter (search/hub SERP pages are skipped; embedded listings on a SERP are scraped instead).
 - **`jobs[]`:** By default only roles with **`posted_at` within the last 24 hours** (`FETCH_REQUIRE_POSTED_WITHIN_24H=true`). Undated roles go to `jobs_undated`.
 - **`FETCH_JOB_SOURCES`:** Set to `linkedin` to fetch **LinkedIn only** (no Naukri). Values: `linkedin`, `naukri`, `both` (default).
 - **Sources:** **`linkedin.com`** and **`naukri.com`** detail URLs only.
@@ -276,6 +276,9 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `FETCH_LINKEDIN_CONTENT_PAGES` | Max content SERP pages to scrape per run (default **3**, max **5**). |
 | `FETCH_JOB_SOURCES` | `linkedin` (LinkedIn only), `naukri`, or `both` (default). |
 | `FETCH_REQUIRE_POSTED_WITHIN_24H` | Set `false` to include jobs without a parsed `posted_at` in `jobs[]` (default **true**). |
+| `FETCH_NAUKRI_STRICT_DATES` | When **true** (default), Naukri jobs whose posted date can't be parsed are dropped from `jobs[]` instead of being optimistically stamped with the fetch time. Set `false` for the legacy behavior. |
+| `FETCH_NAUKRI_HUB_PAGES` | Number of pages of the curated Naukri Vizag 24h hub to scrape per run (default **1**, max **5**). Page 1 typically holds all fresh listings; raise to **2–3** if you see fewer than expected jobs. |
+| `FETCH_NAUKRI_USE_SEARCH` | Set **true** to also run the legacy `firecrawl search` queries in addition to the curated 24h hub (default **false**). Search results don't honor `jobAge=1`, so the post-fetch 24h filter does extra work to drop them. |
 | `FETCH_LINKEDIN_SCRAPE_WAIT_MS` | Extra wait for LinkedIn pages in Firecrawl (default **4000**). |
 | `FETCH_LINKEDIN_CONTENT_POSTS` | Set `false` to skip hiring-post extraction from the content feed (default **true**). |
 | `FETCH_LINKEDIN_CONTENT_POSTS_LIMIT` | Max hiring posts per fetch (default **20**). Response includes `apify_posts_raw_count` (dataset items) and `apify_posts_count` (after Vizag/hiring filters). |

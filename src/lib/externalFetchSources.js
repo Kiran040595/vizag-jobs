@@ -5,7 +5,8 @@ export const EXTERNAL_FETCH_SOURCES = [
   {
     id: 'naukri',
     title: 'Naukri',
-    description: 'Naukri job-listings in Visakhapatnam / Vizag (past 24h when dates parse).',
+    description:
+      'Naukri Vizag jobs from the curated 24h hub (jobAge=1, cityTypeGid=26, functional-area filters). Server-side filtered to past 24h.',
     providerHint: 'Firecrawl',
     secretHint: 'FIRECRAWL_API_KEY_NAUKRI, FIRECRAWL_API_KEYS',
     accent: 'border-amber-200 bg-amber-50 hover:border-amber-300',
