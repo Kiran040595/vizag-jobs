@@ -473,6 +473,36 @@ export const deserializeJobForForm = (job) => {
   };
 };
 
+/**
+ * Check whether a slug is already used by *another* job. Used by the SEO
+ * approval dialog to surface unique-constraint collisions before the
+ * UPDATE round-trip, instead of after a failed save.
+ *
+ * @param {string} slug
+ * @param {string | null | undefined} excludeJobId  Job id to ignore (so
+ *        re-saving a job with its existing slug returns false).
+ * @returns {Promise<boolean>}
+ */
+export const isJobSlugTaken = async (slug, excludeJobId) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const trimmed = normalizeText(slug);
+  if (!trimmed) return false;
+
+  let query = supabase.from(JOBS_TABLE).select('id').eq('slug', trimmed).limit(1);
+  if (excludeJobId) {
+    query = query.neq('id', excludeJobId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw mapError(error, 'Could not verify slug availability.');
+  }
+  return Array.isArray(data) && data.length > 0;
+};
+
 export const fetchAdminJobs = async () => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');

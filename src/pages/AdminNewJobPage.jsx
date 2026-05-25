@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import AdminShell from '../components/admin/AdminShell';
 import AdminJobForm from '../components/admin/AdminJobForm';
-import { createAdminJobFromSql, deserializeJobForForm } from '../services/adminJobs';
+import { createAdminJobFromSql } from '../services/adminJobs';
+import { consumeAdminJobPrefill } from '../lib/adminNewJobPrefill';
 
 const SQL_EXAMPLE = `INSERT INTO public.jobs (
   slug,
@@ -60,12 +61,34 @@ const SQL_EXAMPLE = `INSERT INTO public.jobs (
 export default function AdminNewJobPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const prefillValues = useMemo(() => {
-    if (!location.state?.prefill) {
-      return null;
-    }
-    return deserializeJobForForm(location.state.prefill);
+
+  // Same-tab path (legacy): values arrive already deserialized via router state.
+  // Don't deserialize again — it would clobber array fields to empty strings.
+  const prefillFromState = useMemo(() => {
+    const prefill = location.state?.prefill;
+    if (!prefill || typeof prefill !== 'object') return null;
+    return prefill;
   }, [location.state?.prefill]);
+
+  // New-tab path: external fetch page stashes the prefill in localStorage and
+  // opens us with `?prefillKey=<id>`. Consume the entry once on mount and
+  // strip the param from the URL so a refresh doesn't try to replay it.
+  const [prefillFromStorage, setPrefillFromStorage] = useState(null);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('prefillKey');
+    if (!id) return;
+    const stored = consumeAdminJobPrefill(id);
+    if (stored) {
+      setPrefillFromStorage(stored);
+    }
+    params.delete('prefillKey');
+    const cleanedSearch = params.toString();
+    const cleanedPath = `${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}`;
+    navigate(cleanedPath, { replace: true, state: location.state ?? {} });
+  }, [location.pathname, location.search, location.state, navigate]);
+
+  const prefillValues = prefillFromState || prefillFromStorage || null;
 
   useEffect(() => {
     if (!location.state?.prefill) {

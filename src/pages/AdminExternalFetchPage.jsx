@@ -9,6 +9,7 @@ import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../servic
 import { fetchExternalJobsBySource, seoOptimizeExternalJob } from '../services/externalJobFetch';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
+import { stashAdminJobPrefill } from '../lib/adminNewJobPrefill';
 
 const BULK_IMPORT_CONCURRENCY = 3;
 
@@ -255,6 +256,25 @@ export default function AdminExternalFetchPage() {
     }
   };
 
+  // Edit opens the create-job page in a NEW tab so the current fetched-jobs
+  // list isn't unmounted (and lost) under the user. Prefill is too large for
+  // a query-string, so we stash it in localStorage and pass just a key.
+  const handleEditInNewTab = (job) => {
+    const prefill = deserializeJobForForm(job);
+    const id = stashAdminJobPrefill(prefill);
+    const target = id
+      ? `/admin/new?prefillKey=${encodeURIComponent(id)}`
+      : '/admin/new';
+    const url = `${window.location.origin}${target}`;
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      // Popup blocker — fall back to same-tab navigation with router state so
+      // the edit at least still works (state is lost, but the user can press
+      // Back to recover).
+      navigate('/admin/new', { state: { prefill } });
+    }
+  };
+
   const handleBulkImport = async (selectedJobs, status) => {
     let ok = 0;
     let fail = 0;
@@ -440,7 +460,7 @@ export default function AdminExternalFetchPage() {
         onPublish={(job) => handleImport(job, 'published')}
         onSaveDraft={(job) => handleImport(job, 'draft')}
         onSkip={handleSkip}
-        onEdit={(job) => navigate('/admin/new', { state: { prefill: deserializeJobForForm(job) } })}
+        onEdit={handleEditInNewTab}
         onBulkPublish={(selected) => handleBulkImport(selected, 'published')}
         onBulkSaveDraft={(selected) => handleBulkImport(selected, 'draft')}
       />

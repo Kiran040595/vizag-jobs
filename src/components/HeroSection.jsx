@@ -10,7 +10,13 @@ const popularTags = [
   'Fresher Jobs'
 ];
 
-export default function HeroSection({ searchTerm, onSearch, category: categoryProp, onCategoryChange }) {
+export default function HeroSection({
+  searchTerm,
+  onSearch,
+  onSubmit,
+  category: categoryProp,
+  onCategoryChange,
+}) {
   const [localCategory, setLocalCategory] = useState('All Categories');
   const category = onCategoryChange ? categoryProp ?? 'All Categories' : localCategory;
   const [location, setLocation] = useState('Visakhapatnam');
@@ -56,7 +62,18 @@ export default function HeroSection({ searchTerm, onSearch, category: categoryPr
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSearch(searchTerm);
+    if (onSubmit) {
+      // HomePage owns the URL — flush the current input immediately so a
+      // pending debounce doesn't drop the search after the user hits Enter.
+      onSubmit(searchTerm);
+    } else {
+      onSearch(searchTerm);
+    }
+  };
+
+  const handlePopularTagClick = (tag) => {
+    onSearch(tag);
+    if (onSubmit) onSubmit(tag);
   };
 
   return (
@@ -135,7 +152,7 @@ export default function HeroSection({ searchTerm, onSearch, category: categoryPr
               <button
                 key={tag}
                 type="button"
-                onClick={() => onSearch(tag)}
+                onClick={() => handlePopularTagClick(tag)}
                 className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:px-3 sm:py-1.5 sm:text-xs"
               >
                 {tag}

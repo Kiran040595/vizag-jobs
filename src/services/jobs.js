@@ -1,9 +1,55 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 
-const CACHE_DURATION = 60000;
+const CACHE_DURATION = 60_000;
 const DEFAULT_TABLE_NAME = 'jobs';
 const jobsTable = import.meta.env.VITE_SUPABASE_JOBS_TABLE || DEFAULT_TABLE_NAME;
+
+/**
+ * Default cap for list queries. The 45-day public display window already
+ * bounds list size, but a hard limit is a safety net against runaway data
+ * (e.g. a buggy import) blowing past the Supabase free-tier egress budget.
+ */
+export const DEFAULT_LIST_LIMIT = 500;
+
+/**
+ * Shared session-storage TTL for the public listing pages. Bumped from 5 min
+ * to 20 min to reduce repeat fetches per session — the public site doesn't
+ * need fresher-than-this data, and the in-memory cache (60s) still keeps
+ * navigation snappy.
+ */
+export const JOB_LIST_SESSION_CACHE_TTL_MS = 20 * 60 * 1000;
+
+/**
+ * Slim column allow-list for listing queries. Anything the home-page card,
+ * filter pills, search, freshness check, sitemap, or canonical-URL builder
+ * needs — and nothing that's only used on the detail page.
+ *
+ * Heavy fields intentionally left out (loaded on the detail page via
+ * `fetchJobById` instead): description, responsibilities, eligibility,
+ * json_ld, warning, apply_link, source_url. Those four big text/JSON fields
+ * are typically 80-90% of a row's bytes.
+ */
+const LIST_COLUMNS = [
+  'id',
+  'slug',
+  'title',
+  'company',
+  'location',
+  'category',
+  'job_type',
+  'work_mode',
+  'experience',
+  'is_fresher',
+  'salary',
+  'short_description',
+  'skills',
+  'company_logo_url',
+  'source_name',
+  'posted_at',
+  'expires_at',
+  'status',
+].join(', ');
 
 const jobsCache = new Map();
 
@@ -54,6 +100,14 @@ const joinList = (value) => {
 
 const normalizeFresherValue = (value) => (value ? 'Yes' : 'No');
 
+/**
+ * Map a Supabase row to the public-facing shape consumed by the UI.
+ *
+ * Heavy/optional fields (`description`, `responsibilities`, `eligibility`,
+ * `json_ld`, `warning`, `apply_link`, `source_url`) are forwarded only when
+ * the caller requested them via `fetchJobById`; in list responses they will
+ * simply be `undefined`/empty, which all consumers already handle.
+ */
 const processJobData = (job, index) => {
   const category = normalizeText(job.category);
   const jobType = normalizeText(job.job_type);
@@ -97,9 +151,11 @@ const processJobData = (job, index) => {
 const escapeIlike = (value) => value.replaceAll('%', '\\%').replaceAll(',', '\\,');
 
 const buildSupabaseQuery = (filters = {}) => {
+  const limit = filters.limit ?? DEFAULT_LIST_LIMIT;
+
   let query = supabase
     .from(jobsTable)
-    .select('*')
+    .select(LIST_COLUMNS)
     .eq('status', 'published')
     .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
     .order('posted_at', { ascending: false })
@@ -119,11 +175,17 @@ const buildSupabaseQuery = (filters = {}) => {
 
   if (filters.search) {
     const term = escapeIlike(filters.search.trim());
-    query = query.or(`title.ilike.%${term}%,company.ilike.%${term}%,description.ilike.%${term}%`);
+    // NOTE: description was intentionally removed from the OR set since
+    // the slim list query no longer fetches it. Searching covers
+    // title/company/short_description here, and the client-side filter
+    // (jobFilters.applyJobFilters) covers skills/location/experience.
+    query = query.or(
+      `title.ilike.%${term}%,company.ilike.%${term}%,short_description.ilike.%${term}%`,
+    );
   }
 
-  if (filters.limit !== undefined && filters.limit !== null) {
-    query = query.limit(Number(filters.limit));
+  if (limit !== null && limit !== undefined) {
+    query = query.limit(Number(limit));
   }
 
   return query;
@@ -132,7 +194,7 @@ const buildSupabaseQuery = (filters = {}) => {
 export const fetchJobs = async (filters = {}, forceRefresh = false) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error(
-      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
   }
 
@@ -171,6 +233,69 @@ export const fetchJobs = async (filters = {}, forceRefresh = false) => {
   return processedJobs;
 };
 
+/**
+ * Fetch a single job by its UUID `id` or its `slug`. Used by the detail page
+ * so it doesn't have to download the entire list to render one row.
+ *
+ * Returns `null` when no matching published job exists within the public
+ * display window. Heavy fields (description, json_ld, etc.) are included
+ * because the detail page needs them.
+ *
+ * Note: we cannot use a single `.or('id.eq.X,slug.eq.X')` filter — Postgres
+ * has to cast every operand at parse time, so a non-UUID slug would crash
+ * the `id::uuid` cast before the OR could short-circuit. Dispatch by shape
+ * instead and run a single targeted equality check against the right column.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const jobByIdCache = new Map();
+
+export const fetchJobById = async (idOrSlug, options = {}) => {
+  const { forceRefresh = false } = options;
+  if (!idOrSlug) return null;
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
+    );
+  }
+
+  const key = String(idOrSlug);
+  const includeAllStatuses = Boolean(options.includeAllStatuses);
+  // Cache buckets are per-scope so a public miss followed by an admin hit
+  // (or vice-versa) doesn't return stale data from the wrong bucket.
+  const cacheKey = includeAllStatuses ? `admin:${key}` : `public:${key}`;
+  const cached = jobByIdCache.get(cacheKey);
+  if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.job;
+  }
+
+  const lookupColumn = UUID_RE.test(key) ? 'id' : 'slug';
+
+  const data = await retryWithBackoff(async () => {
+    let query = supabase.from(jobsTable).select('*').eq(lookupColumn, key).limit(1);
+
+    // Admin viewers can read drafts/archived rows (RLS still gates this);
+    // public viewers only see published jobs within the display window.
+    if (!includeAllStatuses) {
+      query = query
+        .eq('status', 'published')
+        .gte('posted_at', getMinPostedAtIsoForPublicDisplay());
+    }
+
+    const { data: rows, error } = await query;
+
+    if (error) {
+      throw new Error(`Supabase job lookup failed: ${error.message}`);
+    }
+    return rows;
+  });
+
+  const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+  const job = row ? processJobData(row, 0) : null;
+
+  jobByIdCache.set(cacheKey, { job, timestamp: Date.now() });
+  return job;
+};
+
 export const getAllJobs = async (limit, forceRefresh = false) =>
   fetchJobs(limit ? { limit } : {}, forceRefresh);
 
@@ -188,4 +313,5 @@ export const searchJobs = async (searchTerm, limit, forceRefresh = false) =>
 
 export const clearJobsCache = () => {
   jobsCache.clear();
+  jobByIdCache.clear();
 };

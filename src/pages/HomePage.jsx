@@ -1,57 +1,84 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
+import JobFilters from '../components/JobFilters';
+import Pagination from '../components/Pagination';
 import StatsSection from '../components/StatsSection';
 import CTASection from '../components/CTASection';
 import BlogTeaserSection from '../components/BlogTeaserSection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { fetchJobs } from '../services/jobs';
+import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
-import { isItRelatedJob } from '../lib/jobItMatch';
+import {
+  CATEGORY_OPTIONS,
+  DEFAULT_FILTERS,
+  PAGE_SIZE,
+  applyJobFilters,
+  paginate,
+  readFiltersFromSearchParams,
+  writeFiltersToSearchParams,
+} from '../lib/jobFilters';
 
-const jobMatchesSearchText = (job, raw) => {
-  const q = raw.trim().toLowerCase();
-  if (!q) return true;
-  const blob = [
-    job.title,
-    job.company,
-    job.skills,
-    job.description,
-    job.shortDescription,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  return blob.includes(q);
-};
+const SEARCH_DEBOUNCE_MS = 300;
+const CACHE_KEY = 'vizagJobs';
+const CACHE_TTL_MS = JOB_LIST_SESSION_CACHE_TTL_MS;
+// Trigger a background refresh once we're within the last minute of the TTL.
+const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_MS * 0.8));
+
+/** Hero's existing select uses these labels; map between them and the URL ids. */
+const CATEGORY_LABEL_TO_ID = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.label, o.id]));
+const CATEGORY_ID_TO_LABEL = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.id, o.label]));
 
 export default function HomePage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [category, setCategory] = useState('All Categories');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo(() => readFiltersFromSearchParams(searchParams), [searchParams]);
+
   const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  // Refresh jobs in background
+  // Local input state so typing feels snappy. The URL is the source of truth
+  // for the *applied* search; we sync to it on a 300ms debounce.
+  const [searchInput, setSearchInput] = useState(filters.q);
+  const lastUrlQRef = useRef(filters.q);
+  const listSectionRef = useRef(null);
+  const userInteractedRef = useRef(false);
+
+  // Sync local input ← URL when the URL changes from outside (back/forward,
+  // chip removal, clear-all). Don't clobber active typing.
+  useEffect(() => {
+    if (filters.q !== lastUrlQRef.current) {
+      setSearchInput(filters.q);
+      lastUrlQRef.current = filters.q;
+    }
+  }, [filters.q]);
+
+  // Debounce-write input → URL `q` param.
+  useEffect(() => {
+    if (searchInput === filters.q) return;
+    const handle = window.setTimeout(() => {
+      lastUrlQRef.current = searchInput;
+      const next = writeFiltersToSearchParams({ ...filters, q: searchInput, page: 1 });
+      setSearchParams(next, { replace: true });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
   const refreshJobsInBackground = useCallback(async () => {
     setIsBackgroundRefreshing(true);
     try {
-      const jobs = await fetchJobs({}, true); // Force refresh
+      const jobs = await fetchJobs({}, true);
       if (jobs.length > 0) {
         setAllJobs(jobs);
-        // Update cache with new timestamp
-        const cacheData = {
-          jobs,
-          timestamp: Date.now()
-        };
-        sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
       }
     } catch (error) {
-      // Silently fail background refresh - user still has cached data
       console.warn('Background refresh failed:', error);
     } finally {
       setIsBackgroundRefreshing(false);
@@ -61,153 +88,194 @@ export default function HomePage() {
   useEffect(() => {
     let isMounted = true;
 
-    const loadJobs = async () => {
-      // First, try to load from sessionStorage (expires after 5 minutes)
-      const cachedData = sessionStorage.getItem('vizagJobs');
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
-      if (cachedData) {
-        try {
-          const { jobs, timestamp } = JSON.parse(cachedData);
-          const now = Date.now();
-
-          // Check if cache is still valid (less than 5 minutes old)
-          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
-            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
-            if (visibleJobs.length > 0) {
-              setAllJobs(visibleJobs);
-              setIsLoading(false);
-
-              // Start background refresh if cache is getting old (older than 4 minutes)
-              if ((now - timestamp) > (4 * 60 * 1000)) {
-                refreshJobsInBackground();
-              }
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error parsing cached jobs:', error);
-        }
-      }
-
-      // If no valid cache, fetch from API
-      await fetchFreshJobs();
-    };
-
     const fetchFreshJobs = async () => {
       try {
         const jobs = await fetchJobs();
         if (!isMounted) return;
-
         if (jobs.length > 0) {
           setAllJobs(jobs);
-          const cacheData = {
-            jobs,
-            timestamp: Date.now()
-          };
-          sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
           setLoadError('');
           return;
         }
-
         setLoadError('No jobs found. Please check back later.');
       } catch (error) {
         if (!isMounted) return;
         console.error('Error fetching jobs:', error);
-        setLoadError(error instanceof Error ? error.message : 'Failed to load jobs. Please try refreshing the page.');
+        setLoadError(
+          error instanceof Error ? error.message : 'Failed to load jobs. Please try refreshing the page.',
+        );
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    loadJobs();
+    const loadJobs = async () => {
+      const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+      if (cachedRaw) {
+        try {
+          const { jobs, timestamp } = JSON.parse(cachedRaw);
+          const age = Date.now() - Number(timestamp);
+          if (Array.isArray(jobs) && jobs.length > 0 && age < CACHE_TTL_MS) {
+            const visible = filterProcessedJobsForPublicDisplay(jobs);
+            if (visible.length > 0) {
+              setAllJobs(visible);
+              setIsLoading(false);
+              if (age > CACHE_STALE_AT_MS) refreshJobsInBackground();
+              return;
+            }
+          }
+        } catch (err) {
+          console.error('Error parsing cached jobs:', err);
+        }
+      }
+      await fetchFreshJobs();
+    };
 
+    loadJobs();
     return () => {
       isMounted = false;
     };
   }, [refreshJobsInBackground]);
 
-  const filteredJobs = useMemo(() => {
-    let list = allJobs;
+  // ---------- Filter / pagination derivations ----------
+  const filteredJobs = useMemo(() => applyJobFilters(allJobs, filters), [allJobs, filters]);
+  const pagination = useMemo(
+    () => paginate(filteredJobs, filters.page, PAGE_SIZE),
+    [filteredJobs, filters.page],
+  );
 
-    if (category === 'IT & Software') {
-      list = list.filter(isItRelatedJob);
-    } else if (category === 'Non-IT Jobs') {
-      list = list.filter((job) => !isItRelatedJob(job));
-    } else if (category === 'Fresher Jobs') {
-      list = list.filter(
-        (job) =>
-          job.isFresher === 'Yes' ||
-          job.experience.toLowerCase().includes('fresher') ||
-          job.experience.includes('0')
-      );
-    } else if (category === 'Walk-in Interviews') {
-      list = list.filter((job) => {
-        const t = `${job.title} ${job.description} ${job.shortDescription}`.toLowerCase();
-        return t.includes('walk-in') || t.includes('walk in') || t.includes('walkin');
+  // If the URL says page=5 but there are only 2 pages of results, snap back.
+  useEffect(() => {
+    if (pagination.page !== filters.page) {
+      const next = writeFiltersToSearchParams({ ...filters, page: pagination.page });
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page, filters.page]);
+
+  // ---------- Filter mutators ----------
+  const updateFilters = useCallback(
+    (partial, options = {}) => {
+      const next = { ...filters, ...partial };
+      // Any user-driven filter change should reset pagination unless the
+      // caller explicitly opts out (e.g. when they're changing the page).
+      if (!('page' in partial) && !options.preservePage) {
+        next.page = 1;
+      }
+      userInteractedRef.current = true;
+      setSearchParams(writeFiltersToSearchParams(next));
+    },
+    [filters, setSearchParams],
+  );
+
+  const clearAllFilters = useCallback(() => {
+    setSearchInput('');
+    lastUrlQRef.current = '';
+    userInteractedRef.current = true;
+    setSearchParams(writeFiltersToSearchParams({ ...DEFAULT_FILTERS }));
+  }, [setSearchParams]);
+
+  const handleCategoryChange = useCallback(
+    (label) => {
+      const id = CATEGORY_LABEL_TO_ID[label] ?? 'all';
+      updateFilters({ category: id });
+    },
+    [updateFilters],
+  );
+
+  const handleSearchSubmit = useCallback(
+    (value) => {
+      // The Hero's submit fires immediately — flush any pending debounce by
+      // writing right now.
+      lastUrlQRef.current = value;
+      setSearchInput(value);
+      const next = writeFiltersToSearchParams({ ...filters, q: value, page: 1 });
+      setSearchParams(next);
+    },
+    [filters, setSearchParams],
+  );
+
+  const handlePageChange = useCallback(
+    (nextPage) => {
+      updateFilters({ page: nextPage }, { preservePage: true });
+      // Smooth-scroll the user back to the top of the list section.
+      window.requestAnimationFrame(() => {
+        listSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
-    }
+    },
+    [updateFilters],
+  );
 
-    return list.filter((job) => jobMatchesSearchText(job, searchTerm));
-  }, [allJobs, searchTerm, category]);
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Vizag Jobs",
-    "url": "https://jobsinvizag.in",
-    "description": "Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://jobsinvizag.in/?search={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
-  };
+  const structuredData = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Jobs in Vizag',
+      alternateName: 'Vizag Jobs',
+      url: 'https://jobsinvizag.in',
+      description:
+        'Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://jobsinvizag.in/?q={search_term_string}',
+        'query-input': 'required name=search_term_string',
+      },
+    }),
+    [],
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/30 to-white">
       <SEO
-        title="Vizag Jobs | Latest Jobs in Visakhapatnam 2026"
-        description="Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam."
-        keywords="Vizag Jobs, Jobs in Vizag, Visakhapatnam Jobs, IT Jobs Vizag, Fresher Jobs Vizag"
+        title="Jobs in Vizag | Latest Job Openings in Visakhapatnam 2026"
+        description="Find the latest IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam. Search and filter by category, type, and freshness."
+        keywords="Jobs in Vizag, Vizag Jobs, Visakhapatnam Jobs, IT Jobs Vizag, Fresher Jobs Vizag"
         canonical="/"
         structuredData={structuredData}
       />
       <Navbar />
       <HeroSection
-        searchTerm={searchTerm}
-        onSearch={setSearchTerm}
-        category={category}
-        onCategoryChange={setCategory}
+        searchTerm={searchInput}
+        onSearch={setSearchInput}
+        onSubmit={handleSearchSubmit}
+        category={CATEGORY_ID_TO_LABEL[filters.category] ?? 'All Categories'}
+        onCategoryChange={handleCategoryChange}
       />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        {/* <CategoriesSection /> */}
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : null}
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {isLoading ? <LoadingSpinner /> : null}
+
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">
             {loadError}
           </p>
         ) : null}
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
-          {filteredJobs.length} jobs match your search
-          {isBackgroundRefreshing && (
-            <span className="ml-2 inline-flex items-center text-xs text-blue-600">
-              <svg className="mr-1 h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Updating...
-            </span>
-          )}
-        </p>
-        <JobList jobs={filteredJobs} />
+
+        {!isLoading ? (
+          <JobFilters
+            filters={filters}
+            onUpdate={updateFilters}
+            onClearAll={clearAllFilters}
+            resultCount={filteredJobs.length}
+            isRefreshing={isBackgroundRefreshing}
+          />
+        ) : null}
+
+        <JobList
+          jobs={pagination.items}
+          total={filteredJobs.length}
+          onResetFilters={clearAllFilters}
+          headerRef={listSectionRef}
+        />
+
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
 
         <BlogTeaserSection />
-
         <StatsSection />
         <CTASection />
       </main>

@@ -4,8 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { fetchJobs } from '../services/jobs';
-import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { fetchJobById } from '../services/jobs';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { isJobFresh } from '../lib/jobFreshness';
 import NewBadge from '../components/NewBadge';
@@ -17,6 +16,8 @@ import {
 import { buildJobPostingSchema } from '../lib/jobPostingSchema';
 import { buildBreadcrumbSchema } from '../lib/breadcrumbSchema';
 import { SITE_URL } from '../lib/site';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -27,84 +28,70 @@ const splitCommaValues = (value) =>
 export default function JobDetailsPage() {
   const { jobId, jobSlug, jobSegment } = useParams();
   const navigate = useNavigate();
-  const [allJobs, setAllJobs] = useState([]);
+  const { isAdmin } = useAdminAuth();
+  const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+
+  const routeJobIdentifier = jobSlug || jobId || '';
+  const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
+
+  /**
+   * Fetch only the single row we're rendering. Bandwidth per detail-page
+   * hit drops from ~2.4 MB (full list) to ~10 KB (one row). Admins see a
+   * job in any status (draft / archived / published) so they can re-publish
+   * unpublished jobs from this page; RLS still gates that access.
+   *
+   * `refreshTick` is bumped after Make SEO completes (or any other action
+   * that may have rewritten every field) to force a re-fetch.
+   */
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadJobs = async () => {
-      // First, try to load from sessionStorage (expires after 5 minutes)
-      const cachedData = sessionStorage.getItem('vizagJobs');
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-      if (cachedData) {
-        try {
-          const { jobs, timestamp } = JSON.parse(cachedData);
-          const now = Date.now();
-
-          // Check if cache is still valid (less than 5 minutes old)
-          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
-            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
-            if (visibleJobs.length > 0) {
-              setAllJobs(visibleJobs);
-              setIsLoading(false);
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error parsing cached jobs:', error);
-        }
-      }
-
-      // If no cache, expired cache, or empty cache, fetch from API
-      try {
-        const jobs = await fetchJobs();
+    fetchJobById(routeJobIdentifier, {
+      includeAllStatuses: isAdmin,
+      forceRefresh: refreshTick > 0,
+    })
+      .then((found) => {
         if (!isMounted) return;
-        if (jobs.length > 0) {
-          setAllJobs(jobs);
-          // Cache with timestamp
-          const cacheData = {
-            jobs,
-            timestamp: Date.now()
-          };
-          sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
-        }
+        setJob(found);
         setLoadError('');
-      } catch (error) {
+      })
+      .catch((error) => {
         if (!isMounted) return;
         console.error('Error fetching job details:', error);
         setLoadError(error instanceof Error ? error.message : 'Failed to load job details.');
-      } finally {
+      })
+      .finally(() => {
         if (isMounted) setIsLoading(false);
-      }
-    };
-
-    loadJobs();
+      });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [routeJobIdentifier, isAdmin, refreshTick]);
+
+  /**
+   * Optimistic in-place update after a quick admin action — the server is
+   * the source of truth (the action already returned successfully), but we
+   * patch local state to avoid a follow-up network round-trip.
+   */
+  const handleAdminPatch = (patch) => {
+    if (!patch) return;
+    setJob((current) => (current ? { ...current, ...patch } : current));
+  };
+
+  /** Force a full re-fetch — used after Make SEO since every field may have changed. */
+  const handleAdminRefetch = () => {
+    setRefreshTick((tick) => tick + 1);
+  };
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  const routeJobIdentifier = jobSlug || jobId || '';
-  const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
-
-  const job = useMemo(
-    () =>
-      allJobs.find(
-        (item) =>
-          String(item.slug) === String(routeJobIdentifier) ||
-          String(item.id) === String(routeJobIdentifier)
-      ),
-    [allJobs, routeJobIdentifier]
-  );
 
   useEffect(() => {
     if (!job) {
@@ -169,6 +156,20 @@ export default function JobDetailsPage() {
         <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
           ← Back to jobs
         </Link>
+
+        {isAdmin && job ? (
+          <AdminJobActionsBar
+            job={job}
+            onPatch={handleAdminPatch}
+            onRefetch={handleAdminRefetch}
+          />
+        ) : null}
+
+        {isAdmin && job && job.status && job.status !== 'published' ? (
+          <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
+            This job is currently <strong>{job.status}</strong> — public visitors cannot see it.
+          </p>
+        ) : null}
 
         {isLoading ? (
           <LoadingSpinner message="Loading job details..." />

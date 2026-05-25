@@ -5,7 +5,7 @@ import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { fetchJobs } from '../services/jobs';
+import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { isItRelatedJob } from '../lib/jobItMatch';
 import { toAbsoluteUrl } from '../lib/site';
@@ -13,12 +13,14 @@ import { toAbsoluteUrl } from '../lib/site';
 const jobMatchesSearchText = (job, raw) => {
   const q = raw.trim().toLowerCase();
   if (!q) return true;
+  // Listing payload is slim — full `description` lives only on the detail
+  // page now. Search the metadata fields actually present on the card.
   const blob = [
     job.title,
     job.company,
     job.skills,
-    job.description,
     job.shortDescription,
+    job.category,
   ]
     .filter(Boolean)
     .join(' ')
@@ -36,16 +38,14 @@ export default function ItJobsInVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
-      // First, try to load from sessionStorage (expires after 5 minutes)
       const cachedData = sessionStorage.getItem('vizagJobs');
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+      const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
 
       if (cachedData) {
         try {
           const { jobs, timestamp } = JSON.parse(cachedData);
           const now = Date.now();
 
-          // Check if cache is still valid (less than 5 minutes old)
           if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
             const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
             if (visibleJobs.length > 0) {
