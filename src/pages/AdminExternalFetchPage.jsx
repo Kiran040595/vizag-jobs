@@ -10,8 +10,29 @@ import { fetchExternalJobsBySource, seoOptimizeExternalJob } from '../services/e
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
 import { stashAdminJobPrefill } from '../lib/adminNewJobPrefill';
+import {
+  clearAdminFetchSnapshot,
+  loadAdminFetchSnapshot,
+  saveAdminFetchSnapshot,
+} from '../lib/adminExternalFetchPersistence';
 
 const BULK_IMPORT_CONCURRENCY = 3;
+/** Debounce auto-save so rapid state changes (typing, bulk SEO) don't thrash localStorage. */
+const PERSIST_DEBOUNCE_MS = 250;
+/** Hide the "Restored from..." banner when the user just hit Fetch — only show on actual restores. */
+const RESTORED_BANNER_GRACE_MS = 5_000;
+
+const formatRelativeTime = (timestamp) => {
+  if (!timestamp) return '';
+  const diffSec = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.round(diffHr / 24);
+  return `${diffDay}d ago`;
+};
 
 async function runWithConcurrency(items, limit, worker) {
   const results = [];
@@ -33,21 +54,36 @@ async function runWithConcurrency(items, limit, worker) {
 export default function AdminExternalFetchPage() {
   const navigate = useNavigate();
   const { session, isSupabaseConfigured } = useAdminAuth();
+
+  // Hydrate from localStorage so a fetched batch survives tab switches,
+  // refreshes, and accidental browser closes. Read once via useMemo so each
+  // useState lazy initializer below sees the same snapshot without
+  // re-parsing JSON multiple times.
+  const initialSnapshot = useMemo(() => loadAdminFetchSnapshot(), []);
+
   const [existingJobs, setExistingJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(true);
-  const [activeSource, setActiveSource] = useState(null);
+  const [activeSource, setActiveSource] = useState(initialSnapshot?.activeSource ?? null);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
-  const [fetchPayload, setFetchPayload] = useState(null);
+  const [fetchPayload, setFetchPayload] = useState(initialSnapshot?.fetchPayload ?? null);
   const [notice, setNotice] = useState('');
-  const [reviewJobs, setReviewJobs] = useState([]);
-  const [skippedKeys, setSkippedKeys] = useState(() => new Set());
+  const [reviewJobs, setReviewJobs] = useState(() => initialSnapshot?.reviewJobs ?? []);
+  const [skippedKeys, setSkippedKeys] = useState(
+    () => new Set(initialSnapshot?.skippedKeys ?? []),
+  );
   const [busyImportKey, setBusyImportKey] = useState('');
   const [busySeoKey, setBusySeoKey] = useState('');
-  const [importErrors, setImportErrors] = useState({});
-  const [seoErrors, setSeoErrors] = useState({});
-  const [linkedInPostPreset, setLinkedInPostPreset] = useState('general');
-  const [linkedInCustomSearchUrl, setLinkedInCustomSearchUrl] = useState('');
+  const [importErrors, setImportErrors] = useState(initialSnapshot?.importErrors ?? {});
+  const [seoErrors, setSeoErrors] = useState(initialSnapshot?.seoErrors ?? {});
+  const [linkedInPostPreset, setLinkedInPostPreset] = useState(
+    initialSnapshot?.linkedInPostPreset ?? 'general',
+  );
+  const [linkedInCustomSearchUrl, setLinkedInCustomSearchUrl] = useState(
+    initialSnapshot?.linkedInCustomSearchUrl ?? '',
+  );
+  /** Timestamp of the active batch (when it was first fetched). null = no batch. */
+  const [batchFetchedAt, setBatchFetchedAt] = useState(initialSnapshot?.fetchedAt ?? null);
 
   useEffect(() => {
     let ignore = false;
@@ -69,6 +105,42 @@ export default function AdminExternalFetchPage() {
       ignore = true;
     };
   }, []);
+
+  // Persist the working batch on every relevant state change (debounced).
+  // When the batch is empty AND there's no payload, drop the snapshot
+  // entirely so we don't leave stale data behind.
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const isEmpty = reviewJobs.length === 0 && !fetchPayload;
+      if (isEmpty) {
+        clearAdminFetchSnapshot();
+        if (batchFetchedAt !== null) setBatchFetchedAt(null);
+        return;
+      }
+      saveAdminFetchSnapshot({
+        fetchedAt: batchFetchedAt ?? Date.now(),
+        activeSource,
+        fetchPayload,
+        reviewJobs,
+        skippedKeys: Array.from(skippedKeys),
+        importErrors,
+        seoErrors,
+        linkedInPostPreset,
+        linkedInCustomSearchUrl,
+      });
+    }, PERSIST_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+  }, [
+    activeSource,
+    batchFetchedAt,
+    fetchPayload,
+    reviewJobs,
+    skippedKeys,
+    importErrors,
+    seoErrors,
+    linkedInPostPreset,
+    linkedInCustomSearchUrl,
+  ]);
 
   const existingSlugs = useMemo(
     () => new Set(existingJobs.map((job) => String(job.slug || '').toLowerCase()).filter(Boolean)),
@@ -124,13 +196,35 @@ export default function AdminExternalFetchPage() {
       setSkippedKeys(new Set());
       setImportErrors({});
       setSeoErrors({});
+      // Mark the batch with a fresh timestamp — overrides any restored value
+      // so the "Restored from..." banner doesn't keep showing on a brand-new fetch.
+      setBatchFetchedAt(Date.now());
     } catch (error) {
       setFetchPayload(null);
       setReviewJobs([]);
+      setBatchFetchedAt(null);
       setFetchError(error instanceof Error ? error.message : 'Fetch failed.');
     } finally {
       setFetchLoading(false);
     }
+  };
+
+  const handleClearBatch = () => {
+    if (reviewJobs.length === 0 && !fetchPayload) return;
+    const ok = window.confirm(
+      'Discard the current fetched batch?\n\nAny un-published jobs in this list will be lost. ' +
+        'Already-published jobs are NOT affected.',
+    );
+    if (!ok) return;
+    setReviewJobs([]);
+    setFetchPayload(null);
+    setSkippedKeys(new Set());
+    setImportErrors({});
+    setSeoErrors({});
+    setActiveSource(null);
+    setBatchFetchedAt(null);
+    setNotice('Cleared the working batch.');
+    clearAdminFetchSnapshot();
   };
 
   const removeReviewJob = (job) => {
@@ -304,6 +398,11 @@ export default function AdminExternalFetchPage() {
   };
 
   const activeMeta = EXTERNAL_FETCH_SOURCES.find((s) => s.id === activeSource);
+  const hasBatch = reviewJobs.length > 0 || Boolean(fetchPayload);
+  const showRestoredBanner =
+    hasBatch &&
+    batchFetchedAt !== null &&
+    Date.now() - batchFetchedAt > RESTORED_BANNER_GRACE_MS;
 
   return (
     <AdminShell
@@ -320,6 +419,40 @@ export default function AdminExternalFetchPage() {
         <p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Sign in as admin to fetch listings.
         </p>
+      ) : null}
+
+      {showRestoredBanner ? (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+          <div>
+            <p className="font-semibold">
+              Restored fetched batch from {formatRelativeTime(batchFetchedAt)}
+            </p>
+            <p className="mt-0.5 text-xs text-violet-700">
+              {reviewJobs.length} job{reviewJobs.length === 1 ? '' : 's'} pending review
+              {activeMeta ? ` · Source: ${activeMeta.title}` : ''}. Snapshots are kept for up to 24
+              hours so you can come back later.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleClearBatch}
+            className="rounded-xl border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-800 transition hover:border-violet-400 hover:bg-violet-100"
+          >
+            Clear batch
+          </button>
+        </div>
+      ) : hasBatch ? (
+        // Fresh fetch — no "restored" preamble, but expose Clear so admins
+        // can wipe the batch without publishing every row first.
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-2 text-xs">
+          <button
+            type="button"
+            onClick={handleClearBatch}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+          >
+            Clear batch
+          </button>
+        </div>
       ) : null}
 
       <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
