@@ -271,9 +271,21 @@ function firstString(obj: Record<string, unknown>, keys: string[]): string | nul
   return null;
 }
 
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** LinkedIn Apify often returns calendar dates without time — use end of day IST. */
+function parseCalendarDateOnlyAsIstEnd(isoDate: string): string | null {
+  const d = new Date(`${isoDate}T23:59:59.999+05:30`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 function parseApifyDate(value: unknown, referenceIso: string): string | null {
   if (typeof value === 'string' && value.trim()) {
-    const d = new Date(value);
+    const trimmed = value.trim();
+    if (DATE_ONLY_RE.test(trimmed)) {
+      return parseCalendarDateOnlyAsIstEnd(trimmed);
+    }
+    const d = new Date(trimmed);
     if (!Number.isNaN(d.getTime())) {
       return d.toISOString();
     }
