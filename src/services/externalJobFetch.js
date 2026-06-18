@@ -227,6 +227,37 @@ export async function fetchExternalJobsBySource(accessToken, fetchChannel, optio
   return callFetchExternalJobsEdge(accessToken, body);
 }
 
+/** Default wait before collecting Naukri Apify results (3 minutes). */
+export const NAUKRI_ASYNC_COLLECT_WAIT_MS = 3 * 60 * 1000;
+
+/**
+ * Start Naukri Apify scrape without waiting for completion.
+ * @param {string} accessToken
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function startNaukriApifyFetch(accessToken) {
+  return callFetchExternalJobsEdge(accessToken, {
+    mode: 'fetch',
+    fetch_channel: 'naukri',
+    naukri_action: 'start',
+  });
+}
+
+/**
+ * Collect jobs from a started Naukri Apify run.
+ * @param {string} accessToken
+ * @param {string} apifyRunId
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function collectNaukriApifyFetch(accessToken, apifyRunId) {
+  return callFetchExternalJobsEdge(accessToken, {
+    mode: 'fetch',
+    fetch_channel: 'naukri',
+    naukri_action: 'collect',
+    apify_naukri_run_id: apifyRunId,
+  });
+}
+
 /**
  * Prefer the post body for LinkedIn SEO — stale seo_source_context from fetch dedupe bugs confuses Gemini.
  * @param {Record<string, unknown>} job

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -6,7 +6,13 @@ import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/ExternalJobReviewPanel';
 import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../services/adminJobs';
-import { fetchExternalJobsBySource, seoOptimizeExternalJob } from '../services/externalJobFetch';
+import {
+  collectNaukriApifyFetch,
+  fetchExternalJobsBySource,
+  NAUKRI_ASYNC_COLLECT_WAIT_MS,
+  seoOptimizeExternalJob,
+  startNaukriApifyFetch,
+} from '../services/externalJobFetch';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
 import { stashAdminJobPrefill } from '../lib/adminNewJobPrefill';
@@ -21,6 +27,16 @@ const BULK_IMPORT_CONCURRENCY = 3;
 const PERSIST_DEBOUNCE_MS = 250;
 /** Hide the "Restored from..." banner when the user just hit Fetch — only show on actual restores. */
 const RESTORED_BANNER_GRACE_MS = 5_000;
+const NAUKRI_COLLECT_MAX_ATTEMPTS = 24;
+
+const formatCountdown = (totalSec) => {
+  const sec = Math.max(0, totalSec);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+
+const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const formatRelativeTime = (timestamp) => {
   if (!timestamp) return '';
@@ -84,6 +100,19 @@ export default function AdminExternalFetchPage() {
   );
   /** Timestamp of the active batch (when it was first fetched). null = no batch. */
   const [batchFetchedAt, setBatchFetchedAt] = useState(initialSnapshot?.fetchedAt ?? null);
+  const [naukriPending, setNaukriPending] = useState(() => {
+    const pending = initialSnapshot?.naukriPending;
+    if (!pending?.runId || !pending?.readyAt) return null;
+    if (Date.now() > pending.readyAt + 30 * 60_000) return null;
+    return pending;
+  });
+  const [naukriCountdownSec, setNaukriCountdownSec] = useState(() => {
+    const readyAt = initialSnapshot?.naukriPending?.readyAt;
+    if (!readyAt) return 0;
+    return Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
+  });
+  const [naukriCollecting, setNaukriCollecting] = useState(false);
+  const naukriAutoCollectStarted = useRef(false);
 
   useEffect(() => {
     let ignore = false;
@@ -127,6 +156,7 @@ export default function AdminExternalFetchPage() {
         seoErrors,
         linkedInPostPreset,
         linkedInCustomSearchUrl,
+        naukriPending,
       });
     }, PERSIST_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
@@ -140,6 +170,7 @@ export default function AdminExternalFetchPage() {
     seoErrors,
     linkedInPostPreset,
     linkedInCustomSearchUrl,
+    naukriPending,
   ]);
 
   const existingSlugs = useMemo(
@@ -168,7 +199,107 @@ export default function AdminExternalFetchPage() {
     }
   }, [fetchPayload]);
 
+  const applyFetchPayload = (data) => {
+    setFetchPayload(data);
+    setReviewJobs(
+      Array.isArray(data.jobs)
+        ? data.jobs.map((job) => ({ ...job, seo_optimized: Boolean(job.seo_optimized) }))
+        : [],
+    );
+    setSkippedKeys(new Set());
+    setImportErrors({});
+    setSeoErrors({});
+    setBatchFetchedAt(Date.now());
+  };
+
+  const collectNaukriResults = async (runId) => {
+    if (!runId || !session?.access_token) return;
+    setNaukriCollecting(true);
+    setFetchError('');
+    try {
+      for (let attempt = 0; attempt < NAUKRI_COLLECT_MAX_ATTEMPTS; attempt += 1) {
+        const data = await collectNaukriApifyFetch(session.access_token, runId);
+        if (data.naukri_action === 'pending' || (Array.isArray(data.jobs) && data.jobs.length === 0 && data.retry_after_sec)) {
+          const waitMs = (data.retry_after_sec ?? 15) * 1000;
+          setNotice(`Apify still running… retrying in ${Math.round(waitMs / 1000)}s`);
+          await sleepMs(waitMs);
+          continue;
+        }
+        applyFetchPayload(data);
+        setNaukriPending(null);
+        setNaukriCountdownSec(0);
+        setActiveSource('naukri');
+        setNotice(
+          typeof data.message === 'string'
+            ? data.message
+            : `Loaded ${data.jobs?.length ?? 0} Naukri job(s).`,
+        );
+        return;
+      }
+      setFetchError('Apify run did not finish in time. Check the Apify console and try Load results again.');
+    } catch (error) {
+      setFetchError(error instanceof Error ? error.message : 'Failed to collect Naukri results.');
+    } finally {
+      setNaukriCollecting(false);
+      naukriAutoCollectStarted.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!naukriPending?.readyAt) return undefined;
+    const tick = () => {
+      setNaukriCountdownSec(Math.max(0, Math.ceil((naukriPending.readyAt - Date.now()) / 1000)));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [naukriPending]);
+
+  useEffect(() => {
+    if (!naukriPending?.runId) return;
+    if (naukriCountdownSec > 0) return;
+    if (naukriCollecting || naukriAutoCollectStarted.current) return;
+    naukriAutoCollectStarted.current = true;
+    collectNaukriResults(naukriPending.runId);
+  }, [naukriPending, naukriCountdownSec, naukriCollecting]);
+
+  const handleNaukriStart = async () => {
+    setFetchError('');
+    setNotice('');
+    setActiveSource('naukri');
+    naukriAutoCollectStarted.current = false;
+    setFetchLoading(true);
+    try {
+      const data = await startNaukriApifyFetch(session?.access_token);
+      const waitMs = Number(data.collect_after_ms) || NAUKRI_ASYNC_COLLECT_WAIT_MS;
+      const readyAt = Date.now() + waitMs;
+      setNaukriPending({
+        runId: data.apify_naukri_run_id,
+        readyAt,
+        startedAt: Date.now(),
+      });
+      setNaukriCountdownSec(Math.ceil(waitMs / 1000));
+      setFetchPayload(null);
+      setReviewJobs([]);
+      setNotice(
+        data.message ||
+          `Apify scrape started. Results in about ${Math.round(waitMs / 60_000)} minutes.`,
+      );
+    } catch (error) {
+      setNaukriPending(null);
+      setNaukriCountdownSec(0);
+      setFetchError(error instanceof Error ? error.message : 'Failed to start Naukri scrape.');
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
   const handleFetch = async (sourceId) => {
+    if (sourceId === 'naukri') {
+      await handleNaukriStart();
+      return;
+    }
+
     if (sourceId === 'linkedin_posts' && linkedInPostPreset === 'custom' && !linkedInCustomSearchUrl.trim()) {
       setFetchError('Paste a LinkedIn content search URL (past 24h) or choose another preset.');
       return;
@@ -187,18 +318,7 @@ export default function AdminExternalFetchPage() {
             }
           : {};
       const data = await fetchExternalJobsBySource(session?.access_token, sourceId, fetchOptions);
-      setFetchPayload(data);
-      setReviewJobs(
-        Array.isArray(data.jobs)
-          ? data.jobs.map((job) => ({ ...job, seo_optimized: Boolean(job.seo_optimized) }))
-          : [],
-      );
-      setSkippedKeys(new Set());
-      setImportErrors({});
-      setSeoErrors({});
-      // Mark the batch with a fresh timestamp — overrides any restored value
-      // so the "Restored from..." banner doesn't keep showing on a brand-new fetch.
-      setBatchFetchedAt(Date.now());
+      applyFetchPayload(data);
     } catch (error) {
       setFetchPayload(null);
       setReviewJobs([]);
@@ -223,6 +343,8 @@ export default function AdminExternalFetchPage() {
     setSeoErrors({});
     setActiveSource(null);
     setBatchFetchedAt(null);
+    setNaukriPending(null);
+    setNaukriCountdownSec(0);
     setNotice('Cleared the working batch.');
     clearAdminFetchSnapshot();
   };
@@ -455,10 +577,55 @@ export default function AdminExternalFetchPage() {
         </div>
       ) : null}
 
+      {naukriPending ? (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+          <p className="font-semibold">Naukri scrape running on Apify</p>
+          {naukriCountdownSec > 0 ? (
+            <p className="mt-2 text-amber-900">
+              Check back in{' '}
+              <span className="font-mono text-2xl font-bold tabular-nums">
+                {formatCountdown(naukriCountdownSec)}
+              </span>
+            </p>
+          ) : (
+            <p className="mt-2 text-amber-900">
+              {naukriCollecting ? 'Loading results from Apify…' : 'Timer finished — collecting jobs…'}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-amber-800">
+            Run ID: <span className="font-mono">{naukriPending.runId}</span>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={naukriCollecting || !session?.access_token}
+              onClick={() => collectNaukriResults(naukriPending.runId)}
+              className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 disabled:opacity-50"
+            >
+              {naukriCollecting ? 'Loading…' : 'Load results now'}
+            </button>
+            <button
+              type="button"
+              disabled={naukriCollecting}
+              onClick={() => {
+                setNaukriPending(null);
+                setNaukriCountdownSec(0);
+                naukriAutoCollectStarted.current = false;
+                setNotice('Cancelled Naukri wait timer.');
+              }}
+              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100/80"
+            >
+              Cancel wait
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {EXTERNAL_FETCH_SOURCES.map((source) => {
-          const isActive = activeSource === source.id && fetchLoading;
-          const isLast = activeSource === source.id && fetchPayload && !fetchLoading;
+          const isActive = activeSource === source.id && (fetchLoading || (source.id === 'naukri' && naukriCollecting));
+          const isNaukriWaiting = source.id === 'naukri' && Boolean(naukriPending);
+          const isLast = activeSource === source.id && fetchPayload && !fetchLoading && !naukriCollecting;
           const isLinkedInPosts = source.id === 'linkedin_posts';
           const presetMeta = LINKEDIN_POST_PRESET_OPTIONS.find((p) => p.id === linkedInPostPreset);
 
@@ -514,7 +681,7 @@ export default function AdminExternalFetchPage() {
                 ) : null}
                 <button
                   type="button"
-                  disabled={!isSupabaseConfigured || fetchLoading || !session?.access_token}
+                  disabled={!isSupabaseConfigured || fetchLoading || naukriCollecting || isNaukriWaiting || !session?.access_token}
                   onClick={() => handleFetch(source.id)}
                   className="mt-4 text-sm font-semibold text-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -528,7 +695,7 @@ export default function AdminExternalFetchPage() {
             <button
               key={source.id}
               type="button"
-              disabled={!isSupabaseConfigured || fetchLoading || !session?.access_token}
+              disabled={!isSupabaseConfigured || fetchLoading || naukriCollecting || isNaukriWaiting || !session?.access_token}
               onClick={() => handleFetch(source.id)}
               className={`rounded-[1.5rem] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${source.accent} ${
                 isLast ? 'ring-2 ring-cyan-500 ring-offset-2' : ''
@@ -539,7 +706,13 @@ export default function AdminExternalFetchPage() {
               <p className="mt-2 text-sm text-slate-600">{source.description}</p>
               <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
               <p className="mt-4 text-sm font-semibold text-cyan-700">
-                {isActive ? 'Fetching…' : 'Fetch this source only →'}
+                {isActive
+                  ? source.id === 'naukri'
+                    ? 'Starting Apify…'
+                    : 'Fetching…'
+                  : isNaukriWaiting
+                    ? `Waiting ${formatCountdown(naukriCountdownSec)}…`
+                    : 'Fetch this source only →'}
               </p>
             </button>
           );

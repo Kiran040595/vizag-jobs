@@ -1131,15 +1131,28 @@ async function apifyRunActorAndWait(
   return { runId, items: items as Record<string, unknown>[], error: null };
 }
 
-async function apifyRunActor(
+export type ApifyRunActorOptions = {
+  timeoutSec?: number;
+  /** Skip polled actor-runs fallback — keeps Naukri fetch within edge CPU limits. */
+  syncOnly?: boolean;
+};
+
+export async function apifyRunActor(
   actorId: string,
   input: Record<string, unknown>,
   token: string,
   budget?: FetchBudgetLike,
+  options?: ApifyRunActorOptions,
 ): Promise<ApifyRunMeta> {
-  const timeoutSec = apifySyncTimeoutSec(budget);
+  const timeoutSec = options?.timeoutSec ?? apifySyncTimeoutSec(budget);
   const sync = await apifyRunSyncGetDatasetItems(actorId, input, token, timeoutSec);
   if (!sync.error && sync.items.length > 0) {
+    return sync;
+  }
+  if (options?.syncOnly) {
+    if (sync.items.length > 0) {
+      return { ...sync, error: null };
+    }
     return sync;
   }
   if (sync.error && /timeout|abort|413|payload/i.test(sync.error)) {

@@ -15,6 +15,16 @@ import {
   validateApifyEnvJsonSecrets,
 } from './apify-linkedin.ts';
 import {
+  collectNaukriApifyRun,
+  discoverNaukriViaApify,
+  getApifyTokenForNaukri,
+  getNaukriProvider,
+  isNaukriVizagJob,
+  NAUKRI_ASYNC_COLLECT_WAIT_MS,
+  naukriApifyFallbackEnabled,
+  startNaukriApifyRunAsync,
+} from './apify-naukri.ts';
+import {
   LINKEDIN_VIZAG_24H_CONTENT_URL,
   resolveLinkedInPostPreset,
   type ResolvedLinkedInPostPreset,
@@ -192,7 +202,7 @@ function naukriHubUrlForPage(baseUrl: string, page: number): string {
   }
 }
 
-const DEFAULT_NAUKRI_SCRAPE_LIMIT = 20;
+const DEFAULT_NAUKRI_SCRAPE_LIMIT = 12;
 
 const DETAIL_SEARCH_QUERIES = [...LINKEDIN_DETAIL_SEARCH_QUERIES, ...NAUKRI_DETAIL_SEARCH_QUERIES];
 
@@ -2497,6 +2507,9 @@ type FetchRequestBody = {
   linkedin_post_preset?: string;
   /** Required when linkedin_post_preset is custom */
   linkedin_custom_search_url?: string;
+  /** Naukri async Apify: start (fire-and-forget) | collect (read dataset by run id) */
+  naukri_action?: 'start' | 'collect';
+  apify_naukri_run_id?: string;
 };
 
 type GeminiKeyChannel = 'linkedin_posts' | 'seo' | 'default';
@@ -3619,6 +3632,14 @@ type DiscoverDetailResult = {
   naukri_used_legacy_hub_fallback?: boolean;
   /** Naukri channel: true when the legacy `firecrawl search` queries were also run (opt-in, FETCH_NAUKRI_USE_SEARCH=true). */
   naukri_used_search_fallback?: boolean;
+  /** Naukri channel: jobs returned directly from Apify (api-empire~naukri-job-scraper). */
+  naukri_listing_jobs?: ExtractedJob[];
+  naukri_provider?: 'apify' | 'firecrawl';
+  apify_naukri_run_id?: string | null;
+  apify_naukri_count?: number;
+  apify_naukri_raw_count?: number;
+  apify_naukri_error?: string | null;
+  naukri_search_url?: string | null;
 };
 
 async function discoverLinkedInViaFirecrawl(
@@ -3773,82 +3794,159 @@ async function discoverDetailUrlsForChannel(
   };
 
   if (channel === 'naukri') {
-    if (firecrawlApiKeys.length === 0) {
+    const naukriProviderMode = getNaukriProvider();
+    const naukriToken = getApifyTokenForNaukri();
+    const useApify =
+      (naukriProviderMode === 'apify' || naukriProviderMode === 'apify_then_firecrawl') &&
+      Boolean(naukriToken);
+
+    let naukriListingJobs: ExtractedJob[] = [];
+    let apify_naukri_run_id: string | null = null;
+    let apify_naukri_count = 0;
+    let apify_naukri_raw_count = 0;
+    let apify_naukri_error: string | null = null;
+    let naukri_search_url: string | null = null;
+    let naukri_provider: 'apify' | 'firecrawl' = 'firecrawl';
+
+    if (useApify) {
+      const apifyResult = await discoverNaukriViaApify(budget, fetchInstant);
+      naukriListingJobs = apifyResult.jobs as ExtractedJob[];
+      apify_naukri_run_id = apifyResult.apify_naukri_run_id;
+      apify_naukri_count = apifyResult.apify_naukri_count;
+      apify_naukri_raw_count = apifyResult.apify_naukri_raw_count;
+      apify_naukri_error = apifyResult.apify_naukri_error;
+      naukri_search_url = apifyResult.naukri_search_url;
+      naukri_provider = 'apify';
+      // Only queue URLs for Firecrawl when Apify returned no usable mapped jobs.
+      if (naukriListingJobs.length === 0) {
+        for (const u of apifyResult.job_urls) {
+          found.add(u);
+        }
+      }
+    }
+
+    const shouldRunFirecrawl =
+      firecrawlApiKeys.length > 0 &&
+      (naukriProviderMode === 'firecrawl' ||
+        (naukriProviderMode === 'apify_then_firecrawl' &&
+          naukriListingJobs.length === 0 &&
+          naukriApifyFallbackEnabled()) ||
+        (!naukriToken && naukriProviderMode !== 'apify'));
+
+    if (!useApify && !shouldRunFirecrawl) {
       return {
-        urls: [],
+        urls: [...found],
         ...emptyMeta,
-        apify_posts_error: 'FIRECRAWL_API_KEY_NAUKRI (or FIRECRAWL_API_KEY / FIRECRAWL_API_KEYS) not set',
+        naukri_listing_jobs: naukriListingJobs,
+        naukri_provider,
+        apify_naukri_run_id,
+        apify_naukri_count,
+        apify_naukri_raw_count,
+        apify_naukri_error:
+          apify_naukri_error ??
+          'Set APIFY_API_TOKEN_NAUKRI (recommended) or FIRECRAWL_API_KEY_NAUKRI',
+        naukri_search_url,
       };
     }
 
-    const hubPages = Math.min(
-      5,
-      Math.max(1, Number(Deno.env.get('FETCH_NAUKRI_HUB_PAGES') ?? '1') || 1),
-    );
-    const hubUrlsPlanned: string[] = [];
-    for (let page = 1; page <= hubPages; page += 1) {
-      hubUrlsPlanned.push(naukriHubUrlForPage(NAUKRI_VIZAG_24H_HUB_URL, page));
-    }
     const hubUrlsScraped: string[] = [];
-
-    // Primary: scrape the curated 24h hub (one page by default, more via env).
-    // Naukri server-side filters to last 24h, so we don't need search at all.
-    for (const hubUrl of hubUrlsPlanned) {
-      if (budget && !budget.hasTime(20_000)) {
-        break;
-      }
-      const hubMd = await firecrawlScrapeUrl(hubUrl, firecrawlApiKeys);
-      hubUrlsScraped.push(hubUrl);
-      if (hubMd.length > 200) {
-        for (const u of extractIndividualJobUrlsFromText(hubMd)) {
-          if (/naukri\.com/i.test(u) && looksLikeIndividualJobApplyUrl(u)) {
-            found.add(u);
-          }
-        }
-      }
-    }
-
-    // Fallback: if the 24h hub gave us nothing (no recent jobs OR scrape blocked),
-    // try the unfiltered city hub so the run doesn't come back completely empty.
     let usedLegacyHub = false;
-    if (found.size === 0 && (!budget || budget.hasTime(20_000))) {
-      const hubMd = await firecrawlScrapeUrl(NAUKRI_VIZAG_HUB_URL, firecrawlApiKeys);
-      hubUrlsScraped.push(NAUKRI_VIZAG_HUB_URL);
-      usedLegacyHub = true;
-      if (hubMd.length > 200) {
-        for (const u of extractIndividualJobUrlsFromText(hubMd)) {
-          if (/naukri\.com/i.test(u) && looksLikeIndividualJobApplyUrl(u)) {
-            found.add(u);
+
+    if (shouldRunFirecrawl) {
+      naukri_provider = useApify && naukriListingJobs.length > 0 ? 'apify' : 'firecrawl';
+
+      const hubPages = Math.min(
+        5,
+        Math.max(1, Number(Deno.env.get('FETCH_NAUKRI_HUB_PAGES') ?? '1') || 1),
+      );
+      const hubUrlsPlanned: string[] = [];
+      for (let page = 1; page <= hubPages; page += 1) {
+        hubUrlsPlanned.push(naukriHubUrlForPage(NAUKRI_VIZAG_24H_HUB_URL, page));
+      }
+
+      // Firecrawl fallback: scrape the curated 24h hub when Apify is off or returned nothing.
+      for (const hubUrl of hubUrlsPlanned) {
+        if (budget && !budget.hasTime(20_000)) {
+          break;
+        }
+        const hubMd = await firecrawlScrapeUrl(hubUrl, firecrawlApiKeys);
+        hubUrlsScraped.push(hubUrl);
+        if (hubMd.length > 200) {
+          for (const u of extractIndividualJobUrlsFromText(hubMd)) {
+            if (
+              /naukri\.com/i.test(u) &&
+              looksLikeIndividualJobApplyUrl(u) &&
+              isNaukriVizagJob({ source_url: u, apply_url: u })
+            ) {
+              found.add(u);
+            }
           }
         }
       }
-    }
 
-    // Optional: legacy Firecrawl `search` queries. They don't honor jobAge=1, so
-    // they bring in stale jobs the 24h post-filter has to drop. Off by default.
-    const useSearch =
-      (Deno.env.get('FETCH_NAUKRI_USE_SEARCH') ?? 'false').toLowerCase() === 'true';
-    if (useSearch) {
-      const limitPerQuery = Math.min(
-        10,
-        Number(Deno.env.get('FETCH_JOB_DETAIL_SEARCH_LIMIT') ?? '8') || 8,
-      );
-      const fromNaukri = await firecrawlSearchQueries(
-        NAUKRI_DETAIL_SEARCH_QUERIES,
-        limitPerQuery,
-        firecrawlApiKeys,
-      );
-      for (const u of fromNaukri) {
-        found.add(u);
+      if (found.size === 0 && naukriListingJobs.length === 0 && (!budget || budget.hasTime(20_000))) {
+        const hubMd = await firecrawlScrapeUrl(NAUKRI_VIZAG_HUB_URL, firecrawlApiKeys);
+        hubUrlsScraped.push(NAUKRI_VIZAG_HUB_URL);
+        usedLegacyHub = true;
+        if (hubMd.length > 200) {
+          for (const u of extractIndividualJobUrlsFromText(hubMd)) {
+            if (
+              /naukri\.com/i.test(u) &&
+              looksLikeIndividualJobApplyUrl(u) &&
+              isNaukriVizagJob({ source_url: u, apply_url: u })
+            ) {
+              found.add(u);
+            }
+          }
+        }
       }
+
+      const useSearch =
+        (Deno.env.get('FETCH_NAUKRI_USE_SEARCH') ?? 'false').toLowerCase() === 'true';
+      if (useSearch) {
+        const limitPerQuery = Math.min(
+          10,
+          Number(Deno.env.get('FETCH_JOB_DETAIL_SEARCH_LIMIT') ?? '8') || 8,
+        );
+        const fromNaukri = await firecrawlSearchQueries(
+          NAUKRI_DETAIL_SEARCH_QUERIES,
+          limitPerQuery,
+          firecrawlApiKeys,
+        );
+        for (const u of fromNaukri) {
+          found.add(u);
+        }
+      }
+
+      return {
+        urls: [...found],
+        ...emptyMeta,
+        naukri_listing_jobs: naukriListingJobs,
+        naukri_provider,
+        apify_naukri_run_id,
+        apify_naukri_count,
+        apify_naukri_raw_count,
+        apify_naukri_error,
+        naukri_search_url,
+        naukri_hub_urls_scraped: hubUrlsScraped,
+        naukri_used_legacy_hub_fallback: usedLegacyHub,
+        naukri_used_search_fallback: useSearch,
+      };
     }
 
     return {
       urls: [...found],
       ...emptyMeta,
+      naukri_listing_jobs: naukriListingJobs,
+      naukri_provider,
+      apify_naukri_run_id,
+      apify_naukri_count,
+      apify_naukri_raw_count,
+      apify_naukri_error,
+      naukri_search_url,
       naukri_hub_urls_scraped: hubUrlsScraped,
       naukri_used_legacy_hub_fallback: usedLegacyHub,
-      naukri_used_search_fallback: useSearch,
+      naukri_used_search_fallback: false,
     };
   }
 
@@ -4639,6 +4737,77 @@ function summarizeJobs(jobs: { posted_at?: string | null }[], cutoff: number): F
   };
 }
 
+function mapNaukriExtractedJobsToSiteJobs(
+  rawJobs: ExtractedJob[],
+  fetchInstant: string,
+  cutoff: number,
+): {
+  siteJobs: SiteJobRecord[];
+  jobs_last_24h: SiteJobRecord[];
+  jobs_undated: SiteJobRecord[];
+  filtered_out_older_than_24h: number;
+  naukri_fetch_warning: string | null;
+  summary: FetchSummary;
+} {
+  const vizagJobs = rawJobs.filter((j) => isNaukriVizagJob(j));
+  const mappedBeforeDedupe = vizagJobs.map((j) => toSiteJobRecord(j, fetchInstant));
+  const mappedJobs = dedupeSiteJobs(mappedBeforeDedupe);
+  const sourceContextMap = buildSourceContextMap(vizagJobs);
+  const naukriStrictDates =
+    (Deno.env.get('FETCH_NAUKRI_STRICT_DATES') ?? 'true').toLowerCase() !== 'false';
+
+  let siteJobs = mappedJobs.map((job) => {
+    const raw = vizagJobs.find((r) => {
+      const rawKey = siteJobDedupeKey(toSiteJobRecord(r, fetchInstant));
+      return rawKey === siteJobDedupeKey(job);
+    });
+    let posted_at: string | null = job.posted_at ?? null;
+    if (job.source_name === 'naukri.com') {
+      posted_at = resolvePostedAtFromSource(job, raw, fetchInstant, {
+        strict: naukriStrictDates,
+      });
+    }
+    return {
+      ...job,
+      posted_at,
+      seo_source_context: lookupSourceContext(job, sourceContextMap),
+      seo_optimized: false,
+      source_kind: 'naukri' as const,
+    };
+  });
+
+  const require24h =
+    (Deno.env.get('FETCH_REQUIRE_POSTED_WITHIN_24H') ?? 'true').toLowerCase() !== 'false';
+  const before24hFilter = siteJobs.length;
+  if (require24h) {
+    siteJobs = siteJobs.filter((j) => isPostedWithinCutoff(j.posted_at, cutoff));
+  }
+  const filtered_out_older_than_24h = before24hFilter - siteJobs.length;
+  const jobs_last_24h = siteJobs.filter((j) => isPostedWithinCutoff(j.posted_at, cutoff));
+  const jobs_undated = siteJobs.filter((j) => {
+    const ts = parsePostedAt(j.posted_at ?? null);
+    return ts === null || ts < cutoff;
+  });
+  const summary = summarizeJobs(siteJobs, cutoff);
+
+  const naukriInOutput = siteJobs.filter((j) => j.source_name === 'naukri.com').length;
+  const naukri_fetch_warning =
+    naukriInOutput === 0
+      ? filtered_out_older_than_24h > 0
+        ? `${filtered_out_older_than_24h} job(s) scraped but excluded: posted more than 24h ago.`
+        : 'No Vizag Naukri jobs matched filters for this fetch.'
+      : null;
+
+  return {
+    siteJobs,
+    jobs_last_24h,
+    jobs_undated,
+    filtered_out_older_than_24h,
+    naukri_fetch_warning,
+    summary,
+  };
+}
+
 async function assertAuthorized(
   req: Request,
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -5417,6 +5586,120 @@ Deno.serve(async (req) => {
         fetchChannel === 'linkedin_posts' ||
         fetchChannel === 'vizag_it';
 
+    if (fetchChannel === 'naukri' && !hasFirecrawl && !getApifyTokenForNaukri()) {
+      return jsonResponse(
+        {
+          ok: false,
+          error:
+            'Set APIFY_API_TOKEN_NAUKRI (recommended) or FIRECRAWL_API_KEY_NAUKRI for Naukri fetch.',
+        },
+        501,
+      );
+    }
+
+    const naukriAction = (requestBody.naukri_action ?? '').trim().toLowerCase();
+    if (fetchChannel === 'naukri' && naukriAction === 'start') {
+      const started = await startNaukriApifyRunAsync();
+      if (!started.runId) {
+        return jsonResponse(
+          { ok: false, error: started.error ?? 'Failed to start Naukri Apify run.' },
+          502,
+        );
+      }
+      const collectAfterMs = NAUKRI_ASYNC_COLLECT_WAIT_MS;
+      return jsonResponse({
+        ok: true,
+        mode: 'fetch',
+        naukri_async: true,
+        naukri_action: 'started',
+        fetched_at: fetchInstant,
+        runtime_ms: budget.elapsedMs(),
+        provider_used: 'apify',
+        apify_naukri_run_id: started.runId,
+        started_at: fetchInstant,
+        collect_after_ms: collectAfterMs,
+        collect_after_sec: Math.ceil(collectAfterMs / 1000),
+        collect_at: new Date(Date.now() + collectAfterMs).toISOString(),
+        apify_actor: started.actorId,
+        apify_input_label: started.inputLabel,
+        fetch_channel: 'naukri',
+        fetch_channel_label: channelLabel('naukri'),
+        jobs: [],
+        message: `Apify scrape started. Check back in about ${Math.round(collectAfterMs / 60_000)} minutes.`,
+      });
+    }
+
+    if (fetchChannel === 'naukri' && naukriAction === 'collect') {
+      const runId = requestBody.apify_naukri_run_id?.trim();
+      if (!runId) {
+        return jsonResponse(
+          { ok: false, error: 'Missing apify_naukri_run_id for Naukri collect.' },
+          400,
+        );
+      }
+      const collected = await collectNaukriApifyRun(runId, fetchInstant);
+      if (collected.pending) {
+        return jsonResponse({
+          ok: true,
+          mode: 'fetch',
+          naukri_async: true,
+          naukri_action: 'pending',
+          apify_status: collected.status,
+          apify_naukri_run_id: runId,
+          retry_after_sec: 15,
+          fetched_at: fetchInstant,
+          runtime_ms: budget.elapsedMs(),
+          provider_used: 'apify',
+          fetch_channel: 'naukri',
+          fetch_channel_label: channelLabel('naukri'),
+          jobs: [],
+          message: 'Apify is still scraping Naukri jobs. Try again in a few seconds.',
+        });
+      }
+      if (collected.error && collected.jobs.length === 0) {
+        return jsonResponse(
+          { ok: false, error: collected.error, apify_status: collected.status, apify_naukri_run_id: runId },
+          502,
+        );
+      }
+      const mapped = mapNaukriExtractedJobsToSiteJobs(
+        collected.jobs as ExtractedJob[],
+        fetchInstant,
+        cutoff,
+      );
+      return jsonResponse({
+        ok: true,
+        mode: 'fetch',
+        naukri_async: true,
+        naukri_action: 'collected',
+        fetched_at: fetchInstant,
+        runtime_ms: budget.elapsedMs(),
+        provider_used: 'apify',
+        fetch_channel: 'naukri',
+        fetch_channel_label: channelLabel('naukri'),
+        apify_naukri_run_id: runId,
+        apify_status: collected.status,
+        apify_naukri_count: collected.apify_naukri_count,
+        apify_naukri_raw_count: collected.apify_naukri_raw_count,
+        naukri_search_url: collected.naukri_search_url,
+        naukri_filtered_out_older_than_24h: mapped.filtered_out_older_than_24h,
+        naukri_fetch_warning: mapped.naukri_fetch_warning,
+        extraction_mode: 'apify_naukri_async',
+        parser_version: PARSER_VERSION,
+        jobs: mapped.siteJobs,
+        jobs_last_24h: mapped.jobs_last_24h,
+        jobs_undated: mapped.jobs_undated,
+        summary: mapped.summary,
+        scrape_stats: { attempted: 0, succeeded: mapped.siteJobs.length, failed: 0 },
+        gemini_status: 'skipped',
+        seo_optimized_count: 0,
+        message:
+          mapped.siteJobs.length > 0
+            ? `Loaded ${mapped.siteJobs.length} Vizag Naukri job(s) from Apify.`
+            : collected.error ?? 'No Vizag jobs matched after Apify collect.',
+      });
+    }
+
     if (!fetchChannel && needsNaukri && !hasFirecrawl) {
       return jsonResponse(
         {
@@ -5446,6 +5729,8 @@ Deno.serve(async (req) => {
       )
         ? 'apify'
         : 'firecrawl';
+    } else if (fetchChannel === 'naukri') {
+      provider_used = getApifyTokenForNaukri() ? 'apify' : 'firecrawl';
     } else if (fetchChannel) {
       provider_used = 'firecrawl';
     } else if (apifyToken && getLinkedInProvider() !== 'firecrawl') {
@@ -5459,6 +5744,7 @@ Deno.serve(async (req) => {
     const linkedinContent24hUrlSet = new Set<string>();
     let linkedinPostJobs: ExtractedJob[] = [];
     let linkedinListingJobs: ExtractedJob[] = [];
+    let naukriListingJobs: ExtractedJob[] = [];
     let linkedinPostParseMode: 'gemini' | 'regex' | 'none' = 'none';
     const linkedInPostPreset =
       fetchChannel === 'linkedin_posts'
@@ -5495,6 +5781,9 @@ Deno.serve(async (req) => {
       }
       if (fetchChannel === 'linkedin_jobs') {
         linkedinListingJobs = linkedinDiscoverMeta.linkedin_jobs_listing_jobs ?? [];
+      }
+      if (fetchChannel === 'naukri') {
+        naukriListingJobs = linkedinDiscoverMeta.naukri_listing_jobs ?? [];
       }
     } else {
       const canRunDiscover = Boolean(hasFirecrawl || apifyToken);
@@ -5536,13 +5825,16 @@ Deno.serve(async (req) => {
             DEFAULT_NAUKRI_SCRAPE_LIMIT
           : Number(Deno.env.get('FETCH_JOB_DETAIL_SCRAPE_LIMIT') ?? String(DEFAULT_MAX_SCRAPE_URLS)) ||
             DEFAULT_MAX_SCRAPE_URLS;
-      const floor = fetchChannel === 'naukri' ? 8 : 3;
-      const ceiling = fetchChannel === 'naukri' ? 30 : 20;
+      const floor = fetchChannel === 'naukri' ? 3 : 3;
+      const ceiling = fetchChannel === 'naukri' ? 15 : 20;
       return Math.min(Math.max(floor, rawLimit), ceiling);
     })();
     let linkedinUrls = detailUrls.filter((u) => u.includes('linkedin.com'));
     let naukriUrls = detailUrls.filter(
-      (u) => /naukri\.com/i.test(u) && looksLikeIndividualJobApplyUrl(u),
+      (u) =>
+        /naukri\.com/i.test(u) &&
+        looksLikeIndividualJobApplyUrl(u) &&
+        isNaukriVizagJob({ source_url: u, apply_url: u }),
     );
     let indeedUrls = detailUrls.filter((u) => isIndeedUrl(u));
 
@@ -5577,6 +5869,13 @@ Deno.serve(async (req) => {
     if (skipLiJobView && linkedinPostJobs.length > 0 && linkedinListingJobs.length >= 5) {
       linkedinUrls = linkedinUrls.filter((u) => !/\/jobs\/view\//i.test(u));
     }
+    const apifyNaukriHasJobs =
+      fetchChannel === 'naukri' &&
+      naukriListingJobs.length > 0 &&
+      Boolean(getApifyTokenForNaukri());
+    if (apifyNaukriHasJobs) {
+      naukriUrls = [];
+    }
     const { linkedinCap, naukriCap, indeedCap } = resolveDetailScrapeCaps(
       fetchChannel,
       sourceMode,
@@ -5597,7 +5896,17 @@ Deno.serve(async (req) => {
       getLinkedInProvider() !== 'firecrawl' &&
       linkedinListingJobs.length + linkedinPostJobs.length > 0;
 
-    if (hasFirecrawl && urlsToScrape.length > 0) {
+    const apifyNaukriOnly = apifyNaukriHasJobs;
+
+    if (apifyNaukriOnly) {
+      jobs = dedupeJobs([...naukriListingJobs]);
+      scrape_stats = {
+        attempted: 0,
+        succeeded: jobs.length,
+        failed: 0,
+      };
+      markPhase('scrape_done');
+    } else if (hasFirecrawl && urlsToScrape.length > 0) {
       const scraped = await scrapeDetailUrlsToJobs(
         urlsToScrape,
         activeFirecrawlKeys,
@@ -5608,7 +5917,7 @@ Deno.serve(async (req) => {
       jobs = scraped.jobs;
       failed_urls = scraped.failed_urls;
       scrape_stats = scraped.stats;
-      jobs = dedupeJobs([...linkedinListingJobs, ...linkedinPostJobs, ...jobs]);
+      jobs = dedupeJobs([...linkedinListingJobs, ...linkedinPostJobs, ...naukriListingJobs, ...jobs]);
       markPhase('scrape_done');
     } else if (apifyLinkedInOnly || (apifyToken && linkedinListingJobs.length + linkedinPostJobs.length > 0)) {
       jobs = dedupeJobs([...linkedinListingJobs, ...linkedinPostJobs]);
@@ -5639,6 +5948,13 @@ Deno.serve(async (req) => {
     jobs = jobs.filter((j) => {
       if (j.source_kind === 'linkedin_post' && fetchChannel === 'linkedin_posts') {
         return true;
+      }
+      if (
+        fetchChannel === 'naukri' ||
+        j.source_kind === 'naukri' ||
+        j.source_name === 'naukri.com'
+      ) {
+        return isNaukriVizagJob(j);
       }
       return (
         mentionsVizagContext(j) ||
@@ -5752,7 +6068,13 @@ Deno.serve(async (req) => {
 
     const naukriExtractionDebug = {
       parser_version: PARSER_VERSION,
+      naukri_provider: linkedinDiscoverMeta?.naukri_provider ?? (getApifyTokenForNaukri() ? 'apify' : 'firecrawl'),
       naukri_count: rawJobs.filter((j) => j.source_name === 'naukri.com').length,
+      naukri_apify_count: linkedinDiscoverMeta?.apify_naukri_count ?? 0,
+      naukri_apify_raw_count: linkedinDiscoverMeta?.apify_naukri_raw_count ?? 0,
+      apify_naukri_run_id: linkedinDiscoverMeta?.apify_naukri_run_id ?? null,
+      apify_naukri_error: linkedinDiscoverMeta?.apify_naukri_error ?? null,
+      naukri_search_url: linkedinDiscoverMeta?.naukri_search_url ?? null,
       naukri_bad_title: rawJobs.filter(
         (j) =>
           j.source_name === 'naukri.com' &&
@@ -5871,9 +6193,11 @@ Deno.serve(async (req) => {
     const naukri_fetch_warning = !showNaukriWarnings
       ? null
       : naukriInOutput === 0
-        ? !hasFirecrawl
-          ? 'Set FIRECRAWL_API_KEY_NAUKRI (or FIRECRAWL_API_KEY / FIRECRAWL_API_KEYS) to scrape Naukri job pages.'
-          : naukriUrls.length === 0 && detailUrls.length > 0
+        ? !hasFirecrawl && !getApifyTokenForNaukri()
+          ? 'Set APIFY_API_TOKEN_NAUKRI (recommended) or FIRECRAWL_API_KEY_NAUKRI to fetch Naukri jobs.'
+          : linkedinDiscoverMeta?.apify_naukri_error && !linkedinDiscoverMeta?.apify_naukri_count
+            ? `Naukri Apify fetch failed: ${linkedinDiscoverMeta.apify_naukri_error}`
+            : naukriUrls.length === 0 && detailUrls.length > 0
             ? `Found ${detailUrls.length} URL(s) but none are Naukri job-listings detail pages.`
             : scrape_stats.attempted > 0 && scrape_stats.succeeded === 0
               ? 'Naukri pages were scraped but no jobs could be extracted (blocked page or bad HTML).'
