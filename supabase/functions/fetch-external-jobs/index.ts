@@ -481,7 +481,12 @@ function parsePostedAt(value?: string | null): number | null {
   if (!value || typeof value !== 'string') {
     return null;
   }
-  const t = Date.parse(value);
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const t = Date.parse(`${trimmed}T23:59:59.999+05:30`);
+    return Number.isNaN(t) ? null : t;
+  }
+  const t = Date.parse(trimmed);
   return Number.isNaN(t) ? null : t;
 }
 
@@ -5898,8 +5903,22 @@ Deno.serve(async (req) => {
 
     const apifyNaukriOnly = apifyNaukriHasJobs;
 
+    const apifyLinkedInJobsOnly =
+      fetchChannel === 'linkedin_jobs' &&
+      linkedinListingJobs.length > 0 &&
+      (linkedinDiscoverMeta?.apify_jobs_count ?? linkedinListingJobs.length) > 0 &&
+      Boolean(getApifyTokenForRole('jobs'));
+
     if (apifyNaukriOnly) {
       jobs = dedupeJobs([...naukriListingJobs]);
+      scrape_stats = {
+        attempted: 0,
+        succeeded: jobs.length,
+        failed: 0,
+      };
+      markPhase('scrape_done');
+    } else if (apifyLinkedInJobsOnly) {
+      jobs = dedupeJobs([...linkedinListingJobs]);
       scrape_stats = {
         attempted: 0,
         succeeded: jobs.length,
@@ -5995,8 +6014,8 @@ Deno.serve(async (req) => {
       if (
         job.source_name === 'linkedin.com' &&
         raw?.source_kind !== 'linkedin_post' &&
-        !parsePostedAt(posted_at) &&
-        raw?.from_linkedin_content_24h
+        raw?.from_linkedin_content_24h &&
+        (!parsePostedAt(posted_at) || !isPostedWithinCutoff(posted_at, cutoff))
       ) {
         posted_at = fetchInstant;
       }
@@ -6178,7 +6197,10 @@ Deno.serve(async (req) => {
             linkedinDiscoverMeta?.linkedin_provider === 'apify_firecrawl_posts_fallback'
           ? linkedinDiscoverMeta.apify_jobs_error || linkedinDiscoverMeta.apify_posts_error
             ? `Apify LinkedIn fetch failed. Jobs: ${linkedinDiscoverMeta.apify_jobs_error ?? 'ok'}. Posts: ${linkedinDiscoverMeta.apify_posts_error ?? 'ok'}. Jobs default: curious_coder~linkedin-jobs-scraper. Posts default: harvestapi~linkedin-post-search (remove APIFY_LINKEDIN_POSTS_ACTOR if still set to curious_coder post scraper — rental expired).`
-            : 'Apify returned no LinkedIn jobs or posts for Vizag past 24h. Check actor input JSON overrides and Apify credits.'
+            : linkedin_filtered_out_older_than_24h > 0 &&
+                (linkedinDiscoverMeta?.apify_jobs_count ?? 0) > 0
+              ? `Apify returned ${linkedinDiscoverMeta.apify_jobs_count} job(s) but all were filtered as older than 24h (check postedAt parsing).`
+              : 'Apify returned no LinkedIn jobs or posts for Vizag past 24h. Check actor input JSON overrides and Apify credits.'
           : linkedinDiscoverMeta?.linkedin_content_login_wall_pages
             ? 'LinkedIn login wall on Firecrawl scrape. Set APIFY_API_TOKEN (defaults to harvestapi posts + curious_coder jobs).'
             : 'No LinkedIn jobs in this fetch. Set APIFY_API_TOKEN + FETCH_JOB_SOURCES=linkedin.'
