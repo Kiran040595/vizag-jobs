@@ -1,6 +1,7 @@
 import { clearBlogCache } from './blogs';
 import { supabase } from '../lib/supabaseClient';
 
+
 const BLOG_TABLE = import.meta.env.VITE_SUPABASE_BLOG_TABLE || 'blog_posts';
 
 const normalizeText = (value) => String(value || '').trim();
