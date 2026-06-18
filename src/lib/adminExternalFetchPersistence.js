@@ -44,6 +44,7 @@ const isPlainObject = (value) =>
  * @property {Record<string, string>} seoErrors
  * @property {string} linkedInPostPreset
  * @property {string} linkedInCustomSearchUrl
+ * @property {{ runId: string, readyAt: number, startedAt: number } | null} [naukriPending]
  */
 
 /** @returns {AdminFetchSnapshot | null} */
@@ -105,6 +106,16 @@ export function loadAdminFetchSnapshot() {
       typeof parsed.linkedInPostPreset === 'string' ? parsed.linkedInPostPreset : 'general',
     linkedInCustomSearchUrl:
       typeof parsed.linkedInCustomSearchUrl === 'string' ? parsed.linkedInCustomSearchUrl : '',
+    naukriPending:
+      isPlainObject(parsed.naukriPending) &&
+      typeof parsed.naukriPending.runId === 'string' &&
+      Number.isFinite(Number(parsed.naukriPending.readyAt))
+        ? {
+            runId: parsed.naukriPending.runId,
+            readyAt: Number(parsed.naukriPending.readyAt),
+            startedAt: Number(parsed.naukriPending.startedAt) || Number(parsed.naukriPending.readyAt),
+          }
+        : null,
   };
 }
 
