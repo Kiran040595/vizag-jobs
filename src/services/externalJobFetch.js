@@ -4,6 +4,8 @@
  * - mode `seo`: Gemini SEO rewrite for a single job (admin "Make SEO" button)
  */
 
+import { appendGeminiKeyToSeoErrorMessage } from '../lib/formatGeminiKeyUsage';
+
 export function getFetchExternalJobsUrl() {
   const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
   if (override) {
@@ -31,7 +33,7 @@ function buildSeoJobPayload(job) {
     (typeof job.description === 'string' && job.description.trim()) ||
     (typeof job.short_description === 'string' && job.short_description.trim()) ||
     '';
-  const postText = postRaw ? postRaw.slice(0, 3_500) : null;
+  const postText = postRaw ? postRaw.slice(0, isLinkedInPost ? 2_400 : 3_500) : null;
 
   return {
     slug: job.slug,
@@ -146,16 +148,18 @@ async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
 
     if (res.status === 546) {
       const isSeo = body?.mode === 'seo';
-      throw new Error(
-        isSeo
-          ? 'Edge Function HTTP 546 during SEO: request took too long. Retry Make SEO for this job, or shorten the scraped description before optimizing.'
-          : 'Edge Function HTTP 546: fetch ran out of compute time. Lower FETCH_JOB_DETAIL_SCRAPE_LIMIT (e.g. 8) in Edge secrets, or upgrade your Supabase plan.',
-      );
+      const msg = isSeo
+        ? 'Edge Function HTTP 546 during SEO: request took too long. Retry Make SEO for this job, or shorten the scraped description before optimizing.'
+        : 'Edge Function HTTP 546: fetch ran out of compute time. Lower FETCH_JOB_DETAIL_SCRAPE_LIMIT (e.g. 8) in Edge secrets, or upgrade your Supabase plan.';
+      throw new Error(isSeo ? appendGeminiKeyToSeoErrorMessage(msg, data) : msg);
     }
 
     if (res.status === 504 && body?.mode === 'seo') {
       throw new Error(
-        'Make SEO timed out (150s gateway limit). Retry once; if it keeps failing, shorten the job text or check Edge Function logs.',
+        appendGeminiKeyToSeoErrorMessage(
+          'Make SEO timed out (150s gateway limit). Retry once; if it keeps failing, shorten the job text or check Edge Function logs.',
+          data,
+        ),
       );
     }
 
@@ -165,24 +169,39 @@ async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
       '';
 
     if (body?.mode === 'seo' && serverError) {
+      const withKey = appendGeminiKeyToSeoErrorMessage(serverError, data);
       const isQuota =
         res.status === 502 &&
         (serverError.includes('quota') ||
           serverError.includes('429') ||
           serverError.includes('rate limit'));
       if (isQuota) {
-        throw new Error(serverError);
+        throw new Error(withKey);
+      }
+      if (res.status === 502 || res.status === 504) {
+        throw new Error(`Edge Function HTTP ${res.status}: ${withKey}`);
       }
     }
 
     const bodyHint =
       serverError || (rawText && rawText.length > 0 ? rawText.slice(0, 400) : res.statusText);
 
+    if (body?.mode === 'seo' && data && typeof data === 'object') {
+      throw new Error(
+        `Edge Function HTTP ${res.status}: ${appendGeminiKeyToSeoErrorMessage(bodyHint, data)}`,
+      );
+    }
+
     throw new Error(`Edge Function HTTP ${res.status}: ${bodyHint}`);
   }
 
   if (!data?.ok) {
-    throw new Error(typeof data?.error === 'string' ? data.error : 'Request failed (unexpected JSON).');
+    const err =
+      typeof data?.error === 'string' ? data.error : 'Request failed (unexpected JSON).';
+    if (body?.mode === 'seo') {
+      throw new Error(appendGeminiKeyToSeoErrorMessage(err, data));
+    }
+    throw new Error(err);
   }
 
   return data;
@@ -327,7 +346,7 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
     seo_source_context: context,
     seo_custom_instructions: customInstructions || undefined,
   };
-  const timeoutMs = isLinkedInPost ? 100_000 : 130_000;
+  const timeoutMs = isLinkedInPost ? 120_000 : 130_000;
   const maxAttempts = 3;
 
   let lastError = null;

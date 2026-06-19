@@ -2493,6 +2493,9 @@ const DEPRIORITIZED_SEO_MODELS = ['gemini-2.0-flash-lite'];
 const GEMINI_SEO_MAX_RETRIES = 2;
 const GEMINI_SEO_REQUEST_TIMEOUT_MS = 72_000;
 const GEMINI_SEO_HARD_CAP_MS = 118_000;
+/** One Gemini call budget for LinkedIn post SEO (avoid stacked 58s × retries). */
+const GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS = 78_000;
+const GEMINI_SEO_LINKEDIN_HARD_CAP_MS = 112_000;
 const MAX_SEO_SOURCE_FOR_SINGLE_JOB = 1_800;
 const DEFAULT_SEO_BATCH_SIZE = 4;
 const DEFAULT_MAX_SCRAPE_URLS = 12;
@@ -2584,7 +2587,52 @@ function getGeminiSeoModelCandidates(): string[] {
 
 /** Channel-specific key first, then GEMINI_API_KEY + GEMINI_API_KEYS. */
 function getGeminiApiKeys(channel: GeminiKeyChannel = 'default'): string[] {
-  const keys: string[] = [];
+  return getGeminiKeySlots(channel).map((slot) => slot.apiKey);
+}
+
+export type GeminiKeySlot = {
+  apiKey: string;
+  source: string;
+  label: string;
+  hint: string;
+  /** 1-based index in the configured Make SEO key pool (stable, not shuffle order). */
+  poolIndex: number;
+};
+
+export type GeminiKeyUsage = {
+  index: number;
+  total: number;
+  source: string;
+  label: string;
+  hint: string;
+};
+
+function maskGeminiKeyHint(key: string): string {
+  const trimmed = key.trim();
+  if (trimmed.length <= 4) {
+    return '****';
+  }
+  return `…${trimmed.slice(-4)}`;
+}
+
+/** Keys from one env channel (deduped), with stable labels for admin display. */
+function getGeminiKeySlots(channel: GeminiKeyChannel = 'default'): GeminiKeySlot[] {
+  const slots: GeminiKeySlot[] = [];
+  const seen = new Set<string>();
+
+  const push = (apiKey: string, source: string, label?: string) => {
+    if (seen.has(apiKey)) {
+      return;
+    }
+    seen.add(apiKey);
+    slots.push({
+      apiKey,
+      source,
+      label: label ?? source,
+      hint: maskGeminiKeyHint(apiKey),
+    });
+  };
+
   const channelPrimary =
     channel === 'linkedin_posts'
       ? Deno.env.get('GEMINI_API_KEY_LINKEDIN_POSTS')?.trim()
@@ -2592,33 +2640,119 @@ function getGeminiApiKeys(channel: GeminiKeyChannel = 'default'): string[] {
         ? Deno.env.get('GEMINI_API_KEY_SEO')?.trim()
         : null;
   if (channelPrimary) {
-    keys.push(channelPrimary);
+    push(
+      channelPrimary,
+      channel === 'seo' ? 'GEMINI_API_KEY_SEO' : 'GEMINI_API_KEY_LINKEDIN_POSTS',
+    );
   }
   const primary = Deno.env.get('GEMINI_API_KEY')?.trim();
   if (primary) {
-    keys.push(primary);
+    push(primary, 'GEMINI_API_KEY');
   }
   const extra = Deno.env.get('GEMINI_API_KEYS')?.trim();
   if (extra) {
+    let extraIndex = 0;
     for (const part of extra.split(/[,\n]+/)) {
       const k = part.trim();
-      if (k) {
-        keys.push(k);
+      if (!k) {
+        continue;
       }
+      extraIndex += 1;
+      push(k, 'GEMINI_API_KEYS', `GEMINI_API_KEYS (#${extraIndex})`);
     }
   }
-  return [...new Set(keys)];
+  return slots.map((slot, i) => ({ ...slot, poolIndex: i + 1 }));
+}
+
+/** Make SEO key pool — same merge order as getGeminiApiKeysForMakeSeo, with labels. */
+function getGeminiKeySlotsForMakeSeo(linkedInPost = false): GeminiKeySlot[] {
+  const merged: GeminiKeySlot[] = [];
+  const seen = new Set<string>();
+  for (const slot of [
+    ...getGeminiKeySlots('seo'),
+    ...(linkedInPost ? getGeminiKeySlots('linkedin_posts') : []),
+    ...getGeminiKeySlots('default'),
+  ]) {
+    if (seen.has(slot.apiKey)) {
+      continue;
+    }
+    seen.add(slot.apiKey);
+    merged.push({ ...slot, poolIndex: merged.length + 1 });
+  }
+  return merged;
+}
+
+function geminiKeyUsageFromSlot(slot: GeminiKeySlot, total: number): GeminiKeyUsage {
+  return {
+    index: slot.poolIndex,
+    total,
+    source: slot.source,
+    label: slot.label,
+    hint: slot.hint,
+  };
+}
+
+/** Tracks which Gemini key is in use during an in-flight Make SEO request (for error responses). */
+type MakeSeoKeyTracker = {
+  keysConfigured: GeminiKeyUsage[];
+  lastAttempt: GeminiKeyUsage | null;
+};
+
+let activeMakeSeoKeyTracker: MakeSeoKeyTracker | null = null;
+
+function beginMakeSeoKeyTracking(linkedInPost: boolean): MakeSeoKeyTracker {
+  const slots = getGeminiKeySlotsForMakeSeo(linkedInPost);
+  const total = slots.length;
+  const tracker: MakeSeoKeyTracker = {
+    keysConfigured: slots.map((slot) => geminiKeyUsageFromSlot(slot, total)),
+    lastAttempt: null,
+  };
+  activeMakeSeoKeyTracker = tracker;
+  return tracker;
+}
+
+function noteMakeSeoKeyAttempt(slot: GeminiKeySlot, total: number): void {
+  if (!activeMakeSeoKeyTracker) {
+    return;
+  }
+  activeMakeSeoKeyTracker.lastAttempt = geminiKeyUsageFromSlot(slot, total);
+}
+
+function endMakeSeoKeyTracking(): void {
+  activeMakeSeoKeyTracker = null;
+}
+
+function makeSeoGeminiKeyFailureFields(linkedInPost: boolean): Record<string, unknown> {
+  const tracker = activeMakeSeoKeyTracker;
+  const configured =
+    tracker?.keysConfigured ??
+    getGeminiKeySlotsForMakeSeo(linkedInPost).map((slot, _i, arr) =>
+      geminiKeyUsageFromSlot(slot, arr.length),
+    );
+
+  if (tracker?.lastAttempt) {
+    return {
+      gemini_key_index: tracker.lastAttempt.index,
+      gemini_keys_total: tracker.lastAttempt.total,
+      gemini_key_source: tracker.lastAttempt.source,
+      gemini_key_label: tracker.lastAttempt.label,
+      gemini_key_hint: tracker.lastAttempt.hint,
+    };
+  }
+
+  if (configured.length === 0) {
+    return {};
+  }
+
+  return {
+    gemini_keys_total: configured.length,
+    gemini_keys_configured: configured.map((k) => k.label),
+  };
 }
 
 /** Make SEO: SEO keys first, then LinkedIn-post keys when optimizing a hiring post. */
 function getGeminiApiKeysForMakeSeo(linkedInPost = false): string[] {
-  const merged: string[] = [];
-  merged.push(...getGeminiApiKeys('seo'));
-  if (linkedInPost) {
-    merged.push(...getGeminiApiKeys('linkedin_posts'));
-  }
-  merged.push(...getGeminiApiKeys('default'));
-  return [...new Set(merged)];
+  return getGeminiKeySlotsForMakeSeo(linkedInPost).map((slot) => slot.apiKey);
 }
 
 function isGeminiQuotaExhausted(message: string): boolean {
@@ -2672,6 +2806,14 @@ function shouldTryNextSeoFallback(message: string): boolean {
   );
 }
 
+function isGeminiSeoTimeoutError(message: string): boolean {
+  return /timed out|timeout|AbortError|aborted/i.test(message);
+}
+
+function isGeminiSeoParseRetryError(message: string): boolean {
+  return /invalid json|json parse|parseSeoGemini|returned no text|unexpected token/i.test(message);
+}
+
 function formatSeoGeminiFailure(
   errors: string[],
   keysCount: number,
@@ -2706,6 +2848,7 @@ type GeminiSeoCallResult = {
   payload: Record<string, unknown>;
   usedKeyIndex: number;
   model: string;
+  keyUsage: GeminiKeyUsage;
 };
 
 type GeminiCallOptions = {
@@ -2814,10 +2957,15 @@ async function geminiGenerateContent(
 
 async function geminiGenerateContentForSeo(
   body: unknown,
-  options?: { timeoutMs?: number; maxModels?: number; linkedInPost?: boolean },
+  options?: {
+    timeoutMs?: number;
+    maxModels?: number;
+    maxRetries?: number;
+    linkedInPost?: boolean;
+  },
 ): Promise<GeminiSeoCallResult> {
-  const keys = shuffledCopy(getGeminiApiKeysForMakeSeo(options?.linkedInPost === true));
-  if (keys.length === 0) {
+  const slots = shuffledCopy(getGeminiKeySlotsForMakeSeo(options?.linkedInPost === true));
+  if (slots.length === 0) {
     throw new Error(
       options?.linkedInPost
         ? 'Gemini API key required for Make SEO. Set GEMINI_API_KEY_SEO, GEMINI_API_KEY, or GEMINI_API_KEY_LINKEDIN_POSTS in Edge Function secrets.'
@@ -2838,7 +2986,8 @@ async function geminiGenerateContentForSeo(
   );
   const maxRetriesPerModel = Math.min(
     4,
-    Number(Deno.env.get('GEMINI_SEO_MAX_RETRIES') ?? GEMINI_SEO_MAX_RETRIES) || GEMINI_SEO_MAX_RETRIES,
+    options?.maxRetries ??
+      (Number(Deno.env.get('GEMINI_SEO_MAX_RETRIES') ?? GEMINI_SEO_MAX_RETRIES) || GEMINI_SEO_MAX_RETRIES),
   );
   const tryFallbackOnQuota =
     (Deno.env.get('GEMINI_SEO_TRY_FALLBACK_MODELS') ?? 'true').toLowerCase() !== 'false';
@@ -2847,9 +2996,11 @@ async function geminiGenerateContentForSeo(
   const modelsAttempted = new Set<string>();
   let keysAttempted = 0;
 
-  for (let keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
-    const apiKey = keys[keyIndex]!;
+  for (let keyIndex = 0; keyIndex < slots.length; keyIndex += 1) {
+    const slot = slots[keyIndex]!;
+    const apiKey = slot.apiKey;
     keysAttempted = keyIndex + 1;
+    noteMakeSeoKeyAttempt(slot, slots.length);
 
     for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
       const model = models[modelIndex]!;
@@ -2861,13 +3012,18 @@ async function geminiGenerateContentForSeo(
           maxRetries: maxRetriesPerModel,
           timeoutMs: seoTimeout,
         });
-        return { payload, usedKeyIndex: keyIndex + 1, model };
+        return {
+          payload,
+          usedKeyIndex: keyIndex + 1,
+          model,
+          keyUsage: geminiKeyUsageFromSlot(slot, slots.length),
+        };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        errors.push(`[key ${keyIndex + 1}/${keys.length}, ${model}] ${msg}`);
+        errors.push(`[key ${keyIndex + 1}/${slots.length}, ${model}] ${msg}`);
 
         const hasMoreModels = modelIndex < models.length - 1;
-        const hasMoreKeys = keyIndex < keys.length - 1;
+        const hasMoreKeys = keyIndex < slots.length - 1;
         const quotaDead = isGeminiQuotaExhausted(msg);
 
         if (tryFallbackOnQuota && shouldTryNextSeoFallback(msg) && (hasMoreModels || hasMoreKeys)) {
@@ -2878,14 +3034,14 @@ async function geminiGenerateContentForSeo(
         }
 
         throw new Error(
-          formatSeoGeminiFailure(errors, keys.length, keysAttempted, [...modelsAttempted], models),
+          formatSeoGeminiFailure(errors, slots.length, keysAttempted, [...modelsAttempted], models),
         );
       }
     }
   }
 
   throw new Error(
-    formatSeoGeminiFailure(errors, keys.length, keysAttempted, [...modelsAttempted], models),
+    formatSeoGeminiFailure(errors, slots.length, keysAttempted, [...modelsAttempted], models),
   );
 }
 
@@ -2896,8 +3052,34 @@ type GeminiSeoOptimizeResult = {
   record: SiteJobRecord;
   usedKeyIndex: number;
   model: string;
+  keyUsage: GeminiKeyUsage;
   seoExtras: ReturnType<typeof extractSeoExtrasFromPayload>;
 };
+
+function buildSeoGeminiMetaExtras(
+  model: string,
+  keyUsage: GeminiKeyUsage,
+  runtimeMs: number,
+  seoProfile: string,
+  hadCustomInstructions: boolean,
+  seoExtras: ReturnType<typeof extractSeoExtrasFromPayload>,
+) {
+  return {
+    gemini_model: model,
+    gemini_key_index: keyUsage.index,
+    gemini_keys_total: keyUsage.total,
+    gemini_key_source: keyUsage.source,
+    gemini_key_label: keyUsage.label,
+    gemini_key_hint: keyUsage.hint,
+    runtime_ms: runtimeMs,
+    seo_profile: seoProfile,
+    had_custom_instructions: hadCustomInstructions,
+    prompt_version: 'vizag_tasks_1_8',
+    json_ld: seoExtras.json_ld,
+    hashtags: seoExtras.hashtags,
+    keyword_density: seoExtras.keyword_density,
+  };
+}
 
 function clampText(value: string, maxLen: number): string {
   const trimmed = value.trim();
@@ -3057,8 +3239,8 @@ function buildLinkedInPostSeoInput(
   sourceContext: string,
 ): { jobInput: Record<string, unknown>; workingRecord: SiteJobRecord; compact: boolean } {
   const postRaw = (record.linkedin_post_text ?? record.description ?? record.short_description ?? '').trim();
-  const compact = postRaw.length > 2_200;
-  const postText = postRaw.slice(0, compact ? 1_800 : 3_200);
+  const compact = postRaw.length > 1_200;
+  const postText = postRaw.slice(0, compact ? 1_400 : 2_400);
   const parsed = postText ? parseLinkedInHiringPost(postText) : {};
   const title =
     record.title && record.title !== 'Job opening'
@@ -3078,8 +3260,8 @@ function buildLinkedInPostSeoInput(
     short_description: record.short_description?.slice(0, 400) ?? record.short_description,
   };
 
-  const trimmedContext = sourceContext.slice(0, compact ? 500 : 900);
-  const jobInput = jobRecordForSeoPrompt(workingRecord, 0, trimmedContext, compact ? 1_800 : 3_200);
+  const trimmedContext = sourceContext.slice(0, compact ? 400 : 700);
+  const jobInput = jobRecordForSeoPrompt(workingRecord, 0, trimmedContext, compact ? 1_400 : 2_400);
   return { jobInput, workingRecord, compact };
 }
 
@@ -3110,17 +3292,26 @@ async function geminiSeoOptimizeLinkedInPost(
   const { jobInput, workingRecord, compact } = buildLinkedInPostSeoInput(record, sourceContext);
   const instruction = buildGeminiSeoLinkedInPostPrompt(jobInput, compact, customInstructions);
   const maxOutputTokens = Math.min(
-    8_192,
-    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_MAX_OUTPUT_TOKENS') ?? (compact ? '5120' : '6144')) ||
-      (compact ? 5120 : 6144),
+    6_144,
+    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_MAX_OUTPUT_TOKENS') ?? (compact ? '3584' : '4608')) ||
+      (compact ? 3584 : 4608),
   );
   const seoTimeout = Math.min(
-    58_000,
-    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS') ?? '58000') || 58_000,
+    90_000,
+    Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS') ?? String(GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS)) ||
+      GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS,
+  );
+  const maxModels = Math.min(
+    2,
+    Math.max(
+      1,
+      Number(Deno.env.get('GEMINI_SEO_LINKEDIN_POST_MAX_MODELS') ?? '1') || 1,
+    ),
   );
   const geminiOpts = {
     timeoutMs: seoTimeout,
-    maxModels: 3,
+    maxModels,
+    maxRetries: 1,
     linkedInPost: true as const,
   };
 
@@ -3138,7 +3329,7 @@ async function geminiSeoOptimizeLinkedInPost(
     };
 
     try {
-      const { payload, usedKeyIndex, model } = await geminiGenerateContentForSeo(body, geminiOpts);
+      const { payload, usedKeyIndex, model, keyUsage } = await geminiGenerateContentForSeo(body, geminiOpts);
       const text = extractGeminiSeoResponseText(payload);
       if (!text.trim()) {
         throw new Error('Gemini SEO returned no text for this LinkedIn post.');
@@ -3155,20 +3346,28 @@ async function geminiSeoOptimizeLinkedInPost(
         ),
         usedKeyIndex,
         model,
+        keyUsage,
         seoExtras: extractSeoExtrasFromPayload(parsed),
       };
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
-      if (!useSchema) {
+      const msg = lastError.message;
+      if (!useSchema || isGeminiSeoTimeoutError(msg) || !isGeminiSeoParseRetryError(msg)) {
         break;
       }
       console.warn(
         JSON.stringify({
           event: 'gemini_seo_linkedin_retry_plain_json',
-          message: lastError.message.slice(0, 200),
+          message: msg.slice(0, 200),
         }),
       );
     }
+  }
+
+  if (lastError && isGeminiSeoTimeoutError(lastError.message)) {
+    throw new Error(
+      'Gemini SEO timed out generating this LinkedIn post. Retry once in a minute; if it repeats, check GEMINI_API_KEY quota or set GEMINI_SEO_LINKEDIN_POST_TIMEOUT_MS higher.',
+    );
   }
 
   throw lastError ?? new Error('LinkedIn post SEO failed.');
@@ -3205,7 +3404,9 @@ async function geminiSeoOptimizeSiteJob(
     },
   };
 
-  const { payload, usedKeyIndex, model } = await geminiGenerateContentForSeo(body, { linkedInPost: false });
+  const { payload, usedKeyIndex, model, keyUsage } = await geminiGenerateContentForSeo(body, {
+    linkedInPost: false,
+  });
 
   const text = extractGeminiSeoResponseText(payload);
   if (!text.trim()) {
@@ -3223,6 +3424,7 @@ async function geminiSeoOptimizeSiteJob(
     record: applySeoPayload(record, parsed),
     usedKeyIndex,
     model,
+    keyUsage,
     seoExtras: extractSeoExtrasFromPayload(parsed),
   };
 }
@@ -5388,13 +5590,14 @@ Deno.serve(async (req) => {
   const debugTrace = requestBody.debug_trace === true;
 
   if (mode === 'seo') {
+    let isLinkedInPost = false;
     try {
       const rawJob = requestBody.job;
       if (!rawJob) {
         return jsonResponse({ ok: false, error: 'Missing job payload for SEO mode.' }, 400);
       }
 
-      const isLinkedInPost = rawJob.source_kind === 'linkedin_post';
+      isLinkedInPost = rawJob.source_kind === 'linkedin_post';
       if (getGeminiApiKeysForMakeSeo(isLinkedInPost).length === 0) {
         return jsonResponse(
           {
@@ -5439,7 +5642,7 @@ Deno.serve(async (req) => {
       });
       const seoStarted = Date.now();
       const hardCapMs = Math.min(
-        isLinkedInPost ? 98_000 : 125_000,
+        isLinkedInPost ? GEMINI_SEO_LINKEDIN_HARD_CAP_MS : 125_000,
         Number(Deno.env.get('GEMINI_SEO_HARD_CAP_MS') ?? String(GEMINI_SEO_HARD_CAP_MS)) || GEMINI_SEO_HARD_CAP_MS,
       );
 
@@ -5447,6 +5650,8 @@ Deno.serve(async (req) => {
         (typeof requestBody.seo_custom_instructions === 'string' && requestBody.seo_custom_instructions.trim()) ||
         (typeof rawJob.seo_custom_instructions === 'string' && rawJob.seo_custom_instructions.trim()) ||
         '';
+
+      beginMakeSeoKeyTracking(isLinkedInPost);
 
       console.log(
         JSON.stringify({
@@ -5456,6 +5661,7 @@ Deno.serve(async (req) => {
           post_chars: postText.length,
           context_chars: sourceContext.length,
           custom_instructions_chars: customInstructions.length,
+          gemini_keys_configured: getGeminiKeySlotsForMakeSeo(isLinkedInPost).map((s) => s.label),
         }),
       );
 
@@ -5467,7 +5673,7 @@ Deno.serve(async (req) => {
               reject(
                 new Error(
                   isLinkedInPost
-                    ? 'LinkedIn post SEO timed out on the server. Retry once; if it repeats, check GEMINI_API_KEY and Edge logs.'
+                    ? 'LinkedIn post SEO exceeded the server time limit. Retry once; if it repeats, check Gemini quota (GEMINI_API_KEY) or Edge Function logs.'
                     : 'SEO optimization exceeded the server time limit. Retry or use a shorter job description.',
                 ),
               ),
@@ -5486,6 +5692,28 @@ Deno.serve(async (req) => {
       const contextCap = isLinkedInPost ? 900 : MAX_SEO_SOURCE_FOR_SINGLE_JOB;
       const runtimeMs = Date.now() - seoStarted;
 
+      const seoProfile = isLinkedInPost ? 'linkedin_post' : 'standard';
+      const seoMeta = buildSeoGeminiMetaExtras(
+        seoResult.model,
+        seoResult.keyUsage,
+        runtimeMs,
+        seoProfile,
+        customInstructions.length > 0,
+        seoResult.seoExtras,
+      );
+
+      console.log(
+        JSON.stringify({
+          event: 'gemini_seo_ok',
+          model: seoResult.model,
+          gemini_key_label: seoResult.keyUsage.label,
+          gemini_key_index: seoResult.keyUsage.index,
+          gemini_keys_total: seoResult.keyUsage.total,
+          gemini_key_hint: seoResult.keyUsage.hint,
+          runtime_ms: runtimeMs,
+        }),
+      );
+
       return jsonResponse({
         ok: true,
         mode: 'seo',
@@ -5495,17 +5723,7 @@ Deno.serve(async (req) => {
           seo_optimized: true,
           seo_show_preview: true,
           seo_custom_instructions: customInstructions.slice(0, MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS) || null,
-          seo_meta: {
-            gemini_model: seoResult.model,
-            gemini_key_index: seoResult.usedKeyIndex,
-            runtime_ms: runtimeMs,
-            seo_profile: isLinkedInPost ? 'linkedin_post' : 'standard',
-            had_custom_instructions: customInstructions.length > 0,
-            prompt_version: 'vizag_tasks_1_8',
-            json_ld: seoResult.seoExtras.json_ld,
-            hashtags: seoResult.seoExtras.hashtags,
-            keyword_density: seoResult.seoExtras.keyword_density,
-          },
+          seo_meta: seoMeta,
           source_kind: incoming.source_kind ?? seoResult.record.source_kind ?? 'linkedin_post',
           linkedin_post_text: incoming.linkedin_post_text ?? seoResult.record.linkedin_post_text ?? null,
           needs_review: false,
@@ -5528,16 +5746,33 @@ Deno.serve(async (req) => {
         },
         gemini_status: 'ok',
         gemini_model: seoResult.model,
-        gemini_key_index: seoResult.usedKeyIndex,
+        gemini_key_index: seoResult.keyUsage.index,
+        gemini_keys_total: seoResult.keyUsage.total,
+        gemini_key_source: seoResult.keyUsage.source,
+        gemini_key_label: seoResult.keyUsage.label,
+        gemini_key_hint: seoResult.keyUsage.hint,
         runtime_ms: runtimeMs,
-        seo_profile: isLinkedInPost ? 'linkedin_post' : 'standard',
+        seo_profile: seoProfile,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : 'SEO optimization failed.';
       const hint = isGemini429Error(message)
         ? ' Wait a few seconds between jobs, or add more keys in GEMINI_API_KEYS.'
         : '';
-      return jsonResponse({ ok: false, error: `${message}${hint}`, mode: 'seo' }, 502);
+      const keyFields = makeSeoGeminiKeyFailureFields(isLinkedInPost);
+      console.warn(
+        JSON.stringify({
+          event: 'gemini_seo_failed',
+          message: message.slice(0, 300),
+          ...keyFields,
+        }),
+      );
+      return jsonResponse(
+        { ok: false, error: `${message}${hint}`, mode: 'seo', ...keyFields },
+        502,
+      );
+    } finally {
+      endMakeSeoKeyTracking();
     }
   }
 

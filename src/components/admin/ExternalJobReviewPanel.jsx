@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
 
 export function getExternalJobKey(job) {
   const sourceUrl = String(job?.source_url || '').trim().toLowerCase();
@@ -76,6 +77,7 @@ function SeoResultPreview({ job }) {
   const meta = job.seo_meta && typeof job.seo_meta === 'object' ? job.seo_meta : null;
   const model = meta?.gemini_model ? String(meta.gemini_model) : null;
   const runtimeMs = typeof meta?.runtime_ms === 'number' ? meta.runtime_ms : null;
+  const keyUsage = formatGeminiKeyUsage(meta);
   const hashtags = Array.isArray(meta?.hashtags) ? meta.hashtags : [];
   const keywordDensity = Array.isArray(meta?.keyword_density) ? meta.keyword_density : [];
   const jsonLd = meta?.json_ld && typeof meta.json_ld === 'object' ? meta.json_ld : null;
@@ -84,8 +86,10 @@ function SeoResultPreview({ job }) {
     <div className="mt-3 rounded-xl border-2 border-violet-300 bg-violet-50/80 p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-bold text-violet-950">SEO output — review before publish</p>
-        {model || runtimeMs ? (
+        {model || runtimeMs || keyUsage ? (
           <p className="text-xs text-violet-700">
+            {keyUsage ? <span className="font-medium">{keyUsage}</span> : null}
+            {keyUsage && (model || runtimeMs) ? ' · ' : ''}
             {model ? `Model: ${model}` : ''}
             {model && runtimeMs ? ' · ' : ''}
             {runtimeMs ? `${runtimeMs} ms` : ''}
@@ -227,6 +231,14 @@ function ExternalJobCard({
                 SEO pending
               </span>
             )}
+            {job.seo_optimized && formatGeminiKeyUsage(job.seo_meta) ? (
+              <span
+                className="rounded-full border border-violet-200 bg-white px-2.5 py-0.5 text-xs font-medium text-violet-900"
+                title="Gemini API key used for Make SEO"
+              >
+                {formatGeminiKeyUsage(job.seo_meta)}
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-slate-600">
             {job.company || 'Unknown company'} · {job.location || '—'} · {job.category || 'No category'}
