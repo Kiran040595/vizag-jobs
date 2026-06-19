@@ -6,7 +6,11 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchJobById } from '../services/jobs';
 import { getJobDetailPath } from '../lib/jobRoutes';
-import { isJobFresh } from '../lib/jobFreshness';
+import {
+  formatRelativePostedAt,
+  isJobFresh,
+  shouldHighlightPostedTime,
+} from '../lib/jobFreshness';
 import NewBadge from '../components/NewBadge';
 import JobDescriptionContent from '../components/JobDescriptionContent';
 import {
@@ -221,7 +225,22 @@ export default function JobDetailsPage() {
               <p><span className="font-semibold text-slate-900">Experience:</span> {job.experience || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Fresher:</span> {job.isFresher || 'N/A'}</p>
               <p><span className="font-semibold text-slate-900">Salary:</span> {job.salary || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Posted At:</span> {job.postedAt ? new Date(job.postedAt).toLocaleDateString() : 'N/A'}</p>
+              <p>
+                <span className="font-semibold text-slate-900">Posted At:</span>{' '}
+                {job.postedAt ? (
+                  <span
+                    className={
+                      shouldHighlightPostedTime(job.postedAt)
+                        ? 'font-semibold text-red-600'
+                        : undefined
+                    }
+                  >
+                    {formatRelativePostedAt(job.postedAt) || new Date(job.postedAt).toLocaleDateString()}
+                  </span>
+                ) : (
+                  'N/A'
+                )}
+              </p>
             </div>
 
             {job.shortDescription && !structuredDescription ? (

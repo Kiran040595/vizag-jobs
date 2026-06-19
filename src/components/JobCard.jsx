@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
-import { isJobFresh } from '../lib/jobFreshness';
+import {
+  formatRelativePostedAt,
+  isJobFresh,
+  shouldHighlightPostedTime,
+} from '../lib/jobFreshness';
 import NewBadge from './NewBadge';
 
 const JobCard = ({
@@ -14,6 +18,9 @@ const JobCard = ({
   tags = [],
   postedAt
 }) => {
+  const relativePostedAt = formatRelativePostedAt(postedAt);
+  const highlightPostedTime = shouldHighlightPostedTime(postedAt);
+
   const fallbackLogoText = companyName
     ? companyName
       .split(' ')
@@ -73,6 +80,16 @@ const JobCard = ({
           </>
         ) : null}
       </div>
+
+      {relativePostedAt ? (
+        <p
+          className={`mb-2 text-xs sm:text-sm ${
+            highlightPostedTime ? 'font-semibold text-red-600' : 'text-slate-500'
+          }`}
+        >
+          Posted {relativePostedAt}
+        </p>
+      ) : null}
 
       {description ? (
         <p className="mb-3 line-clamp-2 text-xs text-slate-600 sm:text-sm">{description}</p>
