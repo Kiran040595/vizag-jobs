@@ -10,6 +10,7 @@ import {
   updateAdminJobStatus,
 } from '../../services/adminJobs';
 import { seoOptimizeExternalJob } from '../../services/externalJobFetch';
+import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -359,6 +360,8 @@ function SeoApprovalDialog({ rawJob, seoJob, isApplying, onApply, onCancel }) {
     (slugStatus.state === 'available' ||
       slugStatus.state === 'unknown'); // unknown = let user try; server will gate it
 
+  const keyUsage = formatGeminiKeyUsage(seoJob.seo_meta);
+
   const rows = [
     { label: 'Title', before: rawJob.title, after: seoJob.title },
     {
@@ -425,6 +428,9 @@ function SeoApprovalDialog({ rawJob, seoJob, isApplying, onApply, onCancel }) {
               SEO rewrite ready
             </p>
             <h2 className="mt-1 text-lg font-bold text-slate-950">Review changes</h2>
+            {keyUsage ? (
+              <p className="mt-1 text-xs font-medium text-violet-800">{keyUsage}</p>
+            ) : null}
           </div>
           <button
             type="button"

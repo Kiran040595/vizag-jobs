@@ -13,6 +13,7 @@ import {
   seoOptimizeExternalJob,
   startNaukriApifyFetch,
 } from '../services/externalJobFetch';
+import { geminiKeyFieldsFromSeoResponse } from '../lib/formatGeminiKeyUsage';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
 import { stashAdminJobPrefill } from '../lib/adminNewJobPrefill';
@@ -418,22 +419,24 @@ export default function AdminExternalFetchPage() {
                 seo_show_preview: true,
                 seo_custom_instructions:
                   optimized.seo_custom_instructions ?? item.seo_custom_instructions ?? '',
-                seo_meta:
-                  optimized.seo_meta ??
-                  (data.gemini_model || data.runtime_ms
+                seo_meta: {
+                  ...(optimized.seo_meta && typeof optimized.seo_meta === 'object' ? optimized.seo_meta : {}),
+                  ...(geminiKeyFieldsFromSeoResponse(data) ?? {}),
+                  ...(data.gemini_model || data.runtime_ms
                     ? {
-                        gemini_model: data.gemini_model,
-                        runtime_ms: data.runtime_ms,
-                        seo_profile: data.seo_profile,
+                        gemini_model: data.gemini_model ?? optimized.seo_meta?.gemini_model,
+                        runtime_ms: data.runtime_ms ?? optimized.seo_meta?.runtime_ms,
+                        seo_profile: data.seo_profile ?? optimized.seo_meta?.seo_profile,
                         had_custom_instructions: Boolean(job.seo_custom_instructions?.trim()),
                       }
-                    : item.seo_meta),
+                    : {}),
+                },
               }
             : item,
         ),
       );
       setNotice(
-        `SEO ready: "${optimized.title}". Review the violet SEO output box below, then publish or add more instructions and Re-run SEO.`,
+        `SEO ready: "${optimized.title}". ${formatGeminiKeyUsage(optimized.seo_meta) ? `Used ${formatGeminiKeyUsage(optimized.seo_meta)}. ` : ''}Review the violet SEO output box below, then publish or add more instructions and Re-run SEO.`,
       );
     } catch (error) {
       setSeoErrors((current) => ({

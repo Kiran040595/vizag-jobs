@@ -150,19 +150,36 @@ export function buildGeminiSeoSingleJobPrompt(
   return appendSeoCustomInstructions(base, customInstructions);
 }
 
+const LINKEDIN_POST_COMPACT_TASKS = `${SEO_ROLE}
+${SEO_LOCATION_RULES}
+
+Rewrite a casual LinkedIn HIRING POST for jobsinvizag.in. Facts from linkedin_post_text / scraped_source only.
+If many cities are listed, focus on Vizag/Visakhapatnam when mentioned; preserve WhatsApp/phone/apply links from the post.
+
+TASK 1 — SEO title under 60 chars (Vizag + Visakhapatnam).
+TASK 2 — short_description 150–160 chars (meta).
+TASK 3 — slug hyphenated lowercase.
+TASK 4 — Markdown description under 1200 chars: H1, ## About the Role, ## Key Responsibilities, ## How to Apply, ## FAQs (3 Q&As).
+TASK 6 — json_ld JobPosting object (input facts only).
+TASK 7 — hashtags[] with 10 items (include #).
+TASK 8 — keyword_density top 5 { keyword, count }.
+
+Use relevant Vizag job keywords naturally; do not invent salary or contact details.`;
+
 export function buildGeminiSeoLinkedInPostPrompt(
   jobInput: Record<string, unknown>,
   compact = false,
   customInstructions?: string,
 ): string {
-  const descNote = compact
-    ? 'Keep description under 1200 characters but still include all H2 sections and at least 3 FAQs.'
-    : 'Description may be up to 2000 characters.';
   const linkedInNote =
     'Input is a casual LinkedIn HIRING POST. Extract facts from linkedin_post_text / scraped_source only. ' +
     'If many cities are listed, focus on Visakhapatnam/Vizag only when Vizag is mentioned; otherwise use "multiple locations" without inventing Vizag-only details. ' +
     'Preserve apply_link (WhatsApp/phone/URL from post).';
-  const base = `${TASKS_CORE}\n\n${linkedInNote}\n${descNote}\n\n${GEMINI_SEO_JSON_OUTPUT_RULES}\n\n${buildRawListingSection(jobInput)}`;
+  const tasks = compact ? LINKEDIN_POST_COMPACT_TASKS : TASKS_CORE;
+  const descNote = compact
+    ? 'Keep description under 1200 characters.'
+    : 'Description may be up to 2000 characters.';
+  const base = `${tasks}\n\n${linkedInNote}\n${descNote}\n\n${GEMINI_SEO_JSON_OUTPUT_RULES}\n\n${buildRawListingSection(jobInput)}`;
   return appendSeoCustomInstructions(base, customInstructions);
 }
 
