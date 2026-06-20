@@ -45,10 +45,10 @@ export default function Navbar() {
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           />
           <Link
-            to="/admin/login"
+            to="/contact"
             className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
           >
-            Admin login
+            Contact
           </Link>
         </div>
 
@@ -95,11 +95,11 @@ export default function Navbar() {
               className="rounded-xl border border-slate-200 px-4 py-2.5 text-center text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             />
             <Link
-              to="/admin/login"
+              to="/contact"
               onClick={() => setIsOpen(false)}
               className="rounded-xl bg-cyan-500 px-4 py-2.5 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
             >
-              Admin login
+              Contact
             </Link>
           </div>
         </nav>
