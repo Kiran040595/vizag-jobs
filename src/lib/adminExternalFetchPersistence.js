@@ -42,6 +42,7 @@ const isPlainObject = (value) =>
  * @property {Array<string>} skippedKeys
  * @property {Record<string, string>} importErrors
  * @property {Record<string, string>} seoErrors
+ * @property {Record<string, number>} [seoKeyIndexByJob]
  * @property {string} linkedInPostPreset
  * @property {string} linkedInCustomSearchUrl
  * @property {{ runId: string, readyAt: number, startedAt: number } | null} [naukriPending]
@@ -102,6 +103,13 @@ export function loadAdminFetchSnapshot() {
       : [],
     importErrors: isPlainObject(parsed.importErrors) ? parsed.importErrors : {},
     seoErrors: isPlainObject(parsed.seoErrors) ? parsed.seoErrors : {},
+    seoKeyIndexByJob: isPlainObject(parsed.seoKeyIndexByJob)
+      ? Object.fromEntries(
+          Object.entries(parsed.seoKeyIndexByJob)
+            .filter(([k, v]) => typeof k === 'string' && Number.isFinite(Number(v)))
+            .map(([k, v]) => [k, Math.floor(Number(v))]),
+        )
+      : {},
     linkedInPostPreset:
       typeof parsed.linkedInPostPreset === 'string' ? parsed.linkedInPostPreset : 'general',
     linkedInCustomSearchUrl:

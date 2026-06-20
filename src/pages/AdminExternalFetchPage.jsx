@@ -9,11 +9,13 @@ import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../servic
 import {
   collectNaukriApifyFetch,
   fetchExternalJobsBySource,
+  fetchSeoGeminiKeys,
   NAUKRI_ASYNC_COLLECT_WAIT_MS,
   seoOptimizeExternalJob,
   startNaukriApifyFetch,
 } from '../services/externalJobFetch';
 import { geminiKeyFieldsFromSeoResponse } from '../lib/formatGeminiKeyUsage';
+import { parseGeminiSeoKeySelectValue } from '../lib/geminiSeoKeyOptions';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
 import { stashAdminJobPrefill } from '../lib/adminNewJobPrefill';
@@ -93,6 +95,11 @@ export default function AdminExternalFetchPage() {
   const [busySeoKey, setBusySeoKey] = useState('');
   const [importErrors, setImportErrors] = useState(initialSnapshot?.importErrors ?? {});
   const [seoErrors, setSeoErrors] = useState(initialSnapshot?.seoErrors ?? {});
+  const [seoGeminiKeysStandard, setSeoGeminiKeysStandard] = useState([]);
+  const [seoGeminiKeysLinkedIn, setSeoGeminiKeysLinkedIn] = useState([]);
+  const [seoKeyIndexByJob, setSeoKeyIndexByJob] = useState(
+    () => initialSnapshot?.seoKeyIndexByJob ?? {},
+  );
   const [linkedInPostPreset, setLinkedInPostPreset] = useState(
     initialSnapshot?.linkedInPostPreset ?? 'general',
   );
@@ -136,6 +143,32 @@ export default function AdminExternalFetchPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let ignore = false;
+    if (!session?.access_token) {
+      return undefined;
+    }
+    (async () => {
+      try {
+        const [standard, linkedIn] = await Promise.all([
+          fetchSeoGeminiKeys(session.access_token, { linkedInPost: false }),
+          fetchSeoGeminiKeys(session.access_token, { linkedInPost: true }),
+        ]);
+        if (ignore) return;
+        setSeoGeminiKeysStandard(standard.keys);
+        setSeoGeminiKeysLinkedIn(linkedIn.keys);
+      } catch {
+        if (!ignore) {
+          setSeoGeminiKeysStandard([]);
+          setSeoGeminiKeysLinkedIn([]);
+        }
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [session?.access_token]);
+
   // Persist the working batch on every relevant state change (debounced).
   // When the batch is empty AND there's no payload, drop the snapshot
   // entirely so we don't leave stale data behind.
@@ -155,6 +188,7 @@ export default function AdminExternalFetchPage() {
         skippedKeys: Array.from(skippedKeys),
         importErrors,
         seoErrors,
+        seoKeyIndexByJob,
         linkedInPostPreset,
         linkedInCustomSearchUrl,
         naukriPending,
@@ -169,6 +203,7 @@ export default function AdminExternalFetchPage() {
     skippedKeys,
     importErrors,
     seoErrors,
+    seoKeyIndexByJob,
     linkedInPostPreset,
     linkedInCustomSearchUrl,
     naukriPending,
@@ -396,13 +431,25 @@ export default function AdminExternalFetchPage() {
     );
   };
 
+  const handleSeoKeyIndexChange = (job, value) => {
+    const key = getExternalJobKey(job);
+    const index = parseGeminiSeoKeySelectValue(value);
+    setSeoKeyIndexByJob((current) => ({
+      ...current,
+      [key]: index,
+    }));
+  };
+
   const handleMakeSeo = async (job) => {
     const key = getExternalJobKey(job);
     const sourceUrl = String(job.source_url || '').toLowerCase();
+    const selectedKeyIndex = seoKeyIndexByJob[key] ?? 0;
     setBusySeoKey(key);
     setSeoErrors((current) => clearKeyedError(current, job));
     try {
-      const data = await seoOptimizeExternalJob(session?.access_token, job);
+      const data = await seoOptimizeExternalJob(session?.access_token, job, '', {
+        geminiKeyIndex: selectedKeyIndex > 0 ? selectedKeyIndex : undefined,
+      });
       const optimized = data.job;
       if (!optimized) {
         throw new Error('SEO response did not include a job.');
@@ -764,8 +811,12 @@ export default function AdminExternalFetchPage() {
         busySeoKey={busySeoKey}
         importErrors={importErrors}
         seoErrors={seoErrors}
+        seoGeminiKeysStandard={seoGeminiKeysStandard}
+        seoGeminiKeysLinkedIn={seoGeminiKeysLinkedIn}
+        seoKeyIndexByJob={seoKeyIndexByJob}
         onMakeSeo={handleMakeSeo}
         onSeoInstructionsChange={handleSeoInstructionsChange}
+        onSeoKeyIndexChange={handleSeoKeyIndexChange}
         onPublish={(job) => handleImport(job, 'published')}
         onSaveDraft={(job) => handleImport(job, 'draft')}
         onSkip={handleSkip}

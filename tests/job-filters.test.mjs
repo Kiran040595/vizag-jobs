@@ -200,7 +200,10 @@ section('applyJobFilters — fresher / walk-in categories');
   const jobs = [
     fakeJob({ id: 'fr', isFresher: 'Yes', experience: '0-2 years' }),
     fakeJob({ id: 'fr2', isFresher: 'No', experience: 'Fresher / 0-1 yrs' }),
+    fakeJob({ id: 'fr3', isFresher: 'No', experience: '0 Years' }),
+    fakeJob({ id: 'titleOnly', isFresher: 'No', experience: 'Not specified', title: 'Java Fresher Developer' }),
     fakeJob({ id: 'sr', isFresher: 'No', experience: '5-8 years' }),
+    fakeJob({ id: 'ten', isFresher: 'No', experience: '10 years' }),
     fakeJob({ id: 'wi', title: 'Walk-in interview at 9am', isFresher: 'No', experience: '5-8 years' }),
   ];
   const fresherIds = applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'fresher' })
@@ -208,10 +211,12 @@ section('applyJobFilters — fresher / walk-in categories');
     .sort();
   eq(
     fresherIds,
-    ['fr', 'fr2'].sort(),
-    'fresher matches isFresher=Yes OR experience text mentioning fresher/0',
+    ['fr', 'fr2', 'fr3'].sort(),
+    'fresher matches is_fresher flag OR experience containing 0',
   );
   ok(!fresherIds.includes('sr'), 'fresher does NOT match a senior with no 0 in experience');
+  ok(!fresherIds.includes('ten'), 'fresher does NOT match 10 years via naive zero digit');
+  ok(!fresherIds.includes('titleOnly'), 'fresher does NOT match title alone without flag or exp 0');
   eq(
     applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'walk-in' }).map((j) => j.id),
     ['wi'],

@@ -332,7 +332,7 @@ function sleepMs(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext = '') {
+export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext = '', options = {}) {
   const isLinkedInPost = job.source_kind === 'linkedin_post';
   const context =
     seoSourceContext?.trim()
@@ -340,11 +340,16 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
       : resolveSeoSourceContext(job);
   const customInstructions =
     typeof job.seo_custom_instructions === 'string' ? job.seo_custom_instructions.trim().slice(0, 1200) : '';
+  const geminiKeyIndex =
+    typeof options.geminiKeyIndex === 'number' && options.geminiKeyIndex > 0
+      ? Math.floor(options.geminiKeyIndex)
+      : undefined;
   const body = {
     mode: 'seo',
     job: buildSeoJobPayload(job),
     seo_source_context: context,
     seo_custom_instructions: customInstructions || undefined,
+    ...(geminiKeyIndex ? { gemini_key_index: geminiKeyIndex } : {}),
   };
   const timeoutMs = isLinkedInPost ? 120_000 : 130_000;
   const maxAttempts = 3;
@@ -365,4 +370,22 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
   }
 
   throw lastError ?? new Error('SEO optimization failed after rate-limit retries.');
+}
+
+/**
+ * List configured Make SEO Gemini keys (labels + index only — never full keys).
+ * @param {string} accessToken
+ * @param {{ linkedInPost?: boolean }} [options]
+ * @returns {Promise<{ keys: Array<{ index: number, label: string, source?: string, hint?: string }>, total: number }>}
+ */
+export async function fetchSeoGeminiKeys(accessToken, options = {}) {
+  const data = await callFetchExternalJobsEdge(accessToken, {
+    mode: 'seo_keys',
+    linkedin_post: options.linkedInPost === true,
+  });
+  const keys = Array.isArray(data?.keys) ? data.keys : [];
+  return {
+    keys,
+    total: Number(data?.gemini_keys_total) || keys.length,
+  };
 }

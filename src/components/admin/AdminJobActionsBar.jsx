@@ -9,8 +9,9 @@ import {
   updateAdminJob,
   updateAdminJobStatus,
 } from '../../services/adminJobs';
-import { seoOptimizeExternalJob } from '../../services/externalJobFetch';
+import { seoOptimizeExternalJob, fetchSeoGeminiKeys } from '../../services/externalJobFetch';
 import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
+import { buildGeminiSeoKeySelectOptions, parseGeminiSeoKeySelectValue } from '../../lib/geminiSeoKeyOptions';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -56,6 +57,39 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
   // Holds the in-flight SEO rewrite. Stays mounted until the admin clicks
   // Apply (commits to DB) or Cancel (discards).
   const [seoPreview, setSeoPreview] = useState(null); // { rawJob, seoJob } | null
+  const [seoGeminiKeyIndex, setSeoGeminiKeyIndex] = useState(0);
+  const [seoGeminiKeys, setSeoGeminiKeys] = useState([]);
+
+  const isLinkedInPostJob =
+    job?.sourceKind === 'linkedin_post' || job?.source_kind === 'linkedin_post';
+  const geminiKeySelectOptions = useMemo(
+    () => buildGeminiSeoKeySelectOptions(seoGeminiKeys),
+    [seoGeminiKeys],
+  );
+
+  useEffect(() => {
+    let ignore = false;
+    if (!session?.access_token) {
+      return undefined;
+    }
+    (async () => {
+      try {
+        const { keys } = await fetchSeoGeminiKeys(session.access_token, {
+          linkedInPost: isLinkedInPostJob,
+        });
+        if (!ignore) {
+          setSeoGeminiKeys(keys);
+        }
+      } catch {
+        if (!ignore) {
+          setSeoGeminiKeys([]);
+        }
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [session?.access_token, isLinkedInPostJob]);
 
   const status = job?.status || 'draft';
   const isPublished = status === 'published';
@@ -134,7 +168,9 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
       // responsibilities/eligibility/skills), so go to the source rather
       // than reconstructing from the camelCase processed shape.
       const rawJob = await fetchAdminJobById(job.id);
-      const data = await seoOptimizeExternalJob(session.access_token, rawJob);
+      const data = await seoOptimizeExternalJob(session.access_token, rawJob, '', {
+        geminiKeyIndex: seoGeminiKeyIndex > 0 ? seoGeminiKeyIndex : undefined,
+      });
       const seoJob = data?.job;
       if (!seoJob) {
         throw new Error('SEO response did not include a job.');
@@ -228,6 +264,20 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
           >
             Edit
           </a>
+          <select
+            value={String(seoGeminiKeyIndex || 0)}
+            onChange={(e) => setSeoGeminiKeyIndex(parseGeminiSeoKeySelectValue(e.target.value))}
+            disabled={Boolean(busyAction)}
+            className="max-w-[14rem] rounded-xl border border-violet-200 bg-violet-50 px-2 py-2 text-[11px] font-semibold text-violet-900 disabled:opacity-50"
+            title="Choose which Gemini API key runs Make SEO"
+            aria-label="Gemini API key for Make SEO"
+          >
+            {geminiKeySelectOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             className={`${baseBtn} ${seoStyle}`}

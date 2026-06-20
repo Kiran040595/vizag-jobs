@@ -2,14 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import vsp2Image from '../assets/VSP2.jpg';
 import vsp1Image from '../assets/VSP1.jpg';
 
-const popularTags = [
-  'Software Engineer',
-  'Frontend Developer',
-  'BPO Jobs',
-  'Walk-in Interviews',
-  'Fresher Jobs'
-];
-
 export default function HeroSection({
   searchTerm,
   onSearch,
@@ -69,11 +61,6 @@ export default function HeroSection({
     } else {
       onSearch(searchTerm);
     }
-  };
-
-  const handlePopularTagClick = (tag) => {
-    onSearch(tag);
-    if (onSubmit) onSubmit(tag);
   };
 
   return (
@@ -142,22 +129,6 @@ export default function HeroSection({
             >
               Search Jobs
             </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-left sm:gap-2">
-            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Popular:
-            </span>
-            {popularTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => handlePopularTagClick(tag)}
-                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:px-3 sm:py-1.5 sm:text-xs"
-              >
-                {tag}
-              </button>
-            ))}
           </div>
         </form>
       </div>

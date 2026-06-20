@@ -1900,7 +1900,15 @@ function inferDisplayTitle(raw: ExtractedJob, md: string): string {
 
 function inferIsFresher(experience: string, title: string, md: string): boolean {
   const exp = experience.toLowerCase();
-  if (/^0\s*[-–]/.test(exp) || /\bfresher\b/i.test(exp) || /^0\s+to\s+/i.test(exp)) {
+  if (
+    /^0\s*[-–]/.test(exp) ||
+    /\bfresher\b/i.test(exp) ||
+    /^0\s+to\s+/i.test(exp) ||
+    /\b0\s*(?:yr|yrs|year|years)\b/i.test(exp) ||
+    /\bentry[\s-]?level\b/i.test(exp) ||
+    /\btrainee\b/i.test(exp) ||
+    /\bintern(?:ship)?\b/i.test(exp)
+  ) {
     return true;
   }
   if (/\bfresher\b|\btrainee\b|\bintern\b/i.test(title)) {
@@ -1982,6 +1990,8 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
   const sourceName = raw.source_name ?? (raw.source_url.includes('naukri.com') ? 'naukri.com' : 'linkedin.com');
   const salary =
     (isLinkedInPost ? extractLinkedInPostSalary(md) : null) ?? extractNaukriSalary(md);
+  const experience =
+    raw.experience?.trim() || parsedPost?.experience?.trim() || 'Not specified';
 
   return {
     slug: createJobSlug(title, company, postedAt ?? referenceIso),
@@ -1992,8 +2002,8 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
       raw.category?.trim() || (isLinkedInPost ? 'General' : inferCategory(md)),
     job_type: inferJobType(md),
     work_mode: isLinkedInPost ? null : inferWorkMode(md),
-    experience: raw.experience?.trim() || parsedPost?.experience?.trim() || 'Not specified',
-    is_fresher: inferIsFresher(raw.experience ?? '', title, md),
+    experience,
+    is_fresher: inferIsFresher(experience === 'Not specified' ? '' : experience, title, md),
     salary,
     apply_link: resolveApplyLinkForJob(
       raw.apply_url,
@@ -2501,7 +2511,7 @@ const DEFAULT_SEO_BATCH_SIZE = 4;
 const DEFAULT_MAX_SCRAPE_URLS = 12;
 
 type FetchRequestBody = {
-  mode?: 'fetch' | 'seo';
+  mode?: 'fetch' | 'seo' | 'seo_keys';
   /** Single-source fetch: naukri | linkedin_jobs | linkedin_posts | vizag_it | indeed */
   fetch_channel?: string;
   source?: string;
@@ -2511,6 +2521,10 @@ type FetchRequestBody = {
   seo_source_context?: string;
   /** Admin-only hints appended to the Make SEO Gemini prompt (max ~1200 chars). */
   seo_custom_instructions?: string;
+  /** Make SEO: 1-based key pool index from `seo_keys` mode. Omit or 0 = auto shuffle. */
+  gemini_key_index?: number;
+  /** seo_keys mode: use LinkedIn-post key pool when true. */
+  linkedin_post?: boolean;
   /** linkedin_posts only: general | it | bank | custom */
   linkedin_post_preset?: string;
   /** Required when linkedin_post_preset is custom */
@@ -2680,6 +2694,43 @@ function getGeminiKeySlotsForMakeSeo(linkedInPost = false): GeminiKeySlot[] {
     merged.push({ ...slot, poolIndex: merged.length + 1 });
   }
   return merged;
+}
+
+function parsePreferredGeminiKeyIndex(raw: unknown): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    return 0;
+  }
+  return Math.floor(n);
+}
+
+function geminiKeySlotsToPublicMeta(slots: GeminiKeySlot[]) {
+  return slots.map((slot) => ({
+    index: slot.poolIndex,
+    label: slot.label,
+    source: slot.source,
+    hint: slot.hint,
+  }));
+}
+
+/** Auto shuffle when preferredIndex is 0; otherwise use exactly one configured key. */
+function resolveGeminiKeySlotsForSeoAttempt(
+  pool: GeminiKeySlot[],
+  preferredIndex: number,
+): GeminiKeySlot[] {
+  if (pool.length === 0) {
+    return pool;
+  }
+  if (preferredIndex <= 0) {
+    return shuffledCopy(pool);
+  }
+  const selected = pool.find((slot) => slot.poolIndex === preferredIndex);
+  if (!selected) {
+    throw new Error(
+      `Invalid gemini_key_index ${preferredIndex}. Configured keys (${pool.length}): ${pool.map((s) => `${s.poolIndex}=${s.label}`).join(', ')}.`,
+    );
+  }
+  return [selected];
 }
 
 function geminiKeyUsageFromSlot(slot: GeminiKeySlot, total: number): GeminiKeyUsage {
@@ -2962,16 +3013,21 @@ async function geminiGenerateContentForSeo(
     maxModels?: number;
     maxRetries?: number;
     linkedInPost?: boolean;
+    /** 1-based pool index; omit or 0 = random shuffle across all keys. */
+    preferredKeyIndex?: number;
   },
 ): Promise<GeminiSeoCallResult> {
-  const slots = shuffledCopy(getGeminiKeySlotsForMakeSeo(options?.linkedInPost === true));
-  if (slots.length === 0) {
+  const pool = getGeminiKeySlotsForMakeSeo(options?.linkedInPost === true);
+  if (pool.length === 0) {
     throw new Error(
       options?.linkedInPost
         ? 'Gemini API key required for Make SEO. Set GEMINI_API_KEY_SEO, GEMINI_API_KEY, or GEMINI_API_KEY_LINKEDIN_POSTS in Edge Function secrets.'
         : 'GEMINI_API_KEY_SEO or GEMINI_API_KEY is required for Make SEO. Add keys in Edge Function secrets.',
     );
   }
+  const preferredKeyIndex = parsePreferredGeminiKeyIndex(options?.preferredKeyIndex);
+  const slots = resolveGeminiKeySlotsForSeoAttempt(pool, preferredKeyIndex);
+  const poolTotal = pool.length;
 
   const allModels = shuffledCopy(getGeminiSeoModelCandidates());
   const models =
@@ -3000,7 +3056,7 @@ async function geminiGenerateContentForSeo(
     const slot = slots[keyIndex]!;
     const apiKey = slot.apiKey;
     keysAttempted = keyIndex + 1;
-    noteMakeSeoKeyAttempt(slot, slots.length);
+    noteMakeSeoKeyAttempt(slot, poolTotal);
 
     for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
       const model = models[modelIndex]!;
@@ -3014,9 +3070,9 @@ async function geminiGenerateContentForSeo(
         });
         return {
           payload,
-          usedKeyIndex: keyIndex + 1,
+          usedKeyIndex: slot.poolIndex,
           model,
-          keyUsage: geminiKeyUsageFromSlot(slot, slots.length),
+          keyUsage: geminiKeyUsageFromSlot(slot, poolTotal),
         };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -3034,16 +3090,20 @@ async function geminiGenerateContentForSeo(
         }
 
         throw new Error(
-          formatSeoGeminiFailure(errors, slots.length, keysAttempted, [...modelsAttempted], models),
+          formatSeoGeminiFailure(errors, poolTotal, keysAttempted, [...modelsAttempted], models),
         );
       }
     }
   }
 
   throw new Error(
-    formatSeoGeminiFailure(errors, slots.length, keysAttempted, [...modelsAttempted], models),
+    formatSeoGeminiFailure(errors, poolTotal, keysAttempted, [...modelsAttempted], models),
   );
 }
+
+type GeminiSeoRunOptions = {
+  preferredKeyIndex?: number;
+};
 
 const MAX_SEO_TITLE_CHARS = 60;
 const MAX_SEO_SLUG_CHARS = 60;
@@ -3288,6 +3348,7 @@ async function geminiSeoOptimizeLinkedInPost(
   record: SiteJobRecord,
   sourceContext: string,
   customInstructions?: string,
+  runOptions?: GeminiSeoRunOptions,
 ): Promise<GeminiSeoOptimizeResult> {
   const { jobInput, workingRecord, compact } = buildLinkedInPostSeoInput(record, sourceContext);
   const instruction = buildGeminiSeoLinkedInPostPrompt(jobInput, compact, customInstructions);
@@ -3313,6 +3374,7 @@ async function geminiSeoOptimizeLinkedInPost(
     maxModels,
     maxRetries: 1,
     linkedInPost: true as const,
+    preferredKeyIndex: runOptions?.preferredKeyIndex,
   };
 
   let lastError: Error | null = null;
@@ -3377,9 +3439,10 @@ async function geminiSeoOptimizeSiteJob(
   record: SiteJobRecord,
   sourceContext: string,
   customInstructions?: string,
+  runOptions?: GeminiSeoRunOptions,
 ): Promise<GeminiSeoOptimizeResult> {
   if (record.source_kind === 'linkedin_post') {
-    return geminiSeoOptimizeLinkedInPost(record, sourceContext, customInstructions);
+    return geminiSeoOptimizeLinkedInPost(record, sourceContext, customInstructions, runOptions);
   }
 
   const trimmedContext = sourceContext.slice(0, MAX_SEO_SOURCE_FOR_SINGLE_JOB);
@@ -3406,6 +3469,7 @@ async function geminiSeoOptimizeSiteJob(
 
   const { payload, usedKeyIndex, model, keyUsage } = await geminiGenerateContentForSeo(body, {
     linkedInPost: false,
+    preferredKeyIndex: runOptions?.preferredKeyIndex,
   });
 
   const text = extractGeminiSeoResponseText(payload);
@@ -5586,8 +5650,24 @@ Deno.serve(async (req) => {
   } catch {
     requestBody = {};
   }
-  const mode = requestBody.mode === 'seo' ? 'seo' : 'fetch';
+  const modeRaw = requestBody.mode;
+  const mode =
+    modeRaw === 'seo' ? 'seo' : modeRaw === 'seo_keys' ? 'seo_keys' : 'fetch';
   const debugTrace = requestBody.debug_trace === true;
+
+  if (mode === 'seo_keys') {
+    const linkedInPost =
+      requestBody.linkedin_post === true ||
+      requestBody.job?.source_kind === 'linkedin_post';
+    const slots = getGeminiKeySlotsForMakeSeo(linkedInPost);
+    return jsonResponse({
+      ok: true,
+      mode: 'seo_keys',
+      linkedin_post: linkedInPost,
+      gemini_keys_total: slots.length,
+      keys: geminiKeySlotsToPublicMeta(slots),
+    });
+  }
 
   if (mode === 'seo') {
     let isLinkedInPost = false;
@@ -5650,6 +5730,7 @@ Deno.serve(async (req) => {
         (typeof requestBody.seo_custom_instructions === 'string' && requestBody.seo_custom_instructions.trim()) ||
         (typeof rawJob.seo_custom_instructions === 'string' && rawJob.seo_custom_instructions.trim()) ||
         '';
+      const preferredKeyIndex = parsePreferredGeminiKeyIndex(requestBody.gemini_key_index);
 
       beginMakeSeoKeyTracking(isLinkedInPost);
 
@@ -5661,12 +5742,15 @@ Deno.serve(async (req) => {
           post_chars: postText.length,
           context_chars: sourceContext.length,
           custom_instructions_chars: customInstructions.length,
+          gemini_key_index: preferredKeyIndex > 0 ? preferredKeyIndex : null,
           gemini_keys_configured: getGeminiKeySlotsForMakeSeo(isLinkedInPost).map((s) => s.label),
         }),
       );
 
       const seoResult = await Promise.race([
-        geminiSeoOptimizeSiteJob(record, sourceContext, customInstructions || undefined),
+        geminiSeoOptimizeSiteJob(record, sourceContext, customInstructions || undefined, {
+          preferredKeyIndex: preferredKeyIndex > 0 ? preferredKeyIndex : undefined,
+        }),
         new Promise<GeminiSeoOptimizeResult>((_, reject) => {
           setTimeout(
             () =>

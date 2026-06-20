@@ -7,6 +7,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { isPublicFresherListingJob } from '../lib/fresherMatch';
 import { toAbsoluteUrl } from '../lib/site';
 
 export default function FresherJobsInVizagPage() {
@@ -79,11 +80,11 @@ export default function FresherJobsInVizagPage() {
     () =>
       allJobs.filter(
         (job) =>
-          (job.tags.includes('Fresher') || job.experience.includes('0') || job.experience.toLowerCase().includes('fresher')) &&
+          isPublicFresherListingJob(job) &&
           (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+            job.company.toLowerCase().includes(searchTerm.toLowerCase())),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
+import { buildGeminiSeoKeySelectOptions } from '../../lib/geminiSeoKeyOptions';
 
 export function getExternalJobKey(job) {
   const sourceUrl = String(job?.source_url || '').trim().toLowerCase();
@@ -156,6 +157,9 @@ function ExternalJobCard({
   onToggleSelect,
   onMakeSeo,
   onSeoInstructionsChange,
+  onSeoKeyIndexChange,
+  seoKeyIndex = 0,
+  seoGeminiKeys = [],
   onPublish,
   onSaveDraft,
   onSkip,
@@ -166,6 +170,10 @@ function ExternalJobCard({
   const seoPreviewRef = useRef(null);
   const jobKey = getExternalJobKey(job);
   const showSeoPreview = Boolean(job.seo_optimized && (job.seo_show_preview ?? true));
+  const geminiKeySelectOptions = useMemo(
+    () => buildGeminiSeoKeySelectOptions(seoGeminiKeys),
+    [seoGeminiKeys],
+  );
 
   useEffect(() => {
     if (showSeoPreview && seoPreviewRef.current) {
@@ -323,6 +331,33 @@ function ExternalJobCard({
 
       {onMakeSeo && onSeoInstructionsChange ? (
         <div className="mt-3 rounded-xl border border-violet-100 bg-white p-3">
+          {onSeoKeyIndexChange ? (
+            <div className="mb-3">
+              <label
+                htmlFor={`seo-gemini-key-${jobKey}`}
+                className="text-xs font-semibold uppercase tracking-wide text-violet-900"
+              >
+                Gemini API key for Make SEO
+              </label>
+              <p className="mt-1 text-xs text-slate-600">
+                Choose a specific key to debug quota or timeouts, or leave <strong>Default</strong> to shuffle keys
+                automatically.
+              </p>
+              <select
+                id={`seo-gemini-key-${jobKey}`}
+                value={String(seoKeyIndex || 0)}
+                onChange={(e) => onSeoKeyIndexChange(job, e.target.value)}
+                disabled={isBusy || isSeoBusy}
+                className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+              >
+                {geminiKeySelectOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <label
             htmlFor={`seo-instructions-${jobKey}`}
             className="text-xs font-semibold uppercase tracking-wide text-violet-900"
@@ -429,6 +464,10 @@ export default function ExternalJobReviewPanel({
   busySeoKey = '',
   importErrors,
   seoErrors = {},
+  seoGeminiKeysStandard = [],
+  seoGeminiKeysLinkedIn = [],
+  seoKeyIndexByJob = {},
+  onSeoKeyIndexChange,
   onMakeSeo,
   onSeoInstructionsChange,
   onPublish,
@@ -527,6 +566,11 @@ export default function ExternalJobReviewPanel({
               onToggleSelect={() => toggleSelect(job)}
               onMakeSeo={onMakeSeo}
               onSeoInstructionsChange={onSeoInstructionsChange}
+              onSeoKeyIndexChange={onSeoKeyIndexChange}
+              seoKeyIndex={seoKeyIndexByJob[key] ?? 0}
+              seoGeminiKeys={
+                job.source_kind === 'linkedin_post' ? seoGeminiKeysLinkedIn : seoGeminiKeysStandard
+              }
               onPublish={onPublish}
               onSaveDraft={onSaveDraft}
               onSkip={onSkip}

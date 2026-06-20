@@ -12,6 +12,7 @@
  */
 
 import { isItRelatedJob } from './jobItMatch.js';
+import { isPublicFresherListingJob } from './fresherMatch.js';
 
 export const PAGE_SIZE = 12;
 
@@ -125,8 +126,7 @@ const matchesCategory = (job, category) => {
   if (category === 'it') return isItRelatedJob(job);
   if (category === 'non-it') return !isItRelatedJob(job);
   if (category === 'fresher') {
-    const exp = (job.experience || '').toLowerCase();
-    return job.isFresher === 'Yes' || exp.includes('fresher') || exp.includes('0');
+    return isPublicFresherListingJob(job);
   }
   if (category === 'walk-in') {
     const t = `${job.title ?? ''} ${job.description ?? ''} ${job.shortDescription ?? ''}`.toLowerCase();
