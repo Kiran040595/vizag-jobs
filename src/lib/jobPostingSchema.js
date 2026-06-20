@@ -2,6 +2,8 @@ import { getJobDetailPath } from './jobRoutes.js';
 
 const SCHEMA_CONTEXT = 'https://schema.org/';
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
+/** Central Visakhapatnam GPO pin — used when listing has no explicit postal code. */
+const VIZAG_DEFAULT_POSTAL_CODE = '530001';
 
 const buildAbsoluteUrl = (path, siteUrl) => {
   const base = String(siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
@@ -124,6 +126,18 @@ const parseSalaryAmount = (salaryText) => {
     return { min, max, unitText };
   }
 
+  const inrRange = text.match(
+    /₹?\s*(\d{1,3}(?:,\d{3})+|\d+)\s*(?:-|to)\s*₹?\s*(\d{1,3}(?:,\d{3})+|\d+)/i,
+  );
+  if (inrRange) {
+    const min = Number(inrRange[1].replace(/,/g, ''));
+    const max = Number(inrRange[2].replace(/,/g, ''));
+    if (min > 0 && max >= min) {
+      const unitText = min >= 100000 ? 'YEAR' : 'MONTH';
+      return { min, max, unitText };
+    }
+  }
+
   return null;
 };
 
@@ -152,6 +166,95 @@ export const buildBaseSalary = (salaryText) => {
     currency: 'INR',
     value,
   };
+};
+
+/** Try salary column, then description / short text (for GSC baseSalary coverage). */
+export const resolveBaseSalary = (job, extraText = '') => {
+  const direct = buildBaseSalary(pick(job, 'salary'));
+  if (direct) {
+    return direct;
+  }
+
+  const blobs = [
+    pick(job, 'description'),
+    pick(job, 'shortDescription', 'short_description'),
+    extraText,
+  ].filter(Boolean);
+
+  for (const blob of blobs) {
+    const parsed = buildBaseSalary(stripMarkdownForPlainText(blob, 8000));
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  return null;
+};
+
+const extractPostalCodeFromText = (text) => {
+  const match = String(text || '').match(/\b(5[0-3]\d{4})\b/);
+  return match?.[1] || null;
+};
+
+/** Ensure jobLocation.address includes postalCode (GSC recommendation). */
+export const enrichJobLocation = (jobLocation, job) => {
+  const fallback = buildJobLocation(job);
+  const base =
+    jobLocation && typeof jobLocation === 'object' && !Array.isArray(jobLocation)
+      ? { ...jobLocation }
+      : { ...fallback };
+
+  const rawAddress =
+    base.address && typeof base.address === 'object' && !Array.isArray(base.address)
+      ? { ...base.address }
+      : { ...fallback.address };
+
+  const address = {
+    '@type': 'PostalAddress',
+    addressLocality: rawAddress.addressLocality || fallback.address.addressLocality,
+    addressRegion: rawAddress.addressRegion || fallback.address.addressRegion || 'Andhra Pradesh',
+    addressCountry: rawAddress.addressCountry || fallback.address.addressCountry || 'IN',
+    ...rawAddress,
+    '@type': 'PostalAddress',
+  };
+
+  if (!address.postalCode) {
+    address.postalCode =
+      extractPostalCodeFromText(pick(job, 'location')) ||
+      extractPostalCodeFromText(pick(job, 'description')) ||
+      VIZAG_DEFAULT_POSTAL_CODE;
+  }
+
+  if (!address.streetAddress && fallback.address.streetAddress) {
+    address.streetAddress = fallback.address.streetAddress;
+  }
+
+  return {
+    '@type': 'Place',
+    ...base,
+    address,
+  };
+};
+
+const finalizeJobPostingSchema = (schema, job) => {
+  if (!schema || typeof schema !== 'object') {
+    return schema;
+  }
+
+  if (schema.jobLocationType !== 'TELECOMMUTE') {
+    schema.jobLocation = enrichJobLocation(schema.jobLocation, job);
+  } else if (schema.jobLocation) {
+    schema.jobLocation = enrichJobLocation(schema.jobLocation, job);
+  }
+
+  if (!schema.baseSalary) {
+    const resolved = resolveBaseSalary(job, schema.description);
+    if (resolved) {
+      schema.baseSalary = resolved;
+    }
+  }
+
+  return schema;
 };
 
 const toIsoDate = (value) => {
@@ -209,6 +312,10 @@ const buildJobLocation = (job) => {
       addressLocality: locality,
       addressRegion: 'Andhra Pradesh',
       addressCountry: 'IN',
+      postalCode:
+        extractPostalCodeFromText(location) ||
+        extractPostalCodeFromText(pick(job, 'description')) ||
+        VIZAG_DEFAULT_POSTAL_CODE,
     },
   };
 };
@@ -355,10 +462,6 @@ const mergeStoredJsonLd = (stored, job, { siteUrl, canonicalUrl }) => {
     directApply: Boolean(pick(job, 'applyLink', 'apply_link')),
   };
 
-  if (!merged.baseSalary && pick(job, 'salary')) {
-    merged.baseSalary = buildBaseSalary(pick(job, 'salary'));
-  }
-
   if (isRemoteWorkMode(job)) {
     merged.jobLocationType = stored.jobLocationType || 'TELECOMMUTE';
     merged.applicantLocationRequirements = stored.applicantLocationRequirements || {
@@ -367,7 +470,7 @@ const mergeStoredJsonLd = (stored, job, { siteUrl, canonicalUrl }) => {
     };
   }
 
-  return merged;
+  return finalizeJobPostingSchema(merged, job);
 };
 
 const buildFromColumns = (job, { siteUrl, canonicalUrl }) => {
@@ -393,11 +496,6 @@ const buildFromColumns = (job, { siteUrl, canonicalUrl }) => {
     directApply: Boolean(normalizeText(pick(job, 'applyLink', 'apply_link'))),
   };
 
-  const baseSalary = buildBaseSalary(pick(job, 'salary'));
-  if (baseSalary) {
-    schema.baseSalary = baseSalary;
-  }
-
   if (isRemoteWorkMode(job)) {
     schema.jobLocationType = 'TELECOMMUTE';
     schema.applicantLocationRequirements = {
@@ -406,7 +504,7 @@ const buildFromColumns = (job, { siteUrl, canonicalUrl }) => {
     };
   }
 
-  return schema;
+  return finalizeJobPostingSchema(schema, job);
 };
 
 /**

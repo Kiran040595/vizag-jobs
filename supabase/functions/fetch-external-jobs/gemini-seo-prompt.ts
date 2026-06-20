@@ -74,9 +74,11 @@ ${TASK_KEYWORDS_BLOCK}
 TASK 6 — JSON-LD JobPosting
 Return a complete schema.org JobPosting object in field json_ld (not a string). Use only facts from input:
 title, description (2–3 line summary), datePosted, validThrough, employmentType (default FULL_TIME if unknown),
-hiringOrganization (name, sameAs URL if known), jobLocation (city Visakhapatnam, addressRegion Andhra Pradesh, addressCountry IN),
+hiringOrganization (name, sameAs URL if known),
+jobLocation with PostalAddress: addressLocality Visakhapatnam, addressRegion Andhra Pradesh, addressCountry IN, postalCode (use pin from listing or 530001),
+baseSalary as MonetaryAmount (currency INR, value QuantitativeValue with minValue/maxValue or value and unitText YEAR/MONTH when salary/CTC/LPA is known),
 experienceRequirements, educationRequirements, applicationContact (email/phone only if in input),
-identifier (company + job id or slug). Omit unknown fields rather than guessing.
+identifier (company + job id or slug). Omit unknown optional fields rather than guessing salary numbers.
 
 TASK 7 — Hashtags
 Return exactly 15 trending hashtags in hashtags[] (with #). Mix branch-specific (#MechanicalJobs #ECEJobs #EEEJobs #CivilJobs #BTechJobs), role-specific (#PipelineJobs #OilandGasJobs #OMJobs #EngineeringJobs), and location-specific (#VizagJobs #VisakhapatnamJobs #AndhraPradeshJobs).
