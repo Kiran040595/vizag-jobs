@@ -93,6 +93,8 @@ assert('directApply true (has applyLink)', geminiSchema.directApply === true);
 assert('jobLocation present', geminiSchema.jobLocation?.['@type'] === 'Place');
 assert('addressLocality Visakhapatnam', geminiSchema.jobLocation?.address?.addressLocality === 'Visakhapatnam');
 assert('addressCountry IN', geminiSchema.jobLocation?.address?.addressCountry === 'IN');
+assert('postalCode present', geminiSchema.jobLocation?.address?.postalCode === '530001');
+assert('baseSalary from job salary column', geminiSchema.baseSalary?.currency === 'INR');
 assert('identifier present', !!geminiSchema.identifier?.value);
 
 // ---------------------------------------------------------------------------

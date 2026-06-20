@@ -179,6 +179,11 @@ const collectIssues = (schema) => {
           typeof schema.jobLocation.address.addressRegion === 'string' &&
             schema.jobLocation.address.addressRegion.length > 0,
         );
+        should(
+          'jobLocation.address.postalCode is set',
+          typeof schema.jobLocation.address.postalCode === 'string' &&
+            /^\d{6}$/.test(schema.jobLocation.address.postalCode),
+        );
       }
     }
   }
