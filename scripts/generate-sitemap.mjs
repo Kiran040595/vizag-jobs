@@ -20,6 +20,11 @@ const staticRoutes = [
   { path: '/jobs/fresher', priority: '0.9' },
   { path: '/jobs/part-time', priority: '0.8' },
   { path: '/blog', priority: '0.8' },
+  { path: '/about', priority: '0.6' },
+  { path: '/contact', priority: '0.6' },
+  { path: '/privacy-policy', priority: '0.5' },
+  { path: '/terms-of-service', priority: '0.5' },
+  { path: '/disclaimer', priority: '0.5' },
 ];
 
 const loadEnvFile = (filename) => {

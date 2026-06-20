@@ -8,13 +8,17 @@ const footerGroups = [
       { label: 'IT Jobs', to: '/jobs/it' },
       { label: 'Fresher Jobs', to: '/jobs/fresher' },
       { label: 'Part-Time Jobs', to: '/jobs/part-time' },
+      { label: 'Blog', to: '/blog' },
     ],
   },
   {
-    title: 'For Admins',
+    title: 'Legal',
     links: [
-      { label: 'Admin Login', to: '/admin/login' },
-      { label: 'Admin Dashboard', to: '/admin' },
+      { label: 'About', to: '/about' },
+      { label: 'Contact', to: '/contact' },
+      { label: 'Privacy Policy', to: '/privacy-policy' },
+      { label: 'Terms of Service', to: '/terms-of-service' },
+      { label: 'Disclaimer', to: '/disclaimer' },
     ],
   },
 ];
@@ -22,9 +26,9 @@ const footerGroups = [
 export default function Footer() {
   return (
     <footer className="mt-12 border-t border-slate-200 bg-slate-950 text-slate-300">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-[1.2fr_0.8fr_0.8fr] sm:px-6 lg:px-8">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3 sm:px-6 lg:px-8">
         <div>
-          <h3 className="text-xl font-black text-white">VizagJobs</h3>
+          <h3 className="text-xl font-black text-white">JobsInVizag.in</h3>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">
             A focused local job board for Visakhapatnam, covering IT, fresher, part-time, and general private roles.
           </p>
@@ -47,7 +51,28 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-slate-800 px-4 py-4 text-center text-xs text-slate-500">
-        © {new Date().getFullYear()} VizagJobs. All rights reserved.
+        <p>© {new Date().getFullYear()} JobsInVizag.in. All rights reserved.</p>
+        <p className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <Link to="/about" className="hover:text-slate-300">
+            About
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/contact" className="hover:text-slate-300">
+            Contact
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/privacy-policy" className="hover:text-slate-300">
+            Privacy
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/terms-of-service" className="hover:text-slate-300">
+            Terms
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/disclaimer" className="hover:text-slate-300">
+            Disclaimer
+          </Link>
+        </p>
       </div>
     </footer>
   );

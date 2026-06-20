@@ -15,6 +15,11 @@ import AdminNewBlogPage from './pages/AdminNewBlogPage';
 import AdminEditBlogPage from './pages/AdminEditBlogPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import DisclaimerPage from './pages/DisclaimerPage';
 import AdminRoute from './components/admin/AdminRoute';
 import EmployerLoginPage from './pages/EmployerLoginPage';
 import EmployerRegisterPage from './pages/EmployerRegisterPage';
@@ -103,6 +108,11 @@ function App() {
       />
       <Route path="/blog" element={<BlogListPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+      <Route path="/disclaimer" element={<DisclaimerPage />} />
       <Route path="/jobs/:jobSegment/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/job/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
