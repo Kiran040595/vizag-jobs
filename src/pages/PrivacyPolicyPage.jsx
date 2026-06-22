@@ -168,6 +168,10 @@ export default function PrivacyPolicyPage() {
             to our website or other websites.
           </li>
           <li>
+            Google&apos;s use of advertising cookies enables it and its partners to serve ads to you based on
+            your visit to our site and/or other sites on the Internet.
+          </li>
+          <li>
             You can disable cookies through your browser settings, though some site features may not work
             correctly without them.
           </li>

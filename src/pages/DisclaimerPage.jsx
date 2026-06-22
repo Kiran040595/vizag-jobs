@@ -10,110 +10,99 @@ export default function DisclaimerPage() {
       description="Important disclaimer for JobsInVizag.in — we are not the employer; how job listings are sourced and your responsibilities as a job seeker."
       canonical="/disclaimer"
     >
-      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-        Please read this page carefully. It explains what {SITE_LEGAL_NAME} is — and is not — responsible
-        for.
-      </p>
-
       <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">We are not the employer</h2>
+        <h2 className="text-xl font-bold text-slate-900">We Are Not the Hiring Employer</h2>
         <p>
-          {SITE_LEGAL_NAME} is an <strong>independent job information service</strong>. We do not hire
-          candidates, conduct interviews, collect application fees on behalf of employers, or make hiring
-          decisions. Company names and logos on listings identify the stated employer or source, not us.
-        </p>
-        <p>
-          If a listing looks suspicious (upfront payment, vague contact, too-good-to-be-true salary), verify
-          directly with the employer before sharing personal documents or money.
+          {SITE_LEGAL_NAME} is a job listing and aggregation platform.{' '}
+          <strong>
+            We are not the employer, recruiter, or hiring authority for the listings shown on this site
+          </strong>
+          , unless explicitly stated otherwise. We do not conduct interviews, make hiring decisions, or handle
+          compensation for the roles posted here.
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">How listings are sourced</h2>
-        <p>Jobs on this Site come from two main paths:</p>
+        <h2 className="text-xl font-bold text-slate-900">How Job Listings Are Sourced</h2>
+        <p>Listings on {SITE_LEGAL_NAME} come from a combination of:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Automated collection</strong> — Our administrators use automated tools to gather
-            publicly available postings from third-party job platforms and professional networks (including
-            sources such as Naukri and LinkedIn). Collection is performed via licensed or permitted scraping
-            services (for example Apify and Firecrawl) and is limited to material that is publicly accessible.
+            <strong>Automated aggregation</strong> — using tools such as Apify and Firecrawl to gather
+            publicly available job postings from across the web
           </li>
           <li>
-            <strong>Direct employer submissions</strong> — Registered employers may post jobs directly
-            through our platform.
+            <strong>Manual research and curation</strong> — our team reviews and organizes listings for
+            relevance to the Vizag job market
+          </li>
+          <li>
+            <strong>Direct submissions</strong> — in some cases, employers may submit openings directly to us
           </li>
         </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-bold text-slate-900">No Guarantee of Accuracy</h2>
         <p>
-          In both cases, listings may be edited for clarity, SEO, or formatting before publication. We aim to
-          link each listing to an original apply URL or source where possible.
+          We make reasonable efforts to keep listings current and accurate, but job postings can change or
+          expire without notice on the original source. We do not guarantee that any listing is:
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Currently open</li>
+          <li>Accurately described</li>
+          <li>Free of errors introduced during aggregation</li>
+          <li>Legitimate (see below)</li>
+        </ul>
+        <p>
+          <strong>
+            Always verify a listing directly with the employer before applying, sharing personal details, or
+            attending an interview.
+          </strong>
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">Accuracy and timeliness</h2>
+        <h2 className="text-xl font-bold text-slate-900">Protecting Yourself from Job Scams</h2>
         <p>
-          Job markets change quickly. A role may be filled, expired, or modified on the original source before
-          we update or remove it here. We do <strong>not</strong> guarantee that any listing is current,
-          complete, or still accepting applications.
+          Unfortunately, fraudulent job postings exist across the internet, and aggregated listings can
+          occasionally include them despite our review process. As a general rule:
         </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            Legitimate employers do not ask candidates to pay money to apply, interview, or &quot;secure&quot;
+            a role
+          </li>
+          <li>
+            Be cautious of postings with vague company details, unusually high pay for minimal qualifications,
+            or requests for sensitive financial information upfront
+          </li>
+          <li>If something feels off, trust your judgment</li>
+        </ul>
         <p>
-          Always confirm details (salary, location, eligibility, deadlines) on the employer&apos;s official
-          posting or with their HR team before applying.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">No endorsement</h2>
-        <p>
-          Inclusion of a company or job on {SITE_LEGAL_NAME} does not mean we endorse that employer, verify
-          their legitimacy, or guarantee the quality of the workplace. Listings are displayed for
-          informational purposes.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">Third-party content and trademarks</h2>
-        <p>
-          Job descriptions, company names, logos, and apply links may be the property of third parties. We
-          display them to help job seekers discover opportunities. If you believe content on our Site
-          infringes your rights, contact us with details and we will review promptly.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">External apply links</h2>
-        <p>
-          When you click &quot;Apply&quot; or similar links, you may leave our Site and interact with a
-          third-party website. We are not responsible for those sites&apos; content, security, or privacy
-          practices.
-        </p>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">Removal requests</h2>
-        <p>
-          Employers, recruiters, or copyright holders who want a listing corrected or removed should email{' '}
-          <a href={`mailto:${SITE_CONTACT_EMAIL}`} className="font-semibold text-cyan-700 hover:text-cyan-800">
-            {SITE_CONTACT_EMAIL}
-          </a>{' '}
-          with the URL on our Site and a brief explanation. See also our{' '}
+          If you encounter a listing on {SITE_LEGAL_NAME} that you believe is fraudulent or misleading,
+          please report it via our{' '}
           <Link to="/contact" className="font-semibold text-cyan-700 hover:text-cyan-800">
             Contact
           </Link>{' '}
-          page.
+          page so we can review and remove it.
         </p>
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">Limitation of liability</h2>
+        <h2 className="text-xl font-bold text-slate-900">External Links</h2>
         <p>
-          Use of this Site is at your own risk. To the fullest extent permitted by law, {SITE_LEGAL_NAME} is
-          not liable for decisions you make based on listings, for interactions with employers, or for losses
-          arising from outdated or inaccurate information. See our{' '}
-          <Link to="/terms-of-service" className="font-semibold text-cyan-700 hover:text-cyan-800">
-            Terms of Service
-          </Link>{' '}
-          for additional limitations.
+          Our site may link to external job sources, company websites, or third-party tools. We are not
+          responsible for the content, accuracy, or practices of those external sites.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-bold text-slate-900">Questions</h2>
+        <p>
+          For anything related to this Disclaimer, reach us at{' '}
+          <a href={`mailto:${SITE_CONTACT_EMAIL}`} className="font-semibold text-cyan-700 hover:text-cyan-800">
+            {SITE_CONTACT_EMAIL}
+          </a>
+          .
         </p>
       </section>
     </LegalPageLayout>

@@ -21,19 +21,12 @@ const footerGroups = [
       { label: 'Disclaimer', to: '/disclaimer' },
     ],
   },
-  {
-    title: 'For Admins',
-    links: [
-      { label: 'Admin Login', to: '/admin/login' },
-      { label: 'Admin Dashboard', to: '/admin' },
-    ],
-  },
 ];
 
 export default function Footer() {
   return (
     <footer className="mt-12 border-t border-slate-200 bg-slate-950 text-slate-300">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4 sm:px-6 lg:px-8">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3 sm:px-6 lg:px-8">
         <div>
           <h3 className="text-xl font-black text-white">JobsInVizag.in</h3>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">
