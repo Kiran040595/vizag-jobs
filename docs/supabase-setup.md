@@ -327,6 +327,10 @@ curl -sS -X POST "$SUPABASE_URL/functions/v1/fetch-external-jobs" \
 
 Persisting snapshots (e.g. private Storage or email) is not implemented in-repo; pipe or store the JSON in your scheduler.
 
+### Automated Naukri pipeline (daily 6 PM IST)
+
+For hands-off Naukri fetch → Make SEO (3 min between jobs) → publish, see **`docs/auto-naukri-pipeline.md`**. It uses the same `FETCH_JOBS_CRON_SECRET` plus `SUPABASE_SERVICE_ROLE_KEY` in GitHub Actions (`.github/workflows/auto-naukri-daily.yml`).
+
 ### Compliance
 
 Respect third-party site terms and robots rules; prefer licensed APIs or feeds where possible.
