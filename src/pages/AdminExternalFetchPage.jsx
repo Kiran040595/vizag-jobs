@@ -14,7 +14,11 @@ import {
   seoOptimizeExternalJob,
   startNaukriApifyFetch,
 } from '../services/externalJobFetch';
-import { geminiKeyFieldsFromSeoResponse } from '../lib/formatGeminiKeyUsage';
+import { formatGeminiKeyUsage, geminiKeyFieldsFromSeoResponse } from '../lib/formatGeminiKeyUsage';
+import {
+  NAUKRI_AUTOMATION_SEO_GAP_MS,
+  runNaukriAutomationPipeline,
+} from '../lib/naukriAutomation';
 import { parseGeminiSeoKeySelectValue } from '../lib/geminiSeoKeyOptions';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
@@ -120,7 +124,10 @@ export default function AdminExternalFetchPage() {
     return Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
   });
   const [naukriCollecting, setNaukriCollecting] = useState(false);
+  const [automationRunning, setAutomationRunning] = useState(false);
+  const [automationProgress, setAutomationProgress] = useState(null);
   const naukriAutoCollectStarted = useRef(false);
+  const automationAbortRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
@@ -298,6 +305,91 @@ export default function AdminExternalFetchPage() {
     naukriAutoCollectStarted.current = true;
     collectNaukriResults(naukriPending.runId);
   }, [naukriPending, naukriCountdownSec, naukriCollecting]);
+
+  const handleCancelAutomation = () => {
+    automationAbortRef.current?.abort();
+    setNotice('Stopping automation…');
+  };
+
+  const handleStartNaukriAutomation = async () => {
+    if (!session?.access_token || automationRunning) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Start Naukri automation?\n\n' +
+        'This will:\n' +
+        '1. Fetch Naukri jobs via Apify (~3 min wait)\n' +
+        `2. Run Make SEO on each new job (${Math.round(NAUKRI_AUTOMATION_SEO_GAP_MS / 60_000)} min between jobs)\n` +
+        '3. Auto-publish jobs that have a valid apply link and are not already in the database\n\n' +
+        'Keep this tab open until finished. You can cancel anytime.',
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const controller = new AbortController();
+    automationAbortRef.current = controller;
+    setAutomationRunning(true);
+    setAutomationProgress({ phase: 'fetching', message: 'Starting Naukri automation…' });
+    setFetchError('');
+    setNotice('');
+    setActiveSource('naukri');
+    naukriAutoCollectStarted.current = false;
+    setNaukriPending(null);
+    setNaukriCountdownSec(0);
+
+    const updateSeoJobInReview = (job) => {
+      const key = getExternalJobKey(job);
+      const sourceUrl = String(job.source_url || '').toLowerCase();
+      setReviewJobs((current) => {
+        const exists = current.some(
+          (item) =>
+            getExternalJobKey(item) === key ||
+            (sourceUrl && String(item.source_url || '').toLowerCase() === sourceUrl),
+        );
+        if (exists) {
+          return current.map((item) =>
+            getExternalJobKey(item) === key ||
+            (sourceUrl && String(item.source_url || '').toLowerCase() === sourceUrl)
+              ? job
+              : item,
+          );
+        }
+        return [job, ...current];
+      });
+    };
+
+    try {
+      const stats = await runNaukriAutomationPipeline({
+        accessToken: session.access_token,
+        existingSlugs,
+        existingApplyLinks,
+        signal: controller.signal,
+        onProgress: setAutomationProgress,
+        onFetchComplete: applyFetchPayload,
+        onJobUpdated: updateSeoJobInReview,
+        onJobPublished: (saved) => {
+          setExistingJobs((current) => [saved, ...current]);
+        },
+        onJobRemoved: removeReviewJob,
+      });
+
+      setNotice(
+        `Automation complete: published ${stats.published}, SEO ok ${stats.seoOk}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo}, failed ${stats.seoFailed + stats.publishFailed}.`,
+      );
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setNotice('Naukri automation cancelled.');
+      } else {
+        setFetchError(error instanceof Error ? error.message : 'Naukri automation failed.');
+      }
+    } finally {
+      setAutomationRunning(false);
+      setAutomationProgress(null);
+      automationAbortRef.current = null;
+    }
+  };
 
   const handleNaukriStart = async () => {
     setFetchError('');
@@ -627,6 +719,42 @@ export default function AdminExternalFetchPage() {
         </div>
       ) : null}
 
+      {automationRunning && automationProgress ? (
+        <div className="mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm text-emerald-950">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold">Naukri automation running</p>
+              <p className="mt-2 text-emerald-900">{automationProgress.message}</p>
+              {automationProgress.phase === 'waiting' || automationProgress.phase === 'seo_gap' ? (
+                <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-emerald-800">
+                  {formatCountdown(automationProgress.waitSec ?? 0)}
+                </p>
+              ) : null}
+              {automationProgress.total ? (
+                <p className="mt-2 text-xs text-emerald-800">
+                  Progress: {automationProgress.current ?? 0} / {automationProgress.total}
+                  {automationProgress.stats
+                    ? ` · Published ${automationProgress.stats.published ?? 0}`
+                    : ''}
+                </p>
+              ) : null}
+              {automationProgress.runId ? (
+                <p className="mt-2 text-xs text-emerald-700">
+                  Apify run: <span className="font-mono">{automationProgress.runId}</span>
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={handleCancelAutomation}
+              className="rounded-xl border border-emerald-400 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100"
+            >
+              Stop automation
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {naukriPending ? (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
           <p className="font-semibold">Naukri scrape running on Apify</p>
@@ -677,7 +805,58 @@ export default function AdminExternalFetchPage() {
           const isNaukriWaiting = source.id === 'naukri' && Boolean(naukriPending);
           const isLast = activeSource === source.id && fetchPayload && !fetchLoading && !naukriCollecting;
           const isLinkedInPosts = source.id === 'linkedin_posts';
+          const isNaukri = source.id === 'naukri';
           const presetMeta = LINKEDIN_POST_PRESET_OPTIONS.find((p) => p.id === linkedInPostPreset);
+          const fetchDisabled =
+            !isSupabaseConfigured ||
+            fetchLoading ||
+            naukriCollecting ||
+            isNaukriWaiting ||
+            automationRunning ||
+            !session?.access_token;
+
+          if (isNaukri) {
+            return (
+              <div
+                key={source.id}
+                className={`rounded-[1.5rem] border p-5 ${source.accent} ${
+                  isLast ? 'ring-2 ring-cyan-500 ring-offset-2' : ''
+                }`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{source.providerHint}</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-950">{source.title}</h2>
+                <p className="mt-2 text-sm text-slate-600">{source.description}</p>
+                <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={fetchDisabled}
+                    onClick={() => handleFetch(source.id)}
+                    className="rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-amber-950 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {fetchLoading && activeSource === 'naukri'
+                      ? 'Starting Apify…'
+                      : isNaukriWaiting
+                        ? `Waiting ${formatCountdown(naukriCountdownSec)}…`
+                        : 'Fetch only (manual review) →'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={fetchDisabled}
+                    onClick={handleStartNaukriAutomation}
+                    className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {automationRunning ? 'Automation running…' : 'Start automation →'}
+                  </button>
+                </div>
+                <p className="mt-3 text-xs text-slate-600">
+                  Automation fetches jobs, runs Make SEO every{' '}
+                  {Math.round(NAUKRI_AUTOMATION_SEO_GAP_MS / 60_000)} minutes, and publishes new jobs with a valid
+                  apply link. Keep this tab open.
+                </p>
+              </div>
+            );
+          }
 
           if (isLinkedInPosts) {
             return (
@@ -731,7 +910,7 @@ export default function AdminExternalFetchPage() {
                 ) : null}
                 <button
                   type="button"
-                  disabled={!isSupabaseConfigured || fetchLoading || naukriCollecting || isNaukriWaiting || !session?.access_token}
+                  disabled={fetchDisabled}
                   onClick={() => handleFetch(source.id)}
                   className="mt-4 text-sm font-semibold text-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -745,7 +924,7 @@ export default function AdminExternalFetchPage() {
             <button
               key={source.id}
               type="button"
-              disabled={!isSupabaseConfigured || fetchLoading || naukriCollecting || isNaukriWaiting || !session?.access_token}
+              disabled={fetchDisabled}
               onClick={() => handleFetch(source.id)}
               className={`rounded-[1.5rem] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${source.accent} ${
                 isLast ? 'ring-2 ring-cyan-500 ring-offset-2' : ''

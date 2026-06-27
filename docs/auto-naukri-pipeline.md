@@ -68,6 +68,17 @@ The workflow file is `.github/workflows/auto-naukri-daily.yml`.
 
 ## Local test
 
+### Admin UI (manual)
+
+1. Sign in at `/admin/login`
+2. Open **Fetch external jobs** (`/admin/fetch`)
+3. On the **Naukri** card, click **Start automation →**
+4. Keep the tab open — progress shows on screen (Apify wait, SEO gaps, publish count)
+
+**Fetch only (manual review)** still uses the separate button on the same card.
+
+### CLI
+
 ```bash
 export SUPABASE_URL=...
 export SUPABASE_ANON_KEY=...
