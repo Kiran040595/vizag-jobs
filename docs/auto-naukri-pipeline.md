@@ -118,8 +118,6 @@ The report persists in browser storage until **Clear report**.
 | **Skipped (after SEO)** | Failed dedup after SEO rewrite |
 | **Publish failed** | Database insert error |
 
-Use **Download JSON** to export. The report persists in browser storage until **Clear report**.
-
 ### CLI
 
 Writes `naukri-automation-report-YYYY-MM-DD-HH-mm-ss.json` in the working directory.
