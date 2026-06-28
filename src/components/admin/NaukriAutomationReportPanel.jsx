@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import {
   AUTOMATION_STATUS_LABELS,
   downloadAutomationReport,
+  downloadAutomationReportCsv,
   summarizeAutomationReport,
 } from '../../lib/naukriAutomationReport';
 
@@ -16,7 +18,15 @@ function StatusPill({ status }) {
   );
 }
 
-export default function NaukriAutomationReportPanel({ report, onClear }) {
+export default function NaukriAutomationReportPanel({
+  report,
+  onClear,
+  onSendEmail,
+  emailSummary,
+}) {
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailError, setEmailError] = useState('');
+
   if (!report || !Array.isArray(report.jobs) || report.jobs.length === 0) {
     return null;
   }
@@ -25,6 +35,20 @@ export default function NaukriAutomationReportPanel({ report, onClear }) {
   const finishedLabel = report.finishedAt
     ? new Date(report.finishedAt).toLocaleString()
     : 'In progress';
+  const summary = emailSummary || report.emailSummary;
+
+  const handleSendEmail = async () => {
+    if (!onSendEmail) return;
+    setEmailBusy(true);
+    setEmailError('');
+    try {
+      await onSendEmail(report);
+    } catch (error) {
+      setEmailError(error instanceof Error ? error.message : 'Could not send email.');
+    } finally {
+      setEmailBusy(false);
+    }
+  };
 
   return (
     <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -41,6 +65,9 @@ export default function NaukriAutomationReportPanel({ report, onClear }) {
               </>
             ) : null}
           </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Download the full report below, or email the same summary to your inbox.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -50,6 +77,23 @@ export default function NaukriAutomationReportPanel({ report, onClear }) {
           >
             Download JSON
           </button>
+          <button
+            type="button"
+            onClick={() => downloadAutomationReportCsv(report)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100"
+          >
+            Download CSV
+          </button>
+          {onSendEmail ? (
+            <button
+              type="button"
+              disabled={emailBusy}
+              onClick={handleSendEmail}
+              className="rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-100 disabled:opacity-50"
+            >
+              {emailBusy ? 'Sending…' : 'Email summary'}
+            </button>
+          ) : null}
           {onClear ? (
             <button
               type="button"
@@ -61,6 +105,23 @@ export default function NaukriAutomationReportPanel({ report, onClear }) {
           ) : null}
         </div>
       </div>
+
+      {summary?.to ? (
+        <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+          Email sent to <strong>{summary.to}</strong>
+          {summary.sentAt ? ` · ${new Date(summary.sentAt).toLocaleString()}` : ''}
+        </p>
+      ) : summary?.error ? (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Email not sent: {summary.error}
+        </p>
+      ) : null}
+
+      {emailError ? (
+        <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          {emailError}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
@@ -81,8 +142,8 @@ export default function NaukriAutomationReportPanel({ report, onClear }) {
       </div>
 
       <p className="mt-3 text-xs text-slate-500">
-        Only <strong>queued</strong> jobs go through Make SEO. Most of the 23 fetched jobs are usually skipped
-        because they already exist in the database or have no apply link.
+        Only <strong>queued</strong> jobs go through Make SEO. Most fetched jobs are usually skipped because
+        they already exist in the database or have no apply link.
       </p>
 
       <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">

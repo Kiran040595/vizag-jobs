@@ -100,7 +100,14 @@ After each run, a **per-job report** shows what happened to every fetched listin
 
 ### Admin UI
 
-On `/admin/fetch`, see **Automation report** below the notice banner:
+On `/admin/fetch`, see **Automation report** below the notice banner.
+
+**Two ways to keep the report:**
+
+1. **Email summary** — sent automatically to `kkumardadi@gmail.com` after each run (or click **Email summary** to resend)
+2. **Download** — **Download JSON** (full data) or **Download CSV** (spreadsheet-friendly)
+
+The report persists in browser storage until **Clear report**.
 
 | Status | Meaning |
 |--------|---------|

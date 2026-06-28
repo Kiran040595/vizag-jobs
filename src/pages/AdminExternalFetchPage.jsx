@@ -390,13 +390,7 @@ export default function AdminExternalFetchPage() {
       setAutomationReport(report);
       saveAutomationReport(report);
 
-      let emailNote = '';
-      try {
-        const emailResult = await sendAutomationSummaryEmail(session.access_token, report);
-        emailNote = ` Summary emailed to ${emailResult.to}.`;
-      } catch (emailError) {
-        emailNote = ` Email not sent: ${emailError instanceof Error ? emailError.message : 'unknown error'}.`;
-      }
+      const emailNote = await emailReportAfterRun(report);
 
       setNotice(
         `Automation complete: fetched ${stats.fetched}, queued ${stats.queued}, published ${stats.published}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo + stats.skippedBatchDuplicate}, failed ${stats.seoFailed + stats.publishFailed}. See report below.${emailNote}`,
@@ -404,15 +398,7 @@ export default function AdminExternalFetchPage() {
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         const partialReport = loadAutomationReport();
-        let emailNote = '';
-        if (partialReport) {
-          try {
-            const emailResult = await sendAutomationSummaryEmail(session.access_token, partialReport);
-            emailNote = ` Summary emailed to ${emailResult.to}.`;
-          } catch (emailError) {
-            emailNote = ` Email not sent: ${emailError instanceof Error ? emailError.message : 'unknown error'}.`;
-          }
-        }
+        const emailNote = partialReport ? await emailReportAfterRun(partialReport) : '';
         setNotice(`Naukri automation cancelled. See report below for jobs processed so far.${emailNote}`);
       } else {
         setFetchError(error instanceof Error ? error.message : 'Naukri automation failed.');
@@ -428,6 +414,47 @@ export default function AdminExternalFetchPage() {
     clearAutomationReport();
     setAutomationReport(null);
     setNotice('Automation report cleared.');
+  };
+
+  const persistReportWithEmail = (report, emailSummary) => {
+    const next = { ...report, emailSummary };
+    setAutomationReport(next);
+    saveAutomationReport(next);
+    return next;
+  };
+
+  const handleSendReportEmail = async (report) => {
+    if (!session?.access_token) {
+      throw new Error('Sign in as admin to send email.');
+    }
+    try {
+      const emailResult = await sendAutomationSummaryEmail(session.access_token, report);
+      persistReportWithEmail(report, {
+        to: emailResult.to,
+        sentAt: new Date().toISOString(),
+        subject: emailResult.subject,
+        error: null,
+      });
+      setNotice(`Report emailed to ${emailResult.to}. You can also download JSON or CSV below.`);
+      return emailResult;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Email failed.';
+      persistReportWithEmail(report, {
+        to: null,
+        sentAt: null,
+        error: message,
+      });
+      throw error;
+    }
+  };
+
+  const emailReportAfterRun = async (report) => {
+    try {
+      const emailResult = await handleSendReportEmail(report);
+      return ` Summary emailed to ${emailResult.to}.`;
+    } catch (emailError) {
+      return ` Email not sent: ${emailError instanceof Error ? emailError.message : 'unknown error'}. Download the report below.`;
+    }
   };
 
   const handleNaukriStart = async () => {
@@ -1011,7 +1038,12 @@ export default function AdminExternalFetchPage() {
         </p>
       ) : null}
 
-      <NaukriAutomationReportPanel report={automationReport} onClear={handleClearAutomationReport} />
+      <NaukriAutomationReportPanel
+        report={automationReport}
+        onClear={handleClearAutomationReport}
+        onSendEmail={session?.access_token ? handleSendReportEmail : null}
+        emailSummary={automationReport?.emailSummary}
+      />
 
       {fetchPayload?.summary ? (
         <FetchSummaryBar payload={fetchPayload} activeMeta={activeMeta} />

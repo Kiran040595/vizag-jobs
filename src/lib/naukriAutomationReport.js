@@ -56,9 +56,36 @@ export function summarizeAutomationReport(report) {
   return byStatus;
 }
 
-export function buildAutomationReportFilename(report) {
+export function buildAutomationReportFilename(report, extension = 'json') {
   const stamp = (report?.startedAt || new Date().toISOString()).slice(0, 19).replace(/[:T]/g, '-');
-  return `naukri-automation-report-${stamp}.json`;
+  return `naukri-automation-report-${stamp}.${extension}`;
+}
+
+const csvEscape = (value) => {
+  const text = String(value ?? '');
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+};
+
+export function buildAutomationReportCsv(report) {
+  const headers = ['title', 'company', 'status', 'reason', 'error', 'apply_link', 'source_url', 'published_slug'];
+  const rows = (report?.jobs ?? []).map((entry) =>
+    [
+      entry.title,
+      entry.company,
+      entry.status,
+      entry.reason,
+      entry.error,
+      entry.applyLink,
+      entry.sourceUrl,
+      entry.publishedSlug,
+    ]
+      .map(csvEscape)
+      .join(','),
+  );
+  return [headers.join(','), ...rows].join('\n');
 }
 
 export function downloadAutomationReport(report) {
@@ -66,7 +93,17 @@ export function downloadAutomationReport(report) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = buildAutomationReportFilename(report);
+  anchor.download = buildAutomationReportFilename(report, 'json');
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export function downloadAutomationReportCsv(report) {
+  const blob = new Blob([buildAutomationReportCsv(report)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = buildAutomationReportFilename(report, 'csv');
   anchor.click();
   URL.revokeObjectURL(url);
 }
