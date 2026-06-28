@@ -24,6 +24,7 @@ import {
   publishJob,
   shouldSkipJob,
 } from './lib/pipeline-publish.mjs';
+import { sendAutomationSummaryEmail } from './lib/pipeline-email.mjs';
 
 const log = (message) => {
   console.log(`[auto-naukri] ${message}`);
@@ -176,6 +177,18 @@ async function main() {
   );
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
   log(`Report saved: ${reportPath}`);
+
+  const sendEmail = !['0', 'false', 'no'].includes(
+    String(process.env.AUTO_NAUKRI_SEND_EMAIL ?? 'true').toLowerCase(),
+  );
+  if (sendEmail) {
+    try {
+      const emailResult = await sendAutomationSummaryEmail(report);
+      log(`Summary emailed to ${emailResult.to} (id: ${emailResult.email_id || 'n/a'})`);
+    } catch (error) {
+      log(`Email summary failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   if (report.stats.seoFailed > 0 || report.stats.publishFailed > 0) {
     process.exitCode = 1;

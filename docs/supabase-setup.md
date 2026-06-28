@@ -303,6 +303,10 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `FETCH_JOB_SCRAPE_PAGE_LIMIT` | Optional max **hub / SERP** URLs to fully scrape before mining for detail links (default `10`, max `20`). |
 | `FETCH_JOB_DETAIL_SCRAPE_LIMIT` | Max individual job detail URLs to scrape per run (default `24`, max `45`). |
 | `FETCH_JOBS_CRON_SECRET` | Optional long random string for scheduled runs (see below). |
+| `RESEND_API_KEY` | Resend API key for automation summary emails (`send-automation-summary`). |
+| `RESEND_FROM_EMAIL` | Optional sender, e.g. `Vizag Jobs <noreply@jobsinvizag.in>` (domain must be verified in Resend). |
+| `AUTOMATION_SUMMARY_EMAIL` | Optional recipient for automation reports (default **kkumardadi@gmail.com**). |
+| `SITE_URL` | Optional site base URL for links in emails (default `https://jobsinvizag.in`). |
 
 ### Frontend env
 
@@ -330,6 +334,8 @@ Persisting snapshots (e.g. private Storage or email) is not implemented in-repo;
 ### Automated Naukri pipeline (daily 6 PM IST)
 
 For hands-off Naukri fetch → Make SEO (3 min between jobs) → publish, see **`docs/auto-naukri-pipeline.md`**. It uses the same `FETCH_JOBS_CRON_SECRET` plus `SUPABASE_SERVICE_ROLE_KEY` in GitHub Actions (`.github/workflows/auto-naukri-daily.yml`).
+
+Email summaries use Edge Function `send-automation-summary` with **Resend** (`RESEND_API_KEY`, default recipient `kkumardadi@gmail.com`).
 
 ### Compliance
 

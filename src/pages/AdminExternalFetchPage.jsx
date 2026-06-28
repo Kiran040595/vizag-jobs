@@ -25,6 +25,7 @@ import {
   loadAutomationReport,
   saveAutomationReport,
 } from '../lib/naukriAutomationReport';
+import { sendAutomationSummaryEmail } from '../lib/automationEmail';
 import { parseGeminiSeoKeySelectValue } from '../lib/geminiSeoKeyOptions';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
@@ -388,12 +389,31 @@ export default function AdminExternalFetchPage() {
 
       setAutomationReport(report);
       saveAutomationReport(report);
+
+      let emailNote = '';
+      try {
+        const emailResult = await sendAutomationSummaryEmail(session.access_token, report);
+        emailNote = ` Summary emailed to ${emailResult.to}.`;
+      } catch (emailError) {
+        emailNote = ` Email not sent: ${emailError instanceof Error ? emailError.message : 'unknown error'}.`;
+      }
+
       setNotice(
-        `Automation complete: fetched ${stats.fetched}, queued ${stats.queued}, published ${stats.published}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo + stats.skippedBatchDuplicate}, failed ${stats.seoFailed + stats.publishFailed}. See report below.`,
+        `Automation complete: fetched ${stats.fetched}, queued ${stats.queued}, published ${stats.published}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo + stats.skippedBatchDuplicate}, failed ${stats.seoFailed + stats.publishFailed}. See report below.${emailNote}`,
       );
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        setNotice('Naukri automation cancelled. See report below for jobs processed so far.');
+        const partialReport = loadAutomationReport();
+        let emailNote = '';
+        if (partialReport) {
+          try {
+            const emailResult = await sendAutomationSummaryEmail(session.access_token, partialReport);
+            emailNote = ` Summary emailed to ${emailResult.to}.`;
+          } catch (emailError) {
+            emailNote = ` Email not sent: ${emailError instanceof Error ? emailError.message : 'unknown error'}.`;
+          }
+        }
+        setNotice(`Naukri automation cancelled. See report below for jobs processed so far.${emailNote}`);
       } else {
         setFetchError(error instanceof Error ? error.message : 'Naukri automation failed.');
       }

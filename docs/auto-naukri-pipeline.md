@@ -127,6 +127,36 @@ This is normal on a site that already has jobs:
 
 Check the report table for the exact reason on each row.
 
+## Email summary
+
+After each automation run, a summary email is sent to **`kkumardadi@gmail.com`** (override with `AUTOMATION_SUMMARY_EMAIL`).
+
+### Setup (one-time)
+
+1. Create a free account at [resend.com](https://resend.com)
+2. Create an API key
+3. Add Supabase Edge Function secrets:
+
+| Secret | Value |
+|--------|--------|
+| `RESEND_API_KEY` | `re_...` from Resend dashboard |
+| `RESEND_FROM_EMAIL` | Optional. Default `Vizag Jobs <onboarding@resend.dev>` (Resend test sender — only works for verified/test use). For production, verify `jobsinvizag.in` in Resend and use e.g. `Vizag Jobs <noreply@jobsinvizag.in>` |
+| `AUTOMATION_SUMMARY_EMAIL` | Optional. Default `kkumardadi@gmail.com` |
+| `SITE_URL` | Optional. Default `https://jobsinvizag.in` (link in email) |
+
+4. Deploy the new function:
+
+```bash
+supabase functions deploy send-automation-summary --no-verify-jwt
+```
+
+### When email is sent
+
+- **Admin UI** — after **Start automation** finishes (success or partial failure)
+- **CLI / GitHub Actions** — after `npm run auto:naukri` (disable with `AUTO_NAUKRI_SEND_EMAIL=false`)
+
+Email includes stats + a table of every job with status and reason.
+
 ## Tunables (env)
 
 | Variable | Default | Purpose |

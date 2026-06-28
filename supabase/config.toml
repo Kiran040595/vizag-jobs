@@ -4,3 +4,6 @@
 [functions.fetch-external-jobs]
 # Auth is enforced inside the function (admin JWT or cron secret).
 verify_jwt = false
+
+[functions.send-automation-summary]
+verify_jwt = false
