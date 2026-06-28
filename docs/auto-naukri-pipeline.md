@@ -94,6 +94,39 @@ node scripts/auto-naukri-pipeline.mjs
 
 Or: `npm run auto:naukri`
 
+## Automation report
+
+After each run, a **per-job report** shows what happened to every fetched listing.
+
+### Admin UI
+
+On `/admin/fetch`, see **Automation report** below the notice banner:
+
+| Status | Meaning |
+|--------|---------|
+| **Published** | Inserted into `public.jobs` |
+| **Skipped (before SEO)** | Already in DB, missing apply link, or missing title/company |
+| **Duplicate in batch** | Same job twice in one fetch |
+| **SEO failed** | Gemini / Edge Function error |
+| **Skipped (after SEO)** | Failed dedup after SEO rewrite |
+| **Publish failed** | Database insert error |
+
+Use **Download JSON** to export. The report persists in browser storage until **Clear report**.
+
+### CLI
+
+Writes `naukri-automation-report-YYYY-MM-DD-HH-mm-ss.json` in the working directory.
+
+### Why 23 fetched but only 5 published?
+
+This is normal on a site that already has jobs:
+
+- **Fetched (23)** = everything Apify returned today
+- **Skipped before SEO (~18)** = already in your database or no apply link
+- **Queued (~5)** = truly new jobs → SEO → publish
+
+Check the report table for the exact reason on each row.
+
 ## Tunables (env)
 
 | Variable | Default | Purpose |

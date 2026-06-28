@@ -7,6 +7,7 @@ import {
   startNaukriApifyFetch,
 } from '../services/externalJobFetch';
 import { geminiKeyFieldsFromSeoResponse } from './formatGeminiKeyUsage';
+import { createEmptyAutomationReport } from './naukriAutomationReport';
 
 /** Gap between Make SEO calls during automation (matches daily pipeline). */
 export const NAUKRI_AUTOMATION_SEO_GAP_MS = 3 * 60 * 1000;
@@ -45,6 +46,20 @@ export function shouldSkipNaukriAutomationJob(job, existingSlugs, existingApplyL
   return { skip: false, reason: '' };
 }
 
+function buildJobEntry(job, status, extra = {}) {
+  return {
+    key: getExternalJobKey(job),
+    title: String(job?.title || '').trim(),
+    company: String(job?.company || '').trim(),
+    applyLink: resolveJobApplyLink(job),
+    sourceUrl: String(job?.source_url || '').trim(),
+    status,
+    reason: extra.reason || '',
+    publishedSlug: extra.publishedSlug || '',
+    error: extra.error || '',
+  };
+}
+
 function mergeSeoJob(job, data) {
   const optimized = data.job;
   if (!optimized) {
@@ -71,7 +86,7 @@ function mergeSeoJob(job, data) {
   };
 }
 
-async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, signal }) {
+async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, signal, report }) {
   const started = await startNaukriApifyFetch(accessToken);
   if (signal?.aborted) {
     throw new DOMException('Automation cancelled.', 'AbortError');
@@ -82,12 +97,15 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
     throw new Error('Naukri Apify run id missing from start response.');
   }
 
+  report.apifyRunId = runId;
+
   const waitMs = Number(started.collect_after_ms) || NAUKRI_ASYNC_COLLECT_WAIT_MS;
   onProgress?.({
     phase: 'waiting',
     message: `Apify scrape started. Waiting ${Math.round(waitMs / 1000)}s before collecting…`,
     waitSec: Math.ceil(waitMs / 1000),
     runId,
+    report,
   });
 
   const waitEnd = Date.now() + waitMs;
@@ -101,6 +119,7 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
       message: `Waiting for Apify results…`,
       waitSec: remainingSec,
       runId,
+      report,
     });
     await sleepMs(Math.min(1000, waitEnd - Date.now()));
   }
@@ -114,6 +133,7 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
       phase: 'collecting',
       message: `Collecting Naukri jobs (attempt ${attempt}/${collectMaxAttempts})…`,
       runId,
+      report,
     });
 
     const data = await collectNaukriApifyFetch(accessToken, runId);
@@ -126,6 +146,7 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
         phase: 'collecting',
         message: `Apify still running. Retrying in ${Math.round(retryMs / 1000)}s…`,
         runId,
+        report,
       });
       await sleepMs(retryMs);
       continue;
@@ -142,6 +163,7 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
 
 /**
  * Fetch Naukri jobs, run Make SEO with gaps, and publish new jobs with valid apply links.
+ * Returns { stats, report } with per-job status for tracing.
  */
 export async function runNaukriAutomationPipeline({
   accessToken,
@@ -152,32 +174,41 @@ export async function runNaukriAutomationPipeline({
   onJobUpdated,
   onJobPublished,
   onJobRemoved,
+  onReportUpdate,
   signal,
   seoGapMs = NAUKRI_AUTOMATION_SEO_GAP_MS,
   collectMaxAttempts = 24,
 }) {
+  const report = createEmptyAutomationReport();
   const slugs = new Set(existingSlugs);
   const applyLinks = new Set(existingApplyLinks);
-  const stats = {
-    fetched: 0,
-    skippedPreSeo: 0,
-    seoOk: 0,
-    seoFailed: 0,
-    published: 0,
-    skippedPostSeo: 0,
-    publishFailed: 0,
+
+  const pushReport = () => {
+    onReportUpdate?.(structuredClone(report));
   };
 
-  onProgress?.({ phase: 'fetching', message: 'Starting Naukri Apify scrape…' });
+  const recordJob = (entry) => {
+    const existingIndex = report.jobs.findIndex((item) => item.key === entry.key);
+    if (existingIndex >= 0) {
+      report.jobs[existingIndex] = entry;
+    } else {
+      report.jobs.push(entry);
+    }
+    pushReport();
+  };
+
+  onProgress?.({ phase: 'fetching', message: 'Starting Naukri Apify scrape…', report });
 
   const { jobs: fetchedJobs, payload } = await collectNaukriJobs(accessToken, {
     collectMaxAttempts,
-    onProgress,
+    onProgress: (update) => onProgress?.({ ...update, report }),
     signal,
+    report,
   });
 
-  stats.fetched = fetchedJobs.length;
+  report.stats.fetched = fetchedJobs.length;
   onFetchComplete?.(payload);
+  pushReport();
 
   const queue = [];
   const seenKeys = new Set();
@@ -185,30 +216,39 @@ export async function runNaukriAutomationPipeline({
   for (const job of fetchedJobs) {
     const key = getExternalJobKey(job);
     if (key && seenKeys.has(key)) {
-      stats.skippedPreSeo += 1;
+      report.stats.skippedBatchDuplicate += 1;
+      recordJob(buildJobEntry(job, 'skipped_batch_duplicate', { reason: 'duplicate in same fetch batch' }));
       continue;
     }
     if (key) seenKeys.add(key);
 
     const preCheck = shouldSkipNaukriAutomationJob(job, slugs, applyLinks);
     if (preCheck.skip) {
-      stats.skippedPreSeo += 1;
+      report.stats.skippedPreSeo += 1;
+      recordJob(buildJobEntry(job, 'skipped_pre_seo', { reason: preCheck.reason }));
       continue;
     }
 
     queue.push(job);
   }
 
+  report.stats.queued = queue.length;
+  pushReport();
+
   onProgress?.({
     phase: 'processing',
-    message: `${queue.length} job(s) queued for SEO and publish.`,
+    message: `${queue.length} job(s) queued for SEO and publish (${report.stats.skippedPreSeo + report.stats.skippedBatchDuplicate} skipped before queue).`,
     current: 0,
     total: queue.length,
-    stats,
+    stats: report.stats,
+    report,
   });
 
   for (let index = 0; index < queue.length; index += 1) {
     if (signal?.aborted) {
+      report.cancelled = true;
+      report.finishedAt = new Date().toISOString();
+      pushReport();
       throw new DOMException('Automation cancelled.', 'AbortError');
     }
 
@@ -218,6 +258,9 @@ export async function runNaukriAutomationPipeline({
       const gapEnd = Date.now() + seoGapMs;
       while (Date.now() < gapEnd) {
         if (signal?.aborted) {
+          report.cancelled = true;
+          report.finishedAt = new Date().toISOString();
+          pushReport();
           throw new DOMException('Automation cancelled.', 'AbortError');
         }
         onProgress?.({
@@ -227,7 +270,8 @@ export async function runNaukriAutomationPipeline({
           total: queue.length,
           waitSec: Math.max(0, Math.ceil((gapEnd - Date.now()) / 1000)),
           jobTitle: job.title,
-          stats,
+          stats: report.stats,
+          report,
         });
         await sleepMs(Math.min(1000, gapEnd - Date.now()));
       }
@@ -239,29 +283,34 @@ export async function runNaukriAutomationPipeline({
       current: index + 1,
       total: queue.length,
       jobTitle: job.title,
-      stats,
+      stats: report.stats,
+      report,
     });
 
     try {
       const data = await seoOptimizeExternalJob(accessToken, job, '', {});
       job = mergeSeoJob(job, data);
-      stats.seoOk += 1;
+      report.stats.seoOk += 1;
       onJobUpdated?.(job);
     } catch (error) {
-      stats.seoFailed += 1;
+      report.stats.seoFailed += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      recordJob(buildJobEntry(job, 'seo_failed', { error: message, reason: 'Make SEO failed' }));
       onProgress?.({
         phase: 'seo',
-        message: `SEO failed for "${job.title}": ${error instanceof Error ? error.message : String(error)}`,
+        message: `SEO failed for "${job.title}": ${message}`,
         current: index + 1,
         total: queue.length,
-        stats,
+        stats: report.stats,
+        report,
       });
       continue;
     }
 
     const postCheck = shouldSkipNaukriAutomationJob(job, slugs, applyLinks);
     if (postCheck.skip) {
-      stats.skippedPostSeo += 1;
+      report.stats.skippedPostSeo += 1;
+      recordJob(buildJobEntry(job, 'skipped_post_seo', { reason: postCheck.reason }));
       continue;
     }
 
@@ -271,33 +320,47 @@ export async function runNaukriAutomationPipeline({
       current: index + 1,
       total: queue.length,
       jobTitle: job.title,
-      stats,
+      stats: report.stats,
+      report,
     });
 
     try {
       const saved = await createAdminJob(job, 'published');
-      stats.published += 1;
+      report.stats.published += 1;
       if (saved?.slug) slugs.add(String(saved.slug).toLowerCase());
       if (saved?.apply_link) applyLinks.add(String(saved.apply_link).toLowerCase());
+      recordJob(
+        buildJobEntry(job, 'published', {
+          reason: 'Published to database',
+          publishedSlug: saved?.slug || job.slug,
+        }),
+      );
       onJobPublished?.(saved);
       onJobRemoved?.(job);
     } catch (error) {
-      stats.publishFailed += 1;
+      report.stats.publishFailed += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      recordJob(buildJobEntry(job, 'publish_failed', { error: message, reason: 'Database insert failed' }));
       onProgress?.({
         phase: 'publishing',
-        message: `Publish failed for "${job.title}": ${error instanceof Error ? error.message : String(error)}`,
+        message: `Publish failed for "${job.title}": ${message}`,
         current: index + 1,
         total: queue.length,
-        stats,
+        stats: report.stats,
+        report,
       });
     }
   }
 
+  report.finishedAt = new Date().toISOString();
+  pushReport();
+
   onProgress?.({
     phase: 'done',
-    message: `Automation finished. Published ${stats.published} of ${queue.length} queued job(s).`,
-    stats,
+    message: `Automation finished. Published ${report.stats.published} of ${report.stats.fetched} fetched (${report.stats.queued} were queued).`,
+    stats: report.stats,
+    report,
   });
 
-  return stats;
+  return { stats: report.stats, report };
 }

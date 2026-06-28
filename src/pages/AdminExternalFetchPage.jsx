@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import NaukriAutomationReportPanel from '../components/admin/NaukriAutomationReportPanel';
 import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/ExternalJobReviewPanel';
 import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../services/adminJobs';
 import {
@@ -19,6 +20,11 @@ import {
   NAUKRI_AUTOMATION_SEO_GAP_MS,
   runNaukriAutomationPipeline,
 } from '../lib/naukriAutomation';
+import {
+  clearAutomationReport,
+  loadAutomationReport,
+  saveAutomationReport,
+} from '../lib/naukriAutomationReport';
 import { parseGeminiSeoKeySelectValue } from '../lib/geminiSeoKeyOptions';
 import { EXTERNAL_FETCH_SOURCES } from '../lib/externalFetchSources';
 import { LINKEDIN_POST_PRESET_OPTIONS } from '../lib/linkedinPostPresets';
@@ -126,6 +132,7 @@ export default function AdminExternalFetchPage() {
   const [naukriCollecting, setNaukriCollecting] = useState(false);
   const [automationRunning, setAutomationRunning] = useState(false);
   const [automationProgress, setAutomationProgress] = useState(null);
+  const [automationReport, setAutomationReport] = useState(() => loadAutomationReport());
   const naukriAutoCollectStarted = useRef(false);
   const automationAbortRef = useRef(null);
 
@@ -361,12 +368,16 @@ export default function AdminExternalFetchPage() {
     };
 
     try {
-      const stats = await runNaukriAutomationPipeline({
+      const { stats, report } = await runNaukriAutomationPipeline({
         accessToken: session.access_token,
         existingSlugs,
         existingApplyLinks,
         signal: controller.signal,
         onProgress: setAutomationProgress,
+        onReportUpdate: (nextReport) => {
+          setAutomationReport(nextReport);
+          saveAutomationReport(nextReport);
+        },
         onFetchComplete: applyFetchPayload,
         onJobUpdated: updateSeoJobInReview,
         onJobPublished: (saved) => {
@@ -375,12 +386,14 @@ export default function AdminExternalFetchPage() {
         onJobRemoved: removeReviewJob,
       });
 
+      setAutomationReport(report);
+      saveAutomationReport(report);
       setNotice(
-        `Automation complete: published ${stats.published}, SEO ok ${stats.seoOk}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo}, failed ${stats.seoFailed + stats.publishFailed}.`,
+        `Automation complete: fetched ${stats.fetched}, queued ${stats.queued}, published ${stats.published}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo + stats.skippedBatchDuplicate}, failed ${stats.seoFailed + stats.publishFailed}. See report below.`,
       );
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        setNotice('Naukri automation cancelled.');
+        setNotice('Naukri automation cancelled. See report below for jobs processed so far.');
       } else {
         setFetchError(error instanceof Error ? error.message : 'Naukri automation failed.');
       }
@@ -389,6 +402,12 @@ export default function AdminExternalFetchPage() {
       setAutomationProgress(null);
       automationAbortRef.current = null;
     }
+  };
+
+  const handleClearAutomationReport = () => {
+    clearAutomationReport();
+    setAutomationReport(null);
+    setNotice('Automation report cleared.');
   };
 
   const handleNaukriStart = async () => {
@@ -971,6 +990,8 @@ export default function AdminExternalFetchPage() {
           {notice}
         </p>
       ) : null}
+
+      <NaukriAutomationReportPanel report={automationReport} onClear={handleClearAutomationReport} />
 
       {fetchPayload?.summary ? (
         <FetchSummaryBar payload={fetchPayload} activeMeta={activeMeta} />
