@@ -26,9 +26,11 @@
 
 export const NAUKRI_AUTOMATION_REPORT_STORAGE_KEY = 'vizagjobs:naukri-automation-report:v1';
 
-export function createEmptyAutomationReport() {
+export function createEmptyAutomationReport(channel = 'naukri', channelLabel = 'Naukri') {
   return {
-    runId: `run-${Date.now().toString(36)}`,
+    channel,
+    channelLabel,
+    runId: `run-${channel}-${Date.now().toString(36)}`,
     startedAt: new Date().toISOString(),
     finishedAt: null,
     cancelled: false,
@@ -57,8 +59,9 @@ export function summarizeAutomationReport(report) {
 }
 
 export function buildAutomationReportFilename(report, extension = 'json') {
+  const channel = report?.channel || 'naukri';
   const stamp = (report?.startedAt || new Date().toISOString()).slice(0, 19).replace(/[:T]/g, '-');
-  return `naukri-automation-report-${stamp}.${extension}`;
+  return `${channel}-automation-report-${stamp}.${extension}`;
 }
 
 const csvEscape = (value) => {

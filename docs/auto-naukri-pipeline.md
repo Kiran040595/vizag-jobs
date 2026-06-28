@@ -1,6 +1,14 @@
 # Automated Naukri fetch → SEO → publish
 
-Daily automation for **Naukri jobs only**: fetch listings at **6:00 PM IST**, run **Make SEO** on each new job with a **3-minute gap**, then **publish** jobs that have a valid apply link and are not already in the database.
+## Supported sources
+
+| Channel | Admin UI | CLI | Daily cron (6 PM IST) |
+|---------|----------|-----|------------------------|
+| **Naukri** | Start automation on Naukri card | `npm run auto:naukri` | Yes |
+| **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | Yes |
+| **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | Yes (general preset) |
+
+Daily automation for **Naukri jobs only** was the original scope; LinkedIn Jobs and LinkedIn Posts use the same fetch → SEO (3 min gap) → publish → report → email flow.
 
 ## Flow
 

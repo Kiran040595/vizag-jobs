@@ -1,6 +1,13 @@
 import { pipelineConfig } from './pipeline-env.mjs';
 
 function buildSeoJobPayload(job) {
+  const isLinkedInPost = job.source_kind === 'linkedin_post';
+  const postRaw =
+    (typeof job.linkedin_post_text === 'string' && job.linkedin_post_text.trim()) ||
+    (typeof job.description === 'string' && job.description.trim()) ||
+    '';
+  const postText = postRaw ? postRaw.slice(0, isLinkedInPost ? 2_400 : 0) : null;
+
   return {
     slug: job.slug,
     title: job.title,
@@ -19,11 +26,17 @@ function buildSeoJobPayload(job) {
     posted_at: job.posted_at,
     short_description:
       typeof job.short_description === 'string' ? job.short_description.slice(0, 600) : job.short_description,
-    description:
-      typeof job.description === 'string' ? job.description.slice(0, 2_500) : job.description,
+    description: isLinkedInPost
+      ? undefined
+      : typeof job.description === 'string'
+        ? job.description.slice(0, 2_500)
+        : job.description,
     responsibilities: Array.isArray(job.responsibilities) ? job.responsibilities.slice(0, 12) : [],
     eligibility: Array.isArray(job.eligibility) ? job.eligibility.slice(0, 10) : [],
     skills: Array.isArray(job.skills) ? job.skills.slice(0, 16) : [],
+    linkedin_post_text: postText,
+    needs_review: job.needs_review,
+    is_likely_hiring_post: job.is_likely_hiring_post,
   };
 }
 
@@ -102,7 +115,7 @@ export async function fetchNaukriJobs() {
   }
 
   const waitMs = Number(started.collect_after_ms) || pipelineConfig.naukriCollectWaitMs;
-  console.log(`[naukri] Apify run ${runId} started; waiting ${Math.round(waitMs / 1000)}s before collect…`);
+  console.log(`[auto] Naukri Apify run ${runId} started; waiting ${Math.round(waitMs / 1000)}s before collect…`);
   await sleepMs(waitMs);
 
   for (let attempt = 1; attempt <= pipelineConfig.naukriCollectMaxAttempts; attempt += 1) {
@@ -112,26 +125,71 @@ export async function fetchNaukriJobs() {
 
     if (pending || emptyWithRetry) {
       const retryMs = (Number(data.retry_after_sec) || 15) * 1000;
-      console.log(`[naukri] Apify still running (attempt ${attempt}/${pipelineConfig.naukriCollectMaxAttempts}); retry in ${Math.round(retryMs / 1000)}s`);
+      console.log(`[auto] Apify still running (attempt ${attempt}); retry in ${Math.round(retryMs / 1000)}s`);
       await sleepMs(retryMs);
       continue;
     }
 
     const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-    console.log(`[naukri] Collected ${jobs.length} job(s) from Apify.`);
-    return { jobs, meta: data };
+    console.log(`[auto] Collected ${jobs.length} Naukri job(s).`);
+    return { jobs, meta: data, apifyRunId: runId };
   }
 
   throw new Error('Naukri Apify run did not finish in time.');
 }
 
+export async function fetchLinkedInJobs() {
+  const data = await callEdgeFunction(
+    { mode: 'fetch', fetch_channel: 'linkedin_jobs' },
+    pipelineConfig.fetchTimeoutMs,
+  );
+  const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+  console.log(`[auto] Fetched ${jobs.length} LinkedIn Jobs listing(s).`);
+  return { jobs, meta: data };
+}
+
+export async function fetchLinkedInPosts(fetchOptions = {}) {
+  const body = {
+    mode: 'fetch',
+    fetch_channel: 'linkedin_posts',
+    linkedin_post_preset: fetchOptions.preset || 'general',
+  };
+  if (body.linkedin_post_preset === 'custom') {
+    const url = String(fetchOptions.customSearchUrl || '').trim();
+    if (!url) {
+      throw new Error('AUTO_LINKEDIN_CUSTOM_SEARCH_URL required when preset is custom.');
+    }
+    body.linkedin_custom_search_url = url;
+  }
+
+  const data = await callEdgeFunction(body, pipelineConfig.fetchTimeoutMs);
+  const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+  console.log(`[auto] Fetched ${jobs.length} LinkedIn post job(s) (preset: ${body.linkedin_post_preset}).`);
+  return { jobs, meta: data };
+}
+
+export async function fetchJobsForChannel(channel, fetchOptions = {}) {
+  if (channel === 'naukri') {
+    return fetchNaukriJobs();
+  }
+  if (channel === 'linkedin_jobs') {
+    return fetchLinkedInJobs();
+  }
+  if (channel === 'linkedin_posts') {
+    return fetchLinkedInPosts(fetchOptions);
+  }
+  throw new Error(`Unsupported automation channel: ${channel}`);
+}
+
 export async function seoOptimizeJob(job) {
+  const isLinkedInPost = job.source_kind === 'linkedin_post';
+  const timeoutMs = isLinkedInPost ? 120_000 : pipelineConfig.seoTimeoutMs;
   const data = await callEdgeFunction(
     {
       mode: 'seo',
       job: buildSeoJobPayload(job),
     },
-    pipelineConfig.seoTimeoutMs,
+    timeoutMs,
   );
 
   if (!data?.job) {

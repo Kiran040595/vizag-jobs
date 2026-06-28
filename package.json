@@ -8,7 +8,9 @@
     "build": "node scripts/generate-sitemap.mjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "auto:naukri": "node scripts/auto-naukri-pipeline.mjs"
+    "auto:naukri": "AUTO_FETCH_CHANNEL=naukri node scripts/auto-external-pipeline.mjs",
+    "auto:linkedin-jobs": "AUTO_FETCH_CHANNEL=linkedin_jobs node scripts/auto-external-pipeline.mjs",
+    "auto:linkedin-posts": "AUTO_FETCH_CHANNEL=linkedin_posts node scripts/auto-external-pipeline.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",

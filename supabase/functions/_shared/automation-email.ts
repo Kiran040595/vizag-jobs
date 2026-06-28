@@ -16,6 +16,8 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;');
 
 export type AutomationReport = {
+  channel?: string;
+  channelLabel?: string;
   runId?: string;
   startedAt?: string;
   finishedAt?: string;
@@ -44,7 +46,8 @@ export function buildAutomationSummaryEmail(
   const startedAt = report?.startedAt ? new Date(report.startedAt) : new Date();
   const finishedAt = report?.finishedAt ? new Date(report.finishedAt) : new Date();
 
-  const subject = `Naukri automation: ${stats.published ?? 0} published / ${stats.fetched ?? jobs.length} fetched — ${startedAt.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
+  const channelLabel = report?.channelLabel || report?.channel || 'Naukri';
+  const subject = `${channelLabel} automation: ${stats.published ?? 0} published / ${stats.fetched ?? jobs.length} fetched — ${startedAt.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}`;
 
   const summaryLines = [
     `Fetched: ${stats.fetched ?? jobs.length}`,
@@ -64,7 +67,7 @@ export function buildAutomationSummaryEmail(
   });
 
   const text = [
-    `${siteName} — Naukri automation summary`,
+    `${siteName} — ${channelLabel} automation summary`,
     '',
     `Run: ${report?.runId || 'unknown'}`,
     `Started: ${startedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST`,
@@ -107,7 +110,7 @@ export function buildAutomationSummaryEmail(
 <body style="margin:0;padding:0;background:#f8fafc;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#0f172a;">
   <div style="max-width:720px;margin:0 auto;padding:24px;">
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;">
-      <h1 style="margin:0 0 8px;font-size:20px;">${escapeHtml(siteName)} — Naukri automation</h1>
+      <h1 style="margin:0 0 8px;font-size:20px;">${escapeHtml(siteName)} — ${escapeHtml(channelLabel)} automation</h1>
       <p style="margin:0 0 16px;color:#64748b;font-size:14px;">
         Run <code style="background:#f1f5f9;padding:2px 6px;border-radius:6px;">${escapeHtml(report?.runId || 'unknown')}</code>
         · ${escapeHtml(startedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }))} IST

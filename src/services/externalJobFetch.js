@@ -243,7 +243,7 @@ export async function fetchExternalJobsBySource(accessToken, fetchChannel, optio
       body.linkedin_custom_search_url = options.customSearchUrl.trim();
     }
   }
-  return callFetchExternalJobsEdge(accessToken, body);
+  return callFetchExternalJobsEdge(accessToken, body, { timeoutMs: options.timeoutMs });
 }
 
 /** Default wait before collecting Naukri Apify results (3 minutes). */

@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import ExternalSourceAutomationActions from '../components/admin/ExternalSourceAutomationActions';
 import NaukriAutomationReportPanel from '../components/admin/NaukriAutomationReportPanel';
 import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/ExternalJobReviewPanel';
 import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../services/adminJobs';
@@ -16,10 +17,11 @@ import {
   startNaukriApifyFetch,
 } from '../services/externalJobFetch';
 import { formatGeminiKeyUsage, geminiKeyFieldsFromSeoResponse } from '../lib/formatGeminiKeyUsage';
+import { buildAutomationConfirmMessage } from '../lib/automationChannels';
 import {
-  NAUKRI_AUTOMATION_SEO_GAP_MS,
-  runNaukriAutomationPipeline,
-} from '../lib/naukriAutomation';
+  AUTOMATION_SEO_GAP_MS,
+  runExternalFetchAutomationPipeline,
+} from '../lib/externalFetchAutomation';
 import {
   clearAutomationReport,
   loadAutomationReport,
@@ -132,6 +134,7 @@ export default function AdminExternalFetchPage() {
   });
   const [naukriCollecting, setNaukriCollecting] = useState(false);
   const [automationRunning, setAutomationRunning] = useState(false);
+  const [automationChannel, setAutomationChannel] = useState(null);
   const [automationProgress, setAutomationProgress] = useState(null);
   const [automationReport, setAutomationReport] = useState(() => loadAutomationReport());
   const naukriAutoCollectStarted = useRef(false);
@@ -319,19 +322,17 @@ export default function AdminExternalFetchPage() {
     setNotice('Stopping automation…');
   };
 
-  const handleStartNaukriAutomation = async () => {
+  const handleStartChannelAutomation = async (channel, fetchOptions = {}) => {
     if (!session?.access_token || automationRunning) {
       return;
     }
 
-    const confirmed = window.confirm(
-      'Start Naukri automation?\n\n' +
-        'This will:\n' +
-        '1. Fetch Naukri jobs via Apify (~3 min wait)\n' +
-        `2. Run Make SEO on each new job (${Math.round(NAUKRI_AUTOMATION_SEO_GAP_MS / 60_000)} min between jobs)\n` +
-        '3. Auto-publish jobs that have a valid apply link and are not already in the database\n\n' +
-        'Keep this tab open until finished. You can cancel anytime.',
-    );
+    if (channel === 'linkedin_posts' && fetchOptions.preset === 'custom' && !fetchOptions.customSearchUrl?.trim()) {
+      setFetchError('Paste a LinkedIn content search URL (past 24h) or choose another preset.');
+      return;
+    }
+
+    const confirmed = window.confirm(buildAutomationConfirmMessage(channel, AUTOMATION_SEO_GAP_MS));
     if (!confirmed) {
       return;
     }
@@ -339,13 +340,16 @@ export default function AdminExternalFetchPage() {
     const controller = new AbortController();
     automationAbortRef.current = controller;
     setAutomationRunning(true);
-    setAutomationProgress({ phase: 'fetching', message: 'Starting Naukri automation…' });
+    setAutomationChannel(channel);
+    setAutomationProgress({ phase: 'fetching', message: `Starting ${channel} automation…`, channel });
     setFetchError('');
     setNotice('');
-    setActiveSource('naukri');
-    naukriAutoCollectStarted.current = false;
-    setNaukriPending(null);
-    setNaukriCountdownSec(0);
+    setActiveSource(channel);
+    if (channel === 'naukri') {
+      naukriAutoCollectStarted.current = false;
+      setNaukriPending(null);
+      setNaukriCountdownSec(0);
+    }
 
     const updateSeoJobInReview = (job) => {
       const key = getExternalJobKey(job);
@@ -369,7 +373,9 @@ export default function AdminExternalFetchPage() {
     };
 
     try {
-      const { stats, report } = await runNaukriAutomationPipeline({
+      const { stats, report } = await runExternalFetchAutomationPipeline({
+        channel,
+        fetchOptions,
         accessToken: session.access_token,
         existingSlugs,
         existingApplyLinks,
@@ -393,22 +399,24 @@ export default function AdminExternalFetchPage() {
       const emailNote = await emailReportAfterRun(report);
 
       setNotice(
-        `Automation complete: fetched ${stats.fetched}, queued ${stats.queued}, published ${stats.published}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo + stats.skippedBatchDuplicate}, failed ${stats.seoFailed + stats.publishFailed}. See report below.${emailNote}`,
+        `${report.channelLabel || channel} automation complete: fetched ${stats.fetched}, queued ${stats.queued}, published ${stats.published}, skipped ${stats.skippedPreSeo + stats.skippedPostSeo + stats.skippedBatchDuplicate}, failed ${stats.seoFailed + stats.publishFailed}. See report below.${emailNote}`,
       );
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         const partialReport = loadAutomationReport();
         const emailNote = partialReport ? await emailReportAfterRun(partialReport) : '';
-        setNotice(`Naukri automation cancelled. See report below for jobs processed so far.${emailNote}`);
+        setNotice(`Automation cancelled. See report below for jobs processed so far.${emailNote}`);
       } else {
-        setFetchError(error instanceof Error ? error.message : 'Naukri automation failed.');
+        setFetchError(error instanceof Error ? error.message : 'Automation failed.');
       }
     } finally {
       setAutomationRunning(false);
+      setAutomationChannel(null);
       setAutomationProgress(null);
       automationAbortRef.current = null;
     }
   };
+
 
   const handleClearAutomationReport = () => {
     clearAutomationReport();
@@ -789,7 +797,13 @@ export default function AdminExternalFetchPage() {
         <div className="mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-sm text-emerald-950">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-semibold">Naukri automation running</p>
+              <p className="font-semibold">
+                {automationProgress?.channel === 'linkedin_jobs'
+                  ? 'LinkedIn Jobs automation running'
+                  : automationProgress?.channel === 'linkedin_posts'
+                    ? 'LinkedIn Posts automation running'
+                    : 'Naukri automation running'}
+              </p>
               <p className="mt-2 text-emerald-900">{automationProgress.message}</p>
               {automationProgress.phase === 'waiting' || automationProgress.phase === 'seo_gap' ? (
                 <p className="mt-2 font-mono text-2xl font-bold tabular-nums text-emerald-800">
@@ -872,6 +886,8 @@ export default function AdminExternalFetchPage() {
           const isLast = activeSource === source.id && fetchPayload && !fetchLoading && !naukriCollecting;
           const isLinkedInPosts = source.id === 'linkedin_posts';
           const isNaukri = source.id === 'naukri';
+          const isLinkedInJobs = source.id === 'linkedin_jobs';
+          const supportsAutomation = isNaukri || isLinkedInJobs || isLinkedInPosts;
           const presetMeta = LINKEDIN_POST_PRESET_OPTIONS.find((p) => p.id === linkedInPostPreset);
           const fetchDisabled =
             !isSupabaseConfigured ||
@@ -881,50 +897,19 @@ export default function AdminExternalFetchPage() {
             automationRunning ||
             !session?.access_token;
 
-          if (isNaukri) {
-            return (
-              <div
-                key={source.id}
-                className={`rounded-[1.5rem] border p-5 ${source.accent} ${
-                  isLast ? 'ring-2 ring-cyan-500 ring-offset-2' : ''
-                }`}
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{source.providerHint}</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-950">{source.title}</h2>
-                <p className="mt-2 text-sm text-slate-600">{source.description}</p>
-                <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
-                <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    disabled={fetchDisabled}
-                    onClick={() => handleFetch(source.id)}
-                    className="rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-amber-950 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {fetchLoading && activeSource === 'naukri'
-                      ? 'Starting Apify…'
-                      : isNaukriWaiting
-                        ? `Waiting ${formatCountdown(naukriCountdownSec)}…`
-                        : 'Fetch only (manual review) →'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={fetchDisabled}
-                    onClick={handleStartNaukriAutomation}
-                    className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {automationRunning ? 'Automation running…' : 'Start automation →'}
-                  </button>
-                </div>
-                <p className="mt-3 text-xs text-slate-600">
-                  Automation fetches jobs, runs Make SEO every{' '}
-                  {Math.round(NAUKRI_AUTOMATION_SEO_GAP_MS / 60_000)} minutes, and publishes new jobs with a valid
-                  apply link. Keep this tab open.
-                </p>
-              </div>
-            );
-          }
+          if (supportsAutomation) {
+            const fetchOnlyBusy =
+              fetchLoading && activeSource === source.id && !(isNaukri && naukriPending);
+            const fetchOnlyLabel = isNaukri
+              ? fetchLoading && activeSource === 'naukri'
+                ? 'Starting Apify…'
+                : isNaukriWaiting
+                  ? `Waiting ${formatCountdown(naukriCountdownSec)}…`
+                  : 'Fetch only (manual review) →'
+              : fetchOnlyBusy
+                ? 'Fetching…'
+                : 'Fetch only (manual review) →';
 
-          if (isLinkedInPosts) {
             return (
               <div
                 key={source.id}
@@ -936,52 +921,70 @@ export default function AdminExternalFetchPage() {
                 <h2 className="mt-1 text-lg font-bold text-slate-950">{source.title}</h2>
                 <p className="mt-2 text-sm text-slate-600">{source.description}</p>
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
-                <label className="mt-4 block text-xs font-semibold text-slate-700" htmlFor="linkedin-post-preset">
-                  Search preset
-                </label>
-                <select
-                  id="linkedin-post-preset"
-                  value={linkedInPostPreset}
-                  disabled={fetchLoading || !session?.access_token}
-                  onChange={(e) => setLinkedInPostPreset(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                >
-                  {LINKEDIN_POST_PRESET_OPTIONS.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                {presetMeta?.description ? (
-                  <p className="mt-2 text-xs text-slate-600">{presetMeta.description}</p>
-                ) : null}
-                {linkedInPostPreset === 'custom' ? (
+
+                {isLinkedInPosts ? (
                   <>
-                    <label
-                      className="mt-3 block text-xs font-semibold text-slate-700"
-                      htmlFor="linkedin-custom-search-url"
-                    >
-                      LinkedIn content search URL
+                    <label className="mt-4 block text-xs font-semibold text-slate-700" htmlFor="linkedin-post-preset">
+                      Search preset
                     </label>
-                    <input
-                      id="linkedin-custom-search-url"
-                      type="url"
-                      value={linkedInCustomSearchUrl}
-                      disabled={fetchLoading || !session?.access_token}
-                      onChange={(e) => setLinkedInCustomSearchUrl(e.target.value)}
-                      placeholder="https://www.linkedin.com/search/results/content/?keywords=..."
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
-                    />
+                    <select
+                      id="linkedin-post-preset"
+                      value={linkedInPostPreset}
+                      disabled={fetchDisabled}
+                      onChange={(e) => setLinkedInPostPreset(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                    >
+                      {LINKEDIN_POST_PRESET_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {presetMeta?.description ? (
+                      <p className="mt-2 text-xs text-slate-600">{presetMeta.description}</p>
+                    ) : null}
+                    {linkedInPostPreset === 'custom' ? (
+                      <>
+                        <label
+                          className="mt-3 block text-xs font-semibold text-slate-700"
+                          htmlFor="linkedin-custom-search-url"
+                        >
+                          LinkedIn content search URL
+                        </label>
+                        <input
+                          id="linkedin-custom-search-url"
+                          type="url"
+                          value={linkedInCustomSearchUrl}
+                          disabled={fetchDisabled}
+                          onChange={(e) => setLinkedInCustomSearchUrl(e.target.value)}
+                          placeholder="https://www.linkedin.com/search/results/content/?keywords=..."
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
+                        />
+                      </>
+                    ) : null}
                   </>
                 ) : null}
-                <button
-                  type="button"
-                  disabled={fetchDisabled}
-                  onClick={() => handleFetch(source.id)}
-                  className="mt-4 text-sm font-semibold text-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isActive ? 'Fetching…' : 'Fetch LinkedIn posts →'}
-                </button>
+
+                <ExternalSourceAutomationActions
+                  fetchDisabled={fetchDisabled}
+                  fetchOnlyBusy={fetchOnlyBusy}
+                  fetchOnlyLabel={fetchOnlyLabel}
+                  onFetchOnly={() => handleFetch(source.id)}
+                  onStartAutomation={() =>
+                    handleStartChannelAutomation(
+                      source.id,
+                      isLinkedInPosts
+                        ? {
+                            preset: linkedInPostPreset,
+                            customSearchUrl: linkedInCustomSearchUrl,
+                          }
+                        : {},
+                    )
+                  }
+                  automationRunning={automationRunning}
+                  activeAutomationChannel={automationChannel}
+                  channelId={source.id}
+                />
               </div>
             );
           }

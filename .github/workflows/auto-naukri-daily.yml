@@ -1,4 +1,4 @@
-name: Auto Naukri daily pipeline
+name: Auto daily job pipelines (Naukri + LinkedIn)
 
 on:
   schedule:
@@ -34,6 +34,44 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: naukri
           AUTO_NAUKRI_SEO_GAP_MS: '180000'
           AUTO_NAUKRI_COLLECT_WAIT_MS: '180000'
-        run: node scripts/auto-naukri-pipeline.mjs
+        run: node scripts/auto-external-pipeline.mjs naukri
+
+  linkedin-jobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/auto-external-pipeline.mjs linkedin_jobs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: linkedin_jobs
+
+  linkedin-posts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/auto-external-pipeline.mjs linkedin_posts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: linkedin_posts
+          AUTO_LINKEDIN_POST_PRESET: general

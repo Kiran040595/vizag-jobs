@@ -54,7 +54,9 @@ export default function NaukriAutomationReportPanel({
     <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-black text-slate-950">Automation report</h3>
+          <h3 className="text-lg font-black text-slate-950">
+            {report.channelLabel ? `${report.channelLabel} automation report` : 'Automation report'}
+          </h3>
           <p className="mt-1 text-sm text-slate-600">
             Run {report.runId} · Started {new Date(report.startedAt).toLocaleString()} · Finished{' '}
             {finishedLabel}
