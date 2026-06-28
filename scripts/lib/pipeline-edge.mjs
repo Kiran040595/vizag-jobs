@@ -1,4 +1,11 @@
 import { pipelineConfig } from './pipeline-env.mjs';
+import {
+  isSeoRetryableError,
+  maxSeoAttemptsForKeyPool,
+  nextGeminiKeyIndex,
+  parseGeminiKeyIndexFromError,
+  parseSeoRetryWaitMs,
+} from '../../src/lib/seoRetry.js';
 
 function buildSeoJobPayload(job) {
   const isLinkedInPost = job.source_kind === 'linkedin_post';
@@ -69,8 +76,20 @@ async function callEdgeFunction(body, timeoutMs) {
       throw new Error(`Edge function returned non-JSON (${res.status}): ${text.slice(0, 300)}`);
     }
 
-    if (!res.ok || data?.ok === false) {
-      throw new Error(data?.error || `Edge function failed (${res.status})`);
+    if (!res.ok) {
+      const serverError =
+        (typeof data?.error === 'string' && data.error) ||
+        (typeof data?.message === 'string' && data.message) ||
+        `Edge function failed (${res.status})`;
+      throw new Error(
+        body?.mode === 'seo' && (res.status === 502 || res.status === 504 || res.status === 546)
+          ? `Edge Function HTTP ${res.status}: ${serverError}`
+          : serverError,
+      );
+    }
+
+    if (data?.ok === false) {
+      throw new Error(data?.error || 'Edge function failed');
     }
 
     return data;
@@ -181,20 +200,70 @@ export async function fetchJobsForChannel(channel, fetchOptions = {}) {
   throw new Error(`Unsupported automation channel: ${channel}`);
 }
 
-export async function seoOptimizeJob(job) {
-  const isLinkedInPost = job.source_kind === 'linkedin_post';
-  const timeoutMs = isLinkedInPost ? 120_000 : pipelineConfig.seoTimeoutMs;
+export async function fetchSeoGeminiKeys(options = {}) {
   const data = await callEdgeFunction(
     {
-      mode: 'seo',
-      job: buildSeoJobPayload(job),
+      mode: 'seo_keys',
+      linkedin_post: options.linkedInPost === true,
     },
-    timeoutMs,
+    pipelineConfig.fetchTimeoutMs,
   );
+  const keys = Array.isArray(data?.keys) ? data.keys : [];
+  return {
+    keys,
+    total: Number(data?.gemini_keys_total) || keys.length,
+  };
+}
 
-  if (!data?.job) {
-    throw new Error('SEO response missing job payload.');
+export async function seoOptimizeJob(job, options = {}) {
+  const isLinkedInPost = job.source_kind === 'linkedin_post';
+  const timeoutMs = isLinkedInPost ? 120_000 : pipelineConfig.seoTimeoutMs;
+
+  let keyPool = options.geminiKeyPool;
+  if (!keyPool) {
+    try {
+      const { keys } = await fetchSeoGeminiKeys({ linkedInPost: isLinkedInPost });
+      keyPool = keys;
+    } catch {
+      keyPool = [];
+    }
   }
 
-  return data.job;
+  const maxAttempts = maxSeoAttemptsForKeyPool(keyPool);
+  let usedKeyIndex = 0;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const body = {
+      mode: 'seo',
+      job: buildSeoJobPayload(job),
+      ...(usedKeyIndex > 0 ? { gemini_key_index: usedKeyIndex } : {}),
+    };
+
+    try {
+      const data = await callEdgeFunction(body, timeoutMs);
+      if (!data?.job) {
+        throw new Error('SEO response missing job payload.');
+      }
+      return data.job;
+    } catch (error) {
+      lastError = error;
+      const msg = error instanceof Error ? error.message : String(error);
+      const canRetry = isSeoRetryableError(msg) && attempt < maxAttempts - 1;
+      if (!canRetry) {
+        throw error;
+      }
+
+      const failedKey =
+        parseGeminiKeyIndexFromError(msg) ?? (usedKeyIndex > 0 ? usedKeyIndex : null);
+      usedKeyIndex = nextGeminiKeyIndex(keyPool, failedKey);
+      const waitMs = parseSeoRetryWaitMs(msg);
+      console.log(
+        `[auto] SEO retry in ${Math.round(waitMs / 1000)}s with Gemini key ${usedKeyIndex > 0 ? `#${usedKeyIndex}` : 'auto'} (${attempt + 2}/${maxAttempts})…`,
+      );
+      await sleepMs(waitMs);
+    }
+  }
+
+  throw lastError ?? new Error('SEO optimization failed after retries.');
 }

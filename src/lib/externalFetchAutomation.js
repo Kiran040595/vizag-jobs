@@ -337,7 +337,20 @@ export async function runExternalFetchAutomationPipeline({
     });
 
     try {
-      const data = await seoOptimizeExternalJob(accessToken, job, '', {});
+      const data = await seoOptimizeExternalJob(accessToken, job, '', {
+        onRetry: (info) => {
+          onProgress?.({
+            phase: 'seo_retry',
+            message: `SEO retry in ${Math.round(info.waitMs / 1000)}s with Gemini key ${info.nextKeyIndex > 0 ? `#${info.nextKeyIndex}` : 'auto'} (attempt ${info.attempt}/${info.maxAttempts})…`,
+            current: index + 1,
+            total: queue.length,
+            jobTitle: job.title,
+            stats: report.stats,
+            report,
+            channel,
+          });
+        },
+      });
       job = mergeSeoJob(job, data);
       report.stats.seoOk += 1;
       onJobUpdated?.(job);

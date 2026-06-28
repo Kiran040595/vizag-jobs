@@ -5,6 +5,13 @@
  */
 
 import { appendGeminiKeyToSeoErrorMessage } from '../lib/formatGeminiKeyUsage';
+import {
+  isSeoRetryableError,
+  maxSeoAttemptsForKeyPool,
+  nextGeminiKeyIndex,
+  parseGeminiKeyIndexFromError,
+  parseSeoRetryWaitMs,
+} from '../lib/seoRetry';
 
 export function getFetchExternalJobsUrl() {
   const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
@@ -312,22 +319,6 @@ function resolveSeoSourceContext(job) {
  * @param {string} [seoSourceContext]
  * @returns {Promise<Record<string, unknown>>}
  */
-function isSeoRateLimitError(message) {
-  return /429|rate limit|quota|retry in|Wait ~\d+s/i.test(message);
-}
-
-function parseSeoRateLimitWaitMs(message) {
-  const retryIn = message.match(/retry in (\d+(?:\.\d+)?)\s*s/i);
-  if (retryIn) {
-    return Math.ceil(Number(retryIn[1]) * 1000) + 1000;
-  }
-  const waitTilde = message.match(/Wait ~(\d+)s/i);
-  if (waitTilde) {
-    return Number(waitTilde[1]) * 1000 + 1000;
-  }
-  return 20_000;
-}
-
 function sleepMs(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -340,36 +331,67 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
       : resolveSeoSourceContext(job);
   const customInstructions =
     typeof job.seo_custom_instructions === 'string' ? job.seo_custom_instructions.trim().slice(0, 1200) : '';
-  const geminiKeyIndex =
+  const timeoutMs = isLinkedInPost ? 120_000 : 130_000;
+
+  let keyPool = options.geminiKeyPool;
+  if (!keyPool && options.fetchKeys !== false) {
+    try {
+      const { keys } = await fetchSeoGeminiKeys(accessToken, { linkedInPost: isLinkedInPost });
+      keyPool = keys;
+    } catch {
+      keyPool = [];
+    }
+  }
+
+  const maxAttempts = Math.max(
+    maxSeoAttemptsForKeyPool(keyPool),
+    typeof options.geminiKeyIndex === 'number' && options.geminiKeyIndex > 0 ? 2 : 1,
+  );
+  let usedKeyIndex =
     typeof options.geminiKeyIndex === 'number' && options.geminiKeyIndex > 0
       ? Math.floor(options.geminiKeyIndex)
-      : undefined;
-  const body = {
-    mode: 'seo',
-    job: buildSeoJobPayload(job),
-    seo_source_context: context,
-    seo_custom_instructions: customInstructions || undefined,
-    ...(geminiKeyIndex ? { gemini_key_index: geminiKeyIndex } : {}),
-  };
-  const timeoutMs = isLinkedInPost ? 120_000 : 130_000;
-  const maxAttempts = 3;
+      : 0;
 
   let lastError = null;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const geminiKeyIndex = usedKeyIndex > 0 ? usedKeyIndex : undefined;
+    const body = {
+      mode: 'seo',
+      job: buildSeoJobPayload(job),
+      seo_source_context: context,
+      seo_custom_instructions: customInstructions || undefined,
+      ...(geminiKeyIndex ? { gemini_key_index: geminiKeyIndex } : {}),
+    };
+
     try {
       return await callFetchExternalJobsEdge(accessToken, body, { timeoutMs });
     } catch (error) {
       lastError = error;
       const msg = error instanceof Error ? error.message : String(error);
-      const canRetry = isSeoRateLimitError(msg) && attempt < maxAttempts - 1;
+      const canRetry = isSeoRetryableError(msg) && attempt < maxAttempts - 1;
       if (!canRetry) {
         throw error;
       }
-      await sleepMs(parseSeoRateLimitWaitMs(msg));
+
+      const failedKey =
+        parseGeminiKeyIndexFromError(msg) ?? (usedKeyIndex > 0 ? usedKeyIndex : null);
+      usedKeyIndex = nextGeminiKeyIndex(keyPool, failedKey);
+      const waitMs = parseSeoRetryWaitMs(msg);
+      if (typeof options.onRetry === 'function') {
+        options.onRetry({
+          attempt: attempt + 2,
+          maxAttempts,
+          waitMs,
+          failedKeyIndex: failedKey,
+          nextKeyIndex: usedKeyIndex,
+          message: msg,
+        });
+      }
+      await sleepMs(waitMs);
     }
   }
 
-  throw lastError ?? new Error('SEO optimization failed after rate-limit retries.');
+  throw lastError ?? new Error('SEO optimization failed after retries.');
 }
 
 /**
