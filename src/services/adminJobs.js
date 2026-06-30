@@ -1,5 +1,10 @@
 import { clearJobsCache } from './jobs';
 import { supabase } from '../lib/supabaseClient';
+import {
+  applySystemPostedAtToPayload,
+  getSystemPostedAtIso,
+  shouldUseSystemPostedAtOnPublish,
+} from '../lib/jobPostedAt';
 
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
 
@@ -551,6 +556,10 @@ export const createAdminJob = async (values, statusOverride) => {
   const sanitized = sanitizeExternalJobForInsert(values);
   let payload = serializeJobForm(sanitized, statusOverride);
 
+  if (shouldUseSystemPostedAtOnPublish(statusOverride, values?.status)) {
+    payload = applySystemPostedAtToPayload(payload);
+  }
+
   if (!payload.title || !payload.company || !payload.slug) {
     throw new Error('Missing title, company, or slug. Edit the job or re-run Make SEO, then publish again.');
   }
@@ -583,7 +592,10 @@ export const createAdminJobFromSql = async (sqlQuery) => {
   }
 
   const parsedRecord = parseSqlInsertToRecord(sqlQuery);
-  const payload = serializeJobForm(parsedRecord, parsedRecord.status || undefined);
+  let payload = serializeJobForm(parsedRecord, parsedRecord.status || undefined);
+  if (shouldUseSystemPostedAtOnPublish(payload.status, parsedRecord.status)) {
+    payload = applySystemPostedAtToPayload(payload);
+  }
   const { data, error } = await supabase.from(JOBS_TABLE).insert(payload).select('*').single();
 
   if (error) {
@@ -600,9 +612,14 @@ export const updateAdminJob = async (jobId, values, statusOverride) => {
   }
 
   const payload = serializeJobForm(values, statusOverride);
+
+  const nextPayload = shouldUseSystemPostedAtOnPublish(statusOverride, values?.status)
+    ? applySystemPostedAtToPayload(payload)
+    : payload;
+
   const { data, error } = await supabase
     .from(JOBS_TABLE)
-    .update(payload)
+    .update(nextPayload)
     .eq('id', jobId)
     .select('*')
     .single();
@@ -620,9 +637,31 @@ export const updateAdminJobStatus = async (jobId, status) => {
     throw new Error('Supabase is not configured.');
   }
 
+  let patch = { status };
+
+  if (status === 'published') {
+    const { data: existing, error: fetchError } = await supabase
+      .from(JOBS_TABLE)
+      .select('status, json_ld, seo_meta')
+      .eq('id', jobId)
+      .maybeSingle();
+
+    if (fetchError) {
+      throw mapError(fetchError, 'Could not load the job before publishing.');
+    }
+
+    if (shouldUseSystemPostedAtOnPublish('published', existing?.status)) {
+      patch = applySystemPostedAtToPayload({
+        status,
+        json_ld: existing?.json_ld ?? null,
+        seo_meta: existing?.seo_meta ?? null,
+      });
+    }
+  }
+
   const { data, error } = await supabase
     .from(JOBS_TABLE)
-    .update({ status })
+    .update(patch)
     .eq('id', jobId)
     .select('*')
     .single();
@@ -648,12 +687,28 @@ export const approveAdminJob = async (jobId) => {
     throw new Error('You must be signed in as an admin.');
   }
 
-  const now = new Date().toISOString();
+  const now = getSystemPostedAtIso();
+  const { data: existing, error: fetchError } = await supabase
+    .from(JOBS_TABLE)
+    .select('json_ld, seo_meta')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw mapError(fetchError, 'Could not load the job before approval.');
+  }
+
+  const publishPatch = applySystemPostedAtToPayload({
+    status: 'published',
+    posted_at: now,
+    json_ld: existing?.json_ld ?? null,
+    seo_meta: existing?.seo_meta ?? null,
+  });
+
   const { data, error } = await supabase
     .from(JOBS_TABLE)
     .update({
-      status: 'published',
-      posted_at: now,
+      ...publishPatch,
       reviewed_at: now,
       reviewed_by: user.id,
       rejection_reason: null,

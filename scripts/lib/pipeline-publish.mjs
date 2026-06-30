@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+import { applySystemPostedAtToPayload } from '../../src/lib/jobPostedAt.js';
 import { pipelineConfig } from './pipeline-env.mjs';
 
 const REQUIRED_DEFAULTS = { location: 'Visakhapatnam', experience: 'Not specified' };
@@ -223,6 +224,10 @@ export function shouldSkipJob(job, existing) {
 export async function publishJob(job, status = 'published') {
   const sanitized = sanitizeExternalJobForInsert(job);
   let payload = serializeJobForm(sanitized, status);
+
+  if (status === 'published') {
+    payload = applySystemPostedAtToPayload(payload);
+  }
 
   if (!payload.title || !payload.company || !payload.slug) {
     throw new Error('Missing title, company, or slug after SEO.');
