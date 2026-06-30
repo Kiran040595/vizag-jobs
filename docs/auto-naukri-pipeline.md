@@ -2,19 +2,19 @@
 
 ## Supported sources
 
-| Channel | Admin UI | CLI | Daily cron (6 PM IST) |
-|---------|----------|-----|------------------------|
-| **Naukri** | Start automation on Naukri card | `npm run auto:naukri` | Yes |
-| **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | Yes |
-| **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | Yes (general preset) |
+| Channel | Admin UI | CLI | Daily cron (IST) |
+|---------|----------|-----|------------------|
+| **Naukri** | Start automation on Naukri card | `npm run auto:naukri` | **4:00 PM** |
+| **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | **6:00 PM** (general preset) |
+| **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | **9:00 PM** |
 
-Daily automation for **Naukri jobs only** was the original scope; LinkedIn Jobs and LinkedIn Posts use the same fetch → SEO (3 min gap) → publish → report → email flow.
+Each channel runs on its own schedule via GitHub Actions (`.github/workflows/auto-naukri-daily.yml`). All use the same fetch → SEO (3 min gap) → publish → report → email flow.
 
 ## Flow
 
 ```mermaid
 sequenceDiagram
-  participant GH as GitHub Actions (6 PM IST)
+  participant GH as GitHub Actions (4/6/9 PM IST)
   participant Edge as fetch-external-jobs
   participant Apify as Apify Naukri actor
   participant Gemini as Gemini Make SEO
@@ -71,8 +71,11 @@ Add these under **Settings → Secrets and variables → Actions**:
 
 The workflow file is `.github/workflows/auto-naukri-daily.yml`.
 
-- **Schedule:** `30 12 * * *` UTC = **6:00 PM IST** every day
-- **Manual run:** Actions → *Auto Naukri daily pipeline* → *Run workflow*
+- **Schedule (IST):**
+  - Naukri: `30 10 * * *` UTC = **4:00 PM IST**
+  - LinkedIn Posts: `30 12 * * *` UTC = **6:00 PM IST**
+  - LinkedIn Jobs: `30 15 * * *` UTC = **9:00 PM IST**
+- **Manual run:** Actions → *Auto daily job pipelines* → *Run workflow* (runs all three channels)
 
 ## Local test
 
