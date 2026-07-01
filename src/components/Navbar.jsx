@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import NavbarPostJobLink from './NavbarPostJobLink';
+import QuestionNotificationBell from './QuestionNotificationBell';
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -35,6 +36,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2.5 md:flex">
+          <QuestionNotificationBell />
           <Link
             to="/jobs"
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
@@ -83,6 +85,9 @@ export default function Navbar() {
           ))}
 
           <div className="mt-3 flex flex-col gap-2 pb-2">
+            <div className="flex justify-center pb-1">
+              <QuestionNotificationBell />
+            </div>
             <Link
               to="/jobs"
               onClick={() => setIsOpen(false)}

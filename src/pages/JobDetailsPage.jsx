@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -21,7 +21,10 @@ import { buildJobPostingSchema } from '../lib/jobPostingSchema';
 import { buildBreadcrumbSchema } from '../lib/breadcrumbSchema';
 import { SITE_URL } from '../lib/site';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
+import JobShareButtons from '../components/JobShareButtons';
+import JobQuestionsSection from '../components/JobQuestionsSection';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -32,7 +35,10 @@ const splitCommaValues = (value) =>
 export default function JobDetailsPage() {
   const { jobId, jobSlug, jobSegment } = useParams();
   const navigate = useNavigate();
-  const { isAdmin } = useAdminAuth();
+  const [searchParams] = useSearchParams();
+  const { isAdmin, user: adminUser } = useAdminAuth();
+  const { isEmployer, user: employerUser } = useEmployerAuth();
+  const user = adminUser || employerUser;
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -92,10 +98,14 @@ export default function JobDetailsPage() {
     setRefreshTick((tick) => tick + 1);
   };
 
-  // Scroll to top when component mounts
+  // Scroll to top when opening a job, unless we're deep-linking to a question.
   useEffect(() => {
+    if (searchParams.get('question')) {
+      return;
+    }
+
     window.scrollTo(0, 0);
-  }, []);
+  }, [routeJobIdentifier, searchParams]);
 
   useEffect(() => {
     if (!job) {
@@ -115,6 +125,12 @@ export default function JobDetailsPage() {
   const eligibility = splitCommaValues(job?.eligibility);
   const structuredDescription = looksLikeStructuredJobDescription(job?.description);
   const showSeparateSections = !structuredDescription;
+  const highlightQuestionId = searchParams.get('question');
+  const canModerateQuestions = useMemo(() => {
+    if (!job || !user) return false;
+    if (isAdmin) return true;
+    return Boolean(isEmployer && job.createdBy && job.createdBy === user.id);
+  }, [isAdmin, isEmployer, job, user]);
 
   const jobTitle = job ? `${job.title} at ${job.company} - Vizag Jobs` : 'Job Details - Vizag Jobs';
   const jobDescription = job
@@ -206,16 +222,19 @@ export default function JobDetailsPage() {
                   {job.company} · {job.location}
                 </p>
               </div>
-              {job.applyLink ? (
-                <a
-                  href={job.applyLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                  Apply Now
-                </a>
-              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                {job.applyLink ? (
+                  <a
+                    href={job.applyLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    Apply Now
+                  </a>
+                ) : null}
+                <JobShareButtons job={job} />
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
@@ -302,6 +321,13 @@ export default function JobDetailsPage() {
                 <span className="font-semibold">Warning:</span> {job.warning}
               </div>
             ) : null}
+
+            <JobQuestionsSection
+              jobId={job.id}
+              canModerate={canModerateQuestions}
+              userId={user?.id ?? null}
+              highlightQuestionId={highlightQuestionId}
+            />
           </section>
         ) : null}
       </main>

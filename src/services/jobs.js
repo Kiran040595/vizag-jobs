@@ -134,6 +134,7 @@ const processJobData = (job, index) => {
     warning: normalizeText(job.warning),
     postedAt: normalizeText(job.posted_at),
     status: normalizeText(job.status),
+    createdBy: job.created_by || null,
     source: normalizeText(job.source_name),
     sourceUrl: normalizeText(job.source_url),
     skills: joinList(job.skills),
