@@ -25,6 +25,17 @@ import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
 import JobShareButtons from '../components/JobShareButtons';
 import JobQuestionsSection from '../components/JobQuestionsSection';
+import {
+  displayCompanyName,
+  displayExperience,
+  displayFresher,
+  displayJobCategory,
+  displayJobType,
+  displayLocation,
+  displayPostedAt,
+  displaySalary,
+  displayWorkMode,
+} from '../lib/jobDisplayLabels';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -132,9 +143,11 @@ export default function JobDetailsPage() {
     return Boolean(isEmployer && job.createdBy && job.createdBy === user.id);
   }, [isAdmin, isEmployer, job, user]);
 
-  const jobTitle = job ? `${job.title} at ${job.company} - Vizag Jobs` : 'Job Details - Vizag Jobs';
+  const jobTitle = job
+    ? `${job.title} at ${displayCompanyName(job.company)} - Vizag Jobs`
+    : 'Job Details - Vizag Jobs';
   const jobDescription = job
-    ? `Apply for ${job.title} position at ${job.company} in ${job.location}. ${
+    ? `Apply for ${job.title} position at ${displayCompanyName(job.company)} in ${displayLocation(job.location)}. ${
         stripMarkdownForPlainText(job.shortDescription || job.description, 200) ||
         'Find more job opportunities in Visakhapatnam.'
       }`
@@ -219,7 +232,7 @@ export default function JobDetailsPage() {
                   {isJobFresh(job.postedAt) && <NewBadge />}
                 </div>
                 <p className="mt-1 text-sm text-slate-600 sm:text-base">
-                  {job.company} · {job.location}
+                  {displayCompanyName(job.company)} · {displayLocation(job.location)}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -238,27 +251,26 @@ export default function JobDetailsPage() {
             </div>
 
             <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
-              <p><span className="font-semibold text-slate-900">Category:</span> {job.category || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Job Type:</span> {job.jobType || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Work Mode:</span> {job.workMode || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Experience:</span> {job.experience || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Fresher:</span> {job.isFresher || 'N/A'}</p>
-              <p><span className="font-semibold text-slate-900">Salary:</span> {job.salary || 'N/A'}</p>
+              <p><span className="font-semibold text-slate-900">Category:</span> {displayJobCategory(job.category)}</p>
+              <p><span className="font-semibold text-slate-900">Job Type:</span> {displayJobType(job.jobType)}</p>
+              <p><span className="font-semibold text-slate-900">Work Mode:</span> {displayWorkMode(job.workMode)}</p>
+              <p><span className="font-semibold text-slate-900">Experience:</span> {displayExperience(job.experience)}</p>
+              <p><span className="font-semibold text-slate-900">Fresher:</span> {displayFresher(job.isFresher)}</p>
+              <p><span className="font-semibold text-slate-900">Salary:</span> {displaySalary(job.salary)}</p>
               <p>
                 <span className="font-semibold text-slate-900">Posted At:</span>{' '}
-                {job.postedAt ? (
-                  <span
-                    className={
-                      shouldHighlightPostedTime(job.postedAt)
-                        ? 'font-semibold text-red-600'
-                        : undefined
-                    }
-                  >
-                    {formatRelativePostedAt(job.postedAt) || new Date(job.postedAt).toLocaleDateString()}
-                  </span>
-                ) : (
-                  'N/A'
-                )}
+                <span
+                  className={
+                    job.postedAt && shouldHighlightPostedTime(job.postedAt)
+                      ? 'font-semibold text-red-600'
+                      : undefined
+                  }
+                >
+                  {displayPostedAt(
+                    job.postedAt,
+                    job.postedAt ? formatRelativePostedAt(job.postedAt) : null
+                  )}
+                </span>
               </p>
             </div>
 

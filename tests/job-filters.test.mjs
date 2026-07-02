@@ -211,16 +211,41 @@ section('applyJobFilters — fresher / walk-in categories');
     .sort();
   eq(
     fresherIds,
-    ['fr', 'fr2', 'fr3'].sort(),
-    'fresher matches is_fresher flag OR experience containing 0',
+    ['fr', 'fr2', 'fr3', 'titleOnly'].sort(),
+    'fresher matches flag, experience 0, or fresher in title',
   );
   ok(!fresherIds.includes('sr'), 'fresher does NOT match a senior with no 0 in experience');
   ok(!fresherIds.includes('ten'), 'fresher does NOT match 10 years via naive zero digit');
-  ok(!fresherIds.includes('titleOnly'), 'fresher does NOT match title alone without flag or exp 0');
   eq(
     applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'walk-in' }).map((j) => j.id),
     ['wi'],
     'walk-in matches via title',
+  );
+}
+
+// ------------------------------------------------------------
+section('applyJobFilters — engineering branch categories');
+{
+  const jobs = [
+    fakeJob({ id: 'civil', title: 'Civil Site Engineer', category: 'Construction', skills: '' }),
+    fakeJob({ id: 'mech', title: 'Mechanical Maintenance Engineer', category: 'Manufacturing', skills: '' }),
+    fakeJob({ id: 'it', title: 'React Developer', category: 'IT', skills: 'react' }),
+    fakeJob({ id: 'sales', title: 'Sales Executive', category: 'Sales', skills: 'communication' }),
+  ];
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'civil' }).map((j) => j.id),
+    ['civil'],
+    'civil filter',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'mechanical' }).map((j) => j.id),
+    ['mech'],
+    'mechanical filter',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'engineering' }).map((j) => j.id).sort(),
+    ['civil', 'mech'].sort(),
+    'engineering includes civil and mechanical',
   );
 }
 

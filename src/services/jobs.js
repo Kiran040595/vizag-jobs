@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
+import { PUBLIC_JOB_DISPLAY, sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 
 const CACHE_DURATION = 60_000;
 const DEFAULT_TABLE_NAME = 'jobs';
@@ -114,7 +115,7 @@ const processJobData = (job, index) => {
   const isFresher = normalizeFresherValue(job.is_fresher);
   const fresherTag = isFresher === 'Yes' ? 'Fresher' : 'Experienced';
 
-  return {
+  return sanitizeJobSeoRecord({
     id: job.id || `supabase-job-${index + 1}`,
     slug: normalizeText(job.slug),
     title: normalizeText(job.title),
@@ -123,7 +124,7 @@ const processJobData = (job, index) => {
     category,
     jobType,
     workMode: normalizeText(job.work_mode),
-    experience: normalizeText(job.experience, 'Not specified'),
+    experience: normalizeText(job.experience, PUBLIC_JOB_DISPLAY.experience),
     isFresher,
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
@@ -146,7 +147,7 @@ const processJobData = (job, index) => {
         : null,
     expiresAt: normalizeText(job.expires_at),
     tags: [category, jobType, fresherTag].filter(Boolean),
-  };
+  });
 };
 
 const escapeIlike = (value) => value.replaceAll('%', '\\%').replaceAll(',', '\\,');

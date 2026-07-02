@@ -1,5 +1,11 @@
 import { clearJobsCache } from './jobs';
 import { supabase } from '../lib/supabaseClient';
+import { classifyJobRecord } from '../lib/jobCategoryTaxonomy.js';
+import {
+  PUBLIC_JOB_DISPLAY,
+  companyNameForSlug,
+  sanitizeJobSeoRecord,
+} from '../lib/jobDisplayLabels.js';
 import {
   applySystemPostedAtToPayload,
   getSystemPostedAtIso,
@@ -24,7 +30,7 @@ const OPTIONAL_TEXT_FIELDS = [
 
 const REQUIRED_DEFAULTS = {
   location: 'Visakhapatnam',
-  experience: 'Not specified',
+  experience: PUBLIC_JOB_DISPLAY.experience,
 };
 
 const SUPPORTED_SQL_TABLE_PATTERN = /^insert\s+into\s+(?:public\.)?jobs\s*\(([\s\S]*?)\)\s*values\s*\(([\s\S]*?)\)\s*;?\s*$/i;
@@ -320,14 +326,16 @@ const isInvalidApplyLink = (value) => {
 /** Normalize fetched / SEO jobs before insert (stable slug, required fields, valid apply link). */
 export const sanitizeExternalJobForInsert = (values) => {
   const title = normalizeText(values?.title) || 'Job opening';
-  const company = normalizeText(values?.company) || 'Unknown';
+  const rawCompany = normalizeText(values?.company);
+  const company = rawCompany || PUBLIC_JOB_DISPLAY.company;
+  const slugCompany = companyNameForSlug(rawCompany) || 'role';
   const postedAt = values?.posted_at;
   let slug = normalizeText(values?.slug);
   if (!slug) {
-    slug = createSuggestedSlug({ title, company, postedAt });
+    slug = createSuggestedSlug({ title, company: slugCompany, postedAt });
   }
   if (!slug) {
-    slug = slugify(`${title}-${company}`);
+    slug = slugify(`${title}-${slugCompany}`);
   }
 
   let applyLink = normalizeText(values?.apply_link);
@@ -359,7 +367,7 @@ export const sanitizeExternalJobForInsert = (values) => {
     ...rest
   } = values ?? {};
 
-  return {
+  const sanitized = {
     ...rest,
     title,
     company,
@@ -374,7 +382,20 @@ export const sanitizeExternalJobForInsert = (values) => {
       'Verify job details on the employer site before sharing personal documents or payments. Never pay a fee to apply.',
     json_ld: incomingJsonLd,
     seo_meta: incomingSeoMeta,
+    responsibilities: normalizeLineItems(values?.responsibilities),
+    eligibility: normalizeLineItems(values?.eligibility),
+    skills: normalizeLineItems(values?.skills),
+    is_fresher: toBoolean(values?.is_fresher),
   };
+
+  const classified = classifyJobRecord(sanitized);
+  return sanitizeJobSeoRecord({
+    ...sanitized,
+    company: classified.company,
+    category: classified.category,
+    is_fresher: classified.is_fresher,
+    experience: classified.experience,
+  });
 };
 
 const mapError = (error, fallbackMessage) => {

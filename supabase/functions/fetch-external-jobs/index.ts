@@ -38,6 +38,16 @@ import {
   VIZAG_IT_SEARCH_QUERIES,
 } from './fetch-channels.ts';
 import {
+  classifyJobRecord,
+  normalizeJobCategory,
+} from '../_shared/jobCategoryTaxonomy.ts';
+import { isUsableCompanyName } from '../_shared/jobRecordInference.ts';
+import {
+  companyNameForSlug,
+  sanitizeJobSeoRecord,
+  sanitizeJsonLdJobPosting,
+} from '../_shared/jobDisplayLabels.ts';
+import {
   buildGeminiSeoEditorPrompt,
   buildGeminiSeoLinkedInPostPrompt,
   buildGeminiSeoSingleJobPrompt,
@@ -436,8 +446,11 @@ function parseSeoGeminiPayload(text: string, fallback: SiteJobRecord): SeoGemini
         eligibility: extractJsonStringArray(text, 'eligibility'),
         skills: extractJsonStringArray(text, 'skills'),
         category: extractJsonStringField(text, 'category') ?? undefined,
+        company: extractJsonStringField(text, 'company') ?? undefined,
         job_type: extractJsonStringField(text, 'job_type') ?? undefined,
         work_mode: extractJsonStringField(text, 'work_mode') ?? undefined,
+        experience: extractJsonStringField(text, 'experience') ?? undefined,
+        is_fresher: extractJsonBooleanField(text, 'is_fresher'),
       },
       fallback,
     );
@@ -638,7 +651,7 @@ function createSeoJobSlug(title: string, company: string): string {
       .replace(/\s*-\s*vizag\s*jobs.*$/i, '')
       .trim() || 'job',
   );
-  const companyPart = company && company !== 'Unknown' ? slugify(company) : '';
+  const companyPart = companyNameForSlug(company) ? slugify(companyNameForSlug(company)) : '';
   return [rolePart, 'jobs', 'vizag', companyPart].filter(Boolean).join('-').replace(/-+/g, '-').slice(0, 140);
 }
 
@@ -1993,13 +2006,14 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
   const experience =
     raw.experience?.trim() || parsedPost?.experience?.trim() || 'Not specified';
 
-  return {
+  const draft: SiteJobRecord = {
     slug: createJobSlug(title, company, postedAt ?? referenceIso),
     title,
     company,
     location: raw.location?.trim() || parsedPost?.location?.trim() || 'Visakhapatnam',
     category:
-      raw.category?.trim() || (isLinkedInPost ? 'General' : inferCategory(md)),
+      normalizeJobCategory(raw.category?.trim()) ||
+      (isLinkedInPost ? 'General' : normalizeJobCategory(inferCategory(md)) || inferCategory(md)),
     job_type: inferJobType(md),
     work_mode: isLinkedInPost ? null : inferWorkMode(md),
     experience,
@@ -2029,6 +2043,15 @@ function toSiteJobRecord(raw: ExtractedJob, referenceIso: string): SiteJobRecord
     is_likely_hiring_post: raw.is_likely_hiring_post ?? isLinkedInPost,
     linkedin_post_preset: raw.linkedin_post_preset ?? null,
     linkedin_post_preset_label: raw.linkedin_post_preset_label ?? null,
+  };
+
+  const classified = classifyJobRecord(draft);
+  return {
+    ...draft,
+    company: classified.company,
+    category: classified.category,
+    is_fresher: classified.is_fresher,
+    experience: classified.experience,
   };
 }
 
@@ -2338,6 +2361,19 @@ function extractNaukriFieldsFromMarkdown(markdown: string): Partial<ExtractedJob
   const expLine = markdown.match(/\n(\d+\s*-\s*\d+\s+years?)\n/i);
   if (expLine?.[1]) {
     out.experience = expLine[1].replace(/\s+/g, ' ').trim();
+  } else {
+    const expAlt =
+      markdown.match(/Experience:?\s*([^\n]+)/i)?.[1]?.trim() ||
+      markdown.match(/\b(\d+\s*-\s*\d+\s+years?)\b/i)?.[1]?.trim() ||
+      markdown.match(/\b(\d+)\s*\+\s*years?\b/i)?.[1]?.trim();
+    if (expAlt) {
+      out.experience = expAlt.replace(/\s+/g, ' ').trim();
+    }
+  }
+
+  const postedBy = markdown.match(/\[Posted by ([^\]]+)\]/i)?.[1]?.trim();
+  if (postedBy && isUsableCompanyName(postedBy)) {
+    out.company = postedBy;
   }
 
   return out;
@@ -3123,7 +3159,9 @@ function buildSeoGeminiMetaExtras(
   seoProfile: string,
   hadCustomInstructions: boolean,
   seoExtras: ReturnType<typeof extractSeoExtrasFromPayload>,
+  record?: SiteJobRecord,
 ) {
+  const json_ld = sanitizeJsonLdJobPosting(seoExtras.json_ld, record ?? {});
   return {
     gemini_model: model,
     gemini_key_index: keyUsage.index,
@@ -3135,10 +3173,26 @@ function buildSeoGeminiMetaExtras(
     seo_profile: seoProfile,
     had_custom_instructions: hadCustomInstructions,
     prompt_version: 'vizag_tasks_1_8',
-    json_ld: seoExtras.json_ld,
+    json_ld,
     hashtags: seoExtras.hashtags,
     keyword_density: seoExtras.keyword_density,
   };
+}
+
+function finalizeSeoRecord(
+  record: SiteJobRecord,
+  extras: ReturnType<typeof extractSeoExtrasFromPayload>,
+): SiteJobRecord {
+  const json_ld = sanitizeJsonLdJobPosting(extras.json_ld, record);
+  return sanitizeJobSeoRecord({
+    ...record,
+    json_ld,
+    seo_meta: {
+      json_ld,
+      hashtags: extras.hashtags,
+      keyword_density: extras.keyword_density,
+    },
+  });
 }
 
 function clampText(value: string, maxLen: number): string {
@@ -3189,6 +3243,12 @@ function lookupSourceContext(record: SiteJobRecord, contextMap: Map<string, stri
   return (record.description ?? '').slice(0, MAX_SEO_SOURCE_CONTEXT_CHARS);
 }
 
+function extractJsonBooleanField(source: string, key: string): boolean | undefined {
+  const match = source.match(new RegExp(`"${key}"\\s*:\\s*(true|false)`, 'i'));
+  if (!match) return undefined;
+  return match[1].toLowerCase() === 'true';
+}
+
 function applySeoPayload(record: SiteJobRecord, payload: SeoGeminiPayload): SiteJobRecord {
   const rawTitle = typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : record.title;
   const title = clampText(rawTitle, MAX_SEO_TITLE_CHARS);
@@ -3203,8 +3263,9 @@ function applySeoPayload(record: SiteJobRecord, payload: SeoGeminiPayload): Site
   const responsibilities = normalizeSeoStringList(payload.responsibilities);
   const eligibility = normalizeSeoStringList(payload.eligibility);
   const skills = normalizeSeoStringList(payload.skills);
-  const category =
+  const categoryRaw =
     typeof payload.category === 'string' && payload.category.trim() ? payload.category.trim() : record.category;
+  const category = normalizeJobCategory(categoryRaw) ?? categoryRaw;
   const jobType =
     typeof payload.job_type === 'string' && payload.job_type.trim() ? payload.job_type.trim() : record.job_type;
   const workMode =
@@ -3213,11 +3274,19 @@ function applySeoPayload(record: SiteJobRecord, payload: SeoGeminiPayload): Site
       : typeof payload.work_mode === 'string' && payload.work_mode.trim()
         ? payload.work_mode.trim()
         : record.work_mode;
+  const experienceFromGemini =
+    typeof payload.experience === 'string' && payload.experience.trim()
+      ? payload.experience.trim()
+      : record.experience;
+  const companyFromGemini =
+    typeof payload.company === 'string' && payload.company.trim() ? payload.company.trim() : '';
+  const company = isUsableCompanyName(companyFromGemini)
+    ? companyFromGemini
+    : isUsableCompanyName(record.company)
+      ? record.company
+      : record.company;
 
-  const company =
-    record.company === 'Unknown' ? record.company : record.company;
-
-  return {
+  const merged: SiteJobRecord = {
     ...record,
     title,
     company,
@@ -3230,7 +3299,19 @@ function applySeoPayload(record: SiteJobRecord, payload: SeoGeminiPayload): Site
     category,
     job_type: jobType,
     work_mode: workMode,
+    experience: experienceFromGemini,
+    is_fresher:
+      typeof payload.is_fresher === 'boolean' ? payload.is_fresher : record.is_fresher,
   };
+
+  const classified = classifyJobRecord(merged);
+  return sanitizeJobSeoRecord({
+    ...merged,
+    company: classified.company,
+    category: classified.category,
+    is_fresher: classified.is_fresher,
+    experience: classified.experience,
+  });
 }
 
 function resolveSiteJobSlugCollisions(jobs: SiteJobRecord[]): SiteJobRecord[] {
@@ -3398,18 +3479,20 @@ async function geminiSeoOptimizeLinkedInPost(
       }
 
       const parsed = parseSeoGeminiPayload(text, workingRecord);
+      const seoExtras = extractSeoExtrasFromPayload(parsed);
+      const optimizedRecord = applySeoPayload(
+        {
+          ...workingRecord,
+          linkedin_post_text: record.linkedin_post_text ?? workingRecord.linkedin_post_text,
+        },
+        parsed,
+      );
       return {
-        record: applySeoPayload(
-          {
-            ...workingRecord,
-            linkedin_post_text: record.linkedin_post_text ?? workingRecord.linkedin_post_text,
-          },
-          parsed,
-        ),
+        record: finalizeSeoRecord(optimizedRecord, seoExtras),
         usedKeyIndex,
         model,
         keyUsage,
-        seoExtras: extractSeoExtrasFromPayload(parsed),
+        seoExtras,
       };
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
@@ -3484,12 +3567,14 @@ async function geminiSeoOptimizeSiteJob(
   }
 
   const parsed = parseSeoGeminiPayload(text, record);
+  const seoExtras = extractSeoExtrasFromPayload(parsed);
+  const optimizedRecord = applySeoPayload(record, parsed);
   return {
-    record: applySeoPayload(record, parsed),
+    record: finalizeSeoRecord(optimizedRecord, seoExtras),
     usedKeyIndex,
     model,
     keyUsage,
-    seoExtras: extractSeoExtrasFromPayload(parsed),
+    seoExtras,
   };
 }
 
@@ -3599,15 +3684,16 @@ async function geminiSeoOptimizeBatch(
     }
     const extras = extractSeoExtrasFromPayload(seo);
     const updated = applySeoPayload(record, seo);
-    return {
+    const json_ld = sanitizeJsonLdJobPosting(extras.json_ld, updated);
+    return sanitizeJobSeoRecord({
       ...updated,
-      json_ld: extras.json_ld,
+      json_ld,
       seo_meta: {
-        json_ld: extras.json_ld,
+        json_ld,
         hashtags: extras.hashtags,
         keyword_density: extras.keyword_density,
       },
-    };
+    });
   });
 }
 
@@ -5784,6 +5870,7 @@ Deno.serve(async (req) => {
         seoProfile,
         customInstructions.length > 0,
         seoResult.seoExtras,
+        seoResult.record,
       );
 
       console.log(
@@ -5824,7 +5911,7 @@ Deno.serve(async (req) => {
           category: seoResult.record.category,
           job_type: seoResult.record.job_type,
           work_mode: seoResult.record.work_mode,
-          json_ld: seoResult.seoExtras.json_ld,
+          json_ld: seoMeta.json_ld,
           hashtags: seoResult.seoExtras.hashtags,
           keyword_density: seoResult.seoExtras.keyword_density,
         },

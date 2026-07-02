@@ -11,18 +11,19 @@
  *   back/forward and shared links all work without re-fetching.
  */
 
+import { BRANCH_CATEGORY_MATCHERS, isEngineeringRelatedJob } from './jobBranchMatch.js';
 import { isItRelatedJob } from './jobItMatch.js';
 import { isPublicFresherListingJob } from './fresherMatch.js';
+import {
+  FILTER_CATEGORY_OPTIONS,
+  inferIsFresherFromJob,
+  jobMatchesCategoryFilter,
+  normalizeJobCategory,
+} from './jobCategoryTaxonomy.js';
 
 export const PAGE_SIZE = 12;
 
-export const CATEGORY_OPTIONS = [
-  { id: 'all', label: 'All Categories' },
-  { id: 'it', label: 'IT & Software' },
-  { id: 'non-it', label: 'Non-IT Jobs' },
-  { id: 'fresher', label: 'Fresher Jobs' },
-  { id: 'walk-in', label: 'Walk-in Interviews' },
-];
+export const CATEGORY_OPTIONS = FILTER_CATEGORY_OPTIONS;
 
 export const JOB_TYPE_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -84,22 +85,23 @@ export const isAnyFilterActive = (filters) =>
 
 const matchesSearchText = (job, q) => {
   if (!q) return true;
-  // Listing payload is slim: full `description` is only loaded on the detail
-  // page, so search here covers the metadata fields we *do* keep on the card.
-  // `shortDescription` is the canonical searchable summary.
   const blob = [
     job.title,
     job.company,
     job.skills,
     job.shortDescription,
     job.category,
+    normalizeJobCategory(job.category),
     job.location,
     job.experience,
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
-  return blob.includes(q);
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => blob.includes(token));
 };
 
 const normalizeJobType = (value) =>
@@ -123,16 +125,21 @@ const matchesJobType = (job, wanted) => {
 
 const matchesCategory = (job, category) => {
   if (category === 'all') return true;
-  if (category === 'it') return isItRelatedJob(job);
-  if (category === 'non-it') return !isItRelatedJob(job);
+  if (category === 'it') return jobMatchesCategoryFilter(job, 'it') || isItRelatedJob(job);
+  if (category === 'non-it') {
+    return !jobMatchesCategoryFilter(job, 'it') && !isItRelatedJob(job);
+  }
   if (category === 'fresher') {
-    return isPublicFresherListingJob(job);
+    return isPublicFresherListingJob(job) || inferIsFresherFromJob(job);
   }
   if (category === 'walk-in') {
     const t = `${job.title ?? ''} ${job.description ?? ''} ${job.shortDescription ?? ''}`.toLowerCase();
     return t.includes('walk-in') || t.includes('walk in') || t.includes('walkin');
   }
-  return true;
+  if (category === 'engineering') return isEngineeringRelatedJob(job);
+  const branchMatcher = BRANCH_CATEGORY_MATCHERS[category];
+  if (branchMatcher) return branchMatcher(job) || jobMatchesCategoryFilter(job, category);
+  return jobMatchesCategoryFilter(job, category);
 };
 
 const matchesFreshness = (job, freshnessId) => {

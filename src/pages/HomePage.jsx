@@ -7,6 +7,7 @@ import JobFilters from '../components/JobFilters';
 import Pagination from '../components/Pagination';
 import StatsSection from '../components/StatsSection';
 import CTASection from '../components/CTASection';
+import JobCategoryBrowse from '../components/JobCategoryBrowse';
 import BlogTeaserSection from '../components/BlogTeaserSection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -253,13 +254,16 @@ export default function HomePage() {
         ) : null}
 
         {!isLoading ? (
-          <JobFilters
+          <>
+            <JobCategoryBrowse />
+            <JobFilters
             filters={filters}
             onUpdate={updateFilters}
             onClearAll={clearAllFilters}
             resultCount={filteredJobs.length}
             isRefreshing={isBackgroundRefreshing}
           />
+          </>
         ) : null}
 
         <JobList

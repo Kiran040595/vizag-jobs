@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 
+import { JOB_BROWSE_LINKS } from '../lib/jobCategoryPages';
+
 const footerGroups = [
   {
     title: 'Explore',
     links: [
       { label: 'All Jobs', to: '/jobs' },
-      { label: 'IT Jobs', to: '/jobs/it' },
-      { label: 'Fresher Jobs', to: '/jobs/fresher' },
-      { label: 'Part-Time Jobs', to: '/jobs/part-time' },
       { label: 'Blog', to: '/blog' },
+      ...JOB_BROWSE_LINKS,
     ],
   },
   {
@@ -30,7 +30,7 @@ export default function Footer() {
         <div>
           <h3 className="text-xl font-black text-white">JobsInVizag.in</h3>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">
-            A focused local job board for Visakhapatnam, covering IT, fresher, part-time, and general private roles.
+            A focused local job board for Visakhapatnam — IT, civil, mechanical, engineering, fresher, and part-time roles.
           </p>
         </div>
 

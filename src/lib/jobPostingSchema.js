@@ -1,4 +1,11 @@
 import { getJobDetailPath } from './jobRoutes.js';
+import {
+  displayCompanyName,
+  displayExperience,
+  displayJobType,
+  displayLocation,
+  sanitizeJsonLdJobPosting,
+} from './jobDisplayLabels.js';
 
 const SCHEMA_CONTEXT = 'https://schema.org/';
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
@@ -321,7 +328,7 @@ const buildJobLocation = (job) => {
 };
 
 const buildHiringOrganization = (job, siteUrl) => {
-  const company = normalizeText(pick(job, 'company'), 'Employer');
+  const company = displayCompanyName(pick(job, 'company'));
   const logo = pick(job, 'companyLogoUrl', 'company_logo_url', 'companyLogo');
   const sourceUrl = pick(job, 'sourceUrl', 'source_url');
 
@@ -351,11 +358,11 @@ const buildDescriptionHtml = (job) => {
   const responsibilities = pick(job, 'responsibilities');
   const eligibility = pick(job, 'eligibility');
   const skills = pick(job, 'skills');
-  const company = normalizeText(pick(job, 'company'), 'Employer');
+  const company = displayCompanyName(pick(job, 'company'));
   const title = normalizeText(pick(job, 'title'), 'Job opening');
-  const location = normalizeText(pick(job, 'location'), 'Visakhapatnam');
-  const experience = pick(job, 'experience');
-  const jobType = pick(job, 'jobType', 'job_type');
+  const location = displayLocation(pick(job, 'location'));
+  const experience = displayExperience(pick(job, 'experience'));
+  const jobType = displayJobType(pick(job, 'jobType', 'job_type'));
 
   const escape = (s) =>
     String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&(?!(amp|lt|gt|quot);)/g, '&amp;');
@@ -422,7 +429,7 @@ const buildDescriptionHtml = (job) => {
 };
 
 const buildIdentifier = (job) => {
-  const company = normalizeText(pick(job, 'company'), 'Employer');
+  const company = displayCompanyName(pick(job, 'company'));
   const slug = normalizeText(pick(job, 'slug'));
   const id = pick(job, 'id');
 
@@ -470,7 +477,7 @@ const mergeStoredJsonLd = (stored, job, { siteUrl, canonicalUrl }) => {
     };
   }
 
-  return finalizeJobPostingSchema(merged, job);
+  return sanitizeJsonLdJobPosting(finalizeJobPostingSchema(merged, job), job);
 };
 
 const buildFromColumns = (job, { siteUrl, canonicalUrl }) => {
@@ -504,7 +511,7 @@ const buildFromColumns = (job, { siteUrl, canonicalUrl }) => {
     };
   }
 
-  return finalizeJobPostingSchema(schema, job);
+  return sanitizeJsonLdJobPosting(finalizeJobPostingSchema(schema, job), job);
 };
 
 /**

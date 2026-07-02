@@ -11,8 +11,16 @@ export type SeoGeminiPayload = {
   eligibility?: string[];
   skills?: string[];
   category?: string;
+  /** Task 9 — hiring employer name from listing facts. */
+  company?: string;
   job_type?: string;
   work_mode?: string | null;
+  /** Task 9 — hiring employer name from listing facts. */
+  company?: string;
+  /** Task 9 — true when role targets fresh graduates / 0-year experience. */
+  is_fresher?: boolean;
+  /** Task 9 — normalized experience label from listing facts. */
+  experience?: string;
   /** Task 6 — schema.org JobPosting object (facts from input only). */
   json_ld?: Record<string, unknown> | null;
   /** Task 7 — trending hashtags (with #). */
@@ -26,6 +34,8 @@ export type SeoGeminiExtras = {
   hashtags: string[];
   keyword_density: { keyword: string; count: number }[];
 };
+
+import { GEMINI_CATEGORY_LIST_TEXT } from '../_shared/jobCategoryTaxonomy.ts';
 
 const SEO_ROLE =
   'You are an expert SEO content writer specializing in job listings for Indian job portals and Google for Jobs.';
@@ -85,11 +95,23 @@ Return exactly 15 trending hashtags in hashtags[] (with #). Mix branch-specific 
 
 TASK 8 — Keyword density
 Return keyword_density as an array of { "keyword": string, "count": number } for the top 10 keywords in the description.
-Ensure "Vizag" and "Visakhapatnam" each appear at least 4–5 times in the description body.`;
+Ensure "Vizag" and "Visakhapatnam" each appear at least 4–5 times in the description body.
+
+TASK 9 — Job classification (facts from input only — title, experience, eligibility[], skills[], scraped_source, description)
+1. company — hiring employer name exactly as stated (Posted by, Company line, employer in post). Never use Naukri or LinkedIn as the company. If no employer is mentioned, use exactly: "Employer name shared during interview" (never "Unknown", "N/A", or blank).
+2. category — MUST be exactly one of these values (copy verbatim): ${GEMINI_CATEGORY_LIST_TEXT} | General
+   Use education/branch in eligibility (B.Tech Civil, B.E Mechanical, MBA, B.Com, etc.), job title, skills, and department to pick the best match.
+   Examples: Civil site engineer → Civil Engineering; Java developer → IT & Software; telecaller → BPO / Customer Support; bank teller → Banking & Finance.
+3. is_fresher — boolean. true when experience is 0 years, role says fresher/trainee/intern/GET, or eligibility targets fresh graduates / 2024–2025 passout / 0–1 years only.
+   false when minimum 2+ years experience is clearly required.
+4. experience — short normalized label from facts only, e.g. "Fresher", "0-1 years", "2-4 years", "5-8 years". If missing, use exactly: "Experience criteria discussed during interview" (never "Not specified" or "N/A").
+5. job_type — if missing, use "Employment type confirmed during interview".
+6. work_mode — if missing, use "Work arrangement discussed during interview".
+Never output Unknown, N/A, Not specified, Not disclosed, or empty strings for company, experience, job_type, or work_mode.`;
 
 export const GEMINI_SEO_JSON_OUTPUT_RULES = `OUTPUT: Return valid JSON only (no markdown fences). Escape newlines inside strings as \\n.
-Required fields: title, slug, short_description, description, responsibilities[], eligibility[], skills[], category, job_type, work_mode, json_ld, hashtags[], keyword_density[].
-Map Task 2 → short_description. Map Task 4 → description. Map Task 1 → title. Map Task 3 → slug.`;
+Required fields: title, slug, short_description, description, responsibilities[], eligibility[], skills[], company, category, job_type, work_mode, is_fresher, experience, json_ld, hashtags[], keyword_density[].
+Map Task 2 → short_description. Map Task 4 → description. Map Task 1 → title. Map Task 3 → slug. Map Task 9 → company, category, is_fresher, experience.`;
 
 export const GEMINI_SEO_RESPONSE_SCHEMA = {
   type: 'OBJECT',
@@ -101,9 +123,12 @@ export const GEMINI_SEO_RESPONSE_SCHEMA = {
     responsibilities: { type: 'ARRAY', items: { type: 'STRING' } },
     eligibility: { type: 'ARRAY', items: { type: 'STRING' } },
     skills: { type: 'ARRAY', items: { type: 'STRING' } },
+    company: { type: 'STRING' },
     category: { type: 'STRING' },
     job_type: { type: 'STRING' },
     work_mode: { type: 'STRING' },
+    is_fresher: { type: 'BOOLEAN' },
+    experience: { type: 'STRING' },
     json_ld: { type: 'OBJECT' },
     hashtags: { type: 'ARRAY', items: { type: 'STRING' } },
     keyword_density: {
@@ -165,6 +190,8 @@ TASK 4 — Markdown description under 1200 chars: H1, ## About the Role, ## Key 
 TASK 6 — json_ld JobPosting object (input facts only).
 TASK 7 — hashtags[] with 10 items (include #).
 TASK 8 — keyword_density top 5 { keyword, count }.
+TASK 9 — company, category (exact taxonomy value), is_fresher boolean, experience label — facts from input only.
+If company is missing use "Employer name shared during interview". If experience is missing use "Experience criteria discussed during interview". Never use Unknown, N/A, or Not specified.
 
 Use relevant Vizag job keywords naturally; do not invent salary or contact details.`;
 

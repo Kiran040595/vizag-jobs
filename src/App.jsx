@@ -5,6 +5,8 @@ import JobsInVizagPage from './pages/JobsInVizagPage';
 import ItJobsInVizagPage from './pages/ItJobsInVizagPage';
 import FresherJobsInVizagPage from './pages/FresherJobsInVizagPage';
 import PartTimeJobsVizagPage from './pages/PartTimeJobsVizagPage';
+import BranchJobsInVizagPage from './pages/BranchJobsInVizagPage';
+import { JOB_CATEGORY_PAGES } from './lib/jobCategoryPages';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminNewJobPage from './pages/AdminNewJobPage';
 import AdminJobsPage from './pages/AdminJobsPage';
@@ -124,6 +126,20 @@ function App() {
       <Route path="/fresher-jobs-in-vizag" element={<FresherJobsInVizagPage />} />
       <Route path="/jobs/part-time" element={<PartTimeJobsVizagPage />} />
       <Route path="/part-time-jobs-vizag" element={<PartTimeJobsVizagPage />} />
+      {JOB_CATEGORY_PAGES.map((page) => (
+        <Route
+          key={page.id}
+          path={page.path}
+          element={<BranchJobsInVizagPage categoryId={page.id} />}
+        />
+      ))}
+      {JOB_CATEGORY_PAGES.map((page) => (
+        <Route
+          key={`${page.id}-legacy`}
+          path={page.legacyPath}
+          element={<BranchJobsInVizagPage categoryId={page.id} />}
+        />
+      ))}
     </Routes>
   );
 }

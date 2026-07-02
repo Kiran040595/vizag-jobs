@@ -1,6 +1,12 @@
 import JobCard from './JobCard';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
+import {
+  displayCompanyName,
+  displayExperience,
+  displayLocation,
+  displaySalary,
+} from '../lib/jobDisplayLabels';
 
 /**
  * Pure presentational list. The parent owns filtering/pagination and passes
@@ -54,10 +60,10 @@ const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
             jobPath={getJobDetailPath(job)}
             companyLogo={job.companyLogo}
             jobTitle={job.title}
-            companyName={job.company}
-            location={job.location}
-            experience={job.experience}
-            salary={job.salary}
+            companyName={displayCompanyName(job.company)}
+            location={displayLocation(job.location)}
+            experience={displayExperience(job.experience)}
+            salary={displaySalary(job.salary)}
             description={
               job.shortDescription || stripMarkdownForPlainText(job.description, 160)
             }

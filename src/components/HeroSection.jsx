@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import vsp2Image from '../assets/VSP2.jpg';
-import vsp1Image from '../assets/VSP1.jpg';
+import { CATEGORY_OPTIONS } from '../lib/jobFilters';
+import vsp2Image from '../assets/VSP2.jpg';import vsp1Image from '../assets/VSP1.jpg';
 
 export default function HeroSection({
   searchTerm,
@@ -81,9 +81,8 @@ export default function HeroSection({
           Find the Right Job in Visakhapatnam
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-blue-100 sm:mt-4 sm:text-base">
-          Your one-stop platform for IT, Non-IT, Fresher and Experienced jobs
+          Your one-stop platform for IT, engineering, fresher and experienced jobs in Vizag
         </p>
-
         <form
           onSubmit={handleSubmit}
           className="mt-7 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/90 p-3 shadow-2xl backdrop-blur md:mt-8 md:p-4"
@@ -108,13 +107,12 @@ export default function HeroSection({
               className="h-11 rounded-xl border border-slate-200 px-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4"
               aria-label="Select category"
             >
-              <option>All Categories</option>
-              <option>IT & Software</option>
-              <option>Non-IT Jobs</option>
-              <option>Fresher Jobs</option>
-              <option>Walk-in Interviews</option>
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.label}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
-
             <input
               id="location"
               type="text"

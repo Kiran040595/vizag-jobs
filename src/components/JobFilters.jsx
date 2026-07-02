@@ -119,6 +119,23 @@ export default function JobFilters({
       <div className="mt-4 grid gap-4 sm:gap-5">
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            Category / field
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_OPTIONS.map((opt) => (
+              <FilterPill
+                key={opt.id}
+                id={opt.id}
+                label={opt.label}
+                current={filters.category}
+                onSelect={(next) => onUpdate({ category: next })}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             Job type
           </p>
           <div className="flex flex-wrap gap-2">

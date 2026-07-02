@@ -7,8 +7,10 @@ const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'All Jobs', to: '/jobs' },
   { label: 'IT Jobs', to: '/jobs/it' },
+  { label: 'Civil Jobs', to: '/jobs/civil' },
+  { label: 'Mechanical Jobs', to: '/jobs/mechanical' },
+  { label: 'Engineering', to: '/jobs/engineering' },
   { label: 'Fresher Jobs', to: '/jobs/fresher' },
-  { label: 'Part-Time Jobs', to: '/jobs/part-time' },
   { label: 'Blog', to: '/blog' },
 ];
 

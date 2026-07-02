@@ -73,12 +73,8 @@ const JobCard = ({
         <span>{location}</span>
         <span className="text-slate-300">|</span>
         <span>{experience}</span>
-        {salary ? (
-          <>
-            <span className="text-slate-300">|</span>
-            <span>{salary}</span>
-          </>
-        ) : null}
+        <span className="text-slate-300">|</span>
+        <span>{salary}</span>
       </div>
 
       {relativePostedAt ? (

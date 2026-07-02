@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import { getJobDetailPath } from '../src/lib/jobRoutes.js';
 import { getMinPostedAtIsoForPublicDisplay } from '../src/lib/jobDisplayWindow.js';
+import { JOB_CATEGORY_PAGES } from '../src/lib/jobCategoryPages.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +20,8 @@ const staticRoutes = [
   { path: '/jobs/it', priority: '0.9' },
   { path: '/jobs/fresher', priority: '0.9' },
   { path: '/jobs/part-time', priority: '0.8' },
+  ...JOB_CATEGORY_PAGES.map((page) => ({ path: page.path, priority: '0.85' })),
+  ...JOB_CATEGORY_PAGES.map((page) => ({ path: page.legacyPath, priority: '0.8' })),
   { path: '/blog', priority: '0.8' },
   { path: '/about', priority: '0.6' },
   { path: '/contact', priority: '0.6' },

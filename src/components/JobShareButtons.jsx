@@ -1,12 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { toAbsoluteUrl } from '../lib/site';
+import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
 
 const buildSharePayload = (job = {}) => {
   const path = getJobDetailPath(job);
   const url = toAbsoluteUrl(path);
-  const title = `${job.title} at ${job.company}`;
-  const text = `Check out this job opening: ${title} in ${job.location || 'Visakhapatnam'}. Apply here:`;
+  const company = displayCompanyName(job.company);
+  const location = displayLocation(job.location);
+  const title = `${job.title} at ${company}`;
+  const text = `Check out this job opening: ${title} in ${location}. Apply here:`;
   const fullMessage = `${text} ${url}`;
 
   return { url, title, text, fullMessage };
