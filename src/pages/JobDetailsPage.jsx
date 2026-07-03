@@ -22,6 +22,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
 import JobShareButtons from '../components/JobShareButtons';
+import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
 import {
   displayCompanyName,
@@ -275,6 +276,8 @@ export default function JobDetailsPage() {
                 </span>
               </p>
             </div>
+
+            <JobSourceAttribution job={job} />
 
             {job.shortDescription && !structuredDescription ? (
               <div className="mt-6">
