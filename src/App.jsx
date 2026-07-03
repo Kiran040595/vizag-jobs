@@ -34,6 +34,7 @@ import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
+import CookieConsentBanner from './components/CookieConsentBanner';
 
 function App() {
   return (
@@ -156,6 +157,7 @@ function App() {
         />
       ))}
     </Routes>
+    <CookieConsentBanner />
     <FeedbackFloatingButton />
     </>
   );

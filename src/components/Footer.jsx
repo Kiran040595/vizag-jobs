@@ -1,31 +1,39 @@
 import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
 
+import { useOptionalCookieConsent } from '../context/CookieConsentContext.jsx';
 import { JOB_BROWSE_LINKS } from '../lib/jobCategoryPages';
 
-const footerGroups = [
-  {
-    title: 'Explore',
-    links: [
-      { label: 'All Jobs', to: '/jobs' },
-      { label: 'Saved Jobs', to: '/saved-jobs' },
-      { label: 'Blog', to: '/blog' },
-      ...JOB_BROWSE_LINKS,
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'About', to: '/about' },
-      { label: 'Feedback', to: '/feedback' },
-      { label: 'Contact', to: '/contact' },
-      { label: 'Privacy Policy', to: '/privacy-policy' },
-      { label: 'Terms of Service', to: '/terms-of-service' },
-      { label: 'Disclaimer', to: '/disclaimer' },
-    ],
-  },
-];
-
 export default function Footer() {
+  const cookieConsent = useOptionalCookieConsent();
+
+  const footerGroups = useMemo(
+    () => [
+      {
+        title: 'Explore',
+        links: [
+          { label: 'All Jobs', to: '/jobs' },
+          { label: 'Saved Jobs', to: '/saved-jobs' },
+          { label: 'Blog', to: '/blog' },
+          ...JOB_BROWSE_LINKS,
+        ],
+      },
+      {
+        title: 'Legal',
+        links: [
+          { label: 'About', to: '/about' },
+          { label: 'Feedback', to: '/feedback' },
+          { label: 'Contact', to: '/contact' },
+          { label: 'Privacy Policy', to: '/privacy-policy' },
+          { label: 'Terms of Service', to: '/terms-of-service' },
+          { label: 'Disclaimer', to: '/disclaimer' },
+          ...(cookieConsent ? [{ label: 'Cookie settings', action: cookieConsent.openSettings }] : []),
+        ],
+      },
+    ],
+    [cookieConsent],
+  );
+
   return (
     <footer className="mt-12 border-t border-slate-200 bg-slate-950 text-slate-300">
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3 sm:px-6 lg:px-8">
@@ -41,10 +49,20 @@ export default function Footer() {
             <h4 className="text-sm font-semibold uppercase tracking-wide text-white">{group.title}</h4>
             <ul className="mt-3 space-y-2 text-sm text-slate-400">
               {group.links.map((link) => (
-                <li key={link.to}>
-                  <Link to={link.to} className="transition hover:text-white">
-                    {link.label}
-                  </Link>
+                <li key={link.label}>
+                  {'action' in link ? (
+                    <button
+                      type="button"
+                      onClick={link.action}
+                      className="transition hover:text-white"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <Link to={link.to} className="transition hover:text-white">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -74,6 +92,18 @@ export default function Footer() {
           <Link to="/disclaimer" className="hover:text-slate-300">
             Disclaimer
           </Link>
+          {cookieConsent ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={cookieConsent.openSettings}
+                className="hover:text-slate-300"
+              >
+                Cookie settings
+              </button>
+            </>
+          ) : null}
         </p>
       </div>
     </footer>
