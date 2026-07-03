@@ -11,7 +11,6 @@ export const PUBLIC_JOB_DISPLAY = {
   category: 'See role details in the description below',
   jobType: 'Employment type confirmed during interview',
   workMode: 'Work arrangement discussed during interview',
-  experience: 'Experience criteria discussed during interview',
   salary: 'Salary discussed during interview',
   fresherYes: 'Yes — suitable for fresh graduates',
   fresherNo: 'No — prior experience preferred',
@@ -25,6 +24,7 @@ export function isPlaceholderJobValue(value: unknown): boolean {
   if (!text) return true;
   if (PLACEHOLDER_PATTERN.test(text)) return true;
   if (/^not\s+disclosed$/i.test(text)) return true;
+  if (/^experience criteria discussed during interview$/i.test(text)) return true;
   return false;
 }
 
@@ -42,9 +42,6 @@ export const displayJobType = (value: unknown): string =>
 
 export const displayWorkMode = (value: unknown): string =>
   withFallback(value, PUBLIC_JOB_DISPLAY.workMode);
-
-export const displayExperience = (value: unknown): string =>
-  withFallback(value, PUBLIC_JOB_DISPLAY.experience);
 
 export const displaySalary = (value: unknown): string =>
   withFallback(value, PUBLIC_JOB_DISPLAY.salary);
@@ -81,7 +78,14 @@ export function sanitizeJsonLdJobPosting(
   }
 
   if (isPlaceholderJobValue(out.experienceRequirements)) {
-    out.experienceRequirements = displayExperience(job.experience);
+    delete out.experienceRequirements;
+  } else {
+    const experience = job.experience;
+    if (experience && !isPlaceholderJobValue(experience)) {
+      out.experienceRequirements = experience;
+    } else {
+      delete out.experienceRequirements;
+    }
   }
 
   return out;
@@ -114,7 +118,9 @@ export function sanitizeJobSeoRecord(record: JobRecord = {}): JobRecord {
     if ('workMode' in record) out.workMode = displayed;
   }
 
-  out.experience = displayExperience(record.experience);
+  out.experience = isPlaceholderJobValue(record.experience)
+    ? ''
+    : String(record.experience ?? '').trim();
 
   if (record.salary != null && record.salary !== '') {
     out.salary = displaySalary(record.salary);

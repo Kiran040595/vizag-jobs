@@ -104,7 +104,7 @@ TASK 9 — Job classification (facts from input only — title, experience, elig
    Examples: Civil site engineer → Civil Engineering; Java developer → IT & Software; telecaller → BPO / Customer Support; bank teller → Banking & Finance.
 3. is_fresher — boolean. true when experience is 0 years, role says fresher/trainee/intern/GET, or eligibility targets fresh graduates / 2024–2025 passout / 0–1 years only.
    false when minimum 2+ years experience is clearly required.
-4. experience — short normalized label from facts only, e.g. "Fresher", "0-1 years", "2-4 years", "5-8 years". If missing, use exactly: "Experience criteria discussed during interview" (never "Not specified" or "N/A").
+4. experience — short normalized label from facts only, e.g. "Fresher", "0-1 years", "2-4 years", "5-8 years". Omit or leave empty when not stated in the listing (never use generic placeholders).
 5. job_type — if missing, use "Employment type confirmed during interview".
 6. work_mode — if missing, use "Work arrangement discussed during interview".
 Never output Unknown, N/A, Not specified, Not disclosed, or empty strings for company, experience, job_type, or work_mode.`;
@@ -191,7 +191,7 @@ TASK 6 — json_ld JobPosting object (input facts only).
 TASK 7 — hashtags[] with 10 items (include #).
 TASK 8 — keyword_density top 5 { keyword, count }.
 TASK 9 — company, category (exact taxonomy value), is_fresher boolean, experience label — facts from input only.
-If company is missing use "Employer name shared during interview". If experience is missing use "Experience criteria discussed during interview". Never use Unknown, N/A, or Not specified.
+If company is missing use "Employer name shared during interview". Omit experience when not stated in the listing. Never use Unknown, N/A, Not specified, or generic interview placeholders for experience.
 
 Use relevant Vizag job keywords naturally; do not invent salary or contact details.`;
 

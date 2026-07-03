@@ -171,9 +171,15 @@ export function inferExperienceFromJob(job: JobLike = {}): string {
   const singlePlain = hay.match(/\b(\d+)\s*(?:yr|yrs|year|years)\b/i);
   if (singlePlain) return `${singlePlain[1]} years`;
 
-  if (/\bnot disclosed\b/i.test(hay)) return PUBLIC_JOB_DISPLAY.experience;
+  if (/\bnot disclosed\b/i.test(hay)) return '';
 
-  return PUBLIC_JOB_DISPLAY.experience;
+  return '';
+}
+
+export function resolveJobExperienceForDisplay(job: JobLike = {}): string | null {
+  const resolved = inferExperienceFromJob(job);
+  if (!resolved || isPlaceholderJobValue(resolved)) return null;
+  return resolved;
 }
 
 export function enrichJobCompanyAndExperience(record: JobLike = {}): {

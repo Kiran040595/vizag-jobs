@@ -3,10 +3,10 @@ import { getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import {
   displayCompanyName,
-  displayExperience,
   displayLocation,
   displaySalary,
 } from '../lib/jobDisplayLabels';
+import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 
 /**
  * Pure presentational list. The parent owns filtering/pagination and passes
@@ -62,7 +62,7 @@ const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
             jobTitle={job.title}
             companyName={displayCompanyName(job.company)}
             location={displayLocation(job.location)}
-            experience={displayExperience(job.experience)}
+            experience={resolveJobExperienceForDisplay(job)}
             salary={displaySalary(job.salary)}
             description={
               job.shortDescription || stripMarkdownForPlainText(job.description, 160)

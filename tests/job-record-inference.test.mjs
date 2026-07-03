@@ -7,6 +7,7 @@ import {
   inferCompanyFromJob,
   inferExperienceFromJob,
   isUsableCompanyName,
+  resolveJobExperienceForDisplay,
 } from '../src/lib/jobRecordInference.js';
 
 let pass = 0;
@@ -56,6 +57,22 @@ ok(
     experience: '2 - 5 Years',
   }) === '2-5 years',
   'normalize experience range',
+);
+ok(
+  resolveJobExperienceForDisplay({
+    title: 'Java Developer',
+    description: 'Minimum 3 years experience in Java required.',
+    experience: 'Not specified',
+  }) === '3+ years',
+  'resolve experience from description',
+);
+ok(
+  resolveJobExperienceForDisplay({
+    title: 'Generic role',
+    description: 'Apply with resume.',
+    experience: 'Not specified',
+  }) === null,
+  'hide experience when unknown',
 );
 
 console.log(`\n${pass} passed, ${fail} failed`);

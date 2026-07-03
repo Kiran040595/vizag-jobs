@@ -27,7 +27,6 @@ import JobShareButtons from '../components/JobShareButtons';
 import JobQuestionsSection from '../components/JobQuestionsSection';
 import {
   displayCompanyName,
-  displayExperience,
   displayFresher,
   displayJobCategory,
   displayJobType,
@@ -36,6 +35,7 @@ import {
   displaySalary,
   displayWorkMode,
 } from '../lib/jobDisplayLabels';
+import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -153,6 +153,11 @@ export default function JobDetailsPage() {
       }`
     : 'Job details and application information for positions in Visakhapatnam.';
 
+  const experienceLabel = useMemo(
+    () => (job ? resolveJobExperienceForDisplay(job) : null),
+    [job],
+  );
+
   const structuredData = useMemo(() => {
     if (!job) {
       return undefined;
@@ -254,7 +259,9 @@ export default function JobDetailsPage() {
               <p><span className="font-semibold text-slate-900">Category:</span> {displayJobCategory(job.category)}</p>
               <p><span className="font-semibold text-slate-900">Job Type:</span> {displayJobType(job.jobType)}</p>
               <p><span className="font-semibold text-slate-900">Work Mode:</span> {displayWorkMode(job.workMode)}</p>
-              <p><span className="font-semibold text-slate-900">Experience:</span> {displayExperience(job.experience)}</p>
+              {experienceLabel ? (
+                <p><span className="font-semibold text-slate-900">Experience:</span> {experienceLabel}</p>
+              ) : null}
               <p><span className="font-semibold text-slate-900">Fresher:</span> {displayFresher(job.isFresher)}</p>
               <p><span className="font-semibold text-slate-900">Salary:</span> {displaySalary(job.salary)}</p>
               <p>

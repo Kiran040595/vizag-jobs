@@ -43,7 +43,9 @@ ok(
 ok(displaySalary('N/A') === PUBLIC_JOB_DISPLAY.salary, 'salary fallback');
 ok(displayWorkMode(null) === PUBLIC_JOB_DISPLAY.workMode, 'work mode fallback');
 ok(displayJobType('Full-time') === 'Full-time', 'job type passthrough');
-ok(displayExperience('Not specified') === PUBLIC_JOB_DISPLAY.experience, 'experience fallback');
+ok(isPlaceholderJobValue('Experience criteria discussed during interview'), 'generic experience phrase is placeholder');
+ok(displayExperience('Not specified') === null, 'experience placeholder returns null');
+ok(displayExperience('5-8 years') === '5-8 years', 'experience passthrough');
 ok(displayJobCategory('IT & Software') === 'IT & Software', 'category passthrough');
 ok(displayFresher('No') === PUBLIC_JOB_DISPLAY.fresherNo, 'fresher no');
 ok(displayFresher('Yes') === PUBLIC_JOB_DISPLAY.fresherYes, 'fresher yes');
@@ -58,6 +60,7 @@ const sanitized = sanitizeJobSeoRecord({
 });
 ok(sanitized.company === PUBLIC_JOB_DISPLAY.company, 'sanitize company');
 ok(sanitized.salary === PUBLIC_JOB_DISPLAY.salary, 'sanitize salary');
+ok(sanitized.experience === '', 'sanitize experience clears placeholder');
 ok(sanitized.json_ld.hiringOrganization.name === PUBLIC_JOB_DISPLAY.company, 'sanitize json_ld org');
 
 console.log(`\n${pass} passed, ${fail} failed`);

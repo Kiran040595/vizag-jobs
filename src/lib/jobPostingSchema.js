@@ -1,11 +1,11 @@
 import { getJobDetailPath } from './jobRoutes.js';
 import {
   displayCompanyName,
-  displayExperience,
   displayJobType,
   displayLocation,
   sanitizeJsonLdJobPosting,
 } from './jobDisplayLabels.js';
+import { resolveJobExperienceForDisplay } from './jobRecordInference.js';
 
 const SCHEMA_CONTEXT = 'https://schema.org/';
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
@@ -361,7 +361,7 @@ const buildDescriptionHtml = (job) => {
   const company = displayCompanyName(pick(job, 'company'));
   const title = normalizeText(pick(job, 'title'), 'Job opening');
   const location = displayLocation(pick(job, 'location'));
-  const experience = displayExperience(pick(job, 'experience'));
+  const experience = resolveJobExperienceForDisplay(job);
   const jobType = displayJobType(pick(job, 'jobType', 'job_type'));
 
   const escape = (s) =>

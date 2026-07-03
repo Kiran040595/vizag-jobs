@@ -71,8 +71,12 @@ const JobCard = ({
 
       <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 sm:text-sm">
         <span>{location}</span>
-        <span className="text-slate-300">|</span>
-        <span>{experience}</span>
+        {experience ? (
+          <>
+            <span className="text-slate-300">|</span>
+            <span>{experience}</span>
+          </>
+        ) : null}
         <span className="text-slate-300">|</span>
         <span>{salary}</span>
       </div>

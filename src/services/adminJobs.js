@@ -30,7 +30,7 @@ const OPTIONAL_TEXT_FIELDS = [
 
 const REQUIRED_DEFAULTS = {
   location: 'Visakhapatnam',
-  experience: PUBLIC_JOB_DISPLAY.experience,
+  experience: '',
 };
 
 const SUPPORTED_SQL_TABLE_PATTERN = /^insert\s+into\s+(?:public\.)?jobs\s*\(([\s\S]*?)\)\s*values\s*\(([\s\S]*?)\)\s*;?\s*$/i;

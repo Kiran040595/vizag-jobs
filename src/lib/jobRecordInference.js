@@ -169,9 +169,20 @@ export const inferExperienceFromJob = (job = {}) => {
   const singlePlain = hay.match(/\b(\d+)\s*(?:yr|yrs|year|years)\b/i);
   if (singlePlain) return `${singlePlain[1]} years`;
 
-  if (/\bnot disclosed\b/i.test(hay)) return PUBLIC_JOB_DISPLAY.experience;
+  if (/\bnot disclosed\b/i.test(hay)) return '';
 
-  return PUBLIC_JOB_DISPLAY.experience;
+  return '';
+};
+
+/**
+ * Experience for public UI — infer from description when the stored value is missing.
+ * @param {object} job
+ * @returns {string|null}
+ */
+export const resolveJobExperienceForDisplay = (job = {}) => {
+  const resolved = inferExperienceFromJob(job);
+  if (!resolved || isPlaceholderJobValue(resolved)) return null;
+  return resolved;
 };
 
 /**

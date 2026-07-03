@@ -9,7 +9,7 @@ import {
 } from '../../src/lib/jobDisplayLabels.js';
 import { pipelineConfig } from './pipeline-env.mjs';
 
-const REQUIRED_DEFAULTS = { location: 'Visakhapatnam', experience: PUBLIC_JOB_DISPLAY.experience };
+const REQUIRED_DEFAULTS = { location: 'Visakhapatnam', experience: '' };
 const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;
 
 const normalizeText = (value) => String(value || '').trim();

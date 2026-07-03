@@ -11,6 +11,7 @@ export const isPlaceholderJobValue = (value) => {
   if (!text) return true;
   if (PLACEHOLDER_PATTERN.test(text)) return true;
   if (/^not\s+disclosed$/i.test(text)) return true;
+  if (/^experience criteria discussed during interview$/i.test(text)) return true;
   return false;
 };
 
@@ -19,7 +20,6 @@ export const PUBLIC_JOB_DISPLAY = {
   category: 'See role details in the description below',
   jobType: 'Employment type confirmed during interview',
   workMode: 'Work arrangement discussed during interview',
-  experience: 'Experience criteria discussed during interview',
   salary: 'Salary discussed during interview',
   fresherYes: 'Yes — suitable for fresh graduates',
   fresherNo: 'No — prior experience preferred',
@@ -43,8 +43,12 @@ export const displayJobType = (value) =>
 export const displayWorkMode = (value) =>
   withFallback(value, PUBLIC_JOB_DISPLAY.workMode);
 
-export const displayExperience = (value) =>
-  withFallback(value, PUBLIC_JOB_DISPLAY.experience);
+/** Returns experience text or null — never a generic interview placeholder. */
+export const displayExperience = (value) => {
+  if (isPlaceholderJobValue(value)) return null;
+  const text = String(value ?? '').trim();
+  return text || null;
+};
 
 export const displaySalary = (value) =>
   withFallback(value, PUBLIC_JOB_DISPLAY.salary);
@@ -106,7 +110,9 @@ export const sanitizeJsonLdJobPosting = (jsonLd, job = {}) => {
 
   const experience = job.experience;
   if (isPlaceholderJobValue(out.experienceRequirements)) {
-    out.experienceRequirements = displayExperience(experience);
+    delete out.experienceRequirements;
+  } else if (experience && !isPlaceholderJobValue(experience)) {
+    out.experienceRequirements = experience;
   }
 
   return out;
@@ -138,7 +144,9 @@ export const sanitizeJobSeoRecord = (record = {}) => {
     if ('workMode' in record) out.workMode = displayed;
   }
 
-  out.experience = displayExperience(record.experience);
+  out.experience = isPlaceholderJobValue(record.experience)
+    ? ''
+    : String(record.experience ?? '').trim();
 
   if (record.salary != null && record.salary !== '') {
     out.salary = displaySalary(record.salary);
