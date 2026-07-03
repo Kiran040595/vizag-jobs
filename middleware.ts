@@ -160,14 +160,17 @@ const buildJobHeadInjection = (job, { siteUrl, canonicalPath, noindex }) => {
   const canonicalUrl = `${siteUrl}${canonicalPath}`;
   const title = `${job.title || 'Job'} at ${job.company || 'Employer'} - Vizag Jobs`;
   const description = buildJobMetaDescription(job);
-  const jobPosting = buildJobPostingSchema(job, { siteUrl, canonicalPath, canonicalUrl });
+  const expired = noindex || isJobExpired(job);
+  const jobPosting = expired
+    ? null
+    : buildJobPostingSchema(job, { siteUrl, canonicalPath, canonicalUrl });
   const breadcrumb = buildBreadcrumbSchema(job, { siteUrl, canonicalPath });
 
   const scripts = [];
   if (jobPosting) scripts.push(jsonLdScript(jobPosting));
   if (breadcrumb) scripts.push(jsonLdScript(breadcrumb));
 
-  return renderHead({ title, description, canonicalUrl, scripts, noindex, siteUrl });
+  return renderHead({ title, description, canonicalUrl, scripts, noindex: expired || noindex, siteUrl });
 };
 
 const buildBlogPostHeadInjection = (post, { siteUrl }) => {

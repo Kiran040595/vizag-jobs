@@ -1,7 +1,7 @@
 // Smoke-test the JSON-LD builders with realistic job shapes.
 // Run with: node scripts/test-job-posting-schema.mjs
 
-import { buildJobPostingSchema, isJobExpired, mapEmploymentType, buildBaseSalary } from '../src/lib/jobPostingSchema.js';
+import { buildJobPostingSchema, isJobExpired, mapEmploymentType, buildBaseSalary, resolveValidThrough } from '../src/lib/jobPostingSchema.js';
 import { buildBreadcrumbSchema } from '../src/lib/breadcrumbSchema.js';
 
 let passed = 0;
@@ -140,6 +140,30 @@ const remoteJob = {
 const remoteSchema = buildJobPostingSchema(remoteJob);
 assert('remote sets jobLocationType=TELECOMMUTE', remoteSchema.jobLocationType === 'TELECOMMUTE');
 assert('remote sets applicantLocationRequirements', remoteSchema.applicantLocationRequirements?.name === 'India');
+
+// ---------------------------------------------------------------------------
+section('resolveValidThrough() — stale Gemini json_ld on active job');
+const staleJob = {
+  title: 'Sales Associate',
+  company: 'Example Corp',
+  location: 'Visakhapatnam',
+  postedAt: '2026-05-15T00:00:00.000Z',
+  description: '<p>Long enough description for Google structured data requirements here.</p>',
+  jsonLd: {
+    '@type': 'JobPosting',
+    validThrough: '2026-06-14T00:00:00.000Z',
+  },
+};
+const staleSchema = buildJobPostingSchema(staleJob);
+assert(
+  'stale validThrough is bumped to the future for active listings',
+  new Date(staleSchema.validThrough).getTime() > Date.now(),
+);
+assert(
+  'explicit expires_at is preserved even when in the past',
+  resolveValidThrough('2099-01-01T00:00:00.000Z', { expiresAt: '2025-02-01T00:00:00.000Z' }) ===
+    '2025-02-01T00:00:00.000Z',
+);
 
 // ---------------------------------------------------------------------------
 section('buildJobPostingSchema() — invalid input');

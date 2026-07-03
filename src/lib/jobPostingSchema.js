@@ -11,6 +11,8 @@ const SCHEMA_CONTEXT = 'https://schema.org/';
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
 /** Central Visakhapatnam GPO pin — used when listing has no explicit postal code. */
 const VIZAG_DEFAULT_POSTAL_CODE = '530001';
+/** Default listing window when no explicit expiry is stored. */
+const DEFAULT_VALID_DAYS = 30;
 
 const buildAbsoluteUrl = (path, siteUrl) => {
   const base = String(siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
@@ -243,6 +245,33 @@ export const enrichJobLocation = (jobLocation, job) => {
   };
 };
 
+const isPastIso = (value) => {
+  const iso = toIsoDate(value);
+  if (!iso) {
+    return false;
+  }
+  return new Date(iso).getTime() <= Date.now();
+};
+
+/**
+ * Google flags published jobs whose validThrough is in the past while JobPosting
+ * markup remains live ("Expired jobs are still live"). For active listings without
+ * an explicit expires_at, keep validThrough in the future at render time.
+ */
+export const resolveValidThrough = (storedValidThrough, job) => {
+  const explicitExpiry = toIsoDate(pick(job, 'expiresAt', 'expires_at'));
+  if (explicitExpiry) {
+    return explicitExpiry;
+  }
+
+  const storedIso = toIsoDate(storedValidThrough);
+  if (storedIso && !isPastIso(storedIso)) {
+    return storedIso;
+  }
+
+  return buildValidThrough(job);
+};
+
 const finalizeJobPostingSchema = (schema, job) => {
   if (!schema || typeof schema !== 'object') {
     return schema;
@@ -260,6 +289,8 @@ const finalizeJobPostingSchema = (schema, job) => {
       schema.baseSalary = resolved;
     }
   }
+
+  schema.validThrough = resolveValidThrough(schema.validThrough, job);
 
   return schema;
 };
@@ -294,10 +325,13 @@ export const buildValidThrough = (job) => {
   const postedAt = pick(job, 'postedAt', 'posted_at');
   const postedIso = toIsoDate(postedAt);
   if (postedIso) {
-    return addDays(postedIso, 30);
+    const postedPlusWindow = addDays(postedIso, DEFAULT_VALID_DAYS);
+    if (postedPlusWindow && !isPastIso(postedPlusWindow)) {
+      return postedPlusWindow;
+    }
   }
 
-  return addDays(new Date().toISOString(), 30);
+  return addDays(new Date().toISOString(), DEFAULT_VALID_DAYS);
 };
 
 const isRemoteWorkMode = (job) => {
@@ -460,7 +494,7 @@ const mergeStoredJsonLd = (stored, job, { siteUrl, canonicalUrl }) => {
     title,
     description,
     datePosted: toIsoDate(stored.datePosted || pick(job, 'postedAt', 'posted_at')) || new Date().toISOString(),
-    validThrough: toIsoDate(stored.validThrough) || buildValidThrough(job),
+    validThrough: resolveValidThrough(stored.validThrough, job),
     employmentType: stored.employmentType || mapEmploymentType(pick(job, 'jobType', 'job_type')),
     hiringOrganization: stored.hiringOrganization || buildHiringOrganization(job, siteUrl),
     jobLocation: stored.jobLocation || buildJobLocation(job),
