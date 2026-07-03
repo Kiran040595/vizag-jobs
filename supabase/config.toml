@@ -7,3 +7,6 @@ verify_jwt = false
 
 [functions.send-automation-summary]
 verify_jwt = false
+
+[functions.generate-daily-blog]
+verify_jwt = false

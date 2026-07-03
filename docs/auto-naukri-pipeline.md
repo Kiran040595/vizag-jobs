@@ -218,6 +218,15 @@ Uses existing secrets: `GEMINI_API_KEY`, `FETCH_JOBS_CRON_SECRET`, `FIRECRAWL_AP
 npm run auto:daily-blog
 ```
 
+### Admin panel
+
+Open **Admin → Blog posts** (`/admin/blog`). Use **Generate market blog** to run Gemini manually with options:
+
+- Article date (IST)
+- Minimum jobs required
+- Publish immediately vs save as draft
+- Skip if today's article already exists
+
 ### Tunables
 
 | Variable | Default | Purpose |

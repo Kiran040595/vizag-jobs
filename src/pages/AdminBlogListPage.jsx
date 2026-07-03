@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
+import AdminDailyBlogGenerator from '../components/admin/AdminDailyBlogGenerator';
 import { fetchAdminPosts, updateAdminPostStatus } from '../services/adminBlogs';
 
 const STATUS_STYLES = {
@@ -96,6 +97,15 @@ export default function AdminBlogListPage() {
       description="Create guides and updates for job seekers. Drafts stay private until you publish."
     >
       <SEO title="Blog posts | Vizag Jobs Admin" description="Manage Vizag Jobs blog posts." canonical="/admin/blog" />
+
+      <div className="mb-6">
+        <AdminDailyBlogGenerator
+          onGenerated={(post) => {
+            setPosts((current) => upsertPost(current, post));
+            setNotice(`Generated article "${post.title}" (${post.status}).`);
+          }}
+        />
+      </div>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
         <div className="flex flex-wrap items-center justify-between gap-3">

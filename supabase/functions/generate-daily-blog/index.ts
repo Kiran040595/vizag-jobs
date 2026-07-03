@@ -27,7 +27,65 @@ type RequestBody = {
   publish?: boolean;
   skip_if_exists?: boolean;
   min_jobs?: number;
+  load_jobs_from_db?: boolean;
 };
+
+function getIstDayBoundsUtc(dateInput: Date) {
+  const istDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(dateInput);
+
+  return {
+    istDate,
+    startUtc: new Date(`${istDate}T00:00:00+05:30`).toISOString(),
+    endUtc: new Date(`${istDate}T23:59:59.999+05:30`).toISOString(),
+  };
+}
+
+function categorySegment(category: string | null | undefined) {
+  const text = String(category || 'general').trim().toLowerCase();
+  return text.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'general';
+}
+
+async function loadTodaysPublishedJobs(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  dateInput: Date,
+): Promise<DailyBlogJobInput[]> {
+  const jobsTable = Deno.env.get('SUPABASE_JOBS_TABLE')?.trim() || 'jobs';
+  const { startUtc, endUtc } = getIstDayBoundsUtc(dateInput);
+
+  const { data, error } = await supabaseAdmin
+    .from(jobsTable)
+    .select('title, company, category, location, work_mode, experience, salary, slug, posted_at')
+    .eq('status', 'published')
+    .gte('posted_at', startUtc)
+    .lte('posted_at', endUtc)
+    .order('posted_at', { ascending: false })
+    .limit(200);
+
+  if (error) {
+    throw new Error(`Could not load today's jobs: ${error.message}`);
+  }
+
+  return (data || []).map((job) => {
+    const slug = String(job.slug || '').trim();
+    const category = String(job.category || '').trim();
+    return {
+      title: job.title,
+      company: job.company,
+      category: job.category,
+      location: job.location,
+      work_mode: job.work_mode,
+      experience: job.experience,
+      salary: job.salary,
+      slug,
+      path: slug ? `/jobs/${categorySegment(category)}/${slug}` : null,
+    };
+  });
+}
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -280,7 +338,6 @@ Deno.serve(async (req) => {
     body = {};
   }
 
-  const jobs = Array.isArray(body.jobs) ? body.jobs : [];
   const dateInput = resolveIstDateInput(body.date);
   const minJobs = Math.max(0, Number(body.min_jobs ?? Deno.env.get('AUTO_DAILY_BLOG_MIN_JOBS') ?? 1));
   const publish =
@@ -289,6 +346,11 @@ Deno.serve(async (req) => {
   const skipIfExists =
     body.skip_if_exists ??
     !['0', 'false', 'no'].includes(String(Deno.env.get('AUTO_DAILY_BLOG_SKIP_IF_EXISTS') ?? 'true').toLowerCase());
+
+  let jobs = Array.isArray(body.jobs) ? body.jobs : [];
+  if (body.load_jobs_from_db || jobs.length === 0) {
+    jobs = await loadTodaysPublishedJobs(supabaseAdmin, dateInput);
+  }
 
   if (jobs.length < minJobs) {
     return jsonResponse({
