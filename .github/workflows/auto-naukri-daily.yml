@@ -8,6 +8,8 @@ on:
     - cron: '30 12 * * *'
     # 9:00 PM IST = 15:30 UTC — LinkedIn Jobs
     - cron: '30 15 * * *'
+    # 10:15 PM IST = 16:45 UTC — Daily blog (after all job fetches)
+    - cron: '45 16 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -82,3 +84,25 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
           AUTO_FETCH_CHANNEL: linkedin_jobs
+
+  daily-blog:
+    if: github.event.schedule == '45 16 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Generate daily Vizag job market blog
+        run: npm run auto:daily-blog
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_DAILY_BLOG_PUBLISH: 'true'
+          AUTO_DAILY_BLOG_MIN_JOBS: '1'
+          AUTO_DAILY_BLOG_SKIP_IF_EXISTS: 'true'

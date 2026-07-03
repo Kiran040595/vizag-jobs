@@ -189,3 +189,42 @@ Email includes stats + a table of every job with status and reason.
 - This does **not** replace the admin review UI — it automates the same steps an admin would take on `/admin/fetch` for Naukri.
 - Long runs are expected: 10 jobs ≈ 30 minutes of SEO gaps plus fetch/SEO latency. GitHub Actions timeout is set to **180 minutes**.
 - After publish, the next site build will refresh `sitemap.xml` (generated at build time).
+
+## Daily blog (AdSense-quality market article)
+
+After the evening job pipelines finish, a **separate cron at 10:15 PM IST** runs `npm run auto:daily-blog`.
+
+### What it does
+
+1. Loads all jobs **published today (IST)** from Supabase
+2. Fetches optional **live web context** via Firecrawl (Vizag / AP hiring news)
+3. Calls Gemini with a **rotating editorial angle** (market pulse, sector spotlight, fresher lens, etc.)
+4. Writes an original **900–1400 word** Markdown article to `blog_posts`
+5. Publishes automatically (or saves as draft if configured)
+
+The prompt is tuned for **Google AdSense approval**: analysis-first, limited raw job lists, internal links, honest aggregator disclaimer.
+
+### Deploy (one-time)
+
+```bash
+supabase functions deploy generate-daily-blog --no-verify-jwt
+```
+
+Uses existing secrets: `GEMINI_API_KEY`, `FETCH_JOBS_CRON_SECRET`, `FIRECRAWL_API_KEY` (optional but recommended for live market context).
+
+### Manual run
+
+```bash
+npm run auto:daily-blog
+```
+
+### Tunables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AUTO_DAILY_BLOG_PUBLISH` | `true` | Publish immediately (`false` = draft) |
+| `AUTO_DAILY_BLOG_MIN_JOBS` | `1` | Skip if fewer jobs published today |
+| `AUTO_DAILY_BLOG_SKIP_IF_EXISTS` | `true` | Skip if slug for today's angle already exists |
+| `GEMINI_API_KEY_BLOG` | — | Optional dedicated Gemini key for blog generation |
+| `GEMINI_BLOG_MODEL` | `gemini-2.5-flash` | Model override |
+| `FIRECRAWL_API_KEY_BLOG` | — | Optional dedicated Firecrawl key for web context |
