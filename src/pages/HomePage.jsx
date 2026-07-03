@@ -14,6 +14,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { computeSiteStats } from '../lib/siteStats';
 import {
   CATEGORY_OPTIONS,
   DEFAULT_FILTERS,
@@ -141,6 +142,7 @@ export default function HomePage() {
 
   // ---------- Filter / pagination derivations ----------
   const filteredJobs = useMemo(() => applyJobFilters(allJobs, filters), [allJobs, filters]);
+  const siteStats = useMemo(() => computeSiteStats(allJobs), [allJobs]);
   const pagination = useMemo(
     () => paginate(filteredJobs, filters.page, PAGE_SIZE),
     [filteredJobs, filters.page],
@@ -280,7 +282,7 @@ export default function HomePage() {
         />
 
         <BlogTeaserSection />
-        <StatsSection />
+        <StatsSection stats={siteStats} isLoading={isLoading} />
         <CTASection />
       </main>
 
