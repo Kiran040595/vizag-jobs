@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
-import { SITE_CONTACT_EMAIL, SITE_TELEGRAM_CHANNEL_URL } from '../lib/siteLegal';
+import { SITE_CONTACT_EMAIL } from '../lib/siteLegal';
 
 const emailSubscribeHref = `mailto:${SITE_CONTACT_EMAIL}?subject=${encodeURIComponent(
   'Subscribe to Vizag job alerts',
@@ -42,19 +42,9 @@ export default function CTASection() {
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Stay Updated with Vizag Jobs</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Get the latest job updates on Telegram or by email.
+            Get the latest job updates by email or browse new openings anytime.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
-            {SITE_TELEGRAM_CHANNEL_URL ? (
-              <a
-                href={SITE_TELEGRAM_CHANNEL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-              >
-                Join Telegram
-              </a>
-            ) : null}
             <a
               href={emailSubscribeHref}
               className="inline-flex rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
