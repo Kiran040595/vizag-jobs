@@ -10,6 +10,7 @@ import {
   hasCookieConsentDecision,
   parseCookieConsent,
   readCookieConsent,
+  resetCookieConsentCacheForTests,
   writeCookieConsent,
 } from '../src/lib/cookieConsent.js';
 
@@ -45,6 +46,7 @@ test('writeCookieConsent persists and readCookieConsent restores preferences', (
   globalThis.window = /** @type {any} */ ({ localStorage: storage });
 
   try {
+    resetCookieConsentCacheForTests();
     writeCookieConsent({ analytics: true, advertising: true });
     const stored = readCookieConsent();
 
@@ -54,6 +56,26 @@ test('writeCookieConsent persists and readCookieConsent restores preferences', (
     assert.ok(storage.getItem(COOKIE_CONSENT_STORAGE_KEY));
   } finally {
     globalThis.window = originalWindow;
+    resetCookieConsentCacheForTests();
+  }
+});
+
+test('readCookieConsent returns a stable snapshot reference until storage changes', () => {
+  const storage = createMemoryStorage();
+  const originalWindow = globalThis.window;
+
+  globalThis.window = /** @type {any} */ ({ localStorage: storage });
+
+  try {
+    resetCookieConsentCacheForTests();
+    writeCookieConsent({ analytics: true, advertising: false });
+    const first = readCookieConsent();
+    const second = readCookieConsent();
+
+    assert.equal(first, second);
+  } finally {
+    globalThis.window = originalWindow;
+    resetCookieConsentCacheForTests();
   }
 });
 
@@ -64,6 +86,7 @@ test('acceptEssentialCookiesOnly disables optional categories', () => {
   globalThis.window = /** @type {any} */ ({ localStorage: storage });
 
   try {
+    resetCookieConsentCacheForTests();
     acceptAllCookies();
     acceptEssentialCookiesOnly();
     const stored = readCookieConsent();
@@ -73,5 +96,6 @@ test('acceptEssentialCookiesOnly disables optional categories', () => {
     assert.ok(hasCookieConsentDecision(stored));
   } finally {
     globalThis.window = originalWindow;
+    resetCookieConsentCacheForTests();
   }
 });

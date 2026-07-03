@@ -5,10 +5,46 @@ export const COOKIE_CONSENT_STORAGE_KEY = 'vizag_cookie_consent_v1';
 /** @type {Set<() => void>} */
 const listeners = new Set();
 
+/** @type {{ raw: string | null | undefined, value: CookieConsent | null | undefined }} */
+const snapshotCache = {
+  raw: undefined,
+  value: undefined,
+};
+
 const getStorage = () => {
   try {
     return window.localStorage;
   } catch {
+    return null;
+  }
+};
+
+const readStoredRaw = () => {
+  const storage = getStorage();
+  if (!storage) {
+    return null;
+  }
+
+  try {
+    return storage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const updateSnapshotCache = (raw) => {
+  snapshotCache.raw = raw;
+
+  if (!raw) {
+    snapshotCache.value = null;
+    return null;
+  }
+
+  try {
+    snapshotCache.value = parseCookieConsent(JSON.parse(raw));
+    return snapshotCache.value;
+  } catch {
+    snapshotCache.value = null;
     return null;
   }
 };
@@ -32,22 +68,19 @@ export const parseCookieConsent = (raw) => {
   };
 };
 
-/** @returns {CookieConsent | null} */
+/**
+ * Read consent for useSyncExternalStore. Returns a stable object reference until
+ * localStorage changes — a fresh object on every read causes infinite re-renders.
+ * @returns {CookieConsent | null}
+ */
 export const readCookieConsent = () => {
-  const storage = getStorage();
-  if (!storage) {
-    return null;
+  const raw = readStoredRaw();
+
+  if (snapshotCache.raw === raw) {
+    return snapshotCache.value ?? null;
   }
 
-  try {
-    const raw = storage.getItem(COOKIE_CONSENT_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    return parseCookieConsent(JSON.parse(raw));
-  } catch {
-    return null;
-  }
+  return updateSnapshotCache(raw);
 };
 
 /** @param {Partial<Pick<CookieConsent, 'analytics' | 'advertising'>> & { decidedAt?: string }} values */
@@ -59,14 +92,19 @@ export const writeCookieConsent = (values) => {
     decidedAt: values.decidedAt || new Date().toISOString(),
   };
 
+  const serialized = JSON.stringify(consent);
   const storage = getStorage();
+
   if (storage) {
     try {
-      storage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(consent));
+      storage.setItem(COOKIE_CONSENT_STORAGE_KEY, serialized);
     } catch {
       // Ignore quota / private mode errors.
     }
   }
+
+  snapshotCache.raw = serialized;
+  snapshotCache.value = consent;
 
   for (const listener of listeners) {
     listener();
@@ -101,3 +139,9 @@ export const hasAnalyticsConsent = (consent) => Boolean(consent?.analytics);
 
 /** @param {CookieConsent | null | undefined} consent */
 export const hasAdvertisingConsent = (consent) => Boolean(consent?.advertising);
+
+/** Test helper — reset module cache between tests. */
+export const resetCookieConsentCacheForTests = () => {
+  snapshotCache.raw = undefined;
+  snapshotCache.value = undefined;
+};
