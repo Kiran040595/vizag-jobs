@@ -1,19 +1,26 @@
 import { Link } from 'react-router-dom';
 import LegalPageLayout from '../components/LegalPageLayout';
+import {
+  SITE_CONTACT_EMAIL,
+  SITE_LEGAL_NAME,
+  SITE_LOCATION_CITY,
+  SITE_LOCATION_DISPLAY,
+  SITE_PUBLISHER_NAME,
+} from '../lib/siteLegal';
 
 export default function AboutPage() {
   return (
     <LegalPageLayout
       title="About Us"
       seoTitle="About Us | Jobs in Vizag"
-      description="Learn who runs JobsInVizag.in and why we built a focused job board for Visakhapatnam."
+      description="Learn who runs JobsInVizag.in — an independent job board for Visakhapatnam, operated from Andhra Pradesh, India."
       canonical="/about"
       showLastUpdated={false}
     >
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-slate-900">Welcome to JobsInVizag.in</h2>
         <p>
-          JobsInVizag.in is a regional job portal built for one purpose: making it easier for people in
+          {SITE_LEGAL_NAME} is a regional job portal built for one purpose: making it easier for people in
           Visakhapatnam to find genuine, relevant job opportunities — without wading through national job
           boards that bury local listings under thousands of irrelevant results.
         </p>
@@ -28,7 +35,7 @@ export default function AboutPage() {
           to find roles that are actually based here.
         </p>
         <p>
-          JobsInVizag.in was created to fix that: a focused, easy-to-use platform where every listing is
+          {SITE_LEGAL_NAME} was created to fix that: a focused, easy-to-use platform where every listing is
           relevant to Vizag and the surrounding region.
         </p>
       </section>
@@ -62,11 +69,38 @@ export default function AboutPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">Who&apos;s Behind This</h2>
+        <h2 className="text-xl font-bold text-slate-900">Who Runs This Site</h2>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <dl className="space-y-3 text-sm sm:text-base">
+            <div>
+              <dt className="font-semibold text-slate-900">Operator</dt>
+              <dd className="mt-1 text-slate-700">{SITE_PUBLISHER_NAME}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-900">Website</dt>
+              <dd className="mt-1 text-slate-700">{SITE_LEGAL_NAME}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-900">Location</dt>
+              <dd className="mt-1 text-slate-700">{SITE_LOCATION_DISPLAY}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-900">Email</dt>
+              <dd className="mt-1">
+                <a
+                  href={`mailto:${SITE_CONTACT_EMAIL}`}
+                  className="font-semibold text-cyan-700 hover:text-cyan-800"
+                >
+                  {SITE_CONTACT_EMAIL}
+                </a>
+              </dd>
+            </div>
+          </dl>
+        </div>
         <p>
-          JobsInVizag.in is run independently, with a focus on serving the Vizag job-seeker community
-          directly. We&apos;re a small, hands-on team genuinely invested in making local job searching
-          simpler.
+          {SITE_LEGAL_NAME} is operated independently by {SITE_PUBLISHER_NAME}, based in {SITE_LOCATION_CITY}.
+          We are not a recruitment agency or employer for the listings shown here — we aggregate publicly
+          available openings and present them in a format tailored to local job seekers.
         </p>
       </section>
 
@@ -77,7 +111,11 @@ export default function AboutPage() {
           <Link to="/contact" className="font-semibold text-cyan-700 hover:text-cyan-800">
             Contact
           </Link>{' '}
-          page — we read every message.
+          page or email{' '}
+          <a href={`mailto:${SITE_CONTACT_EMAIL}`} className="font-semibold text-cyan-700 hover:text-cyan-800">
+            {SITE_CONTACT_EMAIL}
+          </a>{' '}
+          — we read every message.
         </p>
       </section>
     </LegalPageLayout>

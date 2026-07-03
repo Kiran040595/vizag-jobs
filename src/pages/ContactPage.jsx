@@ -1,13 +1,18 @@
 import { Link } from 'react-router-dom';
 import LegalPageLayout from '../components/LegalPageLayout';
-import { SITE_CONTACT_EMAIL, SITE_LEGAL_NAME } from '../lib/siteLegal';
+import {
+  SITE_CONTACT_EMAIL,
+  SITE_LEGAL_NAME,
+  SITE_LOCATION_DISPLAY,
+  SITE_PUBLISHER_NAME,
+} from '../lib/siteLegal';
 
 export default function ContactPage() {
   return (
     <LegalPageLayout
       title="Contact Us"
       seoTitle="Contact | Jobs in Vizag"
-      description="Contact JobsInVizag.in for listing corrections, feedback, partnerships, or general enquiries."
+      description={`Contact ${SITE_LEGAL_NAME} in ${SITE_LOCATION_DISPLAY} for listing corrections, feedback, partnerships, or general enquiries.`}
       canonical="/contact"
       showLastUpdated={false}
     >
@@ -15,6 +20,24 @@ export default function ContactPage() {
         We welcome questions, corrections, and feedback about {SITE_LEGAL_NAME}. If you found an incorrect
         listing, want a job removed, or have a suggestion to improve the site, please reach out.
       </p>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-900">Publisher details</h2>
+        <dl className="mt-4 space-y-3 text-sm sm:text-base">
+          <div>
+            <dt className="font-semibold text-slate-900">Operator</dt>
+            <dd className="mt-1 text-slate-700">{SITE_PUBLISHER_NAME}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-900">Website</dt>
+            <dd className="mt-1 text-slate-700">{SITE_LEGAL_NAME}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold text-slate-900">Location</dt>
+            <dd className="mt-1 text-slate-700">{SITE_LOCATION_DISPLAY}</dd>
+          </div>
+        </dl>
+      </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold text-slate-900">Email</h2>
@@ -58,8 +81,8 @@ export default function ContactPage() {
       </section>
 
       <p className="text-sm text-slate-600">
-        {SITE_LEGAL_NAME} is an independent job aggregator. We are not the hiring employer for listings on
-        this site. See our{' '}
+        {SITE_LEGAL_NAME} is an independent job aggregator operated by {SITE_PUBLISHER_NAME} from{' '}
+        {SITE_LOCATION_DISPLAY}. We are not the hiring employer for listings on this site. See our{' '}
         <Link to="/disclaimer" className="font-semibold text-cyan-700 hover:text-cyan-800">
           Disclaimer
         </Link>{' '}
