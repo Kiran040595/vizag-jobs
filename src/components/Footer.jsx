@@ -16,6 +16,7 @@ const footerGroups = [
     title: 'Legal',
     links: [
       { label: 'About', to: '/about' },
+      { label: 'Feedback', to: '/feedback' },
       { label: 'Contact', to: '/contact' },
       { label: 'Privacy Policy', to: '/privacy-policy' },
       { label: 'Terms of Service', to: '/terms-of-service' },

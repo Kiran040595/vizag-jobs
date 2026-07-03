@@ -109,6 +109,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://jobsinvizag.in/feedback</loc>
+    <lastmod>2026-07-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://jobsinvizag.in/privacy-policy</loc>
     <lastmod>2026-07-03</lastmod>
     <changefreq>daily</changefreq>
@@ -5216,12 +5222,6 @@
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/general/network-support-engineer-jobs-vizag-atria-convergence-technologies-act</loc>
-    <lastmod>2026-05-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/govt-fresher/locomotive-engineer-jobs-vizag-hbl-engineering-limited</loc>
     <lastmod>2026-05-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>

@@ -7,6 +7,7 @@ const navItems = [
   { label: 'Fetch external jobs', to: '/admin/fetch' },
   { label: 'Blog posts', to: '/admin/blog' },
   { label: 'New post', to: '/admin/blog/new' },
+  { label: 'Site feedback', to: '/admin/feedback' },
 ];
 
 export default function AdminShell({ children, title, description }) {

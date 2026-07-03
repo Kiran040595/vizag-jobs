@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
@@ -9,12 +9,21 @@ import {
   formatQuestionTime,
   markQuestionNotificationRead,
 } from '../services/jobQuestions';
+import {
+  FEEDBACK_TYPE_LABELS,
+  fetchFeedbackNotifications,
+  fetchUnreadFeedbackNotificationCount,
+  formatFeedbackAuthor,
+  formatFeedbackTime,
+  markFeedbackNotificationRead,
+} from '../services/siteFeedback';
 
 export default function QuestionNotificationBell() {
   const { isAdmin, user: adminUser, isLoading: isAdminLoading } = useAdminAuth();
   const { isEmployer, user: employerUser, isLoading: isEmployerLoading } = useEmployerAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  const [questionNotifications, setQuestionNotifications] = useState([]);
+  const [feedbackNotifications, setFeedbackNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef(null);
@@ -25,25 +34,40 @@ export default function QuestionNotificationBell() {
 
   const loadNotifications = useCallback(async () => {
     if (!user?.id || !canModerate) {
-      setNotifications([]);
+      setQuestionNotifications([]);
+      setFeedbackNotifications([]);
       setUnreadCount(0);
       return;
     }
 
     setIsLoading(true);
     try {
-      const [items, count] = await Promise.all([
+      const questionPromise = Promise.all([
         fetchQuestionNotifications(user.id),
         fetchUnreadQuestionNotificationCount(user.id),
       ]);
-      setNotifications(items);
-      setUnreadCount(count);
+
+      const feedbackPromise = isAdmin
+        ? Promise.all([
+            fetchFeedbackNotifications(user.id),
+            fetchUnreadFeedbackNotificationCount(user.id),
+          ])
+        : Promise.resolve([[], 0]);
+
+      const [[questions, questionUnread], [feedback, feedbackUnread]] = await Promise.all([
+        questionPromise,
+        feedbackPromise,
+      ]);
+
+      setQuestionNotifications(questions);
+      setFeedbackNotifications(feedback);
+      setUnreadCount(questionUnread + feedbackUnread);
     } catch (error) {
-      console.error('Failed to load question notifications:', error);
+      console.error('Failed to load notifications:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [canModerate, user?.id]);
+  }, [canModerate, isAdmin, user?.id]);
 
   useEffect(() => {
     if (authLoading) return undefined;
@@ -66,11 +90,38 @@ export default function QuestionNotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  const combinedNotifications = useMemo(() => {
+    const items = [
+      ...questionNotifications.map((notification) => ({
+        kind: 'job_question',
+        id: `question-${notification.id}`,
+        notificationId: notification.id,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt,
+        data: notification,
+      })),
+      ...feedbackNotifications.map((notification) => ({
+        kind: 'site_feedback',
+        id: `feedback-${notification.id}`,
+        notificationId: notification.id,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt,
+        data: notification,
+      })),
+    ];
+
+    return items.sort((left, right) => {
+      const leftTime = new Date(left.createdAt).getTime();
+      const rightTime = new Date(right.createdAt).getTime();
+      return rightTime - leftTime;
+    });
+  }, [feedbackNotifications, questionNotifications]);
+
   if (authLoading || !canModerate) {
     return null;
   }
 
-  const handleOpenNotification = async (notification) => {
+  const handleOpenQuestionNotification = async (notification) => {
     if (!user?.id) return;
 
     try {
@@ -81,7 +132,25 @@ export default function QuestionNotificationBell() {
         });
       }
     } catch (error) {
-      console.error('Failed to mark notification read:', error);
+      console.error('Failed to mark question notification read:', error);
+    }
+
+    setIsOpen(false);
+    loadNotifications();
+  };
+
+  const handleOpenFeedbackNotification = async (notification) => {
+    if (!user?.id) return;
+
+    try {
+      if (!notification.isRead) {
+        await markFeedbackNotificationRead({
+          notificationId: notification.id,
+          userId: user.id,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to mark feedback notification read:', error);
     }
 
     setIsOpen(false);
@@ -99,7 +168,7 @@ export default function QuestionNotificationBell() {
           }
         }}
         className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-        aria-label={`Job question notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+        aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
         aria-expanded={isOpen}
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -116,8 +185,8 @@ export default function QuestionNotificationBell() {
       {isOpen ? (
         <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 px-4 py-3">
-            <p className="text-sm font-bold text-slate-900">Job questions</p>
-            <p className="text-xs text-slate-500">New doubts waiting for review</p>
+            <p className="text-sm font-bold text-slate-900">Notifications</p>
+            <p className="text-xs text-slate-500">Pending job questions and site feedback</p>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
@@ -125,35 +194,72 @@ export default function QuestionNotificationBell() {
               <p className="px-4 py-6 text-sm text-slate-500">Loading…</p>
             ) : null}
 
-            {!isLoading && notifications.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-slate-500">No pending questions right now.</p>
+            {!isLoading && combinedNotifications.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-slate-500">No pending items right now.</p>
             ) : null}
 
             {!isLoading
-              ? notifications.map((notification) => {
-                  const question = notification.question;
-                  const job = notification.job;
-                  const jobPath = notification.jobPath;
+              ? combinedNotifications.map((item) => {
+                  if (item.kind === 'job_question') {
+                    const notification = item.data;
+                    const question = notification.question;
+                    const job = notification.job;
+                    const jobPath = notification.jobPath;
 
-                  if (!question || !job || !jobPath) {
+                    if (!question || !job || !jobPath) {
+                      return null;
+                    }
+
+                    return (
+                      <Link
+                        key={item.id}
+                        to={`${jobPath}?question=${question.id}`}
+                        onClick={() => handleOpenQuestionNotification(notification)}
+                        className={`block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 ${
+                          item.isRead ? 'bg-white' : 'bg-cyan-50/40'
+                        }`}
+                      >
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
+                          Job question
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-900">{question.body}</p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {job.title} · {job.company}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatQuestionAsker(question)} · {formatQuestionTime(question.createdAt)}
+                        </p>
+                      </Link>
+                    );
+                  }
+
+                  const notification = item.data;
+                  const feedback = notification.feedback;
+
+                  if (!feedback) {
                     return null;
                   }
 
+                  const typeLabel = FEEDBACK_TYPE_LABELS[feedback.feedbackType] || 'Site feedback';
+
                   return (
                     <Link
-                      key={notification.id}
-                      to={`${jobPath}?question=${question.id}`}
-                      onClick={() => handleOpenNotification(notification)}
+                      key={item.id}
+                      to={`/admin/feedback?feedback=${feedback.id}`}
+                      onClick={() => handleOpenFeedbackNotification(notification)}
                       className={`block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 ${
-                        notification.isRead ? 'bg-white' : 'bg-cyan-50/40'
+                        item.isRead ? 'bg-white' : 'bg-amber-50/50'
                       }`}
                     >
-                      <p className="line-clamp-2 text-sm font-medium text-slate-900">{question.body}</p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {job.title} · {job.company}
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                        Site feedback · {typeLabel}
                       </p>
+                      <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-900">{feedback.body}</p>
+                      {feedback.pageUrl ? (
+                        <p className="mt-1 text-xs text-slate-600">From page: {feedback.pageUrl}</p>
+                      ) : null}
                       <p className="mt-1 text-xs text-slate-500">
-                        {formatQuestionAsker(question)} · {formatQuestionTime(question.createdAt)}
+                        {formatFeedbackAuthor(feedback)} · {formatFeedbackTime(feedback.createdAt)}
                       </p>
                     </Link>
                   );

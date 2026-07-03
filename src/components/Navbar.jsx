@@ -14,6 +14,7 @@ const navLinks = [
   { label: 'Engineering', to: '/jobs/engineering' },
   { label: 'Fresher Jobs', to: '/jobs/fresher' },
   { label: 'Blog', to: '/blog' },
+  { label: 'Feedback', to: '/feedback' },
 ];
 
 const getLinkClassName = ({ isActive }) =>

@@ -31,9 +31,13 @@ import EmployerNewJobPage from './pages/EmployerNewJobPage';
 import EmployerEditJobPage from './pages/EmployerEditJobPage';
 import OAuthConsentPage from './pages/OAuthConsentPage';
 import SavedJobsPage from './pages/SavedJobsPage';
+import FeedbackPage from './pages/FeedbackPage';
+import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 
 function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -109,10 +113,19 @@ function App() {
           </AdminRoute>
         )}
       />
+      <Route
+        path="/admin/feedback"
+        element={(
+          <AdminRoute>
+            <AdminFeedbackPage />
+          </AdminRoute>
+        )}
+      />
       <Route path="/blog" element={<BlogListPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
@@ -143,6 +156,8 @@ function App() {
         />
       ))}
     </Routes>
+    <FeedbackFloatingButton />
+    </>
   );
 }
 
