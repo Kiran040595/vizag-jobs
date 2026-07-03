@@ -7,6 +7,7 @@ import FresherJobsInVizagPage from './pages/FresherJobsInVizagPage';
 import PartTimeJobsVizagPage from './pages/PartTimeJobsVizagPage';
 import BranchJobsInVizagPage from './pages/BranchJobsInVizagPage';
 import { JOB_CATEGORY_PAGES } from './lib/jobCategoryPages';
+import { LEGACY_ROUTE_REDIRECTS } from './lib/legacyRedirects';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminNewJobPage from './pages/AdminNewJobPage';
 import AdminJobsPage from './pages/AdminJobsPage';
@@ -135,13 +136,9 @@ function App() {
       <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
       <Route path="/saved-jobs" element={<SavedJobsPage />} />
-      <Route path="/jobs-in-vizag" element={<JobsInVizagPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
-      <Route path="/it-jobs-in-vizag" element={<ItJobsInVizagPage />} />
       <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
-      <Route path="/fresher-jobs-in-vizag" element={<FresherJobsInVizagPage />} />
       <Route path="/jobs/part-time" element={<PartTimeJobsVizagPage />} />
-      <Route path="/part-time-jobs-vizag" element={<PartTimeJobsVizagPage />} />
       {JOB_CATEGORY_PAGES.map((page) => (
         <Route
           key={page.id}
@@ -149,12 +146,8 @@ function App() {
           element={<BranchJobsInVizagPage categoryId={page.id} />}
         />
       ))}
-      {JOB_CATEGORY_PAGES.map((page) => (
-        <Route
-          key={`${page.id}-legacy`}
-          path={page.legacyPath}
-          element={<BranchJobsInVizagPage categoryId={page.id} />}
-        />
+      {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([from, to]) => (
+        <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}
     </Routes>
     <CookieConsentBanner />

@@ -21,7 +21,6 @@ const staticRoutes = [
   { path: '/jobs/fresher', priority: '0.9' },
   { path: '/jobs/part-time', priority: '0.8' },
   ...JOB_CATEGORY_PAGES.map((page) => ({ path: page.path, priority: '0.85' })),
-  ...JOB_CATEGORY_PAGES.map((page) => ({ path: page.legacyPath, priority: '0.8' })),
   { path: '/blog', priority: '0.8' },
   { path: '/about', priority: '0.6' },
   { path: '/contact', priority: '0.6' },

@@ -27,6 +27,31 @@
       "permanent": true
     },
     {
+      "source": "/civil-jobs-in-vizag",
+      "destination": "/jobs/civil",
+      "permanent": true
+    },
+    {
+      "source": "/mechanical-jobs-in-vizag",
+      "destination": "/jobs/mechanical",
+      "permanent": true
+    },
+    {
+      "source": "/electrical-jobs-in-vizag",
+      "destination": "/jobs/electrical",
+      "permanent": true
+    },
+    {
+      "source": "/ece-jobs-in-vizag",
+      "destination": "/jobs/ece",
+      "permanent": true
+    },
+    {
+      "source": "/engineering-jobs-in-vizag",
+      "destination": "/jobs/engineering",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
