@@ -30,6 +30,7 @@ import EmployerJobsListPage from './pages/EmployerJobsListPage';
 import EmployerNewJobPage from './pages/EmployerNewJobPage';
 import EmployerEditJobPage from './pages/EmployerEditJobPage';
 import OAuthConsentPage from './pages/OAuthConsentPage';
+import SavedJobsPage from './pages/SavedJobsPage';
 
 function App() {
   return (
@@ -119,6 +120,7 @@ function App() {
       <Route path="/job/:jobSlug" element={<JobDetailsPage />} />
       <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
+      <Route path="/saved-jobs" element={<SavedJobsPage />} />
       <Route path="/jobs-in-vizag" element={<JobsInVizagPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
       <Route path="/it-jobs-in-vizag" element={<ItJobsInVizagPage />} />

@@ -7,6 +7,7 @@ const footerGroups = [
     title: 'Explore',
     links: [
       { label: 'All Jobs', to: '/jobs' },
+      { label: 'Saved Jobs', to: '/saved-jobs' },
       { label: 'Blog', to: '/blog' },
       ...JOB_BROWSE_LINKS,
     ],

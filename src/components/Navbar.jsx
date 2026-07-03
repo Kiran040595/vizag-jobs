@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import NavbarPostJobLink from './NavbarPostJobLink';
+import NavbarSavedJobsLink from './NavbarSavedJobsLink';
 import QuestionNotificationBell from './QuestionNotificationBell';
 
 const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'All Jobs', to: '/jobs' },
+  { label: 'Saved Jobs', to: '/saved-jobs' },
   { label: 'IT Jobs', to: '/jobs/it' },
   { label: 'Civil Jobs', to: '/jobs/civil' },
   { label: 'Mechanical Jobs', to: '/jobs/mechanical' },
@@ -38,6 +40,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2.5 md:flex">
+          <NavbarSavedJobsLink />
           <QuestionNotificationBell />
           <Link
             to="/jobs"
@@ -87,7 +90,8 @@ export default function Navbar() {
           ))}
 
           <div className="mt-3 flex flex-col gap-2 pb-2">
-            <div className="flex justify-center pb-1">
+            <div className="flex items-center justify-center gap-2 pb-1">
+              <NavbarSavedJobsLink onClick={() => setIsOpen(false)} />
               <QuestionNotificationBell />
             </div>
             <Link

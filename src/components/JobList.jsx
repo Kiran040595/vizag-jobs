@@ -2,10 +2,9 @@ import JobCard from './JobCard';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import {
-  displayCompanyName,
-  displayLocation,
-  displaySalary,
-} from '../lib/jobDisplayLabels';
+  buildCardHighlightItems,
+  cardCompanyName,
+} from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 
 /**
@@ -54,23 +53,40 @@ const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {jobsToShow.map((job) => (
+        {jobsToShow.map((job) => {
+          const company = cardCompanyName(job.company);
+          const highlightItems = buildCardHighlightItems({
+            category: job.category,
+            jobType: job.jobType,
+            experience: resolveJobExperienceForDisplay(job),
+            isFresher: job.isFresher,
+            salary: job.salary,
+            workMode: job.workMode,
+          });
+
+          return (
           <JobCard
             key={job.id}
+            jobId={job.id}
+            jobSnapshot={{
+              id: job.id,
+              slug: job.slug,
+              title: job.title,
+              company: company || '',
+              location: '',
+              jobPath: getJobDetailPath(job),
+            }}
             jobPath={getJobDetailPath(job)}
-            companyLogo={job.companyLogo}
             jobTitle={job.title}
-            companyName={displayCompanyName(job.company)}
-            location={displayLocation(job.location)}
-            experience={resolveJobExperienceForDisplay(job)}
-            salary={displaySalary(job.salary)}
+            companyName={company}
+            highlightItems={highlightItems}
             description={
               job.shortDescription || stripMarkdownForPlainText(job.description, 160)
             }
-            tags={job.tags}
             postedAt={job.postedAt}
           />
-        ))}
+          );
+        })}
       </div>
     </section>
   );
