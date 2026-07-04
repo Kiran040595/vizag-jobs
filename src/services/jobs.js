@@ -8,11 +8,14 @@ const DEFAULT_TABLE_NAME = 'jobs';
 const jobsTable = import.meta.env.VITE_SUPABASE_JOBS_TABLE || DEFAULT_TABLE_NAME;
 
 /**
- * Default cap for list queries. The 45-day public display window already
- * bounds list size, but a hard limit is a safety net against runaway data
- * (e.g. a buggy import) blowing past the Supabase free-tier egress budget.
+ * Optional hard cap when callers pass `filters.limit`.
+ * Default list queries load every published job within the public display window
+ * (last 30 days by posted_at), using pagination when needed.
  */
-export const DEFAULT_LIST_LIMIT = 500;
+export const DEFAULT_LIST_LIMIT = null;
+
+/** Supabase/PostgREST page size for paginated job list fetches. */
+const JOB_LIST_PAGE_SIZE = 1000;
 
 /**
  * Shared session-storage TTL for the public listing pages. Bumped from 5 min
@@ -158,7 +161,8 @@ const processJobData = (job, index) => {
 
 const escapeIlike = (value) => value.replaceAll('%', '\\%').replaceAll(',', '\\,');
 
-const buildSupabaseQuery = (filters = {}) => {
+const buildSupabaseQuery = (filters = {}, options = {}) => {
+  const { applyLimit = true } = options;
   const limit = filters.limit ?? DEFAULT_LIST_LIMIT;
 
   let query = supabase
@@ -192,11 +196,45 @@ const buildSupabaseQuery = (filters = {}) => {
     );
   }
 
-  if (limit !== null && limit !== undefined) {
+  if (applyLimit && limit !== null && limit !== undefined) {
     query = query.limit(Number(limit));
   }
 
   return query;
+};
+
+const fetchJobsPaginated = async (filters = {}) => {
+  const maxRows = filters.limit ?? null;
+  let offset = 0;
+  const allRows = [];
+
+  while (true) {
+    const from = offset;
+    const to = offset + JOB_LIST_PAGE_SIZE - 1;
+    const { data, error } = await buildSupabaseQuery(filters, { applyLimit: false }).range(from, to);
+
+    if (error) {
+      throw new Error(`Supabase jobs query failed: ${error.message}`);
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      break;
+    }
+
+    allRows.push(...data);
+
+    if (maxRows && allRows.length >= maxRows) {
+      return allRows.slice(0, maxRows);
+    }
+
+    if (data.length < JOB_LIST_PAGE_SIZE) {
+      break;
+    }
+
+    offset += JOB_LIST_PAGE_SIZE;
+  }
+
+  return allRows;
 };
 
 export const fetchJobs = async (filters = {}, forceRefresh = false) => {
@@ -218,11 +256,7 @@ export const fetchJobs = async (filters = {}, forceRefresh = false) => {
   }
 
   const jobsData = await retryWithBackoff(async () => {
-    const { data, error } = await buildSupabaseQuery(actualFilters);
-
-    if (error) {
-      throw new Error(`Supabase jobs query failed: ${error.message}`);
-    }
+    const data = await fetchJobsPaginated(actualFilters);
 
     if (!Array.isArray(data)) {
       throw new Error('Supabase returned an invalid jobs response.');

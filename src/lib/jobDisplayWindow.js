@@ -1,5 +1,5 @@
 /** Published jobs older than this many days are hidden from the public site. */
-export const JOB_DISPLAY_MAX_AGE_DAYS = 45;
+export const JOB_DISPLAY_MAX_AGE_DAYS = 30;
 
 /** Minimum `posted_at` (inclusive) for jobs shown on the site and sitemap. */
 export const getMinPostedAtIsoForPublicDisplay = () => {
