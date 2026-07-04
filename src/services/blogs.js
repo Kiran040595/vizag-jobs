@@ -1,3 +1,4 @@
+import { normalizeBlogBodyMarkdown } from '../lib/blogBodyMarkdown.js';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
 const CACHE_DURATION = 60000;
@@ -30,7 +31,7 @@ const mapRowToPost = (row) => ({
   slug: row.slug,
   title: row.title,
   excerpt: row.excerpt || '',
-  body: row.body || '',
+  body: normalizeBlogBodyMarkdown(row.body || ''),
   status: row.status,
   publishedAt: row.published_at,
   createdAt: row.created_at,

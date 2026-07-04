@@ -51,6 +51,7 @@ ok(prompt.includes('Maximum ~35%'), 'prompt limits raw job listing share');
 ok(prompt.includes('Software Engineer'), 'prompt includes job data');
 ok(prompt.includes('Sample regional hiring news'), 'prompt includes web context');
 ok(prompt.includes('/jobs/it'), 'prompt includes internal links');
+ok(prompt.includes('blank line between every paragraph'), 'prompt requires paragraph breaks');
 
 const parsed = parseDailyBlogGeminiJson(
   JSON.stringify({

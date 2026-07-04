@@ -3,6 +3,8 @@
  * Used by tests and mirrored in the generate-daily-blog edge function.
  */
 
+import { normalizeBlogBodyMarkdown } from './blogBodyMarkdown.js';
+
 export const DAILY_BLOG_ARTICLE_ANGLES = [
   {
     id: 'market_pulse',
@@ -187,6 +189,8 @@ ${JSON.stringify(digest.highlights, null, 2)}
 ${webSection}
 
 ## Required article structure (Markdown body)
+Use **## section headings** for each block below. Put a **blank line between every paragraph** (Markdown needs two newline characters between paragraphs).
+
 1. **Opening** (2 short paragraphs) — hook with today's market takeaway for Vizag job seekers.
 2. **What stood out today** — 3–5 insights from the data (sectors, employers, experience levels).
 3. **Deep analysis section** — aligned to today's angle (${angle.label}); connect local context (port city, IT parks, pharma, manufacturing, PSU presence) where relevant.
@@ -194,6 +198,12 @@ ${webSection}
 5. **Practical tips for applicants** — 3–4 actionable bullets (resume, timing, categories to watch).
 6. **Looking ahead** — short forward-looking paragraph (next few days, seasonal patterns, sectors to watch).
 7. **Editor's note** — one sentence that ${siteName} aggregates listings; verify details on the original employer posting.
+
+## Markdown formatting rules (critical)
+- Never return the entire article as one long paragraph.
+- Separate every paragraph with a blank line.
+- Use \`##\` headings for major sections.
+- Use bullet lists for tips and highlighted roles; keep list items on consecutive lines.
 
 ## Internal links (include at least 4 naturally in the body)
 ${internalLinks}
@@ -204,7 +214,7 @@ Return **valid JSON only** (no markdown fences) with this exact shape:
   "title": "string — compelling, unique, includes Vizag/Visakhapatnam and date context",
   "slug": "${slug}",
   "excerpt": "string — 140-220 chars meta description for search",
-  "body": "string — full Markdown article, 900-1400 words",
+  "body": "string — full Markdown article, 900-1400 words, with blank lines between paragraphs",
   "angle_id": "${angle.id}",
   "editorial_notes": "string — 1 sentence on how this differs from a generic job list"
 }
@@ -226,7 +236,7 @@ export const parseDailyBlogGeminiJson = (rawText) => {
     title: String(parsed.title).trim(),
     slug: String(parsed.slug || '').trim(),
     excerpt: String(parsed.excerpt || '').trim(),
-    body: String(parsed.body).trim(),
+    body: normalizeBlogBodyMarkdown(String(parsed.body).trim()),
     angleId: String(parsed.angle_id || '').trim(),
     editorialNotes: String(parsed.editorial_notes || '').trim(),
   };

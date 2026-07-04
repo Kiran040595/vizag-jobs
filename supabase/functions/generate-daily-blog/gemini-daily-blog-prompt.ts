@@ -1,3 +1,75 @@
+const MARKDOWN_BLOCK_START = /^(#{1,6}\s|[-*+]\s|\d+\.\s|>\s|```|---|\*\*\*)/;
+
+const splitSentences = (text: string) => {
+  const sentences = text.match(/[^.!?]+[.!?]+(?:["')\]]\s*)?|\S+/g);
+  return sentences ? sentences.map((sentence) => sentence.trim()).filter(Boolean) : [text.trim()];
+};
+
+const splitWallTextIntoParagraphs = (text: string) => {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return trimmed;
+
+  const sentences = splitSentences(trimmed);
+  if (sentences.length <= 1) return trimmed;
+
+  const paragraphs: string[] = [];
+  let chunk: string[] = [];
+
+  for (let index = 0; index < sentences.length; index += 1) {
+    chunk.push(sentences[index]);
+    const atEnd = index === sentences.length - 1;
+    const shouldBreak = chunk.length >= 3 || (chunk.length >= 2 && atEnd);
+
+    if (shouldBreak) {
+      paragraphs.push(chunk.join(' '));
+      chunk = [];
+    }
+  }
+
+  if (chunk.length) {
+    paragraphs.push(chunk.join(' '));
+  }
+
+  return paragraphs.join('\n\n');
+};
+
+export const normalizeBlogBodyMarkdown = (body: unknown) => {
+  let text = String(body || '').trim();
+  if (!text) return text;
+
+  if (text.includes('\\n')) {
+    text = text.replace(/\\n/g, '\n');
+  }
+
+  text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+
+  if (/\n\n/.test(text)) {
+    return text;
+  }
+
+  if (text.includes('\n')) {
+    const lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const isListBlock =
+      lines.length > 0 && lines.every((line) => /^[-*+]\s/.test(line) || /^\d+\.\s/.test(line));
+    if (isListBlock) {
+      return lines.join('\n');
+    }
+
+    const isMarkdownBlock = lines.every((line) => MARKDOWN_BLOCK_START.test(line));
+    if (isMarkdownBlock) {
+      return lines.join('\n\n');
+    }
+
+    return lines.join('\n\n');
+  }
+
+  return splitWallTextIntoParagraphs(text);
+};
+
 /** Daily blog prompt builder — mirrored from src/lib/dailyBlogPrompt.js */
 
 export const DAILY_BLOG_ARTICLE_ANGLES = [
@@ -208,6 +280,8 @@ ${JSON.stringify(digest.highlights, null, 2)}
 ${webSection}
 
 ## Required article structure (Markdown body)
+Use **## section headings** for each block below. Put a **blank line between every paragraph** (Markdown needs two newline characters between paragraphs).
+
 1. **Opening** (2 short paragraphs) — hook with today's market takeaway for Vizag job seekers.
 2. **What stood out today** — 3–5 insights from the data (sectors, employers, experience levels).
 3. **Deep analysis section** — aligned to today's angle (${angle.label}); connect local context (port city, IT parks, pharma, manufacturing, PSU presence) where relevant.
@@ -215,6 +289,12 @@ ${webSection}
 5. **Practical tips for applicants** — 3–4 actionable bullets (resume, timing, categories to watch).
 6. **Looking ahead** — short forward-looking paragraph (next few days, seasonal patterns, sectors to watch).
 7. **Editor's note** — one sentence that ${siteName} aggregates listings; verify details on the original employer posting.
+
+## Markdown formatting rules (critical)
+- Never return the entire article as one long paragraph.
+- Separate every paragraph with a blank line.
+- Use \`##\` headings for major sections.
+- Use bullet lists for tips and highlighted roles; keep list items on consecutive lines.
 
 ## Internal links (include at least 4 naturally in the body)
 ${internalLinks}
@@ -257,7 +337,7 @@ export const parseDailyBlogGeminiJson = (raw: unknown) => {
     title: String(record.title).trim(),
     slug: String(record.slug || '').trim(),
     excerpt: String(record.excerpt || '').trim(),
-    body: String(record.body).trim(),
+    body: normalizeBlogBodyMarkdown(String(record.body).trim()),
     angleId: String(record.angle_id || '').trim(),
     editorialNotes: String(record.editorial_notes || '').trim(),
   };
