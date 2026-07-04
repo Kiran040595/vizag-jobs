@@ -28,6 +28,8 @@ type RequestBody = {
   skip_if_exists?: boolean;
   min_jobs?: number;
   load_jobs_from_db?: boolean;
+  custom_instructions?: string;
+  source_content?: string;
 };
 
 function getIstDayBoundsUtc(dateInput: Date) {
@@ -346,13 +348,16 @@ Deno.serve(async (req) => {
   const skipIfExists =
     body.skip_if_exists ??
     !['0', 'false', 'no'].includes(String(Deno.env.get('AUTO_DAILY_BLOG_SKIP_IF_EXISTS') ?? 'true').toLowerCase());
+  const customInstructions = String(body.custom_instructions || '').trim();
+  const sourceContent = String(body.source_content || '').trim();
+  const hasCustomBrief = Boolean(customInstructions || sourceContent);
 
   let jobs = Array.isArray(body.jobs) ? body.jobs : [];
   if (body.load_jobs_from_db || jobs.length === 0) {
     jobs = await loadTodaysPublishedJobs(supabaseAdmin, dateInput);
   }
 
-  if (jobs.length < minJobs) {
+  if (jobs.length < minJobs && !hasCustomBrief) {
     return jsonResponse({
       ok: true,
       skipped: true,
@@ -365,7 +370,7 @@ Deno.serve(async (req) => {
   const expectedSlug = buildDailyBlogSlug(dateInput, angle.id);
   const blogTable = Deno.env.get('SUPABASE_BLOG_TABLE')?.trim() || 'blog_posts';
 
-  if (skipIfExists) {
+  if (skipIfExists && !hasCustomBrief) {
     const { data: existing } = await supabaseAdmin
       .from(blogTable)
       .select('id, slug, status')
@@ -402,6 +407,8 @@ Deno.serve(async (req) => {
     siteUrl,
     dateInput,
     angle,
+    customInstructions,
+    sourceContent,
   });
 
   const article = await geminiGenerateBlog(prompt);

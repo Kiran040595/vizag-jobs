@@ -224,6 +224,47 @@ const summarizeJobsForPrompt = (jobs: DailyBlogJobInput[] = []) => {
   };
 };
 
+const MAX_CUSTOM_INSTRUCTIONS_CHARS = 4000;
+const MAX_SOURCE_CONTENT_CHARS = 12000;
+
+export const buildAdminBlogCustomizationSections = ({
+  customInstructions = '',
+  sourceContent = '',
+  siteName = 'JobsInVizag.in',
+  siteUrl = 'https://jobsinvizag.in',
+}: {
+  customInstructions?: string;
+  sourceContent?: string;
+  siteName?: string;
+  siteUrl?: string;
+} = {}) => {
+  const instructions = String(customInstructions || '').trim().slice(0, MAX_CUSTOM_INSTRUCTIONS_CHARS);
+  const source = String(sourceContent || '').trim().slice(0, MAX_SOURCE_CONTENT_CHARS);
+  const sections: string[] = [];
+
+  if (instructions) {
+    sections.push(`## Admin custom instructions (follow closely)
+The site editor provided these topics, angles, or editorial notes. Prioritize them when they do not conflict with AdSense quality rules.
+
+${instructions}`);
+  }
+
+  if (source) {
+    sections.push(`## Source material to rewrite for ${siteName}
+The editor pasted reference content from another site, document, or notes. **Rewrite it in original words** for ${siteName} (${siteUrl}) — do not copy sentences verbatim.
+
+${source}
+
+Rewrite rules:
+- Paraphrase fully; keep facts accurate but change wording and structure.
+- Adapt the story for Visakhapatnam / Vizag job seekers and local context where relevant.
+- Weave in natural internal links to ${siteName} pages (/jobs, category pages, /blog) when helpful.
+- Do not present the source as your own employer data; ${siteName} aggregates public listings.`);
+  }
+
+  return sections.length ? `\n${sections.join('\n\n')}\n` : '';
+};
+
 export const buildDailyBlogGeminiPrompt = ({
   jobs = [],
   webContext = '',
@@ -231,6 +272,8 @@ export const buildDailyBlogGeminiPrompt = ({
   siteUrl = 'https://jobsinvizag.in',
   dateInput = new Date(),
   angle = pickDailyBlogAngle(dateInput),
+  customInstructions = '',
+  sourceContent = '',
 }: {
   jobs?: DailyBlogJobInput[];
   webContext?: string;
@@ -238,6 +281,8 @@ export const buildDailyBlogGeminiPrompt = ({
   siteUrl?: string;
   dateInput?: Date | string;
   angle?: DailyBlogAngle;
+  customInstructions?: string;
+  sourceContent?: string;
 }) => {
   const digest = summarizeJobsForPrompt(jobs);
   const displayDate = formatDisplayDate(dateInput);
@@ -248,9 +293,19 @@ export const buildDailyBlogGeminiPrompt = ({
     ? `## Live web context (use for regional/market colour — paraphrase, do not copy verbatim)\n${webContext.trim().slice(0, 6000)}`
     : '## Live web context\nNo external snippets were retrieved. Rely on job data and careful local labour-market reasoning for Visakhapatnam.';
 
+  const adminCustomization = buildAdminBlogCustomizationSections({
+    customInstructions,
+    sourceContent,
+    siteName,
+    siteUrl,
+  });
+
+  const hasCustomBrief = Boolean(String(customInstructions || '').trim() || String(sourceContent || '').trim());
+
   return `You are the editorial lead for ${siteName}, an independent regional job board for Visakhapatnam (Vizag), Andhra Pradesh, India.
 
 Write ONE original blog article for Google AdSense approval standards and helpful job-seeker value.
+${adminCustomization}
 
 ## Editorial mission (AdSense / quality bar)
 - Publish **original analysis**, not a thin scrape or duplicate job list.
@@ -267,6 +322,7 @@ Write ONE original blog article for Google AdSense approval standards and helpfu
 - Article angle: **${angle.label}** — ${angle.focus}
 - Headline style hint: ${angle.headlineStyle}
 - Suggested slug: ${slug}
+${hasCustomBrief ? '- The admin custom brief above may override the default angle/focus when specific topics or rewrite instructions were provided.' : ''}
 
 ## Job data published today on ${siteName}
 Total new listings today: ${digest.total}
@@ -301,6 +357,7 @@ ${internalLinks}
 
 ## Output format
 Return JSON with keys: title, slug, excerpt, body, angle_id, editorial_notes.
+${hasCustomBrief ? 'When admin custom instructions or source material were provided, choose a unique slug that matches the article topic (avoid duplicating the default daily slug unless the topic is the same).' : ''}
 Site URL for absolute references when needed: ${siteUrl}
 `;
 };

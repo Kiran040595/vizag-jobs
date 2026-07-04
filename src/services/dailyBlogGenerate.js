@@ -36,6 +36,8 @@ export function getGenerateDailyBlogUrl() {
  *   minJobs?: number;
  *   date?: string;
  *   loadJobsFromDb?: boolean;
+ *   customInstructions?: string;
+ *   sourceContent?: string;
  * }} [options]
  */
 export async function generateDailyBlogArticle(accessToken, options = {}) {
@@ -61,6 +63,15 @@ export async function generateDailyBlogArticle(accessToken, options = {}) {
 
   if (options.date) {
     body.date = options.date;
+  }
+
+  const customInstructions = String(options.customInstructions || '').trim();
+  const sourceContent = String(options.sourceContent || '').trim();
+  if (customInstructions) {
+    body.custom_instructions = customInstructions;
+  }
+  if (sourceContent) {
+    body.source_content = sourceContent;
   }
 
   let res;

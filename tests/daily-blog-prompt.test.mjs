@@ -4,6 +4,7 @@
 
 import {
   DAILY_BLOG_ARTICLE_ANGLES,
+  buildAdminBlogCustomizationSections,
   buildDailyBlogGeminiPrompt,
   buildDailyBlogSlug,
   parseDailyBlogGeminiJson,
@@ -52,6 +53,27 @@ ok(prompt.includes('Software Engineer'), 'prompt includes job data');
 ok(prompt.includes('Sample regional hiring news'), 'prompt includes web context');
 ok(prompt.includes('/jobs/it'), 'prompt includes internal links');
 ok(prompt.includes('blank line between every paragraph'), 'prompt requires paragraph breaks');
+
+const customSections = buildAdminBlogCustomizationSections({
+  customInstructions: 'Cover pharma hiring and link to fresher jobs.',
+  sourceContent: 'Original article about AP employment trends.',
+  siteName: 'JobsInVizag.in',
+  siteUrl: 'https://jobsinvizag.in',
+});
+ok(customSections.includes('Admin custom instructions'), 'custom instructions section is built');
+ok(customSections.includes('Source material to rewrite'), 'source rewrite section is built');
+ok(customSections.includes('pharma hiring'), 'custom instructions are included');
+
+const customPrompt = buildDailyBlogGeminiPrompt({
+  jobs: [],
+  customInstructions: 'Write about campus placements in Vizag.',
+  sourceContent: 'Sample external paragraph to rewrite.',
+  dateInput: '2026-07-03T12:00:00+05:30',
+  angle,
+});
+ok(customPrompt.includes('Write about campus placements in Vizag.'), 'custom prompt includes admin instructions');
+ok(customPrompt.includes('Sample external paragraph to rewrite.'), 'custom prompt includes source material');
+ok(customPrompt.includes('may override the default angle'), 'custom prompt notes angle override');
 
 const parsed = parseDailyBlogGeminiJson(
   JSON.stringify({
