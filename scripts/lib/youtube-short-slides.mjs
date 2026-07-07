@@ -129,47 +129,67 @@ function categorySeoTags(category, year) {
   const tags = [];
 
   if (value.includes('it') || value.includes('software')) {
-    tags.push(`IT jobs in vizag ${year}`, 'software jobs vizag', 'tech jobs vizag', `IT jobs vizag ${year}`);
+    tags.push(`IT jobs vizag`, 'software jobs vizag', 'tech jobs vizag');
   }
   if (value.includes('bank')) {
-    tags.push('banking jobs vizag', `bank jobs in vizag ${year}`, 'finance jobs vizag');
+    tags.push('banking jobs vizag', `bank jobs vizag`, 'finance jobs vizag');
   }
   if (value.includes('civil')) {
-    tags.push('civil jobs vizag', 'civil engineer jobs vizag', `civil jobs in vizag ${year}`);
+    tags.push('civil jobs vizag', 'civil engineer vizag');
   }
   if (value.includes('hospitality') || value.includes('retail')) {
-    tags.push('hotel jobs vizag', 'hospitality jobs vizag', 'retail jobs vizag');
+    tags.push('hotel jobs vizag', 'hospitality vizag', 'retail jobs vizag');
   }
   if (value.includes('logistic')) {
-    tags.push('logistics jobs vizag', 'supply chain jobs vizag');
+    tags.push('logistics jobs vizag', 'supply chain vizag');
   }
   if (value.includes('mechanical') || value.includes('engineering')) {
-    tags.push('engineering jobs vizag', 'mechanical jobs vizag');
+    tags.push('engineering vizag', 'mechanical vizag');
   }
   if (value.includes('support') || value.includes('bpo')) {
-    tags.push('BPO jobs vizag', 'customer support jobs vizag');
+    tags.push('BPO jobs vizag', 'customer support vizag');
   }
 
   return tags;
 }
 
-function collectTags(candidates, maxChars = 495) {
+function normalizeTag(tag) {
+  const words = String(tag || '')
+    .replace(/[<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return words.join(' ').slice(0, 30).trim();
+}
+
+function tagEffectiveLength(tag) {
+  const spaces = (tag.match(/\s/g) || []).length;
+  return tag.length + spaces * 2;
+}
+
+function collectTags(candidates, maxChars = 480) {
   const seen = new Set();
   const tags = [];
   let totalChars = 0;
 
   for (const candidate of candidates) {
-    const tag = String(candidate || '').trim();
+    const tag = normalizeTag(candidate);
     const key = tag.toLowerCase();
-    if (!tag || seen.has(key)) {
+    if (!tag || tag.length < 2 || seen.has(key)) {
       continue;
     }
-    if (totalChars + tag.length + 1 > maxChars) {
+
+    const nextTotal = totalChars + tagEffectiveLength(tag) + (tags.length > 0 ? 1 : 0);
+    if (nextTotal > maxChars) {
       break;
     }
+
     seen.add(key);
     tags.push(tag);
-    totalChars += tag.length + 1;
+    totalChars = nextTotal;
   }
 
   return tags;
@@ -241,69 +261,57 @@ function buildSeoTags({ leadJob, selectedJobs, year, hasFresher }) {
   const categories = [...new Set((selectedJobs || []).map((job) => String(job?.category || '').trim()).filter(Boolean))];
 
   const coreKeywords = [
-    'latest jobs in vizag',
-    `latest jobs in vizag ${year}`,
-    `fresher jobs in vizag ${year}`,
-    `jobs in vizag today ${year}`,
-    'jobs in vizag today',
-    `jobs in vizag ${year}`,
+    'latest jobs vizag',
+    `jobs vizag ${year}`,
+    `fresher jobs ${year}`,
+    'fresher jobs vizag',
+    'jobs vizag today',
     'vizag jobs today',
-    `vizag jobs today ${year}`,
-    `visakhapatnam jobs ${year}`,
     'visakhapatnam jobs',
-    'jobs in visakhapatnam today',
-    'vizag job openings today',
+    `vizag jobs ${year}`,
     'vizag job openings',
     'vizag hiring',
-    `vizag hiring ${year}`,
     'jobsinvizag',
     'andhra pradesh jobs',
-    `andhra pradesh jobs ${year}`,
     'job vacancy vizag',
-    'careers in vizag',
-    'today jobs in vizag',
+    'careers vizag',
+    'today jobs vizag',
   ];
 
   const fresherKeywords = hasFresher
     ? [
         'fresher jobs vizag',
-        'fresher jobs in vizag',
-        'jobs for freshers in vizag',
-        'freshers jobs in visakhapatnam',
+        'freshers jobs vizag',
         'graduate jobs vizag',
-        'entry level jobs vizag',
-        'fresher job openings vizag',
+        'entry level vizag',
         'campus jobs vizag',
       ]
     : [];
 
   const companyKeywords = brands.flatMap((brand) => [
-    `${brand.tag} jobs in vizag ${year}`,
     `${brand.tag} jobs vizag`,
-    `${brand.label} jobs in vizag`,
-    `${brand.tag} careers vizag`,
+    `${brand.tag} vizag ${year}`,
+    `${brand.label} vizag`,
   ]);
 
   const roleKeywords = [
-    truncate(`${jobTitle} jobs vizag`, 48),
-    truncate(`${jobTitle} jobs in vizag ${year}`, 48),
-    truncate(`${jobTitle} job in vizag`, 48),
+    truncate(`${jobTitle} vizag`, 30),
+    truncate(`${jobTitle} jobs`, 30),
   ];
 
   const categoryKeywords = categories.flatMap((category) => categorySeoTags(category, year));
 
   const longTailKeywords = [
-    'part time jobs vizag',
+    'part time vizag',
     'private jobs vizag',
-    'walk in interview vizag',
-    'daily job updates vizag',
-    'vizag jobs alert',
+    'walk in vizag',
+    'vizag job alert',
     'job search vizag',
-    'hiring in vizag',
-    'job fair vizag',
-    'vizag jobs for freshers',
-    'new jobs in vizag',
-    'job openings visakhapatnam today',
+    'hiring vizag',
+    'new jobs vizag',
+    'IT jobs vizag',
+    'bank jobs vizag',
+    'civil jobs vizag',
     'Shorts',
   ];
 
