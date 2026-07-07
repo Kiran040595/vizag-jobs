@@ -40,8 +40,14 @@ export const displayJobCategory = (value) =>
 export const displayJobType = (value) =>
   withFallback(value, PUBLIC_JOB_DISPLAY.jobType);
 
-export const displayWorkMode = (value) =>
-  withFallback(value, PUBLIC_JOB_DISPLAY.workMode);
+export const displayWorkMode = (value) => {
+  if (isPlaceholderJobValue(value)) return null;
+  const text = String(value ?? '').trim();
+  if (!text || text === PUBLIC_JOB_DISPLAY.workMode) return null;
+  if (/discussed during interview|confirmed during interview/i.test(text)) return null;
+  if (/^at interview$/i.test(text)) return null;
+  return text;
+};
 
 /** Returns experience text or null — never a generic interview placeholder. */
 export const displayExperience = (value) => {
@@ -139,7 +145,7 @@ export const sanitizeJobSeoRecord = (record = {}) => {
     out.work_mode = null;
     if ('workMode' in record) out.workMode = null;
   } else if (workMode !== undefined) {
-    const displayed = displayWorkMode(workMode);
+    const displayed = withFallback(workMode, PUBLIC_JOB_DISPLAY.workMode);
     if ('work_mode' in record) out.work_mode = displayed;
     if ('workMode' in record) out.workMode = displayed;
   }

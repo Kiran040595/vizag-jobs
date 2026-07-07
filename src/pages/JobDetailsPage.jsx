@@ -157,6 +157,11 @@ export default function JobDetailsPage() {
     [job],
   );
 
+  const workModeLabel = useMemo(
+    () => (job ? displayWorkMode(job.workMode) : null),
+    [job],
+  );
+
   const structuredData = useMemo(() => {
     if (!job) {
       return undefined;
@@ -254,7 +259,9 @@ export default function JobDetailsPage() {
             <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
               <p><span className="font-semibold text-slate-900">Category:</span> {displayJobCategory(job.category)}</p>
               <p><span className="font-semibold text-slate-900">Job Type:</span> {displayJobType(job.jobType)}</p>
-              <p><span className="font-semibold text-slate-900">Work Mode:</span> {displayWorkMode(job.workMode)}</p>
+              {workModeLabel ? (
+                <p><span className="font-semibold text-slate-900">Work Mode:</span> {workModeLabel}</p>
+              ) : null}
               {experienceLabel ? (
                 <p><span className="font-semibold text-slate-900">Experience:</span> {experienceLabel}</p>
               ) : null}

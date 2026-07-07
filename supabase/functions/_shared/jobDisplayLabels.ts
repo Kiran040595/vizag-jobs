@@ -40,8 +40,14 @@ export const displayJobCategory = (value: unknown): string =>
 export const displayJobType = (value: unknown): string =>
   withFallback(value, PUBLIC_JOB_DISPLAY.jobType);
 
-export const displayWorkMode = (value: unknown): string =>
-  withFallback(value, PUBLIC_JOB_DISPLAY.workMode);
+export const displayWorkMode = (value: unknown): string | null => {
+  if (isPlaceholderJobValue(value)) return null;
+  const text = String(value ?? '').trim();
+  if (!text || text === PUBLIC_JOB_DISPLAY.workMode) return null;
+  if (/discussed during interview|confirmed during interview/i.test(text)) return null;
+  if (/^at interview$/i.test(text)) return null;
+  return text;
+};
 
 export const displaySalary = (value: unknown): string =>
   withFallback(value, PUBLIC_JOB_DISPLAY.salary);
@@ -113,7 +119,7 @@ export function sanitizeJobSeoRecord(record: JobRecord = {}): JobRecord {
     out.work_mode = null;
     if ('workMode' in record) out.workMode = null;
   } else if (workMode !== undefined) {
-    const displayed = displayWorkMode(workMode);
+    const displayed = withFallback(workMode, PUBLIC_JOB_DISPLAY.workMode);
     if ('work_mode' in record) out.work_mode = displayed;
     if ('workMode' in record) out.workMode = displayed;
   }

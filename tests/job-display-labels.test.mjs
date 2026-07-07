@@ -41,7 +41,9 @@ ok(
   'company fallback'
 );
 ok(displaySalary('N/A') === PUBLIC_JOB_DISPLAY.salary, 'salary fallback');
-ok(displayWorkMode(null) === PUBLIC_JOB_DISPLAY.workMode, 'work mode fallback');
+ok(displayWorkMode(null) === null, 'work mode placeholder returns null');
+ok(displayWorkMode(PUBLIC_JOB_DISPLAY.workMode) === null, 'work mode fallback text returns null');
+ok(displayWorkMode('Hybrid') === 'Hybrid', 'work mode passthrough');
 ok(displayJobType('Full-time') === 'Full-time', 'job type passthrough');
 ok(isPlaceholderJobValue('Experience criteria discussed during interview'), 'generic experience phrase is placeholder');
 ok(displayExperience('Not specified') === null, 'experience placeholder returns null');
@@ -56,11 +58,13 @@ const sanitized = sanitizeJobSeoRecord({
   company: 'Unknown',
   salary: 'N/A',
   experience: 'Not specified',
+  work_mode: '',
   json_ld: { hiringOrganization: { name: 'Unknown' } },
 });
 ok(sanitized.company === PUBLIC_JOB_DISPLAY.company, 'sanitize company');
 ok(sanitized.salary === PUBLIC_JOB_DISPLAY.salary, 'sanitize salary');
 ok(sanitized.experience === '', 'sanitize experience clears placeholder');
+ok(sanitized.work_mode === PUBLIC_JOB_DISPLAY.workMode, 'sanitize work mode keeps SEO fallback');
 ok(sanitized.json_ld.hiringOrganization.name === PUBLIC_JOB_DISPLAY.company, 'sanitize json_ld org');
 
 console.log(`\n${pass} passed, ${fail} failed`);
