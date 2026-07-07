@@ -1,20 +1,33 @@
 import { isPlaceholderJobValue, PUBLIC_JOB_DISPLAY } from './jobDisplayLabels.js';
+import { buildBaseSalary } from './jobPostingSchema.js';
 
 const SEO_FALLBACK_VALUES = new Set(Object.values(PUBLIC_JOB_DISPLAY));
+
+const VAGUE_INTERVIEW_PHRASE = /discussed during interview|confirmed during interview/i;
 
 /** True when we have a real value to show on listing cards (not SEO placeholders). */
 export const isRealCardValue = (value) => {
   const text = String(value ?? '').trim();
   if (!text || isPlaceholderJobValue(text)) return false;
   if (SEO_FALLBACK_VALUES.has(text)) return false;
+  if (VAGUE_INTERVIEW_PHRASE.test(text)) return false;
   return true;
+};
+
+/** True when salary text has a concrete amount (CTC/LPA/₹), not a generic placeholder. */
+export const hasProperSalaryInfo = (value) => {
+  const text = String(value ?? '').trim();
+  if (!isRealCardValue(text)) return false;
+  return Boolean(buildBaseSalary(text));
 };
 
 export const cardCompanyName = (value) =>
   isRealCardValue(value) ? String(value).trim() : null;
 
-export const cardSalary = (value) =>
-  isRealCardValue(value) ? String(value).trim() : null;
+export const cardSalary = (value) => {
+  const text = String(value ?? '').trim();
+  return hasProperSalaryInfo(text) ? text : null;
+};
 
 export const cardLocation = (value) => {
   const text = String(value ?? '').trim();
@@ -33,8 +46,12 @@ export const cardCategory = (value) => {
 export const cardJobType = (value) =>
   isRealCardValue(value) ? String(value).trim() : null;
 
-export const cardWorkMode = (value) =>
-  isRealCardValue(value) ? String(value).trim() : null;
+export const cardWorkMode = (value) => {
+  const text = String(value ?? '').trim();
+  if (!isRealCardValue(text)) return null;
+  if (/^at interview$/i.test(text)) return null;
+  return text;
+};
 
 export const cardFresher = (value) => {
   const text = String(value ?? '').trim().toLowerCase();
@@ -60,7 +77,9 @@ export const buildCardHighlightItems = ({
 
   const categoryValue = cardCategory(category);
   const jobTypeValue = cardJobType(jobType);
-  const experienceValue = experience ? String(experience).trim() : null;
+  const experienceText = experience ? String(experience).trim() : '';
+  const experienceValue =
+    experienceText && isRealCardValue(experienceText) ? experienceText : null;
   const fresherValue = cardFresher(isFresher);
   const salaryValue = cardSalary(salary);
   const workModeValue = cardWorkMode(workMode);
