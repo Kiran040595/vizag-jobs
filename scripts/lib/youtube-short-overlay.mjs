@@ -102,7 +102,7 @@ function escapeRegex(value) {
   return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function shortCompanyName(name) {
+export function shortCompanyName(name) {
   return String(name || '')
     .replace(/\s+private\s+limited$/i, '')
     .replace(/\s+pvt\.?\s+ltd\.?$/i, '')
