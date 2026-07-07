@@ -6,7 +6,7 @@ Automatically creates a vertical **YouTube Short** from today's published Vizag 
 
 ```mermaid
 sequenceDiagram
-  participant GH as GitHub Actions (11 PM IST)
+  participant GH as GitHub Actions (7:30 PM IST)
   participant DB as Supabase jobs
   participant Script as generate-daily-youtube-short
   participant FF as FFmpeg + Sharp
@@ -114,7 +114,7 @@ AUTO_YOUTUBE_SHORT_PRIVACY=private npm run auto:youtube-short
 
 ## Schedule
 
-Runs daily at **11:00 PM IST** via `.github/workflows/auto-naukri-daily.yml` (after the 10:15 PM blog cron).
+Runs daily at **7:30 PM IST** via `.github/workflows/auto-naukri-daily.yml`.
 
 Manual run: **Actions → Auto daily job pipelines → Run workflow**.
 

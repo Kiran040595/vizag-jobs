@@ -10,8 +10,8 @@ on:
     - cron: '30 15 * * *'
     # 10:15 PM IST = 16:45 UTC — Daily blog (after all job fetches)
     - cron: '45 16 * * *'
-    # 11:00 PM IST = 17:30 UTC — Daily YouTube Short (after blog)
-    - cron: '30 17 * * *'
+    # 7:30 PM IST = 14:00 UTC — Daily YouTube Short
+    - cron: '0 14 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -110,7 +110,7 @@ jobs:
           AUTO_DAILY_BLOG_SKIP_IF_EXISTS: 'true'
 
   daily-youtube-short:
-    if: github.event.schedule == '30 17 * * *' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 14 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
