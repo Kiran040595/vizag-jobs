@@ -258,6 +258,7 @@ export default function HomePage() {
         {!isLoading ? (
           <>
             <JobCategoryBrowse />
+            <BlogTeaserSection />
             <JobFilters
             filters={filters}
             onUpdate={updateFilters}
@@ -281,7 +282,6 @@ export default function HomePage() {
           onPageChange={handlePageChange}
         />
 
-        <BlogTeaserSection />
         <StatsSection stats={siteStats} isLoading={isLoading} />
         <CTASection />
       </main>
