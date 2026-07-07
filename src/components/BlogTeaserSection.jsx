@@ -5,8 +5,29 @@ import { fetchPublishedPosts } from '../services/blogs';
 const formatDate = (value) => {
   if (!value) return '';
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
+
+function BlogPostCard({ post }) {
+  return (
+    <Link
+      to={`/blog/${post.slug}`}
+      className="group flex h-full min-h-[148px] flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition hover:border-cyan-200 hover:bg-cyan-50/40 hover:shadow-sm"
+    >
+      <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-950 transition group-hover:text-cyan-800 sm:text-base">
+        {post.title}
+      </h3>
+      {post.excerpt ? (
+        <p className="mt-2 line-clamp-2 flex-1 text-xs leading-relaxed text-slate-600 sm:text-sm">{post.excerpt}</p>
+      ) : (
+        <span className="flex-1" />
+      )}
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+        {formatDate(post.publishedAt)}
+      </p>
+    </Link>
+  );
+}
 
 export default function BlogTeaserSection() {
   const [posts, setPosts] = useState([]);
@@ -37,28 +58,44 @@ export default function BlogTeaserSection() {
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-600">From the blog</p>
-          <h2 className="mt-2 text-2xl font-black text-slate-950">Latest articles</h2>
-          <p className="mt-1 text-sm text-slate-600">Tips and updates for job seekers in Vizag.</p>
+    <section
+      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6"
+      aria-label="Latest blog articles"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-600 sm:tracking-[0.25em]">
+            From the blog
+          </p>
+          <h2 className="mt-1 text-lg font-black text-slate-950 sm:mt-2 sm:text-2xl">Career tips &amp; updates</h2>
         </div>
-        <Link to="/blog" className="text-sm font-semibold text-cyan-700 hover:text-cyan-600">
-          View all posts
+        <Link
+          to="/blog"
+          className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-50 hover:text-cyan-600 sm:text-sm"
+        >
+          View all
         </Link>
       </div>
-      <ul className="mt-6 divide-y divide-slate-100">
+
+      <p className="mt-1 text-xs text-slate-500 sm:hidden">Swipe for more articles</p>
+
+      {/* Mobile: horizontal swipe cards */}
+      <div className="-mx-1 mt-3 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-5 md:hidden [&::-webkit-scrollbar]:hidden">
         {posts.map((post) => (
-          <li key={post.id} className="py-4 first:pt-0 last:pb-0">
-            <Link to={`/blog/${post.slug}`} className="group block">
-              <h3 className="font-bold text-slate-950 transition group-hover:text-cyan-700">{post.title}</h3>
-              {post.excerpt ? <p className="mt-1 line-clamp-2 text-sm text-slate-600">{post.excerpt}</p> : null}
-              <p className="mt-2 text-xs text-slate-400">{formatDate(post.publishedAt)}</p>
-            </Link>
-          </li>
+          <article key={post.id} className="w-[min(82vw,300px)] shrink-0 snap-start">
+            <BlogPostCard post={post} />
+          </article>
         ))}
-      </ul>
+      </div>
+
+      {/* Desktop: grid */}
+      <div className="mt-5 hidden gap-4 md:grid md:grid-cols-3">
+        {posts.map((post) => (
+          <article key={post.id}>
+            <BlogPostCard post={post} />
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
