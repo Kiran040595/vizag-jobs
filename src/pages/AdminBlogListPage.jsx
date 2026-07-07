@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import AdminDailyBlogGenerator from '../components/admin/AdminDailyBlogGenerator';
+import AdminYouTubeShortGenerator from '../components/admin/AdminYouTubeShortGenerator';
 import { fetchAdminPosts, updateAdminPostStatus } from '../services/adminBlogs';
 
 const STATUS_STYLES = {
@@ -98,13 +99,14 @@ export default function AdminBlogListPage() {
     >
       <SEO title="Blog posts | Vizag Jobs Admin" description="Manage Vizag Jobs blog posts." canonical="/admin/blog" />
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-6">
         <AdminDailyBlogGenerator
           onGenerated={(post) => {
             setPosts((current) => upsertPost(current, post));
             setNotice(`Generated article "${post.title}" (${post.status}).`);
           }}
         />
+        <AdminYouTubeShortGenerator />
       </div>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
