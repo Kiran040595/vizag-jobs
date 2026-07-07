@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-import { pipelineConfig } from './pipeline-env.mjs';
+import { getSupabaseReadKey, pipelineConfig } from './pipeline-env.mjs';
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
@@ -63,18 +63,20 @@ export function mapJobRowForDailyBlog(job) {
     slug,
     path: slug ? `/jobs/${categorySegment(category)}/${slug}` : null,
     posted_at: job.posted_at,
+    is_fresher: Boolean(job.is_fresher),
+    job_type: job.job_type,
   };
 }
 
 export async function fetchTodaysPublishedJobs(dateInput = new Date()) {
   const { startUtc, endUtc, istDate } = getIstDayBoundsUtc(dateInput);
-  const supabase = createClient(pipelineConfig.supabaseUrl, pipelineConfig.supabaseServiceRoleKey, {
+  const supabase = createClient(pipelineConfig.supabaseUrl, getSupabaseReadKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
   const { data, error } = await supabase
     .from(pipelineConfig.jobsTable)
-    .select('title, company, category, location, work_mode, experience, salary, slug, posted_at')
+    .select('title, company, category, location, work_mode, experience, salary, slug, posted_at, is_fresher, job_type')
     .eq('status', 'published')
     .gte('posted_at', startUtc)
     .lte('posted_at', endUtc)

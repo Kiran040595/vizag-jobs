@@ -11,11 +11,14 @@
     "auto:naukri": "AUTO_FETCH_CHANNEL=naukri node scripts/auto-external-pipeline.mjs",
     "auto:linkedin-jobs": "AUTO_FETCH_CHANNEL=linkedin_jobs node scripts/auto-external-pipeline.mjs",
     "auto:linkedin-posts": "AUTO_FETCH_CHANNEL=linkedin_posts node scripts/auto-external-pipeline.mjs",
-    "auto:daily-blog": "node scripts/generate-daily-blog.mjs"
+    "auto:daily-blog": "node scripts/generate-daily-blog.mjs",
+    "auto:youtube-short": "node scripts/generate-daily-youtube-short.mjs",
+    "youtube:oauth-setup": "node scripts/youtube-oauth-setup.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
     "@vercel/analytics": "^2.0.1",
+    "msedge-tts": "^2.0.6",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-helmet-async": "^3.0.0",

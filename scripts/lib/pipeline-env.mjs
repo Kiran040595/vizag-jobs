@@ -31,6 +31,19 @@ const loadEnvFile = (file) => {
     }, {});
 };
 
+export function applyLocalEnv() {
+  const files = ['.env', '.env.local'];
+  for (const file of files) {
+    for (const [key, value] of Object.entries(loadEnvFile(file))) {
+      if (process.env[key] === undefined) {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+applyLocalEnv();
+
 const env = { ...loadEnvFile('.env'), ...loadEnvFile('.env.local'), ...process.env };
 
 export const pipelineConfig = {
@@ -66,4 +79,21 @@ export function assertPipelineConfig() {
   if (missing.length > 0) {
     throw new Error(`Missing required env: ${missing.join(', ')}`);
   }
+}
+
+export function assertYouTubeShortConfig() {
+  const missing = [];
+  if (!pipelineConfig.supabaseUrl) missing.push('SUPABASE_URL or VITE_SUPABASE_URL');
+  if (!pipelineConfig.supabaseAnonKey) missing.push('SUPABASE_ANON_KEY or VITE_SUPABASE_ANON_KEY');
+  if (!process.env.YOUTUBE_CLIENT_ID) missing.push('YOUTUBE_CLIENT_ID');
+  if (!process.env.YOUTUBE_CLIENT_SECRET) missing.push('YOUTUBE_CLIENT_SECRET');
+  if (!process.env.YOUTUBE_REFRESH_TOKEN) missing.push('YOUTUBE_REFRESH_TOKEN');
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required env: ${missing.join(', ')}`);
+  }
+}
+
+export function getSupabaseReadKey() {
+  return pipelineConfig.supabaseServiceRoleKey || pipelineConfig.supabaseAnonKey;
 }
