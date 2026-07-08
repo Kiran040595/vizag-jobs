@@ -24,6 +24,7 @@ import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
+import SimilarJobs from '../components/SimilarJobs';
 import {
   displayCompanyName,
   displayFresher,
@@ -354,6 +355,8 @@ export default function JobDetailsPage() {
             />
           </section>
         ) : null}
+
+        {job ? <SimilarJobs job={job} /> : null}
       </main>
       <Footer />
     </div>
