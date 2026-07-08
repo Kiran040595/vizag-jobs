@@ -44,16 +44,16 @@ export default function CTASection() {
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Get the latest job updates by email or browse new openings anytime.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-nowrap items-center gap-3 overflow-x-auto">
             <a
               href={emailSubscribeHref}
-              className="inline-flex rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+              className="inline-flex whitespace-nowrap rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
             >
               Subscribe by Email
             </a>
             <Link
               to="/jobs"
-              className="inline-flex rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+              className="inline-flex whitespace-nowrap rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
             >
               Browse Latest Jobs
             </Link>
@@ -61,7 +61,7 @@ export default function CTASection() {
               href="https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
             >
               <svg
                 aria-hidden="true"

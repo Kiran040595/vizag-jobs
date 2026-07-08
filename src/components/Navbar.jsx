@@ -7,7 +7,6 @@ import QuestionNotificationBell from './QuestionNotificationBell';
 const navLinks = [
   { label: 'Home', to: '/' },
   { label: 'All Jobs', to: '/jobs' },
-  { label: 'Saved Jobs', to: '/saved-jobs' },
   { label: 'IT Jobs', to: '/jobs/it' },
   { label: 'Civil Jobs', to: '/jobs/civil' },
   { label: 'Mechanical Jobs', to: '/jobs/mechanical' },
