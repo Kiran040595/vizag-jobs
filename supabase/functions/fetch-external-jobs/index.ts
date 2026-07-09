@@ -41,6 +41,7 @@ import {
   classifyJobRecord,
   normalizeJobCategory,
 } from '../_shared/jobCategoryTaxonomy.ts';
+import { compareNaukriJobsByExperience } from '../_shared/naukriExperienceSort.ts';
 import { isUsableCompanyName } from '../_shared/jobRecordInference.ts';
 import {
   companyNameForSlug,
@@ -5145,6 +5146,12 @@ function mapNaukriExtractedJobsToSiteJobs(
     const ts = parsePostedAt(j.posted_at ?? null);
     return ts === null || ts < cutoff;
   });
+  siteJobs.sort((a, b) =>
+    compareNaukriJobsByExperience(
+      { experience: a.experience, title: a.title, posted_at: a.posted_at },
+      { experience: b.experience, title: b.title, posted_at: b.posted_at },
+    ),
+  );
   const summary = summarizeJobs(siteJobs, cutoff);
 
   const naukriInOutput = siteJobs.filter((j) => j.source_name === 'naukri.com').length;

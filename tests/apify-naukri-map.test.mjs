@@ -101,6 +101,8 @@ assert.match(sourceText, /APIFY_API_TOKEN_NAUKRI/);
 assert.match(sourceText, /keyword:\s*'vizag'/);
 assert.match(sourceText, /postedBy:\s*\[\s*'1'\s*\]/);
 assert.match(sourceText, /isNaukriVizagJob/);
+assert.match(sourceText, /prioritizeNaukriJobsByExperience/);
+assert.match(sourceText, /naukriApifyScrapePoolSize/);
 
 const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 const scrapedAt = '2026-06-17T12:00:00.000Z';

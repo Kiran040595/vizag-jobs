@@ -4,6 +4,12 @@
  */
 
 import { apifyRunActor } from './apify-linkedin.ts';
+import {
+  naukriApifyScrapePoolSize,
+  naukriExperienceSortEnabled,
+  naukriFresherCollectionRatio,
+  prioritizeNaukriJobsByExperience,
+} from '../_shared/naukriExperienceSort.ts';
 
 export const DEFAULT_NAUKRI_APIFY_ACTOR = 'api-empire~naukri-job-scraper';
 
@@ -228,11 +234,21 @@ function naukriJobRecordFromFlat(
   };
 }
 
+export type ApifyNaukriMapOptions = {
+  /** Cap jobs after fresher-first prioritization (defaults to no cap). */
+  maxJobs?: number;
+  /** Target fresher+entry share when capping (default 0.75). */
+  fresherRatio?: number;
+  /** When false, return Vizag jobs in scrape order without experience sorting. */
+  experienceSort?: boolean;
+};
+
 /** Map api-empire~naukri-job-scraper dataset rows to site jobs. */
 export function apifyItemsToNaukriJobs(
   items: Record<string, unknown>[],
   scrapedAt: string,
   fallbackSearchUrl: string,
+  mapOptions: ApifyNaukriMapOptions = {},
 ): ApifyNaukriJob[] {
   const jobs: ApifyNaukriJob[] = [];
   const seen = new Set<string>();
@@ -257,7 +273,15 @@ export function apifyItemsToNaukriJobs(
     jobs.push(record);
   }
 
-  return jobs;
+  const experienceSort = mapOptions.experienceSort ?? naukriExperienceSortEnabled();
+  if (!experienceSort) {
+    return jobs;
+  }
+
+  return prioritizeNaukriJobsByExperience(jobs, {
+    maxJobs: mapOptions.maxJobs,
+    fresherRatio: mapOptions.fresherRatio ?? naukriFresherCollectionRatio(),
+  });
 }
 
 function defaultNaukriMaxJobs(fetchDetails: boolean): number {
@@ -306,14 +330,32 @@ export function buildNaukriActorInput(): Record<string, unknown> {
   const fetchDetails =
     (Deno.env.get('APIFY_NAUKRI_FETCH_DETAILS') ?? 'true').toLowerCase() !== 'false';
 
+  const outputLimit = defaultNaukriMaxJobs(fetchDetails);
+
   return {
     ...DEFAULT_NAUKRI_APIFY_INPUT,
     keyword,
-    maxJobs: defaultNaukriMaxJobs(fetchDetails),
+    experience: Deno.env.get('APIFY_NAUKRI_EXPERIENCE')?.trim() || 'all',
+    maxJobs: naukriApifyScrapePoolSize(outputLimit),
     postedBy,
     freshness: Deno.env.get('APIFY_NAUKRI_FRESHNESS')?.trim() || '1',
     sortBy: Deno.env.get('APIFY_NAUKRI_SORT_BY')?.trim() || 'date',
     fetchDetails,
+  };
+}
+
+/** Jobs returned to admin/automation after fresher-first prioritization. */
+export function naukriOutputJobLimit(): number {
+  const fetchDetails =
+    (Deno.env.get('APIFY_NAUKRI_FETCH_DETAILS') ?? 'true').toLowerCase() !== 'false';
+  return defaultNaukriMaxJobs(fetchDetails);
+}
+
+function naukriMapOptions(): ApifyNaukriMapOptions {
+  return {
+    maxJobs: naukriOutputJobLimit(),
+    fresherRatio: naukriFresherCollectionRatio(),
+    experienceSort: naukriExperienceSortEnabled(),
   };
 }
 
@@ -476,7 +518,13 @@ export async function collectNaukriApifyRun(
   }
 
   const instant = scrapedAt ?? new Date().toISOString();
-  const jobs = apifyItemsToNaukriJobs(items as Record<string, unknown>[], instant, fallbackHubUrl);
+  const mapOpts = naukriMapOptions();
+  const jobs = apifyItemsToNaukriJobs(
+    items as Record<string, unknown>[],
+    instant,
+    fallbackHubUrl,
+    mapOpts,
+  );
 
   console.log(
     JSON.stringify({
@@ -485,6 +533,9 @@ export async function collectNaukriApifyRun(
       status,
       raw_items: items.length,
       mapped_jobs: jobs.length,
+      experience_sort: mapOpts.experienceSort,
+      output_limit: mapOpts.maxJobs,
+      fresher_ratio: mapOpts.fresherRatio,
     }),
   );
 
@@ -533,7 +584,8 @@ export async function discoverNaukriViaApify(
     timeoutSec: naukriApifySyncTimeoutSec(budget),
     syncOnly: true,
   });
-  const jobs = apifyItemsToNaukriJobs(run.items, instant, fallbackHubUrl);
+  const mapOpts = naukriMapOptions();
+  const jobs = apifyItemsToNaukriJobs(run.items, instant, fallbackHubUrl, mapOpts);
 
   console.log(
     JSON.stringify({
@@ -544,6 +596,9 @@ export async function discoverNaukriViaApify(
       input_label: inputLabel,
       raw_items: run.items.length,
       mapped_jobs: jobs.length,
+      experience_sort: mapOpts.experienceSort,
+      output_limit: mapOpts.maxJobs,
+      fresher_ratio: mapOpts.fresherRatio,
       error: run.error,
     }),
   );
