@@ -84,6 +84,7 @@ const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
               job.shortDescription || stripMarkdownForPlainText(job.description, 160)
             }
             postedAt={job.postedAt}
+            isFeatured={job.isFeatured}
           />
           );
         })}

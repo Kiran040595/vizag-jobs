@@ -14,6 +14,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForPublicDisplay } from '../lib/jobListSort';
 import { computeSiteStats } from '../lib/siteStats';
 import {
   CATEGORY_OPTIONS,
@@ -119,7 +120,7 @@ export default function HomePage() {
           const { jobs, timestamp } = JSON.parse(cachedRaw);
           const age = Date.now() - Number(timestamp);
           if (Array.isArray(jobs) && jobs.length > 0 && age < CACHE_TTL_MS) {
-            const visible = filterProcessedJobsForPublicDisplay(jobs);
+            const visible = sortJobsForPublicDisplay(filterProcessedJobsForPublicDisplay(jobs));
             if (visible.length > 0) {
               setAllJobs(visible);
               setIsLoading(false);

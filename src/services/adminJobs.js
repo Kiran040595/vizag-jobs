@@ -12,6 +12,20 @@ import {
   shouldUseSystemPostedAtOnPublish,
 } from '../lib/jobPostedAt';
 
+const applyFeaturedAtToPayload = (payload, { wasFeatured = false, existingFeaturedAt = null } = {}) => {
+  const isFeatured = Boolean(payload.is_featured);
+  if (!isFeatured) {
+    return { ...payload, featured_at: null };
+  }
+  if (!wasFeatured) {
+    return { ...payload, featured_at: new Date().toISOString() };
+  }
+  if (existingFeaturedAt) {
+    return { ...payload, featured_at: existingFeaturedAt };
+  }
+  return { ...payload, featured_at: payload.featured_at || new Date().toISOString() };
+};
+
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
 
 const MULTILINE_FIELDS = ['responsibilities', 'eligibility', 'skills'];
@@ -588,6 +602,8 @@ export const createAdminJob = async (values, statusOverride) => {
     throw new Error('Missing category or job type. Edit the job before publishing.');
   }
 
+  payload = applyFeaturedAtToPayload(payload);
+
   const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();
 
   let { data, error } = await insertOnce(payload);
@@ -617,6 +633,7 @@ export const createAdminJobFromSql = async (sqlQuery) => {
   if (shouldUseSystemPostedAtOnPublish(payload.status, parsedRecord.status)) {
     payload = applySystemPostedAtToPayload(payload);
   }
+  payload = applyFeaturedAtToPayload(payload);
   const { data, error } = await supabase.from(JOBS_TABLE).insert(payload).select('*').single();
 
   if (error) {
@@ -634,9 +651,24 @@ export const updateAdminJob = async (jobId, values, statusOverride) => {
 
   const payload = serializeJobForm(values, statusOverride);
 
-  const nextPayload = shouldUseSystemPostedAtOnPublish(statusOverride, values?.status)
+  let nextPayload = shouldUseSystemPostedAtOnPublish(statusOverride, values?.status)
     ? applySystemPostedAtToPayload(payload)
     : payload;
+
+  const { data: existing, error: existingError } = await supabase
+    .from(JOBS_TABLE)
+    .select('is_featured, featured_at')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw mapError(existingError, 'Could not load the current job before updating.');
+  }
+
+  nextPayload = applyFeaturedAtToPayload(nextPayload, {
+    wasFeatured: Boolean(existing?.is_featured),
+    existingFeaturedAt: existing?.featured_at || null,
+  });
 
   const { data, error } = await supabase
     .from(JOBS_TABLE)
@@ -787,7 +819,10 @@ export const toggleAdminJobFeatured = async (jobId, isFeatured) => {
 
   const { data, error } = await supabase
     .from(JOBS_TABLE)
-    .update({ is_featured: isFeatured })
+    .update({
+      is_featured: isFeatured,
+      featured_at: isFeatured ? new Date().toISOString() : null,
+    })
     .eq('id', jobId)
     .select('*')
     .single();
