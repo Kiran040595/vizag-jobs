@@ -1,4 +1,5 @@
 import { isPlaceholderJobValue, PUBLIC_JOB_DISPLAY } from './jobDisplayLabels.js';
+import { getJobDetailPath } from './jobRoutes.js';
 import { buildBaseSalary } from './jobPostingSchema.js';
 
 const SEO_FALLBACK_VALUES = new Set(Object.values(PUBLIC_JOB_DISPLAY));
@@ -93,3 +94,13 @@ export const buildCardHighlightItems = ({
 
   return items;
 };
+
+/** Minimal job snapshot stored in localStorage for saved jobs. */
+export const buildJobSaveSnapshot = (job) => ({
+  id: job.id,
+  slug: job.slug || '',
+  title: job.title || 'Job opening',
+  company: cardCompanyName(job.company) || String(job.company || '').trim(),
+  location: cardLocation(job.location) || '',
+  jobPath: getJobDetailPath(job),
+});

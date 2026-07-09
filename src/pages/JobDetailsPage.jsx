@@ -22,6 +22,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
 import JobShareButtons from '../components/JobShareButtons';
+import SaveJobButton from '../components/SaveJobButton';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
 import SimilarJobs from '../components/SimilarJobs';
@@ -36,6 +37,7 @@ import {
   displayWorkMode,
 } from '../lib/jobDisplayLabels';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
+import { buildJobSaveSnapshot } from '../lib/jobCardDisplay';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -253,6 +255,12 @@ export default function JobDetailsPage() {
                     Apply Now
                   </a>
                 ) : null}
+                <SaveJobButton
+                  jobId={job.id}
+                  jobSnapshot={buildJobSaveSnapshot(job)}
+                  jobTitle={job.title}
+                  variant="detail"
+                />
                 <JobShareButtons job={job} />
               </div>
             </div>
