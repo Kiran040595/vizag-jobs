@@ -4,6 +4,7 @@ import {
   shouldHighlightPostedTime,
 } from '../lib/jobFreshness';
 import { useSavedJob } from '../lib/useSavedJob';
+import FeaturedBadge from './FeaturedBadge';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -29,13 +30,20 @@ const JobCard = ({
   highlightItems = [],
   description,
   postedAt,
+  isFeatured = false,
 }) => {
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
 
   return (
-    <article className="group relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg sm:p-4">
+    <article
+      className={`group relative flex h-full flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-4 ${
+        isFeatured
+          ? 'border-cyan-200 ring-1 ring-cyan-100 hover:border-cyan-300'
+          : 'border-slate-200 hover:border-slate-300'
+      }`}
+    >
       <button
         type="button"
         onClick={toggle}
@@ -52,9 +60,12 @@ const JobCard = ({
       </button>
 
       <div className="mb-3 min-w-0 pr-11 sm:pr-12">
-        <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
-          {jobTitle}
-        </h3>
+        <div className="flex flex-wrap items-start gap-2">
+          <h3 className="line-clamp-2 min-w-0 flex-1 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
+            {jobTitle}
+          </h3>
+          {isFeatured ? <FeaturedBadge /> : null}
+        </div>
         {companyName ? (
           <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-600 sm:text-sm">{companyName}</p>
         ) : null}

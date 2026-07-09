@@ -14,6 +14,7 @@
 import { BRANCH_CATEGORY_MATCHERS, isEngineeringRelatedJob } from './jobBranchMatch.js';
 import { isItRelatedJob } from './jobItMatch.js';
 import { isPublicFresherListingJob } from './fresherMatch.js';
+import { sortJobsForPublicDisplay } from './jobListSort.js';
 import {
   FILTER_CATEGORY_OPTIONS,
   inferIsFresherFromJob,
@@ -154,13 +155,14 @@ const matchesFreshness = (job, freshnessId) => {
 export const applyJobFilters = (jobs, filters) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return [];
   const q = (filters.q ?? '').trim().toLowerCase();
-  return jobs.filter(
+  const filtered = jobs.filter(
     (job) =>
       matchesCategory(job, filters.category) &&
       matchesJobType(job, filters.jobType) &&
       matchesFreshness(job, filters.freshness) &&
       matchesSearchText(job, q),
   );
+  return sortJobsForPublicDisplay(filtered);
 };
 
 /**

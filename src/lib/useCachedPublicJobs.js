@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from './jobDisplayWindow';
+import { sortJobsForPublicDisplay } from './jobListSort';
 
 const CACHE_KEY = 'vizagJobs';
 
@@ -26,7 +27,7 @@ export function useCachedPublicJobs() {
             const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
             if (visibleJobs.length > 0) {
               if (isMounted) {
-                setAllJobs(visibleJobs);
+                setAllJobs(sortJobsForPublicDisplay(visibleJobs));
                 setIsLoading(false);
               }
               return;
@@ -42,7 +43,7 @@ export function useCachedPublicJobs() {
         if (!isMounted) return;
 
         if (jobs.length > 0) {
-          const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+          const visibleJobs = sortJobsForPublicDisplay(filterProcessedJobsForPublicDisplay(jobs));
           setAllJobs(visibleJobs);
           sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
           setLoadError('');

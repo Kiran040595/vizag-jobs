@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { isPublicFresherListingJob } from '../lib/fresherMatch';
+import { sortJobsForPublicDisplay } from '../lib/jobListSort';
 import { toAbsoluteUrl } from '../lib/site';
 
 export default function FresherJobsInVizagPage() {
@@ -78,11 +79,13 @@ export default function FresherJobsInVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          isPublicFresherListingJob(job) &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.company.toLowerCase().includes(searchTerm.toLowerCase())),
+      sortJobsForPublicDisplay(
+        allJobs.filter(
+          (job) =>
+            isPublicFresherListingJob(job) &&
+            (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              job.company.toLowerCase().includes(searchTerm.toLowerCase())),
+        ),
       ),
     [allJobs, searchTerm],
   );

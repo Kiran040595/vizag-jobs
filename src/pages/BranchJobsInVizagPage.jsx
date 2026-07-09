@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { getJobCategoryPageConfig } from '../lib/jobCategoryPages';
 import { toAbsoluteUrl } from '../lib/site';
 import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
+import { sortJobsForPublicDisplay } from '../lib/jobListSort';
 
 export default function BranchJobsInVizagPage({ categoryId }) {
   const config = getJobCategoryPageConfig(categoryId);
@@ -17,8 +18,8 @@ export default function BranchJobsInVizagPage({ categoryId }) {
 
   const filteredJobs = useMemo(() => {
     if (!config) return [];
-    return allJobs.filter(
-      (job) => config.matchesJob(job) && jobMatchesSearchText(job, searchTerm),
+    return sortJobsForPublicDisplay(
+      allJobs.filter((job) => config.matchesJob(job) && jobMatchesSearchText(job, searchTerm)),
     );
   }, [allJobs, config, searchTerm]);
 

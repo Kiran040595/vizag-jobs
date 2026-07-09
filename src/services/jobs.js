@@ -2,6 +2,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
+import { sortJobsForPublicDisplay } from '../lib/jobListSort.js';
 
 const CACHE_DURATION = 60_000;
 const DEFAULT_TABLE_NAME = 'jobs';
@@ -54,6 +55,8 @@ const LIST_COLUMNS = [
   'posted_at',
   'expires_at',
   'status',
+  'is_featured',
+  'featured_at',
 ].join(', ');
 
 const jobsCache = new Map();
@@ -139,6 +142,8 @@ const processJobData = (job, index) => {
     warning: normalizeText(job.warning),
     postedAt: normalizeText(job.posted_at),
     status: normalizeText(job.status),
+    isFeatured: Boolean(job.is_featured),
+    featuredAt: normalizeText(job.featured_at),
     createdBy: job.created_by || null,
     source: normalizeText(job.source_name),
     sourceUrl: normalizeText(job.source_url),
@@ -170,6 +175,8 @@ const buildSupabaseQuery = (filters = {}, options = {}) => {
     .select(LIST_COLUMNS)
     .eq('status', 'published')
     .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+    .order('is_featured', { ascending: false })
+    .order('featured_at', { ascending: false, nullsFirst: false })
     .order('posted_at', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -265,7 +272,7 @@ export const fetchJobs = async (filters = {}, forceRefresh = false) => {
     return data;
   });
 
-  const processedJobs = jobsData.map(processJobData);
+  const processedJobs = sortJobsForPublicDisplay(jobsData.map(processJobData));
 
   jobsCache.set(cacheKey, {
     jobs: processedJobs,

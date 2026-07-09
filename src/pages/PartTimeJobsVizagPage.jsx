@@ -7,6 +7,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForPublicDisplay } from '../lib/jobListSort';
 import { toAbsoluteUrl } from '../lib/site';
 
 export default function PartTimeJobsVizagPage() {
@@ -77,13 +78,15 @@ export default function PartTimeJobsVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          job.tags.includes('Part-time') &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+      sortJobsForPublicDisplay(
+        allJobs.filter(
+          (job) =>
+            job.tags.includes('Part-time') &&
+            (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              job.company.toLowerCase().includes(searchTerm.toLowerCase())),
+        ),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {

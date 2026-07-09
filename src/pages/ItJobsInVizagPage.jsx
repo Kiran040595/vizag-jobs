@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { isItRelatedJob } from '../lib/jobItMatch';
+import { sortJobsForPublicDisplay } from '../lib/jobListSort';
 import { toAbsoluteUrl } from '../lib/site';
 
 const jobMatchesSearchText = (job, raw) => {
@@ -96,11 +97,10 @@ export default function ItJobsInVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)
+      sortJobsForPublicDisplay(
+        allJobs.filter((job) => isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {
