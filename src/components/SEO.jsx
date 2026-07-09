@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async'
+import { SITE_URL, toAbsoluteUrl } from '../lib/site'
 
 const SEO = ({
   title,
@@ -15,40 +16,48 @@ const SEO = ({
   twitterImage,
   structuredData
 }) => {
-  const defaultTitle = 'Vizag Jobs | Latest Jobs in Visakhapatnam'
-  const defaultDescription = 'Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.'
-  const defaultKeywords = 'Vizag Jobs, Jobs in Vizag, Visakhapatnam Jobs, IT Jobs Vizag, Fresher Jobs Vizag'
-  const baseUrl = 'https://jobsinvizag.in'
+  const defaultTitle = 'Jobs in Vizag | Latest Job Openings in Visakhapatnam'
+  const defaultDescription = 'Jobs in Vizag — find the latest IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam. Updated daily.'
+  const defaultKeywords = 'Jobs in Vizag, Vizag Jobs, Visakhapatnam Jobs, IT Jobs Vizag, Fresher Jobs Vizag'
+  const siteName = 'Jobs in Vizag'
+  const defaultOgImage = `${SITE_URL}/og-image.png`
 
   const finalTitle = title || defaultTitle
   const finalDescription = description || defaultDescription
   const finalKeywords = keywords || defaultKeywords
-  const finalCanonical = canonical ? `${baseUrl}${canonical}` : baseUrl
+  const finalCanonical = canonical ? toAbsoluteUrl(canonical) : SITE_URL
   const finalOgTitle = ogTitle || finalTitle
   const finalOgDescription = ogDescription || finalDescription
-  const finalOgUrl = ogUrl ? `${baseUrl}${ogUrl}` : finalCanonical
+  const finalOgUrl = ogUrl ? toAbsoluteUrl(ogUrl) : finalCanonical
   const finalTwitterTitle = twitterTitle || finalOgTitle
   const finalTwitterDescription = twitterDescription || finalOgDescription
+  const finalOgImage = ogImage ? toAbsoluteUrl(ogImage) : defaultOgImage
+  const finalTwitterImage = twitterImage ? toAbsoluteUrl(twitterImage) : finalOgImage
 
   return (
     <Helmet>
       <title>{finalTitle}</title>
       <meta name="description" content={finalDescription} />
       <meta name="keywords" content={finalKeywords} />
+      <meta name="application-name" content={siteName} />
       <link rel="canonical" href={finalCanonical} />
 
       {/* Open Graph */}
+      <meta property="og:site_name" content={siteName} />
       <meta property="og:title" content={finalOgTitle} />
       <meta property="og:description" content={finalOgDescription} />
       <meta property="og:url" content={finalOgUrl} />
       <meta property="og:type" content="website" />
-      {ogImage && <meta property="og:image" content={ogImage} />}
+      <meta property="og:image" content={finalOgImage} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content="Jobs in Vizag — Find Your Career in Vizag" />
 
       {/* Twitter Card */}
       <meta name="twitter:card" content={twitterCard} />
       <meta name="twitter:title" content={finalTwitterTitle} />
       <meta name="twitter:description" content={finalTwitterDescription} />
-      {twitterImage && <meta name="twitter:image" content={twitterImage} />}
+      <meta name="twitter:image" content={finalTwitterImage} />
 
       {/* Structured Data */}
       {structuredData && (

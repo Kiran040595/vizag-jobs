@@ -1,0 +1,66 @@
+name: YouTube Short (admin manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      privacy:
+        description: YouTube visibility
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
+        default: unlisted
+      skip_if_exists:
+        description: Skip if today's Short is already on the channel
+        type: boolean
+        default: false
+      publish:
+        description: Upload to YouTube (false = dry run only)
+        type: boolean
+        default: true
+
+concurrency:
+  group: youtube-short-manual
+  cancel-in-progress: false
+
+jobs:
+  youtube-short:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - run: npm ci
+
+      - name: Generate and upload YouTube Short
+        run: npm run auto:youtube-short
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          AUTO_YOUTUBE_SHORT_RENDERER: pollinations
+          AUTO_YOUTUBE_SHORT_PUBLISH: ${{ github.event.inputs.publish == false && 'false' || 'true' }}
+          AUTO_YOUTUBE_SHORT_DRY_RUN: ${{ github.event.inputs.publish == false && 'true' || 'false' }}
+          AUTO_YOUTUBE_SHORT_MIN_JOBS: '1'
+          AUTO_YOUTUBE_SHORT_SKIP_IF_EXISTS: ${{ github.event.inputs.skip_if_exists == true && 'true' || 'false' }}
+          AUTO_YOUTUBE_SHORT_MAX_JOBS: '3'
+          AUTO_YOUTUBE_SHORT_SECONDS_PER_SLIDE: '4.5'
+          AUTO_YOUTUBE_SHORT_VOICE: 'false'
+          AUTO_YOUTUBE_SHORT_MUSIC: 'true'
+          AUTO_YOUTUBE_SHORT_PRIVACY: ${{ github.event.inputs.privacy }}
+          SITE_URL: https://jobsinvizag.in

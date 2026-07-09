@@ -210,6 +210,109 @@
   color: #475569;
 }
 
+/* Animated Attractive Badge */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4), 0 2px 8px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.8), 0 2px 12px rgba(239, 68, 68, 0.4);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
+.animated-attractive-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    #ff6b6b 0%,
+    #ff8787 25%,
+    #ff5252 50%,
+    #ff6b6b 75%,
+    #ff8787 100%
+  );
+  background-size: 200% 200%;
+  color: white;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(255, 107, 107, 0.5);
+  animation: 
+    gradientShift 3s ease infinite,
+    bounce 2s ease-in-out infinite,
+    glow 2s ease-in-out infinite,
+    pulse 2.5s ease-in-out infinite;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.badge-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+.badge-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 @media (max-width: 700px) {
   .hero-header {
     padding: 2.5rem 1rem 2.2rem;

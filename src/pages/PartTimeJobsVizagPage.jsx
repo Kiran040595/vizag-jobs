@@ -4,12 +4,15 @@ import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
-import { fallbackJobs } from '../data/fallbackJobs';
-import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForListing } from '../lib/jobFilters';
+import { toAbsoluteUrl } from '../lib/site';
 
 export default function PartTimeJobsVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [allJobs, setAllJobs] = useState(fallbackJobs);
+  const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -17,20 +20,48 @@ export default function PartTimeJobsVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
+      const cachedData = sessionStorage.getItem('vizagJobs_v2');
+      const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
+
+      if (cachedData) {
+        try {
+          const { jobs, timestamp } = JSON.parse(cachedData);
+          const now = Date.now();
+
+          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
+            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+            if (visibleJobs.length > 0) {
+              setAllJobs(visibleJobs);
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing cached jobs:', error);
+        }
+      }
+
+      // If no cache, expired cache, or empty cache, fetch from API
       try {
-        const jobs = await fetchJobsFromGoogleSheets();
+        const jobs = await fetchJobs();
         if (!isMounted) return;
 
         if (jobs.length > 0) {
           setAllJobs(jobs);
+          // Cache with timestamp
+          const cacheData = {
+            jobs,
+            timestamp: Date.now()
+          };
+          sessionStorage.setItem('vizagJobs_v2', JSON.stringify(cacheData));
           setLoadError('');
           return;
         }
 
-        setLoadError('No rows found in Google Sheets. Showing fallback jobs.');
-      } catch {
+        setLoadError('No jobs found. Please check back later.');
+      } catch (error) {
         if (!isMounted) return;
-        setLoadError('Could not load jobs from Google Sheets. Showing fallback jobs.');
+        setLoadError(error instanceof Error ? error.message : 'Could not load jobs. Please check your connection.');
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -47,11 +78,13 @@ export default function PartTimeJobsVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          job.tags.includes('Part-time') &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+      sortJobsForListing(
+        allJobs.filter(
+          (job) =>
+            job.tags.includes('Part-time') &&
+            (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+        ),
       ),
     [allJobs, searchTerm]
   );
@@ -60,7 +93,7 @@ export default function PartTimeJobsVizagPage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Part-time Jobs in Vizag",
-    "url": "https://jobsinvizag.in/part-time-jobs-vizag",
+    "url": toAbsoluteUrl('/jobs/part-time'),
     "description": "Find part-time jobs and flexible work opportunities in Visakhapatnam for students and working professionals."
   };
 
@@ -70,7 +103,7 @@ export default function PartTimeJobsVizagPage() {
         title="Part-time Jobs in Vizag | Flexible Work Opportunities in Visakhapatnam 2026"
         description="Discover part-time jobs in Vizag for students, freelancers, and working professionals. Find flexible work opportunities in Visakhapatnam."
         keywords="Part-time Jobs Vizag, Flexible Jobs Visakhapatnam, Student Jobs Vizag, Freelance Work Vizag"
-        canonical="/part-time-jobs-vizag"
+        canonical="/jobs/part-time"
         structuredData={structuredData}
       />
       <Navbar />
@@ -84,9 +117,7 @@ export default function PartTimeJobsVizagPage() {
         <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
 
         {isLoading ? (
-          <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">
-            Loading jobs from Google Sheets...
-          </p>
+          <LoadingSpinner />
         ) : null}
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">

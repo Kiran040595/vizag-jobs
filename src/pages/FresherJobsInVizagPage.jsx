@@ -4,12 +4,16 @@ import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
-import { fallbackJobs } from '../data/fallbackJobs';
-import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForListing } from '../lib/jobFilters';
+import { isPublicFresherListingJob } from '../lib/fresherMatch';
+import { toAbsoluteUrl } from '../lib/site';
 
 export default function FresherJobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [allJobs, setAllJobs] = useState(fallbackJobs);
+  const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -17,20 +21,48 @@ export default function FresherJobsInVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
+      const cachedData = sessionStorage.getItem('vizagJobs_v2');
+      const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
+
+      if (cachedData) {
+        try {
+          const { jobs, timestamp } = JSON.parse(cachedData);
+          const now = Date.now();
+
+          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
+            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+            if (visibleJobs.length > 0) {
+              setAllJobs(visibleJobs);
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing cached jobs:', error);
+        }
+      }
+
+      // If no cache, expired cache, or empty cache, fetch from API
       try {
-        const jobs = await fetchJobsFromGoogleSheets();
+        const jobs = await fetchJobs();
         if (!isMounted) return;
 
         if (jobs.length > 0) {
           setAllJobs(jobs);
+          // Cache with timestamp
+          const cacheData = {
+            jobs,
+            timestamp: Date.now()
+          };
+          sessionStorage.setItem('vizagJobs_v2', JSON.stringify(cacheData));
           setLoadError('');
           return;
         }
 
-        setLoadError('No rows found in Google Sheets. Showing fallback jobs.');
-      } catch {
+        setLoadError('No jobs found. Please check back later.');
+      } catch (error) {
         if (!isMounted) return;
-        setLoadError('Could not load jobs from Google Sheets. Showing fallback jobs.');
+        setLoadError(error instanceof Error ? error.message : 'Could not load jobs. Please check your connection.');
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -47,20 +79,22 @@ export default function FresherJobsInVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          (job.tags.includes('Fresher') || job.experience.includes('0') || job.experience.toLowerCase().includes('fresher')) &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+      sortJobsForListing(
+        allJobs.filter(
+          (job) =>
+            isPublicFresherListingJob(job) &&
+            (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              job.company.toLowerCase().includes(searchTerm.toLowerCase())),
+        ),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Fresher Jobs in Vizag",
-    "url": "https://jobsinvizag.in/fresher-jobs-in-vizag",
+    "url": toAbsoluteUrl('/jobs/fresher'),
     "description": "Find fresher jobs and entry-level positions in Visakhapatnam for recent graduates and beginners."
   };
 
@@ -70,7 +104,7 @@ export default function FresherJobsInVizagPage() {
         title="Fresher Jobs in Vizag | Entry-Level Jobs in Visakhapatnam 2026"
         description="Discover fresher jobs and entry-level opportunities in Vizag for recent graduates. Start your career in Visakhapatnam."
         keywords="Fresher Jobs Vizag, Entry Level Jobs Visakhapatnam, Beginner Jobs Vizag, Graduate Jobs Vizag"
-        canonical="/fresher-jobs-in-vizag"
+        canonical="/jobs/fresher"
         structuredData={structuredData}
       />
       <Navbar />
@@ -84,9 +118,7 @@ export default function FresherJobsInVizagPage() {
         <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
 
         {isLoading ? (
-          <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">
-            Loading jobs from Google Sheets...
-          </p>
+          <LoadingSpinner />
         ) : null}
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">

@@ -1,33 +1,78 @@
-import { useState } from 'react';
-import vsp2Image from '../assets/VSP2.jpg';
-import vsp1Image from '../assets/VSP1.jpg';
+import { useState, useEffect, useRef } from 'react';
+import { CATEGORY_OPTIONS } from '../lib/jobFilters';
+import vsp2Image from '../assets/VSP2.jpg';import vsp1Image from '../assets/VSP1.jpg';
 
-const popularTags = [
-  'Software Engineer',
-  'Frontend Developer',
-  'BPO Jobs',
-  'Walk-in Interviews',
-  'Fresher Jobs'
-];
-
-export default function HeroSection({ searchTerm, onSearch }) {
-  const [category, setCategory] = useState('All Categories');
+export default function HeroSection({
+  searchTerm,
+  onSearch,
+  onSubmit,
+  category: categoryProp,
+  onCategoryChange,
+}) {
+  const [localCategory, setLocalCategory] = useState('All Categories');
+  const category = onCategoryChange ? categoryProp ?? 'All Categories' : localCategory;
   const [location, setLocation] = useState('Visakhapatnam');
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !imagesLoaded) {
+            // Preload images when section comes into view
+            const img1 = new Image();
+            const img2 = new Image();
+
+            let loadedCount = 0;
+            const onImageLoad = () => {
+              loadedCount++;
+              if (loadedCount === 2) {
+                setImagesLoaded(true);
+              }
+            };
+
+            img1.onload = onImageLoad;
+            img2.onload = onImageLoad;
+
+            img1.src = vsp2Image;
+            img2.src = vsp1Image;
+
+            observer.disconnect(); // Stop observing once images start loading
+          }
+        });
+      },
+      { threshold: 0.1 } // Trigger when 10% of the section is visible
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [imagesLoaded]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSearch(searchTerm);
+    if (onSubmit) {
+      // HomePage owns the URL — flush the current input immediately so a
+      // pending debounce doesn't drop the search after the user hits Enter.
+      onSubmit(searchTerm);
+    } else {
+      onSearch(searchTerm);
+    }
   };
 
   return (
     <section
+      ref={sectionRef}
       className="relative overflow-hidden text-white"
-      style={{
+      style={imagesLoaded ? {
         backgroundImage: `url(${vsp2Image}), url(${vsp1Image})`,
         backgroundSize: 'cover, cover',
         backgroundPosition: 'center, center',
         backgroundRepeat: 'no-repeat, no-repeat'
-      }}
+      } : {}}
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/75 via-blue-950/65 to-blue-900/60" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.35),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.3),_transparent_35%)]" />
@@ -36,9 +81,8 @@ export default function HeroSection({ searchTerm, onSearch }) {
           Find the Right Job in Visakhapatnam
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-blue-100 sm:mt-4 sm:text-base">
-          Your one-stop platform for IT, Non-IT, Fresher and Experienced jobs
+          Your one-stop platform for IT, engineering, fresher and experienced jobs in Vizag
         </p>
-
         <form
           onSubmit={handleSubmit}
           className="mt-7 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/90 p-3 shadow-2xl backdrop-blur md:mt-8 md:p-4"
@@ -55,17 +99,20 @@ export default function HeroSection({ searchTerm, onSearch }) {
 
             <select
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (onCategoryChange) onCategoryChange(next);
+                else setLocalCategory(next);
+              }}
               className="h-11 rounded-xl border border-slate-200 px-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4"
               aria-label="Select category"
             >
-              <option>All Categories</option>
-              <option>IT & Software</option>
-              <option>Non-IT Jobs</option>
-              <option>Fresher Jobs</option>
-              <option>Walk-in Interviews</option>
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.label}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
-
             <input
               id="location"
               type="text"
@@ -80,22 +127,6 @@ export default function HeroSection({ searchTerm, onSearch }) {
             >
               Search Jobs
             </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-left sm:gap-2">
-            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Popular:
-            </span>
-            {popularTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => onSearch(tag)}
-                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:px-3 sm:py-1.5 sm:text-xs"
-              >
-                {tag}
-              </button>
-            ))}
           </div>
         </form>
       </div>

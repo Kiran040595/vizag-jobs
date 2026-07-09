@@ -1,0 +1,16 @@
+{
+  "jdBrandingBanner": { "image": { "desktop": "https://img.naukimg.com/logo/example.png" } },
+  "brandedJd": true,
+  "jobDetails": {
+    "jobId": "140526018212",
+    "title": "Software Engineer",
+    "companyName": "Infosys",
+    "experience": "2-5 years",
+    "location": "Visakhapatnam",
+    "salary": "4-6 Lacs P.A.",
+    "tagsAndSkills": "Java,Spring Boot,Microservices",
+    "jobDescription": "We are hiring a Software Engineer for our Vizag delivery center.",
+    "jdURL": "https://www.naukri.com/job-listings-software-engineer-infosys-visakhapatnam-140526018212",
+    "createdDate": "2026-06-17T08:14:11.000Z"
+  }
+}

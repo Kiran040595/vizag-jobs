@@ -1,6 +1,6 @@
 # Vizag Jobs
 
-A job portal website for Visakhapatnam (Vizag) built with React and Vite.
+A job portal website for Visakhapatnam (Vizag) built with React, Vite, and Supabase.
 
 ## Features
 
@@ -22,31 +22,35 @@ A job portal website for Visakhapatnam (Vizag) built with React and Vite.
 
 3. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-## Google Sheets Integration
+## Supabase Integration
 
-The app fetches jobs from your deployed Apps Script JSON endpoint:
+The app fetches jobs directly from Supabase.
 
-- [Google Apps Script Jobs API](https://script.google.com/macros/s/AKfycbw_dL3Xy6YNkN0schsB_yLhjNAJdQWhhA0VNO8yiP5xsLpDzaZcexyS5kxA1lbtLCObkw/exec)
-
-Setup:
+Quick start:
 
 1. Create a `.env` file from `.env.example`.
-2. Set `VITE_JOBS_API_URL` if you want to override the default URL.
-3. Ensure the Apps Script deployment is public and returns a JSON array of jobs.
+2. Create your Supabase project.
+3. Run [supabase/migrations/20260427_create_jobs_schema.sql](./supabase/migrations/20260427_create_jobs_schema.sql) in the Supabase SQL Editor.
+4. Optionally run [supabase/seed.sql](./supabase/seed.sql) for sample rows.
+5. Add your project URL and anon key to `.env`.
 
-Supported fields from each job object:
-
-- `id`, `title`, `company`, `location`, `category`, `jobType`, `experience`
-- `isFresher`, `salary`, `applyLink`, `description`, `postedAt`, `source`
-- `companyLogo` (optional)
-
-If the API is unavailable or returns an empty list, the app falls back to local sample jobs.
+Detailed setup steps are in [docs/supabase-setup.md](./docs/supabase-setup.md).
 
 ## Build for Production
 
 ```bash
 npm run build
 ```
+
+The build step auto-generates `public/sitemap.xml` from Supabase so published job detail pages are included alongside the main SEO landing pages.
+
+## Google Jobs Schema (JobPosting JSON-LD)
+
+Job detail pages emit `schema.org/JobPosting` structured data for Google for Jobs. See [docs/google-jobs-seo.md](./docs/google-jobs-seo.md) for:
+
+- Vercel edge middleware setup (`SUPABASE_URL`, `SUPABASE_ANON_KEY` env vars)
+- Database migration for `json_ld` / `seo_meta` columns
+- Post-deploy validation with Google Rich Results Test
 
 ## Preview Production Build
 

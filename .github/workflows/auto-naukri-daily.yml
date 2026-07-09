@@ -1,0 +1,145 @@
+name: Auto daily job pipelines (Naukri + LinkedIn)
+
+on:
+  schedule:
+    # 4:00 PM IST = 10:30 UTC — Naukri
+    - cron: '30 10 * * *'
+    # 6:00 PM IST = 12:30 UTC — LinkedIn Posts
+    - cron: '30 12 * * *'
+    # 9:00 PM IST = 15:30 UTC — LinkedIn Jobs
+    - cron: '30 15 * * *'
+    # 10:15 PM IST = 16:45 UTC — Daily blog (after all job fetches)
+    - cron: '45 16 * * *'
+    # 7:30 PM IST = 14:00 UTC — Daily YouTube Short
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: auto-naukri-pipeline-${{ github.event.schedule || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  fetch-seo-publish:
+    if: github.event.schedule == '30 10 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Naukri auto pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: naukri
+          AUTO_NAUKRI_SEO_GAP_MS: '180000'
+          AUTO_NAUKRI_COLLECT_WAIT_MS: '180000'
+        run: node scripts/auto-external-pipeline.mjs naukri
+
+  linkedin-posts:
+    if: github.event.schedule == '30 12 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/auto-external-pipeline.mjs linkedin_posts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: linkedin_posts
+          AUTO_LINKEDIN_POST_PRESET: general
+
+  linkedin-jobs:
+    if: github.event.schedule == '30 15 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/auto-external-pipeline.mjs linkedin_jobs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: linkedin_jobs
+
+  daily-blog:
+    if: github.event.schedule == '45 16 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Generate daily Vizag job market blog
+        run: npm run auto:daily-blog
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_DAILY_BLOG_PUBLISH: 'true'
+          AUTO_DAILY_BLOG_MIN_JOBS: '1'
+          AUTO_DAILY_BLOG_SKIP_IF_EXISTS: 'true'
+
+  daily-youtube-short:
+    if: github.event.schedule == '0 14 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: npm ci
+      - name: Generate and upload daily YouTube Short
+        run: npm run auto:youtube-short
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          AUTO_YOUTUBE_SHORT_RENDERER: 'pollinations'
+          AUTO_YOUTUBE_SHORT_PUBLISH: 'true'
+          AUTO_YOUTUBE_SHORT_MIN_JOBS: '1'
+          AUTO_YOUTUBE_SHORT_SKIP_IF_EXISTS: 'true'
+          AUTO_YOUTUBE_SHORT_MAX_JOBS: '3'
+          AUTO_YOUTUBE_SHORT_SECONDS_PER_SLIDE: '3.5'
+          AUTO_YOUTUBE_SHORT_VOICE: 'false'
+          AUTO_YOUTUBE_SHORT_MUSIC: 'true'
+          SITE_URL: 'https://jobsinvizag.in'

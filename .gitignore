@@ -10,6 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+tests/output/
+.middleware.runtime.mjs
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files

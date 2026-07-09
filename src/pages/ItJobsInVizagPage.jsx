@@ -4,12 +4,34 @@ import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
-import { fallbackJobs } from '../data/fallbackJobs';
-import { fetchJobsFromGoogleSheets } from '../services/googleSheets';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForListing } from '../lib/jobFilters';
+import { isItRelatedJob } from '../lib/jobItMatch';
+import { toAbsoluteUrl } from '../lib/site';
+
+const jobMatchesSearchText = (job, raw) => {
+  const q = raw.trim().toLowerCase();
+  if (!q) return true;
+  // Listing payload is slim — full `description` lives only on the detail
+  // page now. Search the metadata fields actually present on the card.
+  const blob = [
+    job.title,
+    job.company,
+    job.skills,
+    job.shortDescription,
+    job.category,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return blob.includes(q);
+};
 
 export default function ItJobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [allJobs, setAllJobs] = useState(fallbackJobs);
+  const [allJobs, setAllJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -17,20 +39,48 @@ export default function ItJobsInVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
+      const cachedData = sessionStorage.getItem('vizagJobs_v2');
+      const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
+
+      if (cachedData) {
+        try {
+          const { jobs, timestamp } = JSON.parse(cachedData);
+          const now = Date.now();
+
+          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
+            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+            if (visibleJobs.length > 0) {
+              setAllJobs(visibleJobs);
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing cached jobs:', error);
+        }
+      }
+
+      // If no cache, expired cache, or empty cache, fetch from API
       try {
-        const jobs = await fetchJobsFromGoogleSheets();
+        const jobs = await fetchJobs();
         if (!isMounted) return;
 
         if (jobs.length > 0) {
           setAllJobs(jobs);
+          // Cache with timestamp
+          const cacheData = {
+            jobs,
+            timestamp: Date.now()
+          };
+          sessionStorage.setItem('vizagJobs_v2', JSON.stringify(cacheData));
           setLoadError('');
           return;
         }
 
-        setLoadError('No rows found in Google Sheets. Showing fallback jobs.');
-      } catch {
+        setLoadError('No jobs found. Please check back later.');
+      } catch (error) {
         if (!isMounted) return;
-        setLoadError('Could not load jobs from Google Sheets. Showing fallback jobs.');
+        setLoadError(error instanceof Error ? error.message : 'Could not load jobs. Please check your connection.');
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -47,11 +97,11 @@ export default function ItJobsInVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          job.tags.includes('IT') &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.company.toLowerCase().includes(searchTerm.toLowerCase()))
+      sortJobsForListing(
+        allJobs.filter(
+          (job) =>
+            isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)
+        ),
       ),
     [allJobs, searchTerm]
   );
@@ -60,7 +110,7 @@ export default function ItJobsInVizagPage() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "IT Jobs in Vizag",
-    "url": "https://jobsinvizag.in/it-jobs-in-vizag",
+    "url": toAbsoluteUrl('/jobs/it'),
     "description": "Find IT jobs in Visakhapatnam including software development, data analysis, and tech positions."
   };
 
@@ -70,7 +120,7 @@ export default function ItJobsInVizagPage() {
         title="IT Jobs in Vizag | Software & Tech Jobs in Visakhapatnam 2026"
         description="Discover IT jobs in Vizag including software engineering, data analysis, web development and tech positions in Visakhapatnam."
         keywords="IT Jobs Vizag, Software Jobs Vizag, Tech Jobs Visakhapatnam, IT Careers Vizag"
-        canonical="/it-jobs-in-vizag"
+        canonical="/jobs/it"
         structuredData={structuredData}
       />
       <Navbar />
@@ -84,9 +134,7 @@ export default function ItJobsInVizagPage() {
         <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
 
         {isLoading ? (
-          <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">
-            Loading jobs from Google Sheets...
-          </p>
+          <LoadingSpinner />
         ) : null}
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">
