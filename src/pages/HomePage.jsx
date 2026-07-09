@@ -26,7 +26,7 @@ import {
 } from '../lib/jobFilters';
 
 const SEARCH_DEBOUNCE_MS = 300;
-const CACHE_KEY = 'vizagJobs';
+const CACHE_KEY = 'vizagJobs_v2';
 const CACHE_TTL_MS = JOB_LIST_SESSION_CACHE_TTL_MS;
 // Trigger a background refresh once we're within the last minute of the TTL.
 const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_MS * 0.8));

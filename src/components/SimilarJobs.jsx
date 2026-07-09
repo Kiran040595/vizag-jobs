@@ -125,6 +125,7 @@ export default function SimilarJobs({ job }) {
                 stripMarkdownForPlainText(similar.description, 160)
               }
               postedAt={similar.postedAt}
+              isFeatured={Boolean(similar.isFeatured)}
             />
           );
         })}

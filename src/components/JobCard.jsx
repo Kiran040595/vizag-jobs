@@ -29,13 +29,20 @@ const JobCard = ({
   highlightItems = [],
   description,
   postedAt,
+  isFeatured = false,
 }) => {
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
 
   return (
-    <article className="group relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg sm:p-4">
+    <article
+      className={`group relative flex h-full flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-4 ${
+        isFeatured
+          ? 'border-cyan-300 hover:border-cyan-400'
+          : 'border-slate-200 hover:border-slate-300'
+      }`}
+    >
       <button
         type="button"
         onClick={toggle}
@@ -52,6 +59,11 @@ const JobCard = ({
       </button>
 
       <div className="mb-3 min-w-0 pr-11 sm:pr-12">
+        {isFeatured ? (
+          <span className="mb-1.5 inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
+            Featured
+          </span>
+        ) : null}
         <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
           {jobTitle}
         </h3>

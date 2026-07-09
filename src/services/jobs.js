@@ -46,6 +46,7 @@ const LIST_COLUMNS = [
   'work_mode',
   'experience',
   'is_fresher',
+  'is_featured',
   'salary',
   'short_description',
   'skills',
@@ -130,6 +131,7 @@ const processJobData = (job, index) => {
     workMode: normalizeText(job.work_mode),
     experience: normalizeText(job.experience),
     isFresher,
+    isFeatured: Boolean(job.is_featured),
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
     description: normalizeText(job.description),
@@ -170,6 +172,7 @@ const buildSupabaseQuery = (filters = {}, options = {}) => {
     .select(LIST_COLUMNS)
     .eq('status', 'published')
     .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+    .order('is_featured', { ascending: false })
     .order('posted_at', { ascending: false })
     .order('created_at', { ascending: false });
 

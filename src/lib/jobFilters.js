@@ -151,16 +151,30 @@ const matchesFreshness = (job, freshnessId) => {
   return Date.now() - ts <= opt.hours * 3_600_000;
 };
 
+const postedAtMs = (job) => {
+  const ts = Date.parse(job?.postedAt);
+  return Number.isFinite(ts) ? ts : 0;
+};
+
+/** Featured jobs first, then newest by posted_at. */
+export const sortJobsForListing = (jobs) =>
+  [...jobs].sort((left, right) => {
+    const featuredDelta = Number(Boolean(right.isFeatured)) - Number(Boolean(left.isFeatured));
+    if (featuredDelta !== 0) return featuredDelta;
+    return postedAtMs(right) - postedAtMs(left);
+  });
+
 export const applyJobFilters = (jobs, filters) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return [];
   const q = (filters.q ?? '').trim().toLowerCase();
-  return jobs.filter(
+  const filtered = jobs.filter(
     (job) =>
       matchesCategory(job, filters.category) &&
       matchesJobType(job, filters.jobType) &&
       matchesFreshness(job, filters.freshness) &&
       matchesSearchText(job, q),
   );
+  return sortJobsForListing(filtered);
 };
 
 /**

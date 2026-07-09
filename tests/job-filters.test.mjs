@@ -15,6 +15,7 @@ import {
   isAnyFilterActive,
   paginate,
   readFiltersFromSearchParams,
+  sortJobsForListing,
   writeFiltersToSearchParams,
 } from '../src/lib/jobFilters.js';
 
@@ -246,6 +247,37 @@ section('applyJobFilters — engineering branch categories');
     applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'engineering' }).map((j) => j.id).sort(),
     ['civil', 'mech'].sort(),
     'engineering includes civil and mechanical',
+  );
+}
+
+// ------------------------------------------------------------
+section('applyJobFilters / sortJobsForListing — featured jobs first');
+{
+  const olderFeatured = fakeJob({
+    id: 'featured-old',
+    isFeatured: true,
+    postedAt: new Date(Date.now() - 48 * 3_600_000).toISOString(),
+  });
+  const newerRegular = fakeJob({
+    id: 'regular-new',
+    isFeatured: false,
+    postedAt: new Date(Date.now() - 1 * 3_600_000).toISOString(),
+  });
+  const newerFeatured = fakeJob({
+    id: 'featured-new',
+    isFeatured: true,
+    postedAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+  });
+
+  eq(
+    applyJobFilters([newerRegular, olderFeatured, newerFeatured], DEFAULT_FILTERS).map((j) => j.id),
+    ['featured-new', 'featured-old', 'regular-new'],
+    'featured jobs sort above regular, then by postedAt',
+  );
+  eq(
+    sortJobsForListing([newerRegular, olderFeatured]).map((j) => j.id),
+    ['featured-old', 'regular-new'],
+    'sortJobsForListing pins featured first',
   );
 }
 

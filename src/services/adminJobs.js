@@ -314,6 +314,7 @@ export const createSuggestedSlug = ({ title, company, postedAt }) => {
 const invalidatePublicJobCache = () => {
   clearJobsCache();
   sessionStorage.removeItem('vizagJobs');
+  sessionStorage.removeItem('vizagJobs_v2');
 };
 
 const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;

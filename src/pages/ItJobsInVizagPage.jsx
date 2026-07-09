@@ -7,6 +7,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForListing } from '../lib/jobFilters';
 import { isItRelatedJob } from '../lib/jobItMatch';
 import { toAbsoluteUrl } from '../lib/site';
 
@@ -38,7 +39,7 @@ export default function ItJobsInVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
-      const cachedData = sessionStorage.getItem('vizagJobs');
+      const cachedData = sessionStorage.getItem('vizagJobs_v2');
       const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
 
       if (cachedData) {
@@ -71,7 +72,7 @@ export default function ItJobsInVizagPage() {
             jobs,
             timestamp: Date.now()
           };
-          sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
+          sessionStorage.setItem('vizagJobs_v2', JSON.stringify(cacheData));
           setLoadError('');
           return;
         }
@@ -96,9 +97,11 @@ export default function ItJobsInVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)
+      sortJobsForListing(
+        allJobs.filter(
+          (job) =>
+            isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)
+        ),
       ),
     [allJobs, searchTerm]
   );

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from './jobDisplayWindow';
 
-const CACHE_KEY = 'vizagJobs';
+const CACHE_KEY = 'vizagJobs_v2';
 
 /**
  * Load published jobs with sessionStorage cache (shared across listing pages).

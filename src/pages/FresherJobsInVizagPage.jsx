@@ -7,6 +7,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { sortJobsForListing } from '../lib/jobFilters';
 import { isPublicFresherListingJob } from '../lib/fresherMatch';
 import { toAbsoluteUrl } from '../lib/site';
 
@@ -20,7 +21,7 @@ export default function FresherJobsInVizagPage() {
     let isMounted = true;
 
     const loadJobs = async () => {
-      const cachedData = sessionStorage.getItem('vizagJobs');
+      const cachedData = sessionStorage.getItem('vizagJobs_v2');
       const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
 
       if (cachedData) {
@@ -53,7 +54,7 @@ export default function FresherJobsInVizagPage() {
             jobs,
             timestamp: Date.now()
           };
-          sessionStorage.setItem('vizagJobs', JSON.stringify(cacheData));
+          sessionStorage.setItem('vizagJobs_v2', JSON.stringify(cacheData));
           setLoadError('');
           return;
         }
@@ -78,11 +79,13 @@ export default function FresherJobsInVizagPage() {
 
   const filteredJobs = useMemo(
     () =>
-      allJobs.filter(
-        (job) =>
-          isPublicFresherListingJob(job) &&
-          (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.company.toLowerCase().includes(searchTerm.toLowerCase())),
+      sortJobsForListing(
+        allJobs.filter(
+          (job) =>
+            isPublicFresherListingJob(job) &&
+            (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              job.company.toLowerCase().includes(searchTerm.toLowerCase())),
+        ),
       ),
     [allJobs, searchTerm],
   );
