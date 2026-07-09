@@ -25,6 +25,7 @@ const staticRoutes = [
   { path: '/about', priority: '0.6' },
   { path: '/contact', priority: '0.6' },
   { path: '/feedback', priority: '0.6' },
+  { path: '/saved-jobs', priority: '0.5' },
   { path: '/privacy-policy', priority: '0.5' },
   { path: '/terms-of-service', priority: '0.5' },
   { path: '/disclaimer', priority: '0.5' },

@@ -3,6 +3,7 @@ import { getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import {
   buildCardHighlightItems,
+  buildJobSaveSnapshot,
   cardCompanyName,
 } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
@@ -68,14 +69,7 @@ const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
           <JobCard
             key={job.id}
             jobId={job.id}
-            jobSnapshot={{
-              id: job.id,
-              slug: job.slug,
-              title: job.title,
-              company: company || '',
-              location: '',
-              jobPath: getJobDetailPath(job),
-            }}
+            jobSnapshot={buildJobSaveSnapshot(job)}
             jobPath={getJobDetailPath(job)}
             jobTitle={job.title}
             companyName={company}
