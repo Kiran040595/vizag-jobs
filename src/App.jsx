@@ -34,6 +34,7 @@ import OAuthConsentPage from './pages/OAuthConsentPage';
 import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import AdminEmployersPage from './pages/AdminEmployersPage';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
@@ -120,6 +121,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminFeedbackPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/employers"
+        element={(
+          <AdminRoute>
+            <AdminEmployersPage />
           </AdminRoute>
         )}
       />
