@@ -11,6 +11,7 @@ import {
   getSystemPostedAtIso,
   shouldUseSystemPostedAtOnPublish,
 } from '../lib/jobPostedAt';
+import { getJobPublishBlockReason } from '../lib/jobPublishQuality.js';
 
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
 
@@ -573,6 +574,14 @@ export const fetchAdminJobById = async (jobId) => {
 export const createAdminJob = async (values, statusOverride) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
+  }
+
+  const publishStatus = String(statusOverride ?? values?.status ?? 'draft').trim().toLowerCase();
+  if (publishStatus === 'published') {
+    const blockReason = getJobPublishBlockReason(values);
+    if (blockReason) {
+      throw new Error(`Cannot publish: ${blockReason}. Edit the job or skip it.`);
+    }
   }
 
   const sanitized = sanitizeExternalJobForInsert(values);

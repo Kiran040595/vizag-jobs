@@ -9,6 +9,7 @@ import {
 } from '../services/externalJobFetch';
 import { getAutomationChannelMeta } from './automationChannels';
 import { geminiKeyFieldsFromSeoResponse } from './formatGeminiKeyUsage';
+import { getJobPublishBlockReason } from './jobPublishQuality.js';
 import { createEmptyAutomationReport } from './naukriAutomationReport';
 
 /** Gap between Make SEO calls during automation. */
@@ -45,6 +46,11 @@ export function shouldSkipAutomationJob(job, existingSlugs, existingApplyLinks) 
 
   if (!String(job?.title || '').trim() || !String(job?.company || '').trim()) {
     return { skip: true, reason: 'missing title or company' };
+  }
+
+  const qualityReason = getJobPublishBlockReason(job);
+  if (qualityReason) {
+    return { skip: true, reason: qualityReason };
   }
 
   return { skip: false, reason: '' };

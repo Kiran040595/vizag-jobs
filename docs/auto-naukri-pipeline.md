@@ -43,6 +43,9 @@ A job is published only when **all** of these are true:
 - **Slug** and **apply link** are not already in `public.jobs`
 - SEO step succeeded
 - Title, company, category, and job type are present after SEO
+- **Real employer name** — not `Employer name shared during interview` or other placeholders
+- **Specific role title** — not aggregate SEO titles like `… Jobs in Vizag, Visakhapatnam` or keyword-stuffed listings
+- **Real location** — not comma-separated hashtag blobs (e.g. `ArtificialIntelligence, DataCenters, …`)
 
 Jobs **without** an apply link are skipped (logged, not inserted).
 
