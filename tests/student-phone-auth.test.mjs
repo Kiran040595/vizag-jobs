@@ -3,6 +3,7 @@ import {
   isValidStudentPhone,
   normalizeStudentPhone,
   phoneToAuthEmail,
+  resolveStudentLoginEmail,
   resolveStudentSignInCredentials,
 } from '../src/lib/studentPhoneAuth.js';
 import {
@@ -34,6 +35,12 @@ const emailCreds = resolveStudentSignInCredentials({
 });
 assert.equal(emailCreds.email, 'student@college.edu');
 assert.equal(emailCreds.phone, null);
+
+const fallbackEmail = await resolveStudentLoginEmail(null, '9876543210');
+assert.equal(fallbackEmail, authEmail);
+
+const emailLogin = await resolveStudentLoginEmail(null, 'student@college.edu');
+assert.equal(emailLogin, 'student@college.edu');
 
 const authPath = buildStudentAuthPath({
   pathname: '/jobs/it/sample-job',

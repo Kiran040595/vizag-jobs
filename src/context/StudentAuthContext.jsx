@@ -7,7 +7,7 @@ import { recordStudentRegistrationConsents } from '../services/studentConsent';
 import {
   isValidStudentPhone,
   normalizeStudentPhone,
-  resolveStudentSignInCredentials,
+  resolveStudentLoginEmail,
 } from '../lib/studentPhoneAuth';
 
 const STUDENT_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -196,14 +196,11 @@ export function StudentAuthProvider({ children }) {
       throw new Error('Supabase is not configured.');
     }
 
-    const credentials = resolveStudentSignInCredentials({
-      identifier: identifier ?? email,
-      password,
-    });
+    const loginEmail = await resolveStudentLoginEmail(supabase, identifier ?? email);
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
+      email: loginEmail,
+      password,
     });
     if (error) {
       throw error;
@@ -262,6 +259,8 @@ export function StudentAuthProvider({ children }) {
       });
       if (!signInError && signInData.session) {
         session = signInData.session;
+      } else if (signInError) {
+        throw signInError;
       }
     }
 

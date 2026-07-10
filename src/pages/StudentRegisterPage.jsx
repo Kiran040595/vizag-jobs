@@ -5,7 +5,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import StudentRegistrationConsent from '../components/student/StudentRegistrationConsent';
 import StudentSkillMatchNotice from '../components/student/StudentSkillMatchNotice';
 import { EMPTY_STUDENT_CONSENTS, validateStudentConsents } from '../lib/studentConsent';
-import { REQUIRE_EMAIL_CONFIRMATION } from '../lib/studentAuthFeatures';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
   buildStudentAuthPath,
@@ -103,11 +102,7 @@ export default function StudentRegisterPage() {
       if (result?.session) {
         return;
       }
-      if (REQUIRE_EMAIL_CONFIRMATION) {
-        setNotice('Account created. Check your email to confirm, then you will return to the job you selected.');
-      } else {
-        setNotice('Account created. Sign in with your email and password to continue.');
-      }
+      throw new Error('Account created but sign-in did not complete. Try signing in.');
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not create account.');
     } finally {

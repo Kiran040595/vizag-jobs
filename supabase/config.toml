@@ -1,6 +1,25 @@
 # Supabase local CLI config. Set project_id after linking: `supabase link`.
 # https://supabase.com/docs/guides/cli/config
 
+[auth]
+enabled = true
+site_url = "https://jobsinvizag.in"
+additional_redirect_urls = [
+  "https://jobsinvizag.in/**",
+  "https://www.jobsinvizag.in/**",
+  "http://localhost:5173/**",
+  "http://127.0.0.1:5173/**",
+  "https://vizag-jobs-kkumardadi-6827s-projects.vercel.app/",
+  "https://vizag-jobs-kkumardadi-6827s-projects.vercel.app/**",
+  "https://vizag-*-jobs-kkumardadi-6827s-projects.vercel.app",
+  "https://vizag-*-jobs-kkumardadi-6827s-projects.vercel.app/**",
+]
+
+[auth.email]
+enable_signup = true
+# Students sign in immediately after register (no confirm-email step).
+enable_confirmations = false
+
 [functions.fetch-external-jobs]
 # Auth is enforced inside the function (admin JWT or cron secret).
 verify_jwt = false

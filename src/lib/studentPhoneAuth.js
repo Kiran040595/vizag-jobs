@@ -64,3 +64,32 @@ export const resolveStudentSignInCredentials = ({ identifier, password }) => {
     phone,
   };
 };
+
+/** Map email or registered phone to the Supabase auth email used at sign-in. */
+export const resolveStudentLoginEmail = async (supabase, identifier) => {
+  const trimmed = String(identifier || '').trim();
+  if (!trimmed) {
+    throw new Error('Enter your email or mobile number.');
+  }
+
+  if (isEmailIdentifier(trimmed)) {
+    return trimmed;
+  }
+
+  const phone = normalizeStudentPhone(trimmed);
+  if (!isValidStudentPhone(phone)) {
+    throw new Error('Enter a valid 10-digit Indian mobile number or email address.');
+  }
+
+  if (supabase) {
+    const { data, error } = await supabase.rpc('resolve_student_login_email', { p_phone: phone });
+    if (error) {
+      throw error;
+    }
+    if (data) {
+      return data;
+    }
+  }
+
+  return phoneToAuthEmail(phone);
+};

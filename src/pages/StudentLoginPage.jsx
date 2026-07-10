@@ -85,7 +85,7 @@ export default function StudentLoginPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-300">For students</p>
           <h1 className="mt-4 text-4xl font-black leading-tight">Sign in to apply</h1>
           <p className="mt-5 text-sm leading-7 text-slate-300">
-            Sign in with the email and password you used during registration.
+            Sign in with the email or mobile number and password you used during registration.
           </p>
         </section>
 
@@ -97,14 +97,15 @@ export default function StudentLoginPage() {
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Email</span>
+              <span className="text-sm font-semibold text-slate-700">Email or mobile number</span>
               <input
-                type="email"
+                type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
-                autoComplete="email"
-                placeholder="you@college.edu"
+                autoComplete="username"
+                inputMode="email"
+                placeholder="you@college.edu or 9876543210"
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </label>
