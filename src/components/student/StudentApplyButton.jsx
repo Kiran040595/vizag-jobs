@@ -15,6 +15,11 @@ export default function StudentApplyButton({
     return null;
   }
 
+  const authQuery = buildStudentAuthPath({
+    pathname: jobPath,
+    apply: true,
+  });
+
   const handleClick = () => {
     if (isLoading) {
       return;
@@ -28,19 +33,11 @@ export default function StudentApplyButton({
     stashPendingApplyUrl(applyLink);
 
     if (session && isStudent && !profileComplete) {
-      const profileQuery = buildStudentAuthPath({
-        pathname: jobPath,
-        apply: true,
-      });
-      navigate(`/student/profile${profileQuery}`);
+      navigate(`/student/profile${authQuery}`);
       return;
     }
 
-    const authQuery = buildStudentAuthPath({
-      pathname: jobPath,
-      apply: true,
-    });
-    navigate(`/student/login${authQuery}`);
+    navigate(`/student/register${authQuery}`);
   };
 
   return (

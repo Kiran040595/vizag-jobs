@@ -6,7 +6,7 @@ import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
   consumePendingApplyUrl,
   openExternalApplyLink,
-  readAuthReturnPath,
+  resolvePostAuthDestination,
   shouldAutoApplyAfterAuth,
   buildStudentAuthPath,
 } from '../lib/studentApplyRedirect';
@@ -14,13 +14,13 @@ import {
 export default function StudentLoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { authError, isLoading, isStudent, isSupabaseConfigured, session, signIn } = useStudentAuth();
+  const { authError, isLoading, isStudent, isSupabaseConfigured, profileComplete, session, signIn } = useStudentAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const returnPath = readAuthReturnPath(searchParams);
+  const returnPath = resolvePostAuthDestination(searchParams, { profileComplete });
   const registerPath = `/student/register${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
     apply: shouldAutoApplyAfterAuth(searchParams),

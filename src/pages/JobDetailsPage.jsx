@@ -56,7 +56,7 @@ export default function JobDetailsPage() {
   const [searchParams] = useSearchParams();
   const { isAdmin, user: adminUser } = useAdminAuth();
   const { isEmployer, user: employerUser } = useEmployerAuth();
-  const { isStudent, session: studentSession } = useStudentAuth();
+  const { isStudent, session: studentSession, profileComplete } = useStudentAuth();
   const user = adminUser || employerUser;
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,7 +140,7 @@ export default function JobDetailsPage() {
   }, [currentPath, job, navigate]);
 
   useEffect(() => {
-    if (!job?.applyLink || !studentSession || !isStudent) {
+    if (!job?.applyLink || !studentSession || !isStudent || !profileComplete) {
       return;
     }
 
@@ -150,7 +150,7 @@ export default function JobDetailsPage() {
 
     const pendingApply = consumePendingApplyUrl();
     openExternalApplyLink(pendingApply || job.applyLink);
-  }, [isStudent, job, searchParams, studentSession]);
+  }, [isStudent, job, profileComplete, searchParams, studentSession]);
 
   const jobDetailPath = job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`;
   const skills = splitCommaValues(job?.skills);

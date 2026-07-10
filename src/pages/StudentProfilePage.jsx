@@ -4,20 +4,18 @@ import StudentShell from '../components/student/StudentShell';
 import StudentProfileForm from '../components/student/StudentProfileForm';
 import StudentSessionRoute from '../components/student/StudentSessionRoute';
 import { useStudentAuth } from '../hooks/useStudentAuth';
-
-import { readAuthReturnPath, shouldAutoApplyAfterAuth } from '../lib/studentApplyRedirect';
+import { resolvePostAuthDestination, shouldAutoApplyAfterAuth } from '../lib/studentApplyRedirect';
 
 function StudentProfileContent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profileComplete } = useStudentAuth();
   const needsApply = shouldAutoApplyAfterAuth(searchParams);
-  const returnPath = readAuthReturnPath(searchParams);
+  const returnPath = resolvePostAuthDestination(searchParams, { profileComplete: true });
 
   const handleSaved = () => {
-    if (needsApply && returnPath !== '/student/profile') {
-      const separator = returnPath.includes('?') ? '&' : '?';
-      navigate(`${returnPath}${separator}apply=1`, { replace: true });
+    if (needsApply && searchParams.get('next')) {
+      navigate(returnPath, { replace: true });
     }
   };
 

@@ -22,6 +22,37 @@ export const readAuthReturnPath = (searchParams) => {
 
 export const shouldAutoApplyAfterAuth = (searchParams) => searchParams?.get('apply') === '1';
 
+/** Path to open after login/register; preserves ?apply=1 for job return. */
+export const buildPostAuthReturnPath = (searchParams) => {
+  const base = readAuthReturnPath(searchParams);
+  if (!shouldAutoApplyAfterAuth(searchParams)) {
+    return base;
+  }
+  if (base.includes('apply=1')) {
+    return base;
+  }
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}apply=1`;
+};
+
+/** Profile first when apply flow needs a complete profile, otherwise the job page. */
+export const resolvePostAuthDestination = (searchParams, { profileComplete } = {}) => {
+  const jobPath = buildPostAuthReturnPath(searchParams);
+  const nextJob = searchParams?.get('next');
+
+  if (
+    shouldAutoApplyAfterAuth(searchParams) &&
+    !profileComplete &&
+    nextJob &&
+    nextJob.startsWith('/') &&
+    !nextJob.startsWith('//')
+  ) {
+    return `/student/profile${buildStudentAuthPath({ pathname: nextJob, apply: true })}`;
+  }
+
+  return jobPath;
+};
+
 export const stashPendingApplyUrl = (url) => {
   if (!url) {
     return;

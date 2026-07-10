@@ -9,6 +9,8 @@ import {
   buildStudentAuthPath,
   readAuthReturnPath,
   shouldAutoApplyAfterAuth,
+  buildPostAuthReturnPath,
+  resolvePostAuthDestination,
 } from '../src/lib/studentApplyRedirect.js';
 
 assert.equal(normalizeStudentPhone('9876543210'), '+919876543210');
@@ -38,10 +40,17 @@ const authPath = buildStudentAuthPath({
   apply: true,
 });
 assert.ok(authPath.includes('next=%2Fjobs%2Fit%2Fsample-job'));
-assert.ok(authPath.includes('apply=1'));
 
-const params = new URLSearchParams('next=/jobs/fresher/test&apply=1');
-assert.equal(readAuthReturnPath(params), '/jobs/fresher/test');
+const params = new URLSearchParams('next=/jobs/it/sample-job&apply=1');
+assert.ok(buildPostAuthReturnPath(params).includes('apply=1'));
+
+const profileFirst = resolvePostAuthDestination(params, { profileComplete: false });
+assert.ok(profileFirst.startsWith('/student/profile'));
+
+const jobReturn = resolvePostAuthDestination(params, { profileComplete: true });
+assert.equal(jobReturn, '/jobs/it/sample-job?apply=1');
+
+assert.equal(readAuthReturnPath(params), '/jobs/it/sample-job');
 assert.equal(shouldAutoApplyAfterAuth(params), true);
 
 console.log('student-phone-auth.test.mjs: OK');

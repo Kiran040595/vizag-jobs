@@ -210,7 +210,7 @@ export function StudentAuthProvider({ children }) {
     }
   };
 
-  const signUp = async ({ email, phone, password, fullName, college, consents }) => {
+  const signUp = async ({ email, phone, password, fullName, college, consents, returnPath }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
@@ -228,6 +228,11 @@ export function StudentAuthProvider({ children }) {
       throw new Error('Enter a valid 10-digit Indian mobile number.');
     }
 
+    const postAuthPath =
+      returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
+        ? returnPath
+        : '/student/profile';
+
     const { data, error } = await supabase.auth.signUp({
       email: signupEmail,
       password,
@@ -240,7 +245,7 @@ export function StudentAuthProvider({ children }) {
           auth_method: 'email',
           registration_consents: Boolean(consents),
         },
-        emailRedirectTo: getAuthRedirectUrl('/student/login'),
+        emailRedirectTo: getAuthRedirectUrl(postAuthPath),
       },
     });
 
@@ -248,14 +253,26 @@ export function StudentAuthProvider({ children }) {
       throw error;
     }
 
+    let session = data.session;
+
+    if (data.user && !session) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: signupEmail,
+        password,
+      });
+      if (!signInError && signInData.session) {
+        session = signInData.session;
+      }
+    }
+
     if (data.user) {
-      if (data.session && consents) {
+      if (session && consents) {
         await recordStudentRegistrationConsents(consents, { userId: data.user.id });
       }
       await refreshStudentAccess(data.user.id);
     }
 
-    return data;
+    return { ...data, session };
   };
 
   const signOut = async () => {

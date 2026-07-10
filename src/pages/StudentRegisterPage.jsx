@@ -11,7 +11,7 @@ import {
   buildStudentAuthPath,
   consumePendingApplyUrl,
   openExternalApplyLink,
-  readAuthReturnPath,
+  resolvePostAuthDestination,
   shouldAutoApplyAfterAuth,
 } from '../lib/studentApplyRedirect';
 
@@ -21,7 +21,7 @@ const INPUT_CLASS =
 export default function StudentRegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isLoading, isStudent, isSupabaseConfigured, session, signUp } = useStudentAuth();
+  const { isLoading, isStudent, isSupabaseConfigured, profileComplete, session, signUp } = useStudentAuth();
   const [fullName, setFullName] = useState('');
   const [college, setCollege] = useState('');
   const [email, setEmail] = useState('');
@@ -32,24 +32,31 @@ export default function StudentRegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [consents, setConsents] = useState(EMPTY_STUDENT_CONSENTS);
 
-  const returnPath = readAuthReturnPath(searchParams);
+  const returnPath = resolvePostAuthDestination(searchParams, { profileComplete });
   const loginPath = `/student/login${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
     apply: shouldAutoApplyAfterAuth(searchParams),
   })}`;
+  const registerQuery = buildStudentAuthPath({
+    pathname: searchParams.get('next') || undefined,
+    apply: shouldAutoApplyAfterAuth(searchParams),
+  });
+
+  const completePostAuthNavigation = () => {
+    const destination = resolvePostAuthDestination(searchParams, { profileComplete });
+    const pendingApply = consumePendingApplyUrl();
+    if (pendingApply && profileComplete) {
+      openExternalApplyLink(pendingApply);
+    }
+    navigate(destination, { replace: true });
+  };
 
   useEffect(() => {
     if (!session || !isStudent || isLoading) {
       return;
     }
-
-    const pendingApply = consumePendingApplyUrl();
-    if (pendingApply) {
-      openExternalApplyLink(pendingApply);
-    }
-
-    navigate(returnPath, { replace: true });
-  }, [isLoading, isStudent, navigate, returnPath, session]);
+    completePostAuthNavigation();
+  }, [isLoading, isStudent, navigate, profileComplete, searchParams, session]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -83,6 +90,7 @@ export default function StudentRegisterPage() {
 
     try {
       validateStudentConsents(consents);
+      const postAuthPath = resolvePostAuthDestination(searchParams, { profileComplete: false });
       const result = await signUp({
         email,
         phone,
@@ -90,14 +98,15 @@ export default function StudentRegisterPage() {
         fullName,
         college,
         consents,
+        returnPath: postAuthPath,
       });
       if (result?.session) {
         return;
       }
       if (REQUIRE_EMAIL_CONFIRMATION) {
-        setNotice('Account created. Check your email to confirm, then sign in.');
+        setNotice('Account created. Check your email to confirm, then you will return to the job you selected.');
       } else {
-        setNotice('Account created. You can sign in now with your email and password.');
+        setNotice('Account created. Sign in with your email and password to continue.');
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not create account.');
@@ -111,13 +120,14 @@ export default function StudentRegisterPage() {
       <SEO
         title="Student register | Vizag Jobs"
         description="Create a student account to apply for fresher jobs in Vizag."
-        canonical="/student/register"
+        canonical={`/student/register${registerQuery}`}
       />
       <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
         <h1 className="text-3xl font-black text-slate-950">Create student account</h1>
         <p className="mt-3 text-sm text-slate-600">
-          Enter your email and mobile number. Complete your skills and education in the next step so we can match
-          you with the right companies in Vizag.
+          {shouldAutoApplyAfterAuth(searchParams)
+            ? 'Register below — you will be signed in automatically and returned to the job you selected.'
+            : 'Enter your email and mobile number. Complete your skills and education in the next step.'}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
