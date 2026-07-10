@@ -4,18 +4,22 @@ import { validateStudentConsents } from '../lib/studentConsent';
 const mapError = (error, fallbackMessage) =>
   new Error(error?.message || fallbackMessage);
 
-export const recordStudentRegistrationConsents = async (consents) => {
+export const recordStudentRegistrationConsents = async (consents, { userId } = {}) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
   }
 
   validateStudentConsents(consents);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let resolvedUserId = userId;
+  if (!resolvedUserId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    resolvedUserId = user?.id;
+  }
 
-  if (!user) {
+  if (!resolvedUserId) {
     throw new Error('You must be signed in.');
   }
 
@@ -28,7 +32,7 @@ export const recordStudentRegistrationConsents = async (consents) => {
       consent_accurate_info_at: now,
       consent_age_18_at: now,
     })
-    .eq('user_id', user.id)
+    .eq('user_id', resolvedUserId)
     .select('*')
     .single();
 

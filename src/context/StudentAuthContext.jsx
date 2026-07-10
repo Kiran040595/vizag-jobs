@@ -241,6 +241,7 @@ export function StudentAuthProvider({ children }) {
           college: collegeName,
           phone: normalizedPhone || null,
           auth_method: usePhone ? 'phone' : 'email',
+          registration_consents: Boolean(consents),
         },
         emailRedirectTo: getAuthRedirectUrl('/student/login'),
       },
@@ -251,11 +252,10 @@ export function StudentAuthProvider({ children }) {
     }
 
     if (data.user) {
-      await refreshStudentAccess(data.user.id);
-      if (consents) {
-        await recordStudentRegistrationConsents(consents);
-        await refreshStudentAccess(data.user.id);
+      if (data.session && consents) {
+        await recordStudentRegistrationConsents(consents, { userId: data.user.id });
       }
+      await refreshStudentAccess(data.user.id);
     }
 
     return data;
