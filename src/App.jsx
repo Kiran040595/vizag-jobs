@@ -35,6 +35,10 @@ import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
+import AdminStudentsPage from './pages/AdminStudentsPage';
+import StudentLoginPage from './pages/StudentLoginPage';
+import StudentRegisterPage from './pages/StudentRegisterPage';
+import StudentProfilePage from './pages/StudentProfilePage';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
@@ -52,6 +56,10 @@ function App() {
       <Route path="/employer/jobs" element={<EmployerJobsListPage />} />
       <Route path="/employer/jobs/new" element={<EmployerNewJobPage />} />
       <Route path="/employer/jobs/:jobId/edit" element={<EmployerEditJobPage />} />
+      <Route path="/student/login" element={<StudentLoginPage />} />
+      <Route path="/student/register" element={<StudentRegisterPage />} />
+      <Route path="/student" element={<Navigate to="/student/profile" replace />} />
+      <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route
         path="/admin"
         element={(
@@ -129,6 +137,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminEmployersPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/students"
+        element={(
+          <AdminRoute>
+            <AdminStudentsPage />
           </AdminRoute>
         )}
       />

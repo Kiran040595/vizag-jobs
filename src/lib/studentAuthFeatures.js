@@ -1,0 +1,3 @@
+/** Set VITE_REQUIRE_EMAIL_CONFIRMATION=true when Supabase "Confirm email" is enabled. */
+export const REQUIRE_EMAIL_CONFIRMATION =
+  import.meta.env.VITE_REQUIRE_EMAIL_CONFIRMATION === 'true';

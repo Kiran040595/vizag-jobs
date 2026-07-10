@@ -233,6 +233,7 @@ export function EmployerAuthProvider({ children }) {
       password,
       options: {
         data: {
+          user_type: 'employer',
           company_name: companyName,
         },
         emailRedirectTo: getAuthRedirectUrl('/employer/login'),

@@ -12,6 +12,7 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { AdminAuthProvider } from './context/AdminAuthContext.jsx'
 import { EmployerAuthProvider } from './context/EmployerAuthContext.jsx'
+import { StudentAuthProvider } from './context/StudentAuthContext.jsx'
 import { CookieConsentProvider } from './context/CookieConsentContext.jsx'
 import ConditionalAnalytics from './components/ConditionalAnalytics.jsx'
 
@@ -21,12 +22,14 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AdminAuthProvider>
           <EmployerAuthProvider>
-            <CookieConsentProvider>
-              <HelmetProvider>
-                <App />
-                <ConditionalAnalytics />
-              </HelmetProvider>
-            </CookieConsentProvider>
+            <StudentAuthProvider>
+              <CookieConsentProvider>
+                <HelmetProvider>
+                  <App />
+                  <ConditionalAnalytics />
+                </HelmetProvider>
+              </CookieConsentProvider>
+            </StudentAuthProvider>
           </EmployerAuthProvider>
         </AdminAuthProvider>
       </BrowserRouter>
