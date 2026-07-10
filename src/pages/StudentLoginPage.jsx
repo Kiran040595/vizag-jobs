@@ -1,15 +1,47 @@
-import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import StudentAuthMethodTabs, { STUDENT_AUTH_METHODS } from '../components/student/StudentAuthMethodTabs';
 import { useStudentAuth } from '../hooks/useStudentAuth';
+import {
+  consumePendingApplyUrl,
+  openExternalApplyLink,
+  readAuthReturnPath,
+  shouldAutoApplyAfterAuth,
+  buildStudentAuthPath,
+} from '../lib/studentApplyRedirect';
 
 export default function StudentLoginPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { authError, isLoading, isStudent, isSupabaseConfigured, session, signIn } = useStudentAuth();
-  const [email, setEmail] = useState('');
+  const [authMethod, setAuthMethod] = useState(STUDENT_AUTH_METHODS.EMAIL);
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const returnPath = readAuthReturnPath(searchParams);
+  const registerPath = `/student/register${buildStudentAuthPath({
+    pathname: searchParams.get('next') || undefined,
+    apply: shouldAutoApplyAfterAuth(searchParams),
+  })}`;
+
+  useEffect(() => {
+    if (!session || !isStudent || isLoading) {
+      return;
+    }
+
+    const pendingApply = consumePendingApplyUrl();
+    if (pendingApply) {
+      openExternalApplyLink(pendingApply);
+    } else if (shouldAutoApplyAfterAuth(searchParams)) {
+      // Apply link will open on the job page after redirect.
+    }
+
+    navigate(returnPath, { replace: true });
+  }, [isLoading, isStudent, navigate, returnPath, searchParams, session]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -32,11 +64,7 @@ export default function StudentLoginPage() {
   }
 
   if (session && isStudent) {
-    return <Navigate to="/student/profile" replace />;
-  }
-
-  if (session && !isStudent) {
-    return <Navigate to="/student/profile" replace />;
+    return <Navigate to={returnPath} replace />;
   }
 
   const handleSubmit = async (event) => {
@@ -45,7 +73,7 @@ export default function StudentLoginPage() {
     setIsSubmitting(true);
 
     try {
-      await signIn({ email, password });
+      await signIn({ identifier, password });
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not sign in.');
     } finally {
@@ -55,13 +83,13 @@ export default function StudentLoginPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
-      <SEO title="Student login | Vizag Jobs" description="Sign in to your student profile." canonical="/student/login" />
+      <SEO title="Student login | Vizag Jobs" description="Sign in to apply for jobs in Vizag." canonical="/student/login" />
       <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-300">For students</p>
-          <h1 className="mt-4 text-4xl font-black leading-tight">Find fresher jobs in Vizag</h1>
+          <h1 className="mt-4 text-4xl font-black leading-tight">Sign in to apply</h1>
           <p className="mt-5 text-sm leading-7 text-slate-300">
-            Save your college, branch, and skills. Browse the latest openings and apply directly from each listing.
+            You need a student account before applying to jobs. Sign in with your email or mobile number and password.
           </p>
         </section>
 
@@ -72,13 +100,19 @@ export default function StudentLoginPage() {
           ) : null}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <StudentAuthMethodTabs value={authMethod} onChange={setAuthMethod} />
+
             <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Email</span>
+              <span className="text-sm font-semibold text-slate-700">
+                {authMethod === STUDENT_AUTH_METHODS.PHONE ? 'Mobile number' : 'Email'}
+              </span>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type={authMethod === STUDENT_AUTH_METHODS.PHONE ? 'tel' : 'email'}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 required
+                autoComplete={authMethod === STUDENT_AUTH_METHODS.PHONE ? 'tel' : 'email'}
+                placeholder={authMethod === STUDENT_AUTH_METHODS.PHONE ? '9876543210' : 'you@college.edu'}
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </label>
@@ -89,6 +123,7 @@ export default function StudentLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </label>
@@ -106,7 +141,7 @@ export default function StudentLoginPage() {
 
           <p className="mt-6 text-center text-sm text-slate-600">
             New here?{' '}
-            <Link to="/student/register" className="font-semibold text-indigo-600 hover:text-indigo-700">
+            <Link to={registerPath} className="font-semibold text-indigo-600 hover:text-indigo-700">
               Create student account
             </Link>
           </p>

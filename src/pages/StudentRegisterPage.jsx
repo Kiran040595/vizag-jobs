@@ -1,19 +1,50 @@
-import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import StudentAuthMethodTabs, { STUDENT_AUTH_METHODS } from '../components/student/StudentAuthMethodTabs';
 import { REQUIRE_EMAIL_CONFIRMATION } from '../lib/studentAuthFeatures';
 import { useStudentAuth } from '../hooks/useStudentAuth';
+import {
+  buildStudentAuthPath,
+  consumePendingApplyUrl,
+  openExternalApplyLink,
+  readAuthReturnPath,
+  shouldAutoApplyAfterAuth,
+} from '../lib/studentApplyRedirect';
 
 export default function StudentRegisterPage() {
-  const { isLoading, isSupabaseConfigured, session, signUp } = useStudentAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { isLoading, isStudent, isSupabaseConfigured, session, signUp } = useStudentAuth();
+  const [authMethod, setAuthMethod] = useState(STUDENT_AUTH_METHODS.EMAIL);
   const [fullName, setFullName] = useState('');
   const [college, setCollege] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const returnPath = readAuthReturnPath(searchParams);
+  const loginPath = `/student/login${buildStudentAuthPath({
+    pathname: searchParams.get('next') || undefined,
+    apply: shouldAutoApplyAfterAuth(searchParams),
+  })}`;
+
+  useEffect(() => {
+    if (!session || !isStudent || isLoading) {
+      return;
+    }
+
+    const pendingApply = consumePendingApplyUrl();
+    if (pendingApply) {
+      openExternalApplyLink(pendingApply);
+    }
+
+    navigate(returnPath, { replace: true });
+  }, [isLoading, isStudent, navigate, returnPath, session]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -35,8 +66,8 @@ export default function StudentRegisterPage() {
     );
   }
 
-  if (session) {
-    return <Navigate to="/student/profile" replace />;
+  if (session && isStudent) {
+    return <Navigate to={returnPath} replace />;
   }
 
   const handleSubmit = async (event) => {
@@ -46,14 +77,21 @@ export default function StudentRegisterPage() {
     setIsSubmitting(true);
 
     try {
-      const result = await signUp({ email, password, fullName, college });
+      const result = await signUp({
+        authMethod,
+        email,
+        phone,
+        password,
+        fullName,
+        college,
+      });
       if (result?.session) {
         return;
       }
-      if (REQUIRE_EMAIL_CONFIRMATION) {
+      if (REQUIRE_EMAIL_CONFIRMATION && authMethod === STUDENT_AUTH_METHODS.EMAIL) {
         setNotice('Account created. Check your email to confirm, then sign in.');
       } else {
-        setNotice('Account created. You can sign in now with your email and password.');
+        setNotice('Account created. You can sign in now with your mobile or email and password.');
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not create account.');
@@ -66,14 +104,18 @@ export default function StudentRegisterPage() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
       <SEO
         title="Student register | Vizag Jobs"
-        description="Create a student account to track your profile for fresher jobs in Vizag."
+        description="Create a student account to apply for fresher jobs in Vizag."
         canonical="/student/register"
       />
       <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
         <h1 className="text-3xl font-black text-slate-950">Create student account</h1>
-        <p className="mt-2 text-sm text-slate-600">Register to save your education details and browse fresher roles in Vizag.</p>
+        <p className="mt-2 text-sm text-slate-600">
+          Register with email or mobile to apply for jobs in Vizag.
+        </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <StudentAuthMethodTabs value={authMethod} onChange={setAuthMethod} />
+
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Full name</span>
             <input
@@ -92,16 +134,34 @@ export default function StudentRegisterPage() {
               className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
             />
           </label>
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-            />
-          </label>
+
+          {authMethod === STUDENT_AUTH_METHODS.EMAIL ? (
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              />
+            </label>
+          ) : (
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Mobile number</span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                autoComplete="tel"
+                placeholder="9876543210"
+                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              />
+            </label>
+          )}
+
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Password</span>
             <input
@@ -110,6 +170,7 @@ export default function StudentRegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              autoComplete="new-password"
               className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
             />
           </label>
@@ -132,7 +193,7 @@ export default function StudentRegisterPage() {
 
         <p className="mt-6 text-center text-sm text-slate-600">
           Already registered?{' '}
-          <Link to="/student/login" className="font-semibold text-indigo-600 hover:text-indigo-700">
+          <Link to={loginPath} className="font-semibold text-indigo-600 hover:text-indigo-700">
             Sign in
           </Link>
         </p>

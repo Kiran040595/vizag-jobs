@@ -20,7 +20,14 @@ import { buildBreadcrumbSchema } from '../lib/breadcrumbSchema';
 import { SITE_URL } from '../lib/site';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
+import StudentApplyButton from '../components/student/StudentApplyButton';
+import {
+  consumePendingApplyUrl,
+  openExternalApplyLink,
+  shouldAutoApplyAfterAuth,
+} from '../lib/studentApplyRedirect';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
@@ -49,6 +56,7 @@ export default function JobDetailsPage() {
   const [searchParams] = useSearchParams();
   const { isAdmin, user: adminUser } = useAdminAuth();
   const { isEmployer, user: employerUser } = useEmployerAuth();
+  const { isStudent, session: studentSession } = useStudentAuth();
   const user = adminUser || employerUser;
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,6 +139,20 @@ export default function JobDetailsPage() {
     navigate(canonicalPath, { replace: true });
   }, [currentPath, job, navigate]);
 
+  useEffect(() => {
+    if (!job?.applyLink || !studentSession || !isStudent) {
+      return;
+    }
+
+    if (!shouldAutoApplyAfterAuth(searchParams)) {
+      return;
+    }
+
+    const pendingApply = consumePendingApplyUrl();
+    openExternalApplyLink(pendingApply || job.applyLink);
+  }, [isStudent, job, searchParams, studentSession]);
+
+  const jobDetailPath = job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`;
   const skills = splitCommaValues(job?.skills);
   const responsibilities = splitCommaValues(job?.responsibilities);
   const eligibility = splitCommaValues(job?.eligibility);
@@ -244,14 +266,7 @@ export default function JobDetailsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {job.applyLink ? (
-                  <a
-                    href={job.applyLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    Apply Now
-                  </a>
+                  <StudentApplyButton applyLink={job.applyLink} jobPath={jobDetailPath} />
                 ) : null}
                 <JobShareButtons job={job} />
               </div>

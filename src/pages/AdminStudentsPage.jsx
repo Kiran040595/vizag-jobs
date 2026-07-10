@@ -213,7 +213,17 @@ export default function AdminStudentsPage() {
                       <div className="sm:col-span-2">
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</dt>
                         <dd className="mt-0.5 text-slate-800">
-                          {student.skills.length > 0 ? student.skills.join(', ') : 'Not provided'}
+                          {student.skillLabels?.length > 0
+                            ? student.skillLabels.join(', ')
+                            : student.skills.length > 0
+                              ? student.skills.join(', ')
+                              : 'Not provided'}
+                        </dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Certifications</dt>
+                        <dd className="mt-0.5 text-slate-800">
+                          {student.certificationsText || 'Not provided'}
                         </dd>
                       </div>
                     </dl>

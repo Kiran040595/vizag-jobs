@@ -1,20 +1,41 @@
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import StudentShell from '../components/student/StudentShell';
 import StudentProfileForm from '../components/student/StudentProfileForm';
 import StudentSessionRoute from '../components/student/StudentSessionRoute';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 
+import { readAuthReturnPath, shouldAutoApplyAfterAuth } from '../lib/studentApplyRedirect';
+
 function StudentProfileContent() {
-  const { isStudent } = useStudentAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { profileComplete } = useStudentAuth();
+  const needsApply = shouldAutoApplyAfterAuth(searchParams);
+  const returnPath = readAuthReturnPath(searchParams);
+
+  const handleSaved = () => {
+    if (needsApply && returnPath !== '/student/profile') {
+      const separator = returnPath.includes('?') ? '&' : '?';
+      navigate(`${returnPath}${separator}apply=1`, { replace: true });
+    }
+  };
 
   return (
     <StudentShell
       title="Student profile"
-      description="Your education and skills for fresher job search in Vizag."
+      description="Complete your education, skills, and certifications before applying to jobs in Vizag."
     >
       <SEO title="Student profile | Vizag Jobs" canonical="/student/profile" />
-      <StudentProfileForm onSaved={() => {}} />
-      {isStudent ? (
+      {!profileComplete ? (
+        <p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {needsApply
+            ? 'Complete your profile below to apply for this job. All fields marked * are required.'
+            : 'Complete your profile below before applying to jobs. All fields marked * are required.'}
+        </p>
+      ) : null}
+      <StudentProfileForm onSaved={handleSaved} />
+      {profileComplete ? (
         <p className="mt-6 text-sm text-slate-600">
           <a href="/jobs/fresher" className="font-semibold text-indigo-600 hover:text-indigo-700">
             Browse fresher jobs in Vizag
@@ -25,9 +46,7 @@ function StudentProfileContent() {
           </a>
           .
         </p>
-      ) : (
-        <p className="mt-6 text-sm text-amber-700">Save your profile to complete registration.</p>
-      )}
+      ) : null}
     </StudentShell>
   );
 }

@@ -4,9 +4,24 @@ Lean student accounts for fresher job seekers in Vizag. Designed to stay within 
 
 ## Student features (phase 1)
 
-- Register at `/student/register` (name, college, email, password)
-- Complete profile at `/student/profile` (degree, branch, graduation year, skills, phone)
-- Admin list at `/admin/students`
+- Register at `/student/register` (name, college, **email or mobile**, password)
+- Sign in at `/student/login` with **email + password** or **mobile + password**
+- **Apply Now** requires sign-in **and** a complete student profile
+- Complete profile at `/student/profile` — **all fields mandatory**:
+  - Degree, branch, graduation year (dropdowns)
+  - Mobile number
+  - Skills (multi-select, stored lowercase for matching)
+  - Fresher yes/no
+  - Certifications / courses completed
+- Admin list at `/admin/students` (shows complete vs incomplete profiles)
+
+### Mobile sign-in (no SMS)
+
+Mobile accounts use an internal auth email (`919876543210@phone.jobsinvizag.in`). Students only enter their 10-digit number and password — no OTP/SMS provider required.
+
+### Apply gate
+
+Visitors who click **Apply Now** without a session are sent to `/student/login?next=…&apply=1`. After sign-in they return to the job and the apply link opens automatically.
 
 ## Deferred (phase 2)
 

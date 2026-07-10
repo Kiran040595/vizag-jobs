@@ -1,27 +1,63 @@
+import {
+  formatSkillLabel,
+  isAllowedBranch,
+  isAllowedDegree,
+  isAllowedGraduationYear,
+  normalizeSkillValue,
+  parseSkillSelection,
+} from './studentProfileOptions.js';
+import { isValidStudentPhone, normalizeStudentPhone } from './studentPhoneAuth.js';
+
+const PLACEHOLDER_NAME = 'your name';
+
 export const mapStudentProfileRow = (row) => {
   if (!row) return null;
 
   const fullName = String(row.full_name || '').trim();
-  const skills = Array.isArray(row.skills) ? row.skills : [];
+  const college = String(row.college || '').trim();
+  const degree = String(row.degree || '').trim();
+  const branch = String(row.branch || '').trim();
+  const graduationYear = row.graduation_year ?? null;
+  const phone = String(row.phone || '').trim();
+  const skills = Array.isArray(row.skills)
+    ? row.skills.map(normalizeSkillValue).filter(Boolean)
+    : [];
+  const certifications = Array.isArray(row.certifications)
+    ? row.certifications.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const certificationsText = certifications.join('; ');
+  const isFresher = row.is_fresher !== false;
+
+  const profileComplete =
+    Boolean(fullName) &&
+    fullName.toLowerCase() !== PLACEHOLDER_NAME &&
+    Boolean(college) &&
+    isAllowedDegree(degree) &&
+    isAllowedBranch(branch) &&
+    isAllowedGraduationYear(graduationYear ? String(graduationYear) : '') &&
+    isValidStudentPhone(phone) &&
+    skills.length > 0 &&
+    certifications.length > 0 &&
+    typeof row.is_fresher === 'boolean';
 
   return {
     userId: row.user_id,
     fullName,
-    college: row.college || '',
-    degree: row.degree || '',
-    branch: row.branch || '',
-    graduationYear: row.graduation_year ?? null,
+    college,
+    degree,
+    branch,
+    graduationYear,
     contactEmail: row.contact_email || '',
-    phone: row.phone || '',
+    phone,
     skills,
-    isFresher: row.is_fresher !== false,
+    skillLabels: skills.map(formatSkillLabel),
+    certifications,
+    certificationsText,
+    isFresher,
     isActive: Boolean(row.is_active),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    profileComplete:
-      Boolean(fullName) &&
-      fullName.toLowerCase() !== 'your name' &&
-      Boolean(String(row.college || '').trim()),
+    profileComplete,
   };
 };
 
@@ -33,7 +69,8 @@ export const studentSearchBlob = (student) =>
     student.branch,
     student.contactEmail,
     student.phone,
-    student.skills?.join(' '),
+    student.skillLabels?.join(' ') || student.skills?.join(' '),
+    student.certificationsText,
     student.userId,
   ]
     .filter(Boolean)
@@ -53,3 +90,5 @@ export const formatStudentRegisteredAt = (value) => {
         minute: '2-digit',
       });
 };
+
+export { parseSkillSelection };

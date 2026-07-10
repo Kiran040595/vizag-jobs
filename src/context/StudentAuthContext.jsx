@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { StudentAuthContext } from './studentAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getAuthRedirectUrl } from '../lib/site';
-import { upsertStudentProfile } from '../services/studentJobs';
+import { mapStudentProfileRow } from '../lib/adminStudentProfile';
+import {
+  isValidStudentPhone,
+  normalizeStudentPhone,
+  phoneToAuthEmail,
+  resolveStudentSignInCredentials,
+} from '../lib/studentPhoneAuth';
 
 const STUDENT_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const STUDENT_ACCESS_CACHE_KEY = 'vizagjobs:student-access-cache';
@@ -16,7 +22,7 @@ const readStudentAccessCache = () => {
   }
 };
 
-const writeStudentAccessCache = (userId, isStudent, profile) => {
+const writeStudentAccessCache = (userId, isStudent, profile, profileComplete) => {
   try {
     sessionStorage.setItem(
       STUDENT_ACCESS_CACHE_KEY,
@@ -24,6 +30,7 @@ const writeStudentAccessCache = (userId, isStudent, profile) => {
         userId,
         isStudent,
         profile,
+        profileComplete,
         expiresAt: Date.now() + STUDENT_ACCESS_CACHE_TTL_MS,
       }),
     );
@@ -52,12 +59,13 @@ const getCachedStudentAccess = (userId) => {
   return {
     isStudent: Boolean(cachedValue.isStudent),
     profile: cachedValue.profile ?? null,
+    profileComplete: Boolean(cachedValue.profileComplete),
   };
 };
 
 const getStudentProfile = async (userId) => {
   if (!supabase || !userId) {
-    return { isStudent: false, profile: null };
+    return { isStudent: false, profile: null, profileComplete: false };
   }
 
   const { data, error } = await supabase
@@ -71,12 +79,14 @@ const getStudentProfile = async (userId) => {
   }
 
   const isStudent = Boolean(data?.user_id && data.is_active !== false);
-  return { isStudent, profile: data };
+  const mapped = mapStudentProfileRow(data);
+  return { isStudent, profile: data, profileComplete: Boolean(mapped?.profileComplete) };
 };
 
 export function StudentAuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [isStudent, setIsStudent] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(false);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase));
   const [authError, setAuthError] = useState('');
@@ -85,7 +95,8 @@ export function StudentAuthProvider({ children }) {
     const access = await getStudentProfile(userId);
     setIsStudent(access.isStudent);
     setProfile(access.profile);
-    writeStudentAccessCache(userId, access.isStudent, access.profile);
+    setProfileComplete(access.profileComplete);
+    writeStudentAccessCache(userId, access.isStudent, access.profile, access.profileComplete);
     return access;
   };
 
@@ -110,6 +121,7 @@ export function StudentAuthProvider({ children }) {
       if (!nextSession?.user) {
         setIsStudent(false);
         setProfile(null);
+        setProfileComplete(false);
         clearStudentAccessCache();
         if (showLoader) {
           setIsLoading(false);
@@ -121,18 +133,29 @@ export function StudentAuthProvider({ children }) {
         const cached = getCachedStudentAccess(nextSession.user.id);
         const access =
           cached !== null
-            ? { isStudent: cached.isStudent, profile: cached.profile }
+            ? {
+                isStudent: cached.isStudent,
+                profile: cached.profile,
+                profileComplete: cached.profileComplete,
+              }
             : await getStudentProfile(nextSession.user.id);
 
         if (!isMounted) return;
 
         setIsStudent(access.isStudent);
         setProfile(access.profile);
-        writeStudentAccessCache(nextSession.user.id, access.isStudent, access.profile);
+        setProfileComplete(access.profileComplete);
+        writeStudentAccessCache(
+          nextSession.user.id,
+          access.isStudent,
+          access.profile,
+          access.profileComplete,
+        );
       } catch (error) {
         if (!isMounted) return;
         setIsStudent(false);
         setProfile(null);
+        setProfileComplete(false);
         setAuthError(error instanceof Error ? error.message : 'Could not verify student access.');
       } finally {
         if (isMounted && showLoader) {
@@ -168,29 +191,55 @@ export function StudentAuthProvider({ children }) {
     };
   }, []);
 
-  const signIn = async ({ email, password }) => {
+  const signIn = async ({ identifier, email, password }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const credentials = resolveStudentSignInCredentials({
+      identifier: identifier ?? email,
+      password,
+    });
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    });
     if (error) {
       throw error;
     }
   };
 
-  const signUp = async ({ email, password, fullName, college }) => {
+  const signUp = async ({ authMethod, email, phone, password, fullName, college }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
 
+    const name = String(fullName || '').trim();
+    const collegeName = String(college || '').trim();
+    const usePhone = authMethod === 'phone';
+    const normalizedPhone = usePhone ? normalizeStudentPhone(phone) : '';
+
+    if (usePhone && !isValidStudentPhone(normalizedPhone)) {
+      throw new Error('Enter a valid 10-digit Indian mobile number.');
+    }
+
+    if (!usePhone && !String(email || '').trim()) {
+      throw new Error('Email is required.');
+    }
+
+    const signupEmail = usePhone ? phoneToAuthEmail(normalizedPhone) : String(email || '').trim();
+
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: signupEmail,
       password,
       options: {
         data: {
           user_type: 'student',
-          full_name: fullName,
-          college,
+          full_name: name,
+          college: collegeName,
+          phone: normalizedPhone || null,
+          auth_method: usePhone ? 'phone' : 'email',
         },
         emailRedirectTo: getAuthRedirectUrl('/student/login'),
       },
@@ -201,18 +250,6 @@ export function StudentAuthProvider({ children }) {
     }
 
     if (data.user) {
-      const name = String(fullName || '').trim();
-      const collegeName = String(college || '').trim();
-      if (name && name.toLowerCase() !== 'your name') {
-        await upsertStudentProfile({
-          full_name: name,
-          college: collegeName,
-          contact_email: email,
-          is_fresher: true,
-        }).catch(() => {
-          // Trigger may have already created the row.
-        });
-      }
       await refreshStudentAccess(data.user.id);
     }
 
@@ -238,6 +275,7 @@ export function StudentAuthProvider({ children }) {
         isLoading,
         isSupabaseConfigured,
         profile,
+        profileComplete,
         refreshStudentAccess,
         session,
         signIn,
