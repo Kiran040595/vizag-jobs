@@ -27,6 +27,10 @@ export default function PrivacyPolicyPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>Name, email address, and phone number</li>
           <li>Company and job posting details, if you register as an employer</li>
+          <li>
+            Student account details if you register as a job seeker: college, degree, branch, graduation
+            year, skills, certifications, fresher status, and contact information
+          </li>
           <li>Any messages you send us by email or through our Contact page</li>
         </ul>
         <p>
@@ -61,6 +65,10 @@ export default function PrivacyPolicyPage() {
           <li>Operate and improve the job portal (showing relevant local listings)</li>
           <li>Respond to inquiries submitted through our Contact page</li>
           <li>Manage employer accounts and job postings submitted by employers</li>
+          <li>
+            Match student profiles with employer job requirements in Vizag and share relevant candidate
+            details with employers when students have agreed to this during registration
+          </li>
           <li>Analyze site usage to improve performance and content</li>
           <li>Display relevant advertising through Google AdSense (see Section 4)</li>
         </ul>

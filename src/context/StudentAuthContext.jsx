@@ -3,6 +3,7 @@ import { StudentAuthContext } from './studentAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getAuthRedirectUrl } from '../lib/site';
 import { mapStudentProfileRow } from '../lib/adminStudentProfile';
+import { recordStudentRegistrationConsents } from '../services/studentConsent';
 import {
   isValidStudentPhone,
   normalizeStudentPhone,
@@ -210,7 +211,7 @@ export function StudentAuthProvider({ children }) {
     }
   };
 
-  const signUp = async ({ authMethod, email, phone, password, fullName, college }) => {
+  const signUp = async ({ authMethod, email, phone, password, fullName, college, consents }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
@@ -251,6 +252,10 @@ export function StudentAuthProvider({ children }) {
 
     if (data.user) {
       await refreshStudentAccess(data.user.id);
+      if (consents) {
+        await recordStudentRegistrationConsents(consents);
+        await refreshStudentAccess(data.user.id);
+      }
     }
 
     return data;

@@ -155,6 +155,11 @@ export default function AdminStudentsPage() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-bold text-slate-950">{student.fullName}</h2>
+                      {!student.hasRegistrationConsents ? (
+                        <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-800">
+                          Consent pending
+                        </span>
+                      ) : null}
                       {!student.profileComplete ? (
                         <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
                           Profile incomplete

@@ -21,6 +21,10 @@ const completeRow = {
   certifications: ['Java Full Stack (Udemy)'],
   is_fresher: true,
   is_active: true,
+  consent_terms_at: '2026-07-10T08:00:00.000Z',
+  consent_share_with_employers_at: '2026-07-10T08:00:00.000Z',
+  consent_accurate_info_at: '2026-07-10T08:00:00.000Z',
+  consent_age_18_at: '2026-07-10T08:00:00.000Z',
   created_at: '2026-07-10T08:00:00.000Z',
   updated_at: '2026-07-10T08:00:00.000Z',
 };

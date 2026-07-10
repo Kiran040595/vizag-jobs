@@ -27,6 +27,11 @@ export const mapStudentProfileRow = (row) => {
     : [];
   const certificationsText = certifications.join('; ');
   const isFresher = row.is_fresher !== false;
+  const hasRegistrationConsents =
+    Boolean(row.consent_terms_at) &&
+    Boolean(row.consent_share_with_employers_at) &&
+    Boolean(row.consent_accurate_info_at) &&
+    Boolean(row.consent_age_18_at);
 
   const profileComplete =
     Boolean(fullName) &&
@@ -38,7 +43,8 @@ export const mapStudentProfileRow = (row) => {
     isValidStudentPhone(phone) &&
     skills.length > 0 &&
     certifications.length > 0 &&
-    typeof row.is_fresher === 'boolean';
+    typeof row.is_fresher === 'boolean' &&
+    hasRegistrationConsents;
 
   return {
     userId: row.user_id,
@@ -55,6 +61,9 @@ export const mapStudentProfileRow = (row) => {
     certificationsText,
     isFresher,
     isActive: Boolean(row.is_active),
+    hasRegistrationConsents,
+    consentTermsAt: row.consent_terms_at || null,
+    consentShareWithEmployersAt: row.consent_share_with_employers_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     profileComplete,

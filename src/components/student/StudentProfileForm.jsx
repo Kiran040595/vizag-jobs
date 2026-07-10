@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { upsertStudentProfile } from '../../services/studentJobs';
+import { recordStudentRegistrationConsents } from '../../services/studentConsent';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
+import { EMPTY_STUDENT_CONSENTS, hasStudentRegistrationConsents, validateStudentConsents } from '../../lib/studentConsent';
+import StudentRegistrationConsent from './StudentRegistrationConsent';
+import StudentSkillMatchNotice from './StudentSkillMatchNotice';
 import {
   groupSkillOptions,
   STUDENT_BRANCH_OPTIONS,
@@ -30,6 +34,8 @@ export default function StudentProfileForm({ onSaved }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [consents, setConsents] = useState(EMPTY_STUDENT_CONSENTS);
+  const needsConsent = profile ? !hasStudentRegistrationConsents(profile) : true;
 
   const skillGroups = useMemo(() => groupSkillOptions(), []);
 
@@ -91,6 +97,10 @@ export default function StudentProfileForm({ onSaved }) {
     setIsSaving(true);
 
     try {
+      if (needsConsent) {
+        validateStudentConsents(consents);
+        await recordStudentRegistrationConsents(consents);
+      }
       const saved = await upsertStudentProfile(form);
       if (user?.id) {
         await refreshStudentAccess(user.id);
@@ -106,10 +116,11 @@ export default function StudentProfileForm({ onSaved }) {
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
+      <StudentSkillMatchNotice className="mb-6" />
       <h2 className="text-2xl font-black text-slate-950">Student profile</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Complete every field below before applying to jobs. This helps us share accurate candidate details with
-        recruiters in Vizag.
+        Complete every field below before applying to jobs. Accurate skills and certifications help us pass
+        your profile to matching employers in Vizag (Java, frontend, delivery, BPO, and more).
       </p>
 
       {notice ? (
@@ -296,6 +307,16 @@ export default function StudentProfileForm({ onSaved }) {
             placeholder="Java Full Stack (Udemy), AWS Cloud Practitioner, NPTEL Python — or type None"
           />
         </label>
+
+        <div className="sm:col-span-2">
+          <StudentSkillMatchNotice />
+        </div>
+
+        {needsConsent ? (
+          <div className="sm:col-span-2">
+            <StudentRegistrationConsent values={consents} onChange={setConsents} idPrefix="student-profile-consent" />
+          </div>
+        ) : null}
 
         <div className="sm:col-span-2">
           <button

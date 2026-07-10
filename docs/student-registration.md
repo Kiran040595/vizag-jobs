@@ -23,6 +23,15 @@ Mobile accounts use an internal auth email (`919876543210@phone.jobsinvizag.in`)
 
 Visitors who click **Apply Now** without a session are sent to `/student/login?next=…&apply=1`. After sign-in they return to the job and the apply link opens automatically.
 
+### Consent (registration)
+
+Students must agree at registration (stored with timestamps on `student_profiles`):
+
+- Terms of Service and Privacy Policy
+- Sharing profile with matching employers in Vizag
+- Information is accurate
+- Age 18 or older
+
 ## Deferred (phase 2)
 
 These are **not** implemented yet to avoid filling the 1 GB Storage bucket and adding complexity:

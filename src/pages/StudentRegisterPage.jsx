@@ -3,6 +3,9 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StudentAuthMethodTabs, { STUDENT_AUTH_METHODS } from '../components/student/StudentAuthMethodTabs';
+import StudentRegistrationConsent from '../components/student/StudentRegistrationConsent';
+import StudentSkillMatchNotice from '../components/student/StudentSkillMatchNotice';
+import { EMPTY_STUDENT_CONSENTS, validateStudentConsents } from '../lib/studentConsent';
 import { REQUIRE_EMAIL_CONFIRMATION } from '../lib/studentAuthFeatures';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
@@ -26,6 +29,7 @@ export default function StudentRegisterPage() {
   const [submitError, setSubmitError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [consents, setConsents] = useState(EMPTY_STUDENT_CONSENTS);
 
   const returnPath = readAuthReturnPath(searchParams);
   const loginPath = `/student/login${buildStudentAuthPath({
@@ -77,6 +81,7 @@ export default function StudentRegisterPage() {
     setIsSubmitting(true);
 
     try {
+      validateStudentConsents(consents);
       const result = await signUp({
         authMethod,
         email,
@@ -84,6 +89,7 @@ export default function StudentRegisterPage() {
         password,
         fullName,
         college,
+        consents,
       });
       if (result?.session) {
         return;
@@ -109,8 +115,10 @@ export default function StudentRegisterPage() {
       />
       <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
         <h1 className="text-3xl font-black text-slate-950">Create student account</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Register with email or mobile to apply for jobs in Vizag.
+        <StudentSkillMatchNotice className="mt-4" />
+        <p className="mt-3 text-sm text-slate-600">
+          Register with email or mobile. Complete your skills and education in the next step so we can match
+          you with the right companies in Vizag.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -175,6 +183,8 @@ export default function StudentRegisterPage() {
             />
           </label>
 
+          <StudentRegistrationConsent values={consents} onChange={setConsents} />
+
           {notice ? (
             <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</p>
           ) : null}
@@ -190,6 +200,8 @@ export default function StudentRegisterPage() {
             {isSubmitting ? 'Creating account...' : 'Register'}
           </button>
         </form>
+
+        <StudentSkillMatchNotice className="mt-6" />
 
         <p className="mt-6 text-center text-sm text-slate-600">
           Already registered?{' '}
