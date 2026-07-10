@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import StudentAuthMethodTabs, { STUDENT_AUTH_METHODS } from '../components/student/StudentAuthMethodTabs';
 import StudentRegistrationConsent from '../components/student/StudentRegistrationConsent';
 import StudentSkillMatchNotice from '../components/student/StudentSkillMatchNotice';
 import { EMPTY_STUDENT_CONSENTS, validateStudentConsents } from '../lib/studentConsent';
@@ -16,11 +15,13 @@ import {
   shouldAutoApplyAfterAuth,
 } from '../lib/studentApplyRedirect';
 
+const INPUT_CLASS =
+  'mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
+
 export default function StudentRegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoading, isStudent, isSupabaseConfigured, session, signUp } = useStudentAuth();
-  const [authMethod, setAuthMethod] = useState(STUDENT_AUTH_METHODS.EMAIL);
   const [fullName, setFullName] = useState('');
   const [college, setCollege] = useState('');
   const [email, setEmail] = useState('');
@@ -83,7 +84,6 @@ export default function StudentRegisterPage() {
     try {
       validateStudentConsents(consents);
       const result = await signUp({
-        authMethod,
         email,
         phone,
         password,
@@ -94,10 +94,10 @@ export default function StudentRegisterPage() {
       if (result?.session) {
         return;
       }
-      if (REQUIRE_EMAIL_CONFIRMATION && authMethod === STUDENT_AUTH_METHODS.EMAIL) {
+      if (REQUIRE_EMAIL_CONFIRMATION) {
         setNotice('Account created. Check your email to confirm, then sign in.');
       } else {
-        setNotice('Account created. You can sign in now with your mobile or email and password.');
+        setNotice('Account created. You can sign in now with your email and password.');
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not create account.');
@@ -115,22 +115,19 @@ export default function StudentRegisterPage() {
       />
       <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
         <h1 className="text-3xl font-black text-slate-950">Create student account</h1>
-        <StudentSkillMatchNotice className="mt-4" />
         <p className="mt-3 text-sm text-slate-600">
-          Register with email or mobile. Complete your skills and education in the next step so we can match
+          Enter your email and mobile number. Complete your skills and education in the next step so we can match
           you with the right companies in Vizag.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <StudentAuthMethodTabs value={authMethod} onChange={setAuthMethod} />
-
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Full name</span>
             <input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className={INPUT_CLASS}
             />
           </label>
           <label className="block">
@@ -139,37 +136,33 @@ export default function StudentRegisterPage() {
               value={college}
               onChange={(e) => setCollege(e.target.value)}
               required
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className={INPUT_CLASS}
             />
           </label>
-
-          {authMethod === STUDENT_AUTH_METHODS.EMAIL ? (
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-              />
-            </label>
-          ) : (
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Mobile number</span>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                autoComplete="tel"
-                placeholder="9876543210"
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-              />
-            </label>
-          )}
-
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              placeholder="you@college.edu"
+              className={INPUT_CLASS}
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Mobile number</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              autoComplete="tel"
+              placeholder="9876543210"
+              className={INPUT_CLASS}
+            />
+          </label>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Password</span>
             <input
@@ -179,7 +172,7 @@ export default function StudentRegisterPage() {
               required
               minLength={6}
               autoComplete="new-password"
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className={INPUT_CLASS}
             />
           </label>
 

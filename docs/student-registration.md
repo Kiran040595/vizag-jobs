@@ -4,8 +4,8 @@ Lean student accounts for fresher job seekers in Vizag. Designed to stay within 
 
 ## Student features (phase 1)
 
-- Register at `/student/register` (name, college, **email or mobile**, password)
-- Sign in at `/student/login` with **email + password** or **mobile + password**
+- Register at `/student/register` (name, college, **email and mobile**, password)
+- Sign in at `/student/login` with **email + password**
 - **Apply Now** requires sign-in **and** a complete student profile
 - Complete profile at `/student/profile` — **all fields mandatory**:
   - Degree, branch, graduation year (dropdowns)
@@ -17,7 +17,7 @@ Lean student accounts for fresher job seekers in Vizag. Designed to stay within 
 
 ### Mobile sign-in (no SMS)
 
-Mobile accounts use an internal auth email (`919876543210@phone.jobsinvizag.in`). Students only enter their 10-digit number and password — no OTP/SMS provider required.
+Registration collects **both email and mobile**. Sign-in uses your email and password. Mobile is stored on your profile for recruiters.
 
 ### Apply gate
 

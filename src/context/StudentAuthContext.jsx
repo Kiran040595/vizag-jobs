@@ -7,7 +7,6 @@ import { recordStudentRegistrationConsents } from '../services/studentConsent';
 import {
   isValidStudentPhone,
   normalizeStudentPhone,
-  phoneToAuthEmail,
   resolveStudentSignInCredentials,
 } from '../lib/studentPhoneAuth';
 
@@ -211,25 +210,23 @@ export function StudentAuthProvider({ children }) {
     }
   };
 
-  const signUp = async ({ authMethod, email, phone, password, fullName, college, consents }) => {
+  const signUp = async ({ email, phone, password, fullName, college, consents }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
 
     const name = String(fullName || '').trim();
     const collegeName = String(college || '').trim();
-    const usePhone = authMethod === 'phone';
-    const normalizedPhone = usePhone ? normalizeStudentPhone(phone) : '';
+    const signupEmail = String(email || '').trim();
+    const normalizedPhone = normalizeStudentPhone(phone);
 
-    if (usePhone && !isValidStudentPhone(normalizedPhone)) {
-      throw new Error('Enter a valid 10-digit Indian mobile number.');
-    }
-
-    if (!usePhone && !String(email || '').trim()) {
+    if (!signupEmail) {
       throw new Error('Email is required.');
     }
 
-    const signupEmail = usePhone ? phoneToAuthEmail(normalizedPhone) : String(email || '').trim();
+    if (!isValidStudentPhone(normalizedPhone)) {
+      throw new Error('Enter a valid 10-digit Indian mobile number.');
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email: signupEmail,
@@ -239,8 +236,8 @@ export function StudentAuthProvider({ children }) {
           user_type: 'student',
           full_name: name,
           college: collegeName,
-          phone: normalizedPhone || null,
-          auth_method: usePhone ? 'phone' : 'email',
+          phone: normalizedPhone,
+          auth_method: 'email',
           registration_consents: Boolean(consents),
         },
         emailRedirectTo: getAuthRedirectUrl('/student/login'),

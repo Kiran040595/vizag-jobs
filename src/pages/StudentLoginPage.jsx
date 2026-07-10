@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import StudentAuthMethodTabs, { STUDENT_AUTH_METHODS } from '../components/student/StudentAuthMethodTabs';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
   consumePendingApplyUrl,
@@ -16,7 +15,6 @@ export default function StudentLoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { authError, isLoading, isStudent, isSupabaseConfigured, session, signIn } = useStudentAuth();
-  const [authMethod, setAuthMethod] = useState(STUDENT_AUTH_METHODS.EMAIL);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -36,8 +34,6 @@ export default function StudentLoginPage() {
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply) {
       openExternalApplyLink(pendingApply);
-    } else if (shouldAutoApplyAfterAuth(searchParams)) {
-      // Apply link will open on the job page after redirect.
     }
 
     navigate(returnPath, { replace: true });
@@ -89,7 +85,7 @@ export default function StudentLoginPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-300">For students</p>
           <h1 className="mt-4 text-4xl font-black leading-tight">Sign in to apply</h1>
           <p className="mt-5 text-sm leading-7 text-slate-300">
-            You need a student account before applying to jobs. Sign in with your email or mobile number and password.
+            Sign in with the email and password you used during registration.
           </p>
         </section>
 
@@ -100,19 +96,15 @@ export default function StudentLoginPage() {
           ) : null}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <StudentAuthMethodTabs value={authMethod} onChange={setAuthMethod} />
-
             <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                {authMethod === STUDENT_AUTH_METHODS.PHONE ? 'Mobile number' : 'Email'}
-              </span>
+              <span className="text-sm font-semibold text-slate-700">Email</span>
               <input
-                type={authMethod === STUDENT_AUTH_METHODS.PHONE ? 'tel' : 'email'}
+                type="email"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
-                autoComplete={authMethod === STUDENT_AUTH_METHODS.PHONE ? 'tel' : 'email'}
-                placeholder={authMethod === STUDENT_AUTH_METHODS.PHONE ? '9876543210' : 'you@college.edu'}
+                autoComplete="email"
+                placeholder="you@college.edu"
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </label>

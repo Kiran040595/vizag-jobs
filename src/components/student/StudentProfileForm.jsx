@@ -116,7 +116,6 @@ export default function StudentProfileForm({ onSaved }) {
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
-      <StudentSkillMatchNotice className="mb-6" />
       <h2 className="text-2xl font-black text-slate-950">Student profile</h2>
       <p className="mt-2 text-sm text-slate-600">
         Complete every field below before applying to jobs. Accurate skills and certifications help us pass
