@@ -30,6 +30,7 @@ import EmployerProfilePage from './pages/EmployerProfilePage';
 import EmployerJobsListPage from './pages/EmployerJobsListPage';
 import EmployerNewJobPage from './pages/EmployerNewJobPage';
 import EmployerEditJobPage from './pages/EmployerEditJobPage';
+import EmployerJobApplicationsPage from './pages/EmployerJobApplicationsPage';
 import OAuthConsentPage from './pages/OAuthConsentPage';
 import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
@@ -39,6 +40,8 @@ import AdminStudentsPage from './pages/AdminStudentsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
 import StudentProfilePage from './pages/StudentProfilePage';
+import StudentApplyPage from './pages/StudentApplyPage';
+import StudentApplicationsPage from './pages/StudentApplicationsPage';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
@@ -56,10 +59,13 @@ function App() {
       <Route path="/employer/jobs" element={<EmployerJobsListPage />} />
       <Route path="/employer/jobs/new" element={<EmployerNewJobPage />} />
       <Route path="/employer/jobs/:jobId/edit" element={<EmployerEditJobPage />} />
+      <Route path="/employer/jobs/:jobId/applications" element={<EmployerJobApplicationsPage />} />
       <Route path="/student/login" element={<StudentLoginPage />} />
       <Route path="/student/register" element={<StudentRegisterPage />} />
       <Route path="/student" element={<Navigate to="/student/profile" replace />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
+      <Route path="/student/applications" element={<StudentApplicationsPage />} />
+      <Route path="/student/apply/:jobId" element={<StudentApplyPage />} />
       <Route
         path="/admin"
         element={(

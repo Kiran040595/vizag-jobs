@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
 import EmployerShell from '../components/employer/EmployerShell';
 import { fetchMyJobs } from '../services/employerJobs';
+import { fetchJobApplicationCounts } from '../services/jobApplications';
 
 const STATUS_STYLES = {
   pending: 'border-blue-200 bg-blue-50 text-blue-700',
@@ -24,6 +25,7 @@ const statusLabel = (job) => {
 function EmployerJobsListContent() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
+  const [applicationCounts, setApplicationCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -33,8 +35,12 @@ function EmployerJobsListContent() {
     const load = async () => {
       try {
         const data = await fetchMyJobs();
+        const publishedIds = data.filter((job) => job.status === 'published').map((job) => job.id);
+        const counts = await fetchJobApplicationCounts(publishedIds);
+
         if (!ignore) {
           setJobs(data);
+          setApplicationCounts(counts);
           setLoadError('');
         }
       } catch (error) {
@@ -93,21 +99,42 @@ function EmployerJobsListContent() {
                     >
                       {statusLabel(job)}
                     </span>
+                    {job.apply_mode === 'internal' ? (
+                      <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
+                        On-platform apply
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-1 text-sm text-slate-600">{job.company}</p>
                   {job.rejection_reason ? (
                     <p className="mt-2 text-sm text-rose-700">Reason: {job.rejection_reason}</p>
                   ) : null}
+                  {job.status === 'published' && job.apply_mode === 'internal' ? (
+                    <p className="mt-2 text-sm text-slate-600">
+                      {applicationCounts[job.id] || 0} application
+                      {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
+                    </p>
+                  ) : null}
                 </div>
-                {['pending', 'draft'].includes(job.status) ? (
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
-                    className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Edit
-                  </button>
-                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  {job.status === 'published' && job.apply_mode === 'internal' ? (
+                    <Link
+                      to={`/employer/jobs/${job.id}/applications`}
+                      className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
+                    >
+                      View applications
+                    </Link>
+                  ) : null}
+                  {['pending', 'draft'].includes(job.status) ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
+                      className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Edit
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </article>
           ))}

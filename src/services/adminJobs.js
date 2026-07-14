@@ -19,6 +19,7 @@ const MULTILINE_FIELDS = ['responsibilities', 'eligibility', 'skills'];
 const OPTIONAL_TEXT_FIELDS = [
   'salary',
   'apply_link',
+  'apply_mode',
   'short_description',
   'description',
   'warning',
@@ -47,6 +48,7 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'is_fresher',
   'salary',
   'apply_link',
+  'apply_mode',
   'short_description',
   'description',
   'responsibilities',
@@ -431,6 +433,7 @@ export const getEmptyJobForm = () => {
     is_fresher: false,
     salary: '',
     apply_link: '',
+    apply_mode: 'external',
     short_description: '',
     description: '',
     responsibilities: '',
@@ -462,6 +465,7 @@ export const serializeJobForm = (values, statusOverride) => {
     expires_at: toIsoString(values.expires_at),
     status: statusOverride || values.status || 'draft',
     is_featured: toBoolean(values.is_featured),
+    apply_mode: values.apply_mode === 'internal' ? 'internal' : 'external',
   };
 
   OPTIONAL_TEXT_FIELDS.forEach((field) => {

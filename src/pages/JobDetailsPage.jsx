@@ -24,10 +24,14 @@ import { useStudentAuth } from '../hooks/useStudentAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
 import StudentApplyButton from '../components/student/StudentApplyButton';
 import {
+  buildInternalApplyPath,
+  consumePendingApplyJobId,
   consumePendingApplyUrl,
   openExternalApplyLink,
   shouldAutoApplyAfterAuth,
 } from '../lib/studentApplyRedirect';
+import { isInternalApplyJob } from '../lib/jobApplyMode';
+import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
@@ -42,6 +46,7 @@ import {
   displaySalary,
   displayWorkMode,
 } from '../lib/jobDisplayLabels';
+import { jobSupportsApply } from '../lib/jobApplyMode';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 
 const splitCommaValues = (value) =>
@@ -61,9 +66,14 @@ export default function JobDetailsPage() {
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [existingApplication, setExistingApplication] = useState(null);
 
   const routeJobIdentifier = jobSlug || jobId || '';
   const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
+  const jobDetailPath = useMemo(
+    () => (job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`),
+    [currentPath, job, routeJobIdentifier],
+  );
 
   /**
    * Fetch only the single row we're rendering. Bandwidth per detail-page
@@ -140,7 +150,32 @@ export default function JobDetailsPage() {
   }, [currentPath, job, navigate]);
 
   useEffect(() => {
-    if (!job?.applyLink || !studentSession || !isStudent || !profileComplete) {
+    if (!job?.id || !isInternalApplyJob(job) || !studentSession || !isStudent) {
+      setExistingApplication(null);
+      return;
+    }
+
+    let ignore = false;
+
+    fetchMyApplicationForJob(job.id)
+      .then((application) => {
+        if (!ignore) {
+          setExistingApplication(application);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setExistingApplication(null);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isStudent, job, studentSession]);
+
+  useEffect(() => {
+    if (!job || !studentSession || !isStudent || !profileComplete) {
       return;
     }
 
@@ -148,11 +183,20 @@ export default function JobDetailsPage() {
       return;
     }
 
+    if (isInternalApplyJob(job)) {
+      const pendingJobId = consumePendingApplyJobId();
+      navigate(buildInternalApplyPath(pendingJobId || job.id, jobDetailPath), { replace: true });
+      return;
+    }
+
+    if (!job.applyLink) {
+      return;
+    }
+
     const pendingApply = consumePendingApplyUrl();
     openExternalApplyLink(pendingApply || job.applyLink);
-  }, [isStudent, job, profileComplete, searchParams, studentSession]);
+  }, [isStudent, job, jobDetailPath, navigate, profileComplete, searchParams, studentSession]);
 
-  const jobDetailPath = job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`;
   const skills = splitCommaValues(job?.skills);
   const responsibilities = splitCommaValues(job?.responsibilities);
   const eligibility = splitCommaValues(job?.eligibility);
@@ -265,8 +309,14 @@ export default function JobDetailsPage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {job.applyLink ? (
-                  <StudentApplyButton applyLink={job.applyLink} jobPath={jobDetailPath} />
+                {jobSupportsApply(job) ? (
+                  <StudentApplyButton
+                    applyLink={job.applyLink}
+                    applyMode={job.applyMode}
+                    jobId={job.id}
+                    jobPath={jobDetailPath}
+                    alreadyApplied={Boolean(existingApplication)}
+                  />
                 ) : null}
                 <JobShareButtons job={job} />
               </div>

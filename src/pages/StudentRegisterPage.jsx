@@ -7,7 +7,9 @@ import StudentSkillMatchNotice from '../components/student/StudentSkillMatchNoti
 import { EMPTY_STUDENT_CONSENTS, validateStudentConsents } from '../lib/studentConsent';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
+  buildInternalApplyPath,
   buildStudentAuthPath,
+  consumePendingApplyJobId,
   consumePendingApplyUrl,
   openExternalApplyLink,
   resolvePostAuthDestination,
@@ -43,6 +45,11 @@ export default function StudentRegisterPage() {
 
   const completePostAuthNavigation = () => {
     const destination = resolvePostAuthDestination(searchParams, { profileComplete });
+    const pendingJobId = consumePendingApplyJobId();
+    if (pendingJobId && profileComplete) {
+      navigate(buildInternalApplyPath(pendingJobId, searchParams.get('next') || ''), { replace: true });
+      return;
+    }
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply && profileComplete) {
       openExternalApplyLink(pendingApply);

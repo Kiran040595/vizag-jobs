@@ -1,0 +1,276 @@
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { getJobDetailPath } from '../lib/jobRoutes';
+import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';
+import { fetchStudentProfile } from './studentJobs';
+
+const APPLICATION_COLUMNS = `
+  id,
+  job_id,
+  student_user_id,
+  status,
+  cover_note,
+  resume_path,
+  profile_snapshot,
+  submitted_at,
+  updated_at
+`;
+
+const APPLICATION_STATUSES = ['submitted', 'viewed', 'shortlisted', 'rejected', 'withdrawn'];
+
+const mapApplication = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  const job = row.job
+    ? {
+        id: row.job.id,
+        slug: row.job.slug,
+        title: row.job.title,
+        company: row.job.company,
+        status: row.job.status,
+      }
+    : null;
+
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    studentUserId: row.student_user_id,
+    status: row.status,
+    coverNote: row.cover_note || '',
+    resumePath: row.resume_path || '',
+    profileSnapshot: row.profile_snapshot || {},
+    submittedAt: row.submitted_at,
+    updatedAt: row.updated_at,
+    job,
+    jobPath: job ? getJobDetailPath(job) : null,
+  };
+};
+
+const buildProfileSnapshot = (profile) => ({
+  fullName: profile.full_name || '',
+  college: profile.college || '',
+  degree: profile.degree || '',
+  branch: profile.branch || '',
+  graduationYear: profile.graduation_year || null,
+  phone: profile.phone || '',
+  contactEmail: profile.contact_email || '',
+  skills: Array.isArray(profile.skills) ? profile.skills : [],
+  certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
+  isFresher: Boolean(profile.is_fresher),
+});
+
+export const fetchMyApplicationForJob = async (jobId) => {
+  if (!isSupabaseConfigured || !supabase || !jobId) {
+    return null;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select(APPLICATION_COLUMNS)
+    .eq('job_id', jobId)
+    .eq('student_user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const fetchMyApplications = async () => {
+  if (!isSupabaseConfigured || !supabase) {
+    return [];
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select(`
+      ${APPLICATION_COLUMNS},
+      job:jobs (
+        id,
+        slug,
+        title,
+        company,
+        status
+      )
+    `)
+    .eq('student_user_id', user.id)
+    .order('submitted_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).map(mapApplication);
+};
+
+export const fetchJobApplications = async (jobId) => {
+  if (!isSupabaseConfigured || !supabase || !jobId) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select(APPLICATION_COLUMNS)
+    .eq('job_id', jobId)
+    .order('submitted_at', { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).map(mapApplication);
+};
+
+export const fetchJobApplicationCounts = async (jobIds = []) => {
+  if (!isSupabaseConfigured || !supabase || jobIds.length === 0) {
+    return {};
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('job_id')
+    .in('job_id', jobIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).reduce((counts, row) => {
+    counts[row.job_id] = (counts[row.job_id] || 0) + 1;
+    return counts;
+  }, {});
+};
+
+export const submitJobApplication = async ({ jobId, coverNote, resumeFile, existingResumePath }) => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be signed in as a student.');
+  }
+
+  const profile = await fetchStudentProfile();
+  if (!profile) {
+    throw new Error('Complete your student profile before applying.');
+  }
+
+  let resumePath = existingResumePath || profile.resume_path || '';
+  if (resumeFile) {
+    resumePath = await uploadStudentResume(resumeFile, user.id);
+    await saveResumePathOnProfile(resumePath);
+  }
+
+  if (!resumePath) {
+    throw new Error('Please upload your resume.');
+  }
+
+  const trimmedCover = String(coverNote || '').trim();
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .insert({
+      job_id: jobId,
+      student_user_id: user.id,
+      cover_note: trimmedCover || null,
+      resume_path: resumePath,
+      profile_snapshot: buildProfileSnapshot(profile),
+      status: 'submitted',
+    })
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('You have already applied for this job.');
+    }
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const updateApplicationStatus = async ({ applicationId, status }) => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  if (!APPLICATION_STATUSES.includes(status)) {
+    throw new Error('Invalid application status.');
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update({ status })
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const getApplicationResumeUrl = async (application) =>
+  createResumeSignedUrl(application?.resumePath);
+
+export const formatApplicationStatus = (status) => {
+  switch (status) {
+    case 'submitted':
+      return 'Submitted';
+    case 'viewed':
+      return 'Viewed';
+    case 'shortlisted':
+      return 'Shortlisted';
+    case 'rejected':
+      return 'Rejected';
+    case 'withdrawn':
+      return 'Withdrawn';
+    default:
+      return status;
+  }
+};
+
+export const formatApplicationTime = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
