@@ -5,6 +5,7 @@ import {
   isPublishableAutomationJob,
   isPublishableCompanyName,
   isPublishableJobLocation,
+  recoverPublishableFieldsFromOriginal,
 } from '../src/lib/jobPublishQuality.js';
 
 const googleHubJob = {
@@ -21,6 +22,9 @@ assert.equal(isPublishableCompanyName('Unknown'), false);
 assert.equal(isLowQualityJobTitle(googleHubJob.title), true);
 assert.equal(isLowQualityJobTitle('Java Developer'), false);
 assert.equal(isLowQualityJobTitle('Software Engineer — TCS'), false);
+// Old Gemini Task 1 pattern — dual-city / "Jobs in …" titles must stay blocked
+assert.equal(isLowQualityJobTitle('Pipeline Engineer Jobs in Visakhapatnam (Vizag) | Oil & Gas'), true);
+assert.equal(isLowQualityJobTitle('Sales Executive (Vizag)'), false);
 
 assert.equal(isPublishableJobLocation('Visakhapatnam'), true);
 assert.equal(isPublishableJobLocation(googleHubJob.location), false);
@@ -37,5 +41,24 @@ const goodJob = {
 };
 assert.equal(isPublishableAutomationJob(goodJob), true);
 assert.equal(getJobPublishBlockReason(goodJob), null);
+
+const recovered = recoverPublishableFieldsFromOriginal(
+  {
+    title: 'Treasury Manager',
+    company: 'Devi Sea Foods Limited',
+    location: 'Visakhapatnam',
+  },
+  {
+    title: 'Treasury Manager Jobs in Visakhapatnam (Vizag) | Finance',
+    company: 'Employer name shared during interview',
+    location:
+      'Visakhapatnam / Vizag, ArtificialIntelligence, DataCenters, CloudComputing, AndhraPradesh.',
+    description: 'SEO body…',
+  },
+);
+assert.equal(recovered.title, 'Treasury Manager');
+assert.equal(recovered.company, 'Devi Sea Foods Limited');
+assert.equal(recovered.location, 'Visakhapatnam');
+assert.equal(isPublishableAutomationJob(recovered), true);
 
 console.log('job-publish-quality.test.mjs: OK');

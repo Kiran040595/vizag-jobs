@@ -284,12 +284,12 @@ const scrapedJob = {
 // ============================================================================
 
 const geminiResponse = {
-  title: 'Software Engineer Jobs in Visakhapatnam (Vizag) | Acme Tech',
-  slug: 'software-engineer-jobs-visakhapatnam-vizag-acme',
+  title: 'Software Engineer — Acme Tech (Vizag)',
+  slug: 'software-engineer-acme-tech-vizag',
   short_description:
     'Apply for Software Engineer jobs in Visakhapatnam at Acme Tech. 2-4 years experience, B.Tech qualification, 6-9 LPA salary. Apply online today on Vizag Jobs.',
   description:
-    '# Software Engineer Jobs in Visakhapatnam (Vizag)\n\n## About the Role\nAcme Tech is hiring a Software Engineer in Visakhapatnam (Vizag). Join our growing IT team in Andhra Pradesh.\n\n## Skills Required\n- JavaScript, React, Node.js\n- 2-4 years engineering experience\n\n## Key Responsibilities\n- Build production-grade React applications\n- Collaborate with backend teams in Vizag\n\n## Who Can Apply\n- B.Tech / B.E in CSE/ECE\n- 2-4 years software development experience\n\n## How to Apply\nClick Apply Now to submit your resume.\n\n## FAQs\n**Q: Are these jobs in Vizag or Visakhapatnam?**\nA: Both - Vizag and Visakhapatnam refer to the same city in Andhra Pradesh.\n\n**Q: What is the salary for Software Engineer jobs in Vizag?**\nA: 6-9 LPA based on experience.\n\n**Q: Are fresher candidates considered?**\nA: This role requires 2-4 years experience. See [Fresher Jobs in Vizag](/fresher-jobs-in-vizag) for entry-level openings.\n\n**Q: Is this a remote role?**\nA: No, this is on-site in Visakhapatnam.',
+    '# Software Engineer — Acme Tech (Vizag)\n\n## About the Role\nAcme Tech is hiring a Software Engineer in Visakhapatnam (Vizag). Join our growing IT team in Andhra Pradesh.\n\n## Skills Required\n- JavaScript, React, Node.js\n- 2-4 years engineering experience\n\n## Key Responsibilities\n- Build production-grade React applications\n- Collaborate with backend teams in Vizag\n\n## Who Can Apply\n- B.Tech / B.E in CSE/ECE\n- 2-4 years software development experience\n\n## How to Apply\nClick Apply Now to submit your resume.\n\n## FAQs\n**Q: Are these jobs in Vizag or Visakhapatnam?**\nA: Both - Vizag and Visakhapatnam refer to the same city in Andhra Pradesh.\n\n**Q: What is the salary for Software Engineer jobs in Vizag?**\nA: 6-9 LPA based on experience.\n\n**Q: Are fresher candidates considered?**\nA: This role requires 2-4 years experience. See [Fresher Jobs in Vizag](/fresher-jobs-in-vizag) for entry-level openings.\n\n**Q: Is this a remote role?**\nA: No, this is on-site in Visakhapatnam.',
   responsibilities: [
     'Build production-grade React applications',
     'Collaborate with backend teams in Vizag',
@@ -324,7 +324,7 @@ const geminiResponse = {
     identifier: {
       '@type': 'PropertyValue',
       name: 'Acme Tech Pvt Ltd',
-      value: 'software-engineer-jobs-visakhapatnam-vizag-acme',
+      value: 'software-engineer-acme-tech-vizag',
     },
   },
   hashtags: [
@@ -372,7 +372,7 @@ const seoMeta = {
   keyword_density: extras.keyword_density,
 };
 const adminReviewJob = { ...seoApplied, seo_optimized: true, seo_meta: seoMeta };
-assert('Gemini SEO applied: title rewritten', adminReviewJob.title.includes('Visakhapatnam'));
+assert('Gemini SEO applied: title rewritten', adminReviewJob.title.includes('Acme Tech'));
 assert('Gemini SEO applied: slug rewritten', adminReviewJob.slug.includes('vizag'));
 assert(
   'Gemini SEO applied: description rewritten with H1',
@@ -391,7 +391,8 @@ assert('publish: json_ld has @type JobPosting', dbRow.json_ld['@type'] === 'JobP
 assert('publish: seo_meta preserved', dbRow.seo_meta != null);
 assert('publish: seo_meta.hashtags preserved', Array.isArray(dbRow.seo_meta.hashtags));
 assert('publish: status overridden to published', dbRow.status === 'published');
-assert('publish: title is Gemini SEO title', dbRow.title.includes('Visakhapatnam'));
+assert('publish: title is Gemini SEO title', dbRow.title.includes('Software Engineer'));
+assert('publish: title is not a keyword-hub listing', !/jobs?\s+in\s+visakhapatnam/i.test(dbRow.title));
 assert('publish: SEO admin fields stripped (seo_optimized)', !('seo_optimized' in dbRow));
 assert(
   'publish: SEO admin fields stripped (seo_show_preview)',

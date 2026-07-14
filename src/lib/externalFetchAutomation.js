@@ -9,7 +9,10 @@ import {
 } from '../services/externalJobFetch';
 import { getAutomationChannelMeta } from './automationChannels';
 import { geminiKeyFieldsFromSeoResponse } from './formatGeminiKeyUsage';
-import { getJobPublishBlockReason } from './jobPublishQuality.js';
+import {
+  getJobPublishBlockReason,
+  recoverPublishableFieldsFromOriginal,
+} from './jobPublishQuality.js';
 import { createEmptyAutomationReport } from './naukriAutomationReport';
 
 /** Gap between Make SEO calls during automation. */
@@ -357,7 +360,8 @@ export async function runExternalFetchAutomationPipeline({
           });
         },
       });
-      job = mergeSeoJob(job, data);
+      const original = job;
+      job = recoverPublishableFieldsFromOriginal(original, mergeSeoJob(job, data));
       report.stats.seoOk += 1;
       onJobUpdated?.(job);
     } catch (error) {
@@ -380,6 +384,15 @@ export async function runExternalFetchAutomationPipeline({
     if (postCheck.skip) {
       report.stats.skippedPostSeo += 1;
       recordJob(buildJobEntry(job, 'skipped_post_seo', { reason: postCheck.reason }));
+      onProgress?.({
+        phase: 'seo',
+        message: `Skipped after SEO: "${job.title}" — ${postCheck.reason}`,
+        current: index + 1,
+        total: queue.length,
+        stats: report.stats,
+        report,
+        channel,
+      });
       continue;
     }
 

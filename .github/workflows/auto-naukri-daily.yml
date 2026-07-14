@@ -48,6 +48,14 @@ jobs:
           AUTO_NAUKRI_COLLECT_WAIT_MS: '180000'
         run: node scripts/auto-external-pipeline.mjs naukri
 
+      - name: Upload Naukri automation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: naukri-automation-report
+          path: '*-automation-report-*.json'
+          if-no-files-found: ignore
+
   linkedin-posts:
     if: github.event.schedule == '30 12 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -67,6 +75,13 @@ jobs:
           FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
           AUTO_FETCH_CHANNEL: linkedin_posts
           AUTO_LINKEDIN_POST_PRESET: general
+      - name: Upload LinkedIn Posts automation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkedin-posts-automation-report
+          path: '*-automation-report-*.json'
+          if-no-files-found: ignore
 
   linkedin-jobs:
     if: github.event.schedule == '30 15 * * *' || github.event_name == 'workflow_dispatch'
@@ -86,6 +101,13 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
           AUTO_FETCH_CHANNEL: linkedin_jobs
+      - name: Upload LinkedIn Jobs automation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkedin-jobs-automation-report
+          path: '*-automation-report-*.json'
+          if-no-files-found: ignore
 
   daily-blog:
     if: github.event.schedule == '45 16 * * *' || github.event_name == 'workflow_dispatch'
