@@ -1,4 +1,5 @@
 const PENDING_APPLY_KEY = 'vizagjobs:pending-apply-url';
+const PENDING_APPLY_JOB_KEY = 'vizagjobs:pending-apply-job-id';
 
 export const buildStudentAuthPath = ({ pathname, search = '', apply = false } = {}) => {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
@@ -59,6 +60,19 @@ export const stashPendingApplyUrl = (url) => {
   }
   try {
     sessionStorage.setItem(PENDING_APPLY_KEY, url);
+    sessionStorage.removeItem(PENDING_APPLY_JOB_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+export const stashPendingApplyJobId = (jobId) => {
+  if (!jobId) {
+    return;
+  }
+  try {
+    sessionStorage.setItem(PENDING_APPLY_JOB_KEY, jobId);
+    sessionStorage.removeItem(PENDING_APPLY_KEY);
   } catch {
     // Ignore storage failures.
   }
@@ -72,6 +86,25 @@ export const consumePendingApplyUrl = () => {
   } catch {
     return '';
   }
+};
+
+export const consumePendingApplyJobId = () => {
+  try {
+    const value = sessionStorage.getItem(PENDING_APPLY_JOB_KEY);
+    sessionStorage.removeItem(PENDING_APPLY_JOB_KEY);
+    return value || '';
+  } catch {
+    return '';
+  }
+};
+
+export const buildInternalApplyPath = (jobId, jobPath = '') => {
+  const params = new URLSearchParams();
+  if (jobPath) {
+    params.set('next', jobPath);
+  }
+  const query = params.toString();
+  return `/student/apply/${jobId}${query ? `?${query}` : ''}`;
 };
 
 export const openExternalApplyLink = (url) => {

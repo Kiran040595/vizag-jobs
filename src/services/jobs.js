@@ -134,6 +134,7 @@ const processJobData = (job, index) => {
     isFeatured: Boolean(job.is_featured),
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
+    applyMode: job.apply_mode === 'internal' ? 'internal' : 'external',
     description: normalizeText(job.description),
     shortDescription: normalizeText(job.short_description),
     responsibilities: joinList(job.responsibilities),

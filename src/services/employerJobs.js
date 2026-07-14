@@ -23,6 +23,7 @@ export const getEmptyEmployerJobForm = (companyName = '') => {
     company: companyName || form.company,
     source_name: '',
     source_url: '',
+    apply_mode: 'internal',
     is_featured: false,
     status: 'pending',
   };
@@ -30,8 +31,12 @@ export const getEmptyEmployerJobForm = (companyName = '') => {
 
 export const serializeEmployerJobForm = (values) => {
   const payload = serializeJobForm(values, 'pending');
+  const applyMode = values.apply_mode === 'external' ? 'external' : 'internal';
+
   return {
     ...payload,
+    apply_mode: applyMode,
+    apply_link: applyMode === 'external' ? payload.apply_link : null,
     is_featured: false,
     source_name: null,
     source_url: null,

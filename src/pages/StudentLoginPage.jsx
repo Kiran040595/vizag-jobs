@@ -4,6 +4,8 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
+  buildInternalApplyPath,
+  consumePendingApplyJobId,
   consumePendingApplyUrl,
   openExternalApplyLink,
   resolvePostAuthDestination,
@@ -31,13 +33,19 @@ export default function StudentLoginPage() {
       return;
     }
 
+    const pendingJobId = consumePendingApplyJobId();
+    if (pendingJobId && profileComplete) {
+      navigate(buildInternalApplyPath(pendingJobId, searchParams.get('next') || ''), { replace: true });
+      return;
+    }
+
     const pendingApply = consumePendingApplyUrl();
-    if (pendingApply) {
+    if (pendingApply && profileComplete) {
       openExternalApplyLink(pendingApply);
     }
 
     navigate(returnPath, { replace: true });
-  }, [isLoading, isStudent, navigate, returnPath, searchParams, session]);
+  }, [isLoading, isStudent, navigate, profileComplete, returnPath, searchParams, session]);
 
   if (!isSupabaseConfigured) {
     return (

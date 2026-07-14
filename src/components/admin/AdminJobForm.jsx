@@ -281,9 +281,22 @@ export default function AdminJobForm({
         <Field label="Salary">
           <TextInput name="salary" value={formValues.salary} onChange={handleFieldChange} placeholder="Not Disclosed" />
         </Field>
-        <Field label="Apply link" hint="Optional but recommended for published jobs.">
-          <TextInput name="apply_link" value={formValues.apply_link} onChange={handleFieldChange} placeholder="https://..." />
+        <Field label="Apply mode" hint="Internal jobs are handled on Vizag Jobs. External jobs redirect to Naukri, LinkedIn, or another URL.">
+          <select
+            name="apply_mode"
+            value={formValues.apply_mode || 'external'}
+            onChange={handleFieldChange}
+            className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="internal">Accept applications on Vizag Jobs</option>
+            <option value="external">External apply link</option>
+          </select>
         </Field>
+        {formValues.apply_mode !== 'internal' ? (
+          <Field label="Apply link" hint="Optional but recommended for published jobs.">
+            <TextInput name="apply_link" value={formValues.apply_link} onChange={handleFieldChange} placeholder="https://..." />
+          </Field>
+        ) : null}
         <Field label="Posted at">
           <TextInput type="datetime-local" name="posted_at" value={formValues.posted_at} onChange={handleFieldChange} />
         </Field>

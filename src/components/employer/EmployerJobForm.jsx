@@ -150,9 +150,28 @@ export default function EmployerJobForm({
         <Field label="Salary">
           <input name="salary" value={formValues.salary} onChange={handleFieldChange} className={INPUT_CLASS} />
         </Field>
-        <Field label="Apply link">
-          <input name="apply_link" value={formValues.apply_link} onChange={handleFieldChange} className={INPUT_CLASS} placeholder="https://..." />
+        <Field label="Apply mode" hint="Choose how candidates apply for this job.">
+          <select
+            name="apply_mode"
+            value={formValues.apply_mode || 'internal'}
+            onChange={handleFieldChange}
+            className={INPUT_CLASS}
+          >
+            <option value="internal">Accept applications on Vizag Jobs</option>
+            <option value="external">Send candidates to an external apply link</option>
+          </select>
         </Field>
+        {formValues.apply_mode === 'external' ? (
+          <Field label="Apply link">
+            <input
+              name="apply_link"
+              value={formValues.apply_link}
+              onChange={handleFieldChange}
+              className={INPUT_CLASS}
+              placeholder="https://..."
+            />
+          </Field>
+        ) : null}
         <Field label="Slug" hint="Auto-generated from title and company.">
           <input name="slug" value={formValues.slug} onChange={handleFieldChange} className={INPUT_CLASS} />
         </Field>
