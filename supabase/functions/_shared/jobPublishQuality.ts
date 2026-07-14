@@ -84,6 +84,46 @@ export function getJobPublishBlockReason(job: Record<string, unknown> = {}): str
   return null;
 }
 
+/**
+ * After Make SEO, Gemini sometimes overwrites a good scraped title/company/location
+ * with keyword-stuffed SEO phrasing that publish quality gates reject. Prefer the
+ * original scraped field when the SEO rewrite is not publishable.
+ */
+export function recoverPublishableFieldsFromOriginal(
+  original: Record<string, unknown> = {},
+  optimized: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...optimized };
+
+  const optTitle = String(out.title ?? '').trim();
+  const origTitle = String(original.title ?? '').trim();
+  if (optTitle && isLowQualityJobTitle(optTitle) && origTitle && isPublishableJobTitle(origTitle)) {
+    out.title = origTitle;
+  }
+
+  const optCompany = String(out.company ?? '').trim();
+  const origCompany = String(original.company ?? '').trim();
+  if (
+    (!optCompany || !isPublishableCompanyName(optCompany)) &&
+    origCompany &&
+    isPublishableCompanyName(origCompany)
+  ) {
+    out.company = origCompany;
+  }
+
+  const optLocation = String(out.location ?? '').trim();
+  const origLocation = String(original.location ?? '').trim();
+  if (optLocation && !isPublishableJobLocation(optLocation)) {
+    if (origLocation && isPublishableJobLocation(origLocation)) {
+      out.location = origLocation;
+    } else {
+      out.location = 'Visakhapatnam';
+    }
+  }
+
+  return out;
+}
+
 export function isPublishableAutomationJob(job: Record<string, unknown> = {}): boolean {
   return getJobPublishBlockReason(job) === null;
 }

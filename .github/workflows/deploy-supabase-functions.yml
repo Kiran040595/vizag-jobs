@@ -21,7 +21,7 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy generate-daily-blog
+      - name: Deploy Edge Functions
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
@@ -33,5 +33,7 @@ jobs:
             echo "Project ref (already known): $PROJECT_REF"
             exit 0
           fi
+          supabase functions deploy fetch-external-jobs --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy send-automation-summary --project-ref "$PROJECT_REF" --no-verify-jwt
           supabase functions deploy generate-daily-blog --project-ref "$PROJECT_REF" --no-verify-jwt
           supabase functions deploy trigger-youtube-short --project-ref "$PROJECT_REF" --no-verify-jwt

@@ -20,6 +20,7 @@ import {
   shouldSkipJob,
 } from './lib/pipeline-publish.mjs';
 import { sendAutomationSummaryEmail } from './lib/pipeline-email.mjs';
+import { recoverPublishableFieldsFromOriginal } from '../src/lib/jobPublishQuality.js';
 
 const CHANNEL = (process.env.AUTO_FETCH_CHANNEL || process.argv[2] || 'naukri').trim();
 const CHANNEL_LABELS = {
@@ -107,6 +108,7 @@ async function main() {
     if (preCheck.skip) {
       report.stats.skippedPreSeo += 1;
       record(buildEntry(job, 'skipped_pre_seo', { reason: preCheck.reason }));
+      log(`Skip before SEO: "${job.title}" — ${preCheck.reason}`);
       continue;
     }
 
@@ -129,7 +131,7 @@ async function main() {
     let optimized;
     try {
       log(`SEO (${index + 1}/${queue.length}): ${label}`);
-      optimized = await seoOptimizeJob(job);
+      optimized = recoverPublishableFieldsFromOriginal(job, await seoOptimizeJob(job));
       report.stats.seoOk += 1;
     } catch (error) {
       report.stats.seoFailed += 1;
@@ -143,6 +145,7 @@ async function main() {
     if (postCheck.skip) {
       report.stats.skippedPostSeo += 1;
       record(buildEntry(optimized, 'skipped_post_seo', { reason: postCheck.reason }));
+      log(`Skip after SEO: "${optimized.title || job.title}" — ${postCheck.reason}`);
       continue;
     }
 
