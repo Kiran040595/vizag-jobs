@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
 import { buildStudentAuthPath, stashPendingApplyUrl } from '../../lib/studentApplyRedirect';
 
@@ -9,7 +10,9 @@ export default function StudentApplyButton({
   label = 'Apply Now',
 }) {
   const navigate = useNavigate();
-  const { isLoading, isStudent, profileComplete, session } = useStudentAuth();
+  const { isLoading: isStudentLoading, isStudent, profileComplete, session } = useStudentAuth();
+  const { isLoading: isAdminLoading, isAdmin } = useAdminAuth();
+  const isLoading = isStudentLoading || isAdminLoading;
 
   if (!applyLink) {
     return null;
@@ -25,7 +28,7 @@ export default function StudentApplyButton({
       return;
     }
 
-    if (session && isStudent && profileComplete) {
+    if (isAdmin || (session && isStudent && profileComplete)) {
       window.open(applyLink, '_blank', 'noopener,noreferrer');
       return;
     }
