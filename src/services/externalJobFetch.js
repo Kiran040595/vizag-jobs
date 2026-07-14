@@ -330,7 +330,8 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
       ? resolveSeoSourceContext({ ...job, seo_source_context: seoSourceContext })
       : resolveSeoSourceContext(job);
   const customInstructions =
-    typeof job.seo_custom_instructions === 'string' ? job.seo_custom_instructions.trim().slice(0, 1200) : '';
+    (typeof job.seo_custom_instructions === 'string' && job.seo_custom_instructions.trim()) ||
+    SEO_PUBLISH_SAFE_INSTRUCTIONS;
   const timeoutMs = isLinkedInPost ? 120_000 : 130_000;
 
   let keyPool = options.geminiKeyPool;
@@ -359,7 +360,7 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
       mode: 'seo',
       job: buildSeoJobPayload(job),
       seo_source_context: context,
-      seo_custom_instructions: customInstructions || undefined,
+      seo_custom_instructions: customInstructions.slice(0, 1200) || undefined,
       ...(geminiKeyIndex ? { gemini_key_index: geminiKeyIndex } : {}),
     };
 

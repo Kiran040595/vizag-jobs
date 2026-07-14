@@ -6,6 +6,7 @@ import {
   parseGeminiKeyIndexFromError,
   parseSeoRetryWaitMs,
 } from '../../src/lib/seoRetry.js';
+import { SEO_PUBLISH_SAFE_INSTRUCTIONS } from '../../src/lib/seoPublishSafeInstructions.js';
 
 function buildSeoJobPayload(job) {
   const isLinkedInPost = job.source_kind === 'linkedin_post';
@@ -14,6 +15,9 @@ function buildSeoJobPayload(job) {
     (typeof job.description === 'string' && job.description.trim()) ||
     '';
   const postText = postRaw ? postRaw.slice(0, isLinkedInPost ? 2_400 : 0) : null;
+  const customInstructions =
+    (typeof job.seo_custom_instructions === 'string' && job.seo_custom_instructions.trim()) ||
+    SEO_PUBLISH_SAFE_INSTRUCTIONS;
 
   return {
     slug: job.slug,
@@ -44,6 +48,7 @@ function buildSeoJobPayload(job) {
     linkedin_post_text: postText,
     needs_review: job.needs_review,
     is_likely_hiring_post: job.is_likely_hiring_post,
+    seo_custom_instructions: customInstructions.slice(0, 1200),
   };
 }
 
@@ -234,9 +239,11 @@ export async function seoOptimizeJob(job, options = {}) {
   let lastError = null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const jobPayload = buildSeoJobPayload(job);
     const body = {
       mode: 'seo',
-      job: buildSeoJobPayload(job),
+      job: jobPayload,
+      seo_custom_instructions: jobPayload.seo_custom_instructions,
       ...(usedKeyIndex > 0 ? { gemini_key_index: usedKeyIndex } : {}),
     };
 
