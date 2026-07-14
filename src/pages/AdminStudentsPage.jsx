@@ -1,6 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
@@ -213,7 +214,10 @@ export default function AdminStudentsPage() {
                       </div>
                       <div>
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</dt>
-                        <dd className="mt-0.5 text-slate-800">{student.phone || 'Not provided'}</dd>
+                        <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-800">
+                          <span>{student.phone || 'Not provided'}</span>
+                          {student.phone ? <WhatsAppContactLink phone={student.phone} /> : null}
+                        </dd>
                       </div>
                       <div className="sm:col-span-2">
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</dt>

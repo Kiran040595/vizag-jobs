@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'rea
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
@@ -225,7 +226,10 @@ export default function AdminEmployersPage() {
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Phone
                           </dt>
-                          <dd className="mt-0.5 text-slate-800">{employer.phone || 'Not provided'}</dd>
+                          <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-800">
+                            <span>{employer.phone || 'Not provided'}</span>
+                            {employer.phone ? <WhatsAppContactLink phone={employer.phone} /> : null}
+                          </dd>
                         </div>
                         <div>
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
