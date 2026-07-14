@@ -11,6 +11,7 @@ import {
   toggleAdminJobFeatured,
   updateAdminJobStatus,
 } from '../services/adminJobs';
+import { fetchJobApplicationCounts } from '../services/jobApplications';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -73,6 +74,7 @@ export default function AdminJobsPage() {
   const [searchParams] = useSearchParams();
   useAdminAuth();
   const [jobs, setJobs] = useState([]);
+  const [applicationCounts, setApplicationCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
@@ -87,11 +89,16 @@ export default function AdminJobsPage() {
     const loadJobs = async () => {
       try {
         const data = await fetchAdminJobs();
+        const internalPublishedIds = data
+          .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
+          .map((job) => job.id);
+        const counts = await fetchJobApplicationCounts(internalPublishedIds);
         if (ignore) {
           return;
         }
 
         setJobs(sortJobs(data));
+        setApplicationCounts(counts);
         setLoadError('');
       } catch (error) {
         if (ignore) {
@@ -301,6 +308,11 @@ export default function AdminJobsPage() {
                             Featured
                           </span>
                         ) : null}
+                        {job.apply_mode === 'internal' ? (
+                          <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
+                            On-platform apply
+                          </span>
+                        ) : null}
                       </div>
                       <p className="mt-1 text-sm text-slate-600">
                         {job.company} / {job.location || 'Visakhapatnam'} / {job.category || 'No category'}
@@ -310,9 +322,24 @@ export default function AdminJobsPage() {
                       {job.rejection_reason ? (
                         <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                       ) : null}
+                      {job.status === 'published' && job.apply_mode === 'internal' ? (
+                        <p className="mt-2 text-xs text-slate-600">
+                          {applicationCounts[job.id] || 0} application
+                          {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {job.status === 'published' && job.apply_mode === 'internal' ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/jobs/${job.id}/applications`)}
+                          className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                        >
+                          Applications
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => navigate(`/admin/jobs/${job.id}/edit`)}

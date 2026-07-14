@@ -2,17 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import EmployerRoute from '../components/employer/EmployerRoute';
-import EmployerShell from '../components/employer/EmployerShell';
+import AdminShell from '../components/admin/AdminShell';
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { fetchAdminJobs } from '../services/adminJobs';
 import {
   fetchJobApplications,
   updateApplicationStatus,
 } from '../services/jobApplications';
-import { fetchMyJobs } from '../services/employerJobs';
 
-function EmployerJobApplicationsContent() {
+export default function AdminJobApplicationsPage() {
   const { jobId } = useParams();
+  useAdminAuth();
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +24,7 @@ function EmployerJobApplicationsContent() {
 
     const load = async () => {
       try {
-        const [jobs, rows] = await Promise.all([fetchMyJobs(), fetchJobApplications(jobId)]);
+        const [jobs, rows] = await Promise.all([fetchAdminJobs(), fetchJobApplications(jobId)]);
         if (!ignore) {
           setJob(jobs.find((row) => row.id === jobId) || null);
           setApplications(rows);
@@ -54,16 +55,21 @@ function EmployerJobApplicationsContent() {
   };
 
   return (
-    <EmployerShell
+    <AdminShell
       title="Job applications"
-      description={job ? `${job.title} · ${job.company}` : 'Review applicants for your job.'}
+      description={job ? `${job.title} · ${job.company}` : 'Review applicants for this job.'}
     >
-      <SEO title="Job applications | Vizag Jobs Employer" canonical={`/employer/jobs/${jobId}/applications`} />
+      <SEO title="Job applications | Vizag Jobs Admin" canonical={`/admin/jobs/${jobId}/applications`} />
 
-      <div className="mb-6">
-        <Link to="/employer/jobs" className="text-sm font-semibold text-cyan-700 hover:text-cyan-800">
-          ← Back to my jobs
+      <div className="mb-6 flex flex-wrap gap-4">
+        <Link to="/admin/jobs" className="text-sm font-semibold text-blue-700 hover:text-blue-800">
+          ← Back to jobs
         </Link>
+        {job ? (
+          <Link to={`/admin/jobs/${job.id}/edit`} className="text-sm font-semibold text-slate-600 hover:text-slate-800">
+            Edit job
+          </Link>
+        ) : null}
       </div>
 
       {error ? (
@@ -75,7 +81,7 @@ function EmployerJobApplicationsContent() {
       {!isLoading && applications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No applications yet</h3>
-          <p className="mt-2 text-sm text-slate-600">Applicants will appear here once students apply on Vizag Jobs.</p>
+          <p className="mt-2 text-sm text-slate-600">Students will appear here after applying to this job.</p>
         </div>
       ) : null}
 
@@ -90,14 +96,6 @@ function EmployerJobApplicationsContent() {
           ))}
         </div>
       ) : null}
-    </EmployerShell>
-  );
-}
-
-export default function EmployerJobApplicationsPage() {
-  return (
-    <EmployerRoute>
-      <EmployerJobApplicationsContent />
-    </EmployerRoute>
+    </AdminShell>
   );
 }
