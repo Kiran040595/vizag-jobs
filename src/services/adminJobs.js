@@ -377,6 +377,7 @@ export const sanitizeExternalJobForInsert = (values) => {
     company,
     slug,
     apply_link: applyLink || null,
+    apply_mode: 'external',
     location: normalizeText(values?.location) || REQUIRED_DEFAULTS.location,
     category: normalizeText(values?.category) || 'General',
     job_type: normalizeText(values?.job_type) || 'Full-time',
@@ -484,6 +485,10 @@ export const serializeJobForm = (values, statusOverride) => {
 
   if (values.seo_meta && typeof values.seo_meta === 'object' && !Array.isArray(values.seo_meta)) {
     payload.seo_meta = values.seo_meta;
+  }
+
+  if (payload.apply_mode === 'internal') {
+    payload.apply_link = null;
   }
 
   return payload;

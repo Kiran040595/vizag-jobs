@@ -111,6 +111,7 @@ export const sanitizeExternalJobForInsert = (values) => {
     company,
     slug,
     apply_link: applyLink || null,
+    apply_mode: 'external',
     location: normalizeText(values?.location) || REQUIRED_DEFAULTS.location,
     category: normalizeText(values?.category) || 'General',
     job_type: normalizeText(values?.job_type) || 'Full-time',

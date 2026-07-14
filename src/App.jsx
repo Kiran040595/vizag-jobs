@@ -13,6 +13,7 @@ import AdminNewJobPage from './pages/AdminNewJobPage';
 import AdminJobsPage from './pages/AdminJobsPage';
 import AdminExternalFetchPage from './pages/AdminExternalFetchPage';
 import AdminEditJobPage from './pages/AdminEditJobPage';
+import AdminJobApplicationsPage from './pages/AdminJobApplicationsPage';
 import AdminBlogListPage from './pages/AdminBlogListPage';
 import AdminNewBlogPage from './pages/AdminNewBlogPage';
 import AdminEditBlogPage from './pages/AdminEditBlogPage';
@@ -103,6 +104,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminEditJobPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/jobs/:jobId/applications"
+        element={(
+          <AdminRoute>
+            <AdminJobApplicationsPage />
           </AdminRoute>
         )}
       />
