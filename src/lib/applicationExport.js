@@ -1,10 +1,11 @@
+import { formatApplicationStatus } from './applicationStatus.js';
 import { normalizeWhatsAppDigits } from './whatsappContact.js';
 
 /** @typedef {{ id: string, label: string, group: string, defaultSelected?: boolean, getValue: (application: object) => string }} ApplicationExportColumn */
 
 const snapshot = (application) => application?.profileSnapshot || {};
 
-import { formatApplicationStatus } from './applicationStatus.js';
+const TEXT_COLUMN_IDS = new Set(['phone', 'whatsapp']);
 
 const formatAppliedAt = (value) => {
   if (!value) {
@@ -158,42 +159,44 @@ export const buildApplicationExportRows = (applications, columnIds) => {
   return { headers, rows, columns };
 };
 
-const escapeXml = (value) =>
-  String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+const applyTextColumnFormats = (XLSX, worksheet, columns, rowCount) => {
+  const textColumnIndexes = columns
+    .map((column, index) => (TEXT_COLUMN_IDS.has(column.id) ? index : -1))
+    .filter((index) => index >= 0);
 
-/** SpreadsheetML workbook Excel opens as a real .xls sheet (phones stay text). */
-export const buildApplicationExcelXml = (applications, columnIds) => {
-  const { headers, rows } = buildApplicationExportRows(applications, columnIds);
-  const headerRow = `<Row>${headers
-    .map((header) => `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`)
-    .join('')}</Row>`;
-  const bodyRows = rows
-    .map(
-      (row) =>
-        `<Row>${row
-          .map((cell) => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`)
-          .join('')}</Row>`,
-    )
-    .join('');
-
-  return `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Worksheet ss:Name="Applicants">
-  <Table>
-   ${headerRow}
-   ${bodyRows}
-  </Table>
- </Worksheet>
-</Workbook>`;
+  for (let rowIndex = 1; rowIndex <= rowCount; rowIndex += 1) {
+    for (const columnIndex of textColumnIndexes) {
+      const cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
+      const cell = worksheet[cellRef];
+      if (!cell) {
+        continue;
+      }
+      cell.t = 's';
+      cell.v = String(cell.v ?? '');
+      cell.z = '@';
+    }
+  }
 };
 
-export const buildApplicationExportFilename = (job, extension = 'xls') => {
+/** Build a real .xlsx workbook that Excel, Google Sheets, and LibreOffice can open. */
+export const buildApplicationWorkbook = (applications, columnIds, XLSX) => {
+  const { headers, rows, columns } = buildApplicationExportRows(applications, columnIds);
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  applyTextColumnFormats(XLSX, worksheet, columns, rows.length);
+
+  worksheet['!cols'] = columns.map((column, columnIndex) => ({
+    wch: Math.min(
+      48,
+      Math.max(column.label.length, ...rows.map((row) => String(row[columnIndex] || '').length)),
+    ),
+  }));
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Applicants');
+  return workbook;
+};
+
+export const buildApplicationExportFilename = (job, extension = 'xlsx') => {
   const slug = String(job?.slug || job?.title || 'job')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -203,17 +206,10 @@ export const buildApplicationExportFilename = (job, extension = 'xls') => {
   return `${slug || 'job'}-applicants-${stamp}.${extension}`;
 };
 
-export const downloadApplicationExcel = (applications, columnIds, job) => {
-  const xml = buildApplicationExcelXml(applications, columnIds);
-  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = buildApplicationExportFilename(job, 'xls');
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+export const downloadApplicationExcel = async (applications, columnIds, job) => {
+  const XLSX = await import('xlsx');
+  const workbook = buildApplicationWorkbook(applications, columnIds, XLSX);
+  XLSX.writeFile(workbook, buildApplicationExportFilename(job, 'xlsx'));
 };
 
 export const summarizeApplicationStatuses = (applications = []) =>

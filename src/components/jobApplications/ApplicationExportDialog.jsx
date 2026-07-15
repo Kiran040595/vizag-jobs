@@ -58,9 +58,9 @@ export default function ApplicationExportDialog({
     setSelectedIds([]);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     try {
-      downloadApplicationExcel(applications, selectedIds, job);
+      await downloadApplicationExcel(applications, selectedIds, job);
       onClose?.();
     } catch (downloadError) {
       setError(downloadError instanceof Error ? downloadError.message : 'Could not download file.');
