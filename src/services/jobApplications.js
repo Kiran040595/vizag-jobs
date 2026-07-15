@@ -183,14 +183,12 @@ export const submitJobApplication = async ({ jobId, coverNote, resumeFile, exist
     throw new Error('Complete your student profile before applying.');
   }
 
-  let resumePath = existingResumePath || profile.resume_path || '';
+  let resumePath = '';
   if (resumeFile) {
     resumePath = await uploadStudentResume(resumeFile, user.id);
     await saveResumePathOnProfile(resumePath);
-  }
-
-  if (!resumePath) {
-    throw new Error('Please upload your resume.');
+  } else if (existingResumePath) {
+    resumePath = existingResumePath;
   }
 
   const trimmedCover = String(coverNote || '').trim();
@@ -201,7 +199,7 @@ export const submitJobApplication = async ({ jobId, coverNote, resumeFile, exist
       job_id: jobId,
       student_user_id: user.id,
       cover_note: trimmedCover || null,
-      resume_path: resumePath,
+      resume_path: resumePath || null,
       profile_snapshot: buildProfileSnapshot(profile),
       status: 'applied',
     })

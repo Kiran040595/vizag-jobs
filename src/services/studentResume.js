@@ -1,30 +1,14 @@
+import { resolveResumeContentType, validateResumeFile } from '../lib/studentResumeFile';
 import { supabase } from '../lib/supabaseClient';
 
 const RESUME_BUCKET = 'student-resumes';
-const MAX_RESUME_BYTES = 5 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = new Set(['pdf', 'doc', 'docx']);
 
 const getExtension = (fileName) => {
   const parts = String(fileName || '').split('.');
   return parts.length > 1 ? parts.pop().toLowerCase() : '';
 };
 
-export const validateResumeFile = (file) => {
-  if (!file) {
-    return 'Please upload your resume.';
-  }
-
-  const extension = getExtension(file.name);
-  if (!ALLOWED_EXTENSIONS.has(extension)) {
-    return 'Upload a PDF or Word document (.pdf, .doc, .docx).';
-  }
-
-  if (file.size > MAX_RESUME_BYTES) {
-    return 'Resume must be 5 MB or smaller.';
-  }
-
-  return '';
-};
+export { resolveResumeContentType, validateResumeFile } from '../lib/studentResumeFile';
 
 export const uploadStudentResume = async (file, userId) => {
   if (!supabase) {
@@ -38,10 +22,11 @@ export const uploadStudentResume = async (file, userId) => {
 
   const extension = getExtension(file.name);
   const path = `${userId}/resume-${Date.now()}.${extension}`;
+  const contentType = resolveResumeContentType(file.name, file.type);
 
   const { error } = await supabase.storage.from(RESUME_BUCKET).upload(path, file, {
     upsert: true,
-    contentType: file.type || undefined,
+    contentType,
   });
 
   if (error) {

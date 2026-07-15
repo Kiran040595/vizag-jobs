@@ -80,11 +80,6 @@ function StudentApplyContent() {
       return;
     }
 
-    if (!useSavedResume && !resumeFile) {
-      setError('Please upload your resume.');
-      return;
-    }
-
     if (resumeFile) {
       const validationError = validateResumeFile(resumeFile);
       if (validationError) {
@@ -116,7 +111,7 @@ function StudentApplyContent() {
   return (
     <StudentShell
       title="Apply for job"
-      description="Submit your profile and resume for jobs posted directly on Vizag Jobs."
+      description="Submit your profile for jobs posted directly on Vizag Jobs. You can optionally attach a resume."
     >
       <SEO title="Apply for job | Vizag Jobs" canonical={`/student/apply/${jobId}`} />
 
@@ -202,7 +197,7 @@ function StudentApplyContent() {
               </label>
 
               <div className="mt-6">
-                <span className="text-sm font-semibold text-slate-700">Resume *</span>
+                <span className="text-sm font-semibold text-slate-700">Resume (optional)</span>
                 {profile?.resume_path ? (
                   <label className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                     <input
@@ -227,7 +222,9 @@ function StudentApplyContent() {
                     className="mt-3 block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700"
                   />
                 ) : null}
-                <p className="mt-2 text-xs text-slate-500">PDF or Word document, up to 5 MB.</p>
+                <p className="mt-2 text-xs text-slate-500">
+                  PDF or Word document, up to 5 MB. You can apply without a resume if you prefer.
+                </p>
               </div>
 
               {error ? (

@@ -95,17 +95,23 @@ export default function JobApplicationCard({ application, onStatusChange, canUpd
       </dl>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            handleViewResume().catch((error) => {
-              window.alert(error instanceof Error ? error.message : 'Could not open resume.');
-            });
-          }}
-          className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          View resume
-        </button>
+        {application.resumePath ? (
+          <button
+            type="button"
+            onClick={() => {
+              handleViewResume().catch((error) => {
+                window.alert(error instanceof Error ? error.message : 'Could not open resume.');
+              });
+            }}
+            className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            View resume
+          </button>
+        ) : (
+          <span className="rounded-2xl border border-dashed border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500">
+            No resume attached
+          </span>
+        )}
         {canUpdateStatus ? (
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <span className="font-semibold">Status</span>
