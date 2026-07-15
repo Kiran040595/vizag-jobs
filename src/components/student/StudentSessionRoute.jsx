@@ -1,8 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import LoadingSpinner from '../LoadingSpinner';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
+import { buildStudentAuthPath } from '../../lib/studentApplyRedirect';
 
 export default function StudentSessionRoute({ children }) {
+  const location = useLocation();
   const { isLoading, isSupabaseConfigured, session } = useStudentAuth();
 
   if (!isSupabaseConfigured) {
@@ -26,7 +28,10 @@ export default function StudentSessionRoute({ children }) {
   }
 
   if (!session) {
-    return <Navigate to="/student/login" replace />;
+    const loginPath = `/student/login${buildStudentAuthPath({
+      pathname: `${location.pathname}${location.search}`,
+    })}`;
+    return <Navigate to={loginPath} replace />;
   }
 
   return children;
