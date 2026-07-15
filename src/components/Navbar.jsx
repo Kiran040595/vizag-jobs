@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import NavbarPostJobLink from './NavbarPostJobLink';
 import NavbarSavedJobsLink from './NavbarSavedJobsLink';
 import NavbarAppliedJobsLink from './NavbarAppliedJobsLink';
+import NavbarStudentAuth from './NavbarStudentAuth';
 import QuestionNotificationBell from './QuestionNotificationBell';
 
 const navLinks = [
@@ -59,6 +60,7 @@ export default function Navbar() {
           >
             Contact
           </Link>
+          <NavbarStudentAuth />
         </div>
 
         <button
@@ -74,7 +76,7 @@ export default function Navbar() {
         </button>
       </div>
 
-      <div className={`overflow-hidden border-t border-slate-200 bg-white transition-all duration-300 md:hidden ${isOpen ? 'max-h-[420px]' : 'max-h-0'}`}>
+      <div className={`overflow-hidden border-t border-slate-200 bg-white transition-all duration-300 md:hidden ${isOpen ? 'max-h-[520px]' : 'max-h-0'}`}>
         <nav className="mx-auto flex w-full max-w-7xl flex-col px-4 py-3 sm:px-6">
           {navLinks.map((link) => (
             <NavLink
@@ -116,6 +118,7 @@ export default function Navbar() {
             >
               Contact
             </Link>
+            <NavbarStudentAuth variant="mobile" onNavigate={() => setIsOpen(false)} />
           </div>
         </nav>
       </div>

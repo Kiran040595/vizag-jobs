@@ -14,6 +14,7 @@ const sessionRouteSrc = readFileSync(
 assert.match(appliedJobsPathSrc, /APPLIED_JOBS_PATH = '\/student\/applied-jobs'/);
 assert.match(appliedJobsPathSrc, /buildAppliedJobsLoginPath/);
 assert.match(navbarSrc, /NavbarAppliedJobsLink/);
+assert.match(navbarSrc, /NavbarStudentAuth/);
 assert.match(sessionRouteSrc, /buildStudentAuthPath/);
 
 console.log('navbar-applied-jobs.test.mjs: OK');
