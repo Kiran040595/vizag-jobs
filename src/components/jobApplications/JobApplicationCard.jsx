@@ -1,11 +1,14 @@
 import WhatsAppContactLink from '../WhatsAppContactLink';
 import {
+  ADMIN_STATUS_OPTIONS,
   formatApplicationStatus,
+} from '../../lib/applicationStatus';
+import {
   formatApplicationTime,
   getApplicationResumeUrl,
 } from '../../services/jobApplications';
 
-const STATUS_OPTIONS = ['submitted', 'viewed', 'shortlisted', 'rejected'];
+const STATUS_OPTIONS = ADMIN_STATUS_OPTIONS;
 
 export default function JobApplicationCard({ application, onStatusChange, canUpdateStatus = true }) {
   const snapshot = application.profileSnapshot || {};

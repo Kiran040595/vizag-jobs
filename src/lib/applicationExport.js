@@ -4,22 +4,7 @@ import { normalizeWhatsAppDigits } from './whatsappContact.js';
 
 const snapshot = (application) => application?.profileSnapshot || {};
 
-const formatStatusLabel = (status) => {
-  switch (status) {
-    case 'submitted':
-      return 'Submitted';
-    case 'viewed':
-      return 'Viewed';
-    case 'shortlisted':
-      return 'Shortlisted';
-    case 'rejected':
-      return 'Rejected';
-    case 'withdrawn':
-      return 'Withdrawn';
-    default:
-      return status || '';
-  }
-};
+import { formatApplicationStatus } from './applicationStatus.js';
 
 const formatAppliedAt = (value) => {
   if (!value) {
@@ -141,7 +126,7 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     label: 'Application status',
     group: 'Application',
     defaultSelected: true,
-    getValue: (app) => formatStatusLabel(app.status),
+    getValue: (app) => formatApplicationStatus(app.status),
   },
   {
     id: 'submittedAt',
@@ -233,7 +218,7 @@ export const downloadApplicationExcel = (applications, columnIds, job) => {
 
 export const summarizeApplicationStatuses = (applications = []) =>
   applications.reduce((counts, application) => {
-    const status = application.status || 'submitted';
+    const status = application.status || 'applied';
     counts[status] = (counts[status] || 0) + 1;
     return counts;
   }, {});

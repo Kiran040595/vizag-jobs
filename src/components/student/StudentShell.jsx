@@ -3,7 +3,7 @@ import { useStudentAuth } from '../../hooks/useStudentAuth';
 
 const navItems = [
   { label: 'My profile', to: '/student/profile' },
-  { label: 'My applications', to: '/student/applications' },
+  { label: 'Applied jobs', to: '/student/applied-jobs' },
   { label: 'Browse jobs', to: '/jobs' },
 ];
 
