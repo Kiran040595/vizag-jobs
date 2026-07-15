@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { setPendingEmployerCompanyName, takePendingEmployerCompanyName } from '../lib/employerOAuth';
 import { getAuthRedirectUrl } from '../lib/site';
 import { upsertEmployerProfile } from '../services/employerJobs';
+import { deferAuthWork } from '../lib/deferAuthWork';
 
 const EMPLOYER_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const EMPLOYER_ACCESS_CACHE_KEY = 'vizagjobs:employer-access-cache';
@@ -143,7 +144,7 @@ export function EmployerAuthProvider({ children }) {
         setIsEmployer(false);
         setProfile(null);
         clearEmployerAccessCache();
-        if (showLoader) {
+        if (isMounted) {
           setIsLoading(false);
         }
         return;
@@ -174,36 +175,45 @@ export function EmployerAuthProvider({ children }) {
         setProfile(null);
         setAuthError(error instanceof Error ? error.message : 'Could not verify employer access.');
       } finally {
-        if (isMounted && showLoader) {
+        if (isMounted) {
           setIsLoading(false);
         }
       }
     };
 
     supabase.auth.getSession().then(({ data, error }) => {
-      if (!isMounted) {
-        return;
-      }
+      deferAuthWork(() => {
+        if (!isMounted) {
+          return;
+        }
 
-      if (error) {
-        setAuthError(error.message);
-        setIsLoading(false);
-        return;
-      }
+        if (error) {
+          setAuthError(error.message);
+          setIsLoading(false);
+          return;
+        }
 
-      syncSession(data.session, { showLoader: true });
+        void syncSession(data.session, { showLoader: true });
+      });
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      const shouldShowLoader =
-        event === 'SIGNED_IN' ||
-        event === 'SIGNED_OUT' ||
-        event === 'USER_UPDATED' ||
-        event === 'PASSWORD_RECOVERY';
+      deferAuthWork(() => {
+        if (!isMounted) {
+          return;
+        }
 
-      syncSession(nextSession, { showLoader: shouldShowLoader });
+        const shouldShowLoader =
+          event === 'INITIAL_SESSION' ||
+          event === 'SIGNED_IN' ||
+          event === 'SIGNED_OUT' ||
+          event === 'USER_UPDATED' ||
+          event === 'PASSWORD_RECOVERY';
+
+        void syncSession(nextSession, { showLoader: shouldShowLoader });
+      });
     });
 
     return () => {

@@ -79,7 +79,16 @@ export default function StudentLoginPage() {
     try {
       await signIn({ identifier, password });
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Could not sign in.');
+      const message = error instanceof Error ? error.message : 'Could not sign in.';
+      if (/email not confirmed/i.test(message)) {
+        setSubmitError(
+          'Email is not confirmed yet. Check your inbox for a confirmation link, or contact support if you already confirmed.',
+        );
+      } else if (/invalid login credentials/i.test(message)) {
+        setSubmitError('Wrong email/mobile or password. Try again, or create a student account.');
+      } else {
+        setSubmitError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }

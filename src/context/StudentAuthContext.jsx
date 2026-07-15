@@ -9,6 +9,7 @@ import {
   normalizeStudentPhone,
   resolveStudentLoginEmail,
 } from '../lib/studentPhoneAuth';
+import { deferAuthWork } from '../lib/deferAuthWork';
 
 const STUDENT_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const STUDENT_ACCESS_CACHE_KEY = 'vizagjobs:student-access-cache';
@@ -123,7 +124,7 @@ export function StudentAuthProvider({ children }) {
         setProfile(null);
         setProfileComplete(false);
         clearStudentAccessCache();
-        if (showLoader) {
+        if (isMounted) {
           setIsLoading(false);
         }
         return;
@@ -158,31 +159,37 @@ export function StudentAuthProvider({ children }) {
         setProfileComplete(false);
         setAuthError(error instanceof Error ? error.message : 'Could not verify student access.');
       } finally {
-        if (isMounted && showLoader) {
+        if (isMounted) {
           setIsLoading(false);
         }
       }
     };
 
     supabase.auth.getSession().then(({ data, error }) => {
-      if (!isMounted) return;
-      if (error) {
-        setAuthError(error.message);
-        setIsLoading(false);
-        return;
-      }
-      syncSession(data.session, { showLoader: true });
+      deferAuthWork(() => {
+        if (!isMounted) return;
+        if (error) {
+          setAuthError(error.message);
+          setIsLoading(false);
+          return;
+        }
+        void syncSession(data.session, { showLoader: true });
+      });
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      const shouldShowLoader =
-        event === 'SIGNED_IN' ||
-        event === 'SIGNED_OUT' ||
-        event === 'USER_UPDATED' ||
-        event === 'PASSWORD_RECOVERY';
-      syncSession(nextSession, { showLoader: shouldShowLoader });
+      deferAuthWork(() => {
+        if (!isMounted) return;
+        const shouldShowLoader =
+          event === 'INITIAL_SESSION' ||
+          event === 'SIGNED_IN' ||
+          event === 'SIGNED_OUT' ||
+          event === 'USER_UPDATED' ||
+          event === 'PASSWORD_RECOVERY';
+        void syncSession(nextSession, { showLoader: shouldShowLoader });
+      });
     });
 
     return () => {
@@ -198,13 +205,32 @@ export function StudentAuthProvider({ children }) {
 
     const loginEmail = await resolveStudentLoginEmail(supabase, identifier ?? email);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password,
     });
     if (error) {
       throw error;
     }
+
+    if (data.session?.user) {
+      setSession(data.session);
+      const access = await refreshStudentAccess(data.session.user.id);
+      setIsLoading(false);
+      if (!access.isStudent) {
+        await supabase.auth.signOut();
+        clearStudentAccessCache();
+        setSession(null);
+        setIsStudent(false);
+        setProfile(null);
+        setProfileComplete(false);
+        throw new Error(
+          'This account is not registered as a student. Create a student account, or use the employer login.',
+        );
+      }
+    }
+
+    return data;
   };
 
   const signUp = async ({ email, phone, password, fullName, college, consents, returnPath }) => {

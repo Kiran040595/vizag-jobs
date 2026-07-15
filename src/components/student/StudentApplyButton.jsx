@@ -60,7 +60,7 @@ export default function StudentApplyButton({
       return;
     }
 
-    navigate(`/student/register${authQuery}`);
+    navigate(`/student/login${authQuery}`);
   };
 
   return (

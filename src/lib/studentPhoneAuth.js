@@ -50,7 +50,7 @@ export const resolveStudentSignInCredentials = ({ identifier, password }) => {
   }
 
   if (isEmailIdentifier(trimmed)) {
-    return { email: trimmed, password, phone: null };
+    return { email: trimmed.toLowerCase(), password, phone: null };
   }
 
   const phone = normalizeStudentPhone(trimmed);
@@ -73,7 +73,7 @@ export const resolveStudentLoginEmail = async (supabase, identifier) => {
   }
 
   if (isEmailIdentifier(trimmed)) {
-    return trimmed;
+    return trimmed.toLowerCase();
   }
 
   const phone = normalizeStudentPhone(trimmed);
