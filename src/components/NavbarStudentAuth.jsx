@@ -22,6 +22,40 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
     return null;
   }
 
+  if (variant === 'mobileHeader') {
+    if (session && isStudent) {
+      const profileLabel = profile?.full_name?.trim() || 'Profile';
+      return (
+        <Link
+          to="/student/profile"
+          onClick={handleNavigate}
+          className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700"
+        >
+          {profileLabel}
+        </Link>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <Link
+          to={loginPath}
+          onClick={handleNavigate}
+          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700"
+        >
+          Sign in
+        </Link>
+        <Link
+          to={registerPath}
+          onClick={handleNavigate}
+          className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white"
+        >
+          Sign up
+        </Link>
+      </div>
+    );
+  }
+
   if (session && isStudent) {
     const profileLabel = profile?.full_name?.trim() || 'My profile';
 

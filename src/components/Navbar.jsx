@@ -63,20 +63,27 @@ export default function Navbar() {
           <NavbarStudentAuth />
         </div>
 
-        <button
-          type="button"
-          className="inline-flex items-center justify-center rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 md:hidden"
-          aria-label="Toggle menu"
-          aria-expanded={isOpen}
-          onClick={() => setIsOpen((currentValue) => !currentValue)}
-        >
-          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {isOpen ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
-          </svg>
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <NavbarStudentAuth variant="mobileHeader" />
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-xl p-2 text-slate-700 transition hover:bg-slate-100"
+            aria-label="Toggle menu"
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen((currentValue) => !currentValue)}
+          >
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {isOpen ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <div className={`overflow-hidden border-t border-slate-200 bg-white transition-all duration-300 md:hidden ${isOpen ? 'max-h-[520px]' : 'max-h-0'}`}>
+      <div
+        className={`border-t border-slate-200 bg-white transition-all duration-300 md:hidden ${
+          isOpen ? 'max-h-[min(85dvh,720px)] overflow-y-auto' : 'max-h-0 overflow-hidden'
+        }`}
+      >
         <nav className="mx-auto flex w-full max-w-7xl flex-col px-4 py-3 sm:px-6">
           {navLinks.map((link) => (
             <NavLink
@@ -94,6 +101,8 @@ export default function Navbar() {
           ))}
 
           <NavbarAppliedJobsLink variant="mobile" onClick={() => setIsOpen(false)} />
+
+          <NavbarStudentAuth variant="mobile" onNavigate={() => setIsOpen(false)} />
 
           <div className="mt-3 flex flex-col gap-2 pb-2">
             <div className="flex items-center justify-center gap-2 pb-1">
@@ -118,7 +127,6 @@ export default function Navbar() {
             >
               Contact
             </Link>
-            <NavbarStudentAuth variant="mobile" onNavigate={() => setIsOpen(false)} />
           </div>
         </nav>
       </div>
