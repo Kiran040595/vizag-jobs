@@ -323,7 +323,7 @@ export default function AdminJobsPage() {
                         <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                       ) : null}
                       {job.status === 'published' && job.apply_mode === 'internal' ? (
-                        <p className="mt-2 text-xs text-slate-600">
+                        <p className="mt-2 text-sm font-semibold text-indigo-700">
                           {applicationCounts[job.id] || 0} application
                           {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
                         </p>
@@ -337,7 +337,7 @@ export default function AdminJobsPage() {
                           onClick={() => navigate(`/admin/jobs/${job.id}/applications`)}
                           className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
                         >
-                          Applications
+                          Applications ({applicationCounts[job.id] || 0})
                         </button>
                       ) : null}
                       <button

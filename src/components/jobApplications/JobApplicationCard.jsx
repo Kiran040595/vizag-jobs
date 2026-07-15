@@ -52,11 +52,22 @@ export default function JobApplicationCard({ application, onStatusChange, canUpd
           </dd>
         </div>
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</dt>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone / WhatsApp</dt>
           <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-800">
             <span>{snapshot.phone || 'Not provided'}</span>
             {snapshot.phone ? <WhatsAppContactLink phone={snapshot.phone} /> : null}
           </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Qualification</dt>
+          <dd className="mt-0.5 text-slate-800">
+            {[snapshot.degree, snapshot.branch, snapshot.graduationYear].filter(Boolean).join(' · ') ||
+              'Not provided'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fresher</dt>
+          <dd className="mt-0.5 text-slate-800">{snapshot.isFresher ? 'Yes' : 'No'}</dd>
         </div>
         <div className="sm:col-span-2">
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</dt>
@@ -66,6 +77,12 @@ export default function JobApplicationCard({ application, onStatusChange, canUpd
               : 'Not provided'}
           </dd>
         </div>
+        {Array.isArray(snapshot.certifications) && snapshot.certifications.length > 0 ? (
+          <div className="sm:col-span-2">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Certifications</dt>
+            <dd className="mt-0.5 text-slate-800">{snapshot.certifications.join(', ')}</dd>
+          </div>
+        ) : null}
         {application.coverNote ? (
           <div className="sm:col-span-2">
             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cover note</dt>
