@@ -6,7 +6,8 @@ import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   approveAdminJob,
-  fetchAdminJobs,
+  fetchAdminCreatedJobs,
+  fetchEmployerSubmittedJobs,
   rejectAdminJob,
   toggleAdminJobFeatured,
   updateAdminJobStatus,
@@ -69,7 +70,9 @@ const formatDateTime = (value) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
 
-export default function AdminJobsPage() {
+export default function AdminJobsPage({ scope = 'employer' }) {
+  const isAdminScope = scope === 'admin';
+  const jobsListPath = isAdminScope ? '/admin/admin-jobs' : '/admin/jobs';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   useAdminAuth();
@@ -88,7 +91,7 @@ export default function AdminJobsPage() {
 
     const loadJobs = async () => {
       try {
-        const data = await fetchAdminJobs();
+        const data = isAdminScope ? await fetchAdminCreatedJobs() : await fetchEmployerSubmittedJobs();
         const internalPublishedIds = data
           .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
           .map((job) => job.id);
@@ -118,7 +121,7 @@ export default function AdminJobsPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [isAdminScope]);
 
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
@@ -212,31 +215,49 @@ export default function AdminJobsPage() {
 
   return (
     <AdminShell
-      title="Manage existing jobs"
-      description="Review employer submissions, approve jobs for the public portal, or reject listings."
+      title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
+      description={
+        isAdminScope
+          ? 'Manage listings you created manually or published from external fetch.'
+          : 'Review employer submissions, approve jobs for the public portal, or reject listings.'
+      }
     >
-      <SEO title="Existing Jobs | Vizag Jobs Admin" description="Manage existing Vizag Jobs listings." canonical="/admin/jobs" />
+      <SEO
+        title={isAdminScope ? 'Admin Jobs | Vizag Jobs Admin' : 'Employer Submissions | Vizag Jobs Admin'}
+        description={
+          isAdminScope
+            ? 'Manage admin-created Vizag Jobs listings.'
+            : 'Review employer-submitted Vizag Jobs listings.'
+        }
+        canonical={jobsListPath}
+      />
 
-      <section className="mb-8 rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-6 shadow-lg shadow-cyan-100/40">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-700">External jobs</p>
-        <h2 className="mt-2 text-xl font-black text-slate-950">Fetch from LinkedIn, Naukri, Indeed, and more</h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Use the dedicated fetch page to pull one source at a time, review listings, run Make SEO, then publish.
-        </p>
-        <Link
-          to="/admin/fetch"
-          className="mt-4 inline-flex rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400"
-        >
-          Open fetch page →
-        </Link>
-      </section>
+      {isAdminScope ? (
+        <section className="mb-8 rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-6 shadow-lg shadow-cyan-100/40">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-700">External jobs</p>
+          <h2 className="mt-2 text-xl font-black text-slate-950">Fetch from LinkedIn, Naukri, Indeed, and more</h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Use the dedicated fetch page to pull one source at a time, review listings, run Make SEO, then publish.
+          </p>
+          <Link
+            to="/admin/fetch"
+            className="mt-4 inline-flex rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400"
+          >
+            Open fetch page →
+          </Link>
+        </section>
+      ) : null}
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Manage listings</p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">Existing jobs</h2>
-            {pendingCount > 0 ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+              {isAdminScope ? 'Admin listings' : 'Employer listings'}
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">
+              {isAdminScope ? 'Admin jobs' : 'Employer submissions'}
+            </h2>
+            {!isAdminScope && pendingCount > 0 ? (
               <p className="mt-2 text-sm font-medium text-blue-700">{pendingCount} pending employer submission(s)</p>
             ) : null}
           </div>
@@ -247,7 +268,7 @@ export default function AdminJobsPage() {
               className="h-11 rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
             >
               <option value="all">All statuses</option>
-              <option value="pending">Pending review only</option>
+              {!isAdminScope ? <option value="pending">Pending review only</option> : null}
             </select>
             <input
               type="search"
@@ -269,12 +290,16 @@ export default function AdminJobsPage() {
 
         {isLoading ? (
           <div className="mt-8">
-            <LoadingSpinner message="Loading admin jobs..." />
+            <LoadingSpinner message={isAdminScope ? 'Loading admin jobs...' : 'Loading employer submissions...'} />
           </div>
         ) : filteredJobs.length === 0 ? (
           <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
             <h3 className="text-lg font-bold text-slate-900">No jobs match this filter.</h3>
-            <p className="mt-2 text-sm text-slate-600">Try a different search or status filter.</p>
+            <p className="mt-2 text-sm text-slate-600">
+              {isAdminScope
+                ? 'Create a new job or fetch external listings to get started.'
+                : 'Try a different search or status filter.'}
+            </p>
           </div>
         ) : (
           <div className="mt-6 space-y-4">
@@ -302,7 +327,15 @@ export default function AdminJobsPage() {
                           <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
                             Employer submitted
                           </span>
-                        ) : null}
+                        ) : job.source_name ? (
+                          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
+                            External fetch
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                            Admin created
+                          </span>
+                        )}
                         {job.is_featured ? (
                           <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
                             Featured
@@ -347,7 +380,7 @@ export default function AdminJobsPage() {
                       >
                         Edit
                       </button>
-                      {isPending ? (
+                      {isPending && !isAdminScope ? (
                         <>
                           <button
                             type="button"
@@ -387,7 +420,7 @@ export default function AdminJobsPage() {
                       >
                         {job.is_featured ? 'Unfeature' : 'Feature'}
                       </button>
-                      {!isPending ? (
+                      {!isPending || isAdminScope ? (
                         <button
                           type="button"
                           disabled={isBusy || job.status === 'archived'}

@@ -87,7 +87,15 @@ function App() {
         path="/admin/jobs"
         element={(
           <AdminRoute>
-            <AdminJobsPage />
+            <AdminJobsPage scope="employer" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/admin-jobs"
+        element={(
+          <AdminRoute>
+            <AdminJobsPage scope="admin" />
           </AdminRoute>
         )}
       />

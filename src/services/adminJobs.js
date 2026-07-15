@@ -540,16 +540,39 @@ export const isJobSlugTaken = async (slug, excludeJobId) => {
   return Array.isArray(data) && data.length > 0;
 };
 
-export const fetchAdminJobs = async () => {
+/** @typedef {'all' | 'admin' | 'employer'} AdminJobScope */
+
+const applyAdminJobScope = (query, scope) => {
+  if (scope === 'admin') {
+    return query.is('created_by', null);
+  }
+
+  if (scope === 'employer') {
+    return query.not('created_by', 'is', null);
+  }
+
+  return query;
+};
+
+/**
+ * @param {{ scope?: AdminJobScope }} [options]
+ */
+export const fetchAdminJobs = async (options = {}) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
   }
 
-  const { data, error } = await supabase
+  const scope = options.scope || 'all';
+
+  let query = supabase
     .from(JOBS_TABLE)
     .select('*')
     .order('posted_at', { ascending: false })
     .order('created_at', { ascending: false });
+
+  query = applyAdminJobScope(query, scope);
+
+  const { data, error } = await query;
 
   if (error) {
     throw mapError(error, 'Could not load admin jobs.');
@@ -557,6 +580,15 @@ export const fetchAdminJobs = async () => {
 
   return data || [];
 };
+
+/** Admin-created or externally fetched listings (no employer owner). */
+export const fetchAdminCreatedJobs = () => fetchAdminJobs({ scope: 'admin' });
+
+/** Employer-submitted listings pending admin review or already published. */
+export const fetchEmployerSubmittedJobs = () => fetchAdminJobs({ scope: 'employer' });
+
+/** Route back to the correct admin jobs list for a job row. */
+export const getAdminJobsListPath = (job) => (job?.created_by ? '/admin/jobs' : '/admin/admin-jobs');
 
 export const fetchAdminJobById = async (jobId) => {
   if (!supabase) {

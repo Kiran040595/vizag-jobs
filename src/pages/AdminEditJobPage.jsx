@@ -4,7 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import AdminJobForm from '../components/admin/AdminJobForm';
-import { deserializeJobForForm, fetchAdminJobById } from '../services/adminJobs';
+import { deserializeJobForForm, fetchAdminJobById, getAdminJobsListPath } from '../services/adminJobs';
 
 export default function AdminEditJobPage() {
   const navigate = useNavigate();
@@ -72,7 +72,7 @@ export default function AdminEditJobPage() {
             jobId={job.id}
             initialValues={deserializeJobForForm(job)}
             draftStorageKey={`vizagjobs:admin-edit-job-draft:${job.id}`}
-            onCancel={() => navigate('/admin/jobs')}
+            onCancel={() => navigate(getAdminJobsListPath(job))}
             onSaved={() => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}

@@ -7,7 +7,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 import ExternalSourceAutomationActions from '../components/admin/ExternalSourceAutomationActions';
 import NaukriAutomationReportPanel from '../components/admin/NaukriAutomationReportPanel';
 import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/ExternalJobReviewPanel';
-import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../services/adminJobs';
+import { createAdminJob, deserializeJobForForm, fetchAdminCreatedJobs } from '../services/adminJobs';
 import {
   collectNaukriApifyFetch,
   fetchExternalJobsBySource,
@@ -144,7 +144,7 @@ export default function AdminExternalFetchPage() {
     let ignore = false;
     (async () => {
       try {
-        const data = await fetchAdminJobs();
+        const data = await fetchAdminCreatedJobs();
         if (!ignore) {
           setExistingJobs(data);
         }

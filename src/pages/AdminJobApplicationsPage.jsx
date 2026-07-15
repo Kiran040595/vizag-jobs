@@ -7,7 +7,7 @@ import ApplicationExportDialog from '../components/jobApplications/ApplicationEx
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { summarizeApplicationStatuses } from '../lib/applicationExport';
-import { fetchAdminJobs } from '../services/adminJobs';
+import { fetchAdminJobById, getAdminJobsListPath } from '../services/adminJobs';
 import {
   fetchJobApplications,
   formatApplicationStatus,
@@ -28,9 +28,9 @@ export default function AdminJobApplicationsPage() {
 
     const load = async () => {
       try {
-        const [jobs, rows] = await Promise.all([fetchAdminJobs(), fetchJobApplications(jobId)]);
+        const [jobRow, rows] = await Promise.all([fetchAdminJobById(jobId), fetchJobApplications(jobId)]);
         if (!ignore) {
-          setJob(jobs.find((row) => row.id === jobId) || null);
+          setJob(jobRow);
           setApplications(rows);
           setError('');
         }
@@ -69,7 +69,7 @@ export default function AdminJobApplicationsPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">
-          <Link to="/admin/jobs" className="text-sm font-semibold text-blue-700 hover:text-blue-800">
+          <Link to={getAdminJobsListPath(job)} className="text-sm font-semibold text-blue-700 hover:text-blue-800">
             ← Back to jobs
           </Link>
           {job ? (
