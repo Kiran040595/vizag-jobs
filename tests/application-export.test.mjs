@@ -11,7 +11,7 @@ import {
 
 const sample = [
   {
-    status: 'shortlisted',
+    status: 'processing',
     coverNote: 'Interested in Vizag role',
     submittedAt: '2026-07-14T10:00:00.000Z',
     profileSnapshot: {
@@ -28,7 +28,7 @@ const sample = [
     },
   },
   {
-    status: 'submitted',
+    status: 'applied',
     coverNote: '',
     submittedAt: '2026-07-15T08:00:00.000Z',
     profileSnapshot: {
@@ -76,7 +76,7 @@ const filename = buildApplicationExportFilename({ slug: 'Junior React Developer'
 assert.match(filename, /^junior-react-developer-applicants-\d{4}-\d{2}-\d{2}\.xls$/);
 
 const counts = summarizeApplicationStatuses(sample);
-assert.equal(counts.shortlisted, 1);
-assert.equal(counts.submitted, 1);
+assert.equal(counts.processing, 1);
+assert.equal(counts.applied, 1);
 
 console.log('application-export.test.mjs: OK');

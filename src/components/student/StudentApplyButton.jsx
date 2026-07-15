@@ -32,7 +32,7 @@ export default function StudentApplyButton({
   });
 
   const buttonLabel =
-    label || (alreadyApplied ? 'Application submitted' : applyButtonLabel({ applyMode }));
+    label || (alreadyApplied ? 'Applied' : applyButtonLabel({ applyMode }));
 
   const handleClick = () => {
     if (isLoading || alreadyApplied) {

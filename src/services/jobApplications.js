@@ -1,5 +1,10 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getJobDetailPath } from '../lib/jobRoutes';
+import {
+  APPLICATION_STATUSES,
+  formatApplicationStatus,
+  normalizeApplicationStatus,
+} from '../lib/applicationStatus';
 import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';
 import { fetchStudentProfile } from './studentJobs';
 
@@ -15,7 +20,7 @@ const APPLICATION_COLUMNS = `
   updated_at
 `;
 
-const APPLICATION_STATUSES = ['submitted', 'viewed', 'shortlisted', 'rejected', 'withdrawn'];
+const APPLICATION_STATUSES_SET = new Set(APPLICATION_STATUSES);
 
 const mapApplication = (row) => {
   if (!row) {
@@ -36,7 +41,7 @@ const mapApplication = (row) => {
     id: row.id,
     jobId: row.job_id,
     studentUserId: row.student_user_id,
-    status: row.status,
+    status: normalizeApplicationStatus(row.status),
     coverNote: row.cover_note || '',
     resumePath: row.resume_path || '',
     profileSnapshot: row.profile_snapshot || {},
@@ -198,7 +203,7 @@ export const submitJobApplication = async ({ jobId, coverNote, resumeFile, exist
       cover_note: trimmedCover || null,
       resume_path: resumePath,
       profile_snapshot: buildProfileSnapshot(profile),
-      status: 'submitted',
+      status: 'applied',
     })
     .select(APPLICATION_COLUMNS)
     .single();
@@ -218,13 +223,14 @@ export const updateApplicationStatus = async ({ applicationId, status }) => {
     throw new Error('Supabase is not configured.');
   }
 
-  if (!APPLICATION_STATUSES.includes(status)) {
+  const normalizedStatus = normalizeApplicationStatus(status);
+  if (!APPLICATION_STATUSES_SET.has(normalizedStatus)) {
     throw new Error('Invalid application status.');
   }
 
   const { data, error } = await supabase
     .from('job_applications')
-    .update({ status })
+    .update({ status: normalizedStatus })
     .eq('id', applicationId)
     .select(APPLICATION_COLUMNS)
     .single();
@@ -239,22 +245,7 @@ export const updateApplicationStatus = async ({ applicationId, status }) => {
 export const getApplicationResumeUrl = async (application) =>
   createResumeSignedUrl(application?.resumePath);
 
-export const formatApplicationStatus = (status) => {
-  switch (status) {
-    case 'submitted':
-      return 'Submitted';
-    case 'viewed':
-      return 'Viewed';
-    case 'shortlisted':
-      return 'Shortlisted';
-    case 'rejected':
-      return 'Rejected';
-    case 'withdrawn':
-      return 'Withdrawn';
-    default:
-      return status;
-  }
-};
+export { formatApplicationStatus } from '../lib/applicationStatus';
 
 export const formatApplicationTime = (value) => {
   if (!value) {

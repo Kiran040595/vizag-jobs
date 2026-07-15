@@ -6,7 +6,7 @@ import StudentShell from '../components/student/StudentShell';
 import StudentSessionRoute from '../components/student/StudentSessionRoute';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import { fetchJobById } from '../services/jobs';
-import { fetchMyApplicationForJob, submitJobApplication } from '../services/jobApplications';
+import { fetchMyApplicationForJob, formatApplicationStatus, submitJobApplication } from '../services/jobApplications';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
 import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
@@ -144,7 +144,19 @@ function StudentApplyContent() {
 
           {existingApplication ? (
             <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-800">
-              You already applied for this job on {new Date(existingApplication.submittedAt).toLocaleDateString()}.
+              <p>
+                You already applied for this job on{' '}
+                {new Date(existingApplication.submittedAt).toLocaleDateString()}.
+              </p>
+              <p className="mt-2 font-semibold">
+                Current status: {formatApplicationStatus(existingApplication.status)}
+              </p>
+              <Link
+                to="/student/applied-jobs"
+                className="mt-3 inline-flex font-semibold text-emerald-900 underline hover:text-emerald-950"
+              >
+                View all applied jobs
+              </Link>
             </section>
           ) : (
             <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

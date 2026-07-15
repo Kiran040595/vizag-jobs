@@ -65,7 +65,8 @@ function App() {
       <Route path="/student/register" element={<StudentRegisterPage />} />
       <Route path="/student" element={<Navigate to="/student/profile" replace />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
-      <Route path="/student/applications" element={<StudentApplicationsPage />} />
+      <Route path="/student/applied-jobs" element={<StudentApplicationsPage />} />
+      <Route path="/student/applications" element={<Navigate to="/student/applied-jobs" replace />} />
       <Route path="/student/apply/:jobId" element={<StudentApplyPage />} />
       <Route
         path="/admin"
