@@ -8,6 +8,7 @@ import {
   approveAdminJob,
   fetchAdminCreatedJobs,
   fetchEmployerSubmittedJobs,
+  isExternalFetchSourceName,
   rejectAdminJob,
   toggleAdminJobFeatured,
   updateAdminJobStatus,
@@ -311,7 +312,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                           <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
                             Employer submitted
                           </span>
-                        ) : job.source_name ? (
+                        ) : isExternalFetchSourceName(job.source_name) ? (
                           <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
                             External fetch
                           </span>

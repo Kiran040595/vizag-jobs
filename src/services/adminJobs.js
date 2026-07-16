@@ -542,10 +542,34 @@ export const isJobSlugTaken = async (slug, excludeJobId) => {
 
 /** @typedef {'all' | 'admin' | 'employer' | 'platform'} AdminJobScope */
 
+/**
+ * True when source_name looks like an automated external-fetch / job-board scrape.
+ * Admin posts often set a custom source_name (e.g. company or "Admin Post"), so we
+ * must not treat every non-empty source_name as external.
+ */
+export const isExternalFetchSourceName = (sourceName) => {
+  const name = String(sourceName || '')
+    .trim()
+    .toLowerCase();
+  if (!name) {
+    return false;
+  }
+
+  return name.includes('naukri') || name.includes('linkedin') || name.includes('indeed.com');
+};
+
 const applyAdminJobScope = (query, scope) => {
   if (scope === 'admin') {
-    // Manually posted by admin only (exclude employer + external-fetch rows).
-    return query.is('created_by', null).or('source_name.is.null,source_name.eq.');
+    // Manually posted by admin: no employer owner, and not Naukri/LinkedIn scrape rows.
+    return query
+      .is('created_by', null)
+      .or(
+        [
+          'source_name.is.null',
+          'source_name.eq.',
+          'and(source_name.not.ilike.%naukri%,source_name.not.ilike.%linkedin%,source_name.not.ilike.%indeed.com%)',
+        ].join(','),
+      );
   }
 
   if (scope === 'platform') {
