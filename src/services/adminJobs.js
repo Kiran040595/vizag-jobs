@@ -540,10 +540,16 @@ export const isJobSlugTaken = async (slug, excludeJobId) => {
   return Array.isArray(data) && data.length > 0;
 };
 
-/** @typedef {'all' | 'admin' | 'employer'} AdminJobScope */
+/** @typedef {'all' | 'admin' | 'employer' | 'platform'} AdminJobScope */
 
 const applyAdminJobScope = (query, scope) => {
   if (scope === 'admin') {
+    // Manually posted by admin only (exclude employer + external-fetch rows).
+    return query.is('created_by', null).or('source_name.is.null,source_name.eq.');
+  }
+
+  if (scope === 'platform') {
+    // Admin-created and externally fetched listings (no employer owner).
     return query.is('created_by', null);
   }
 
@@ -581,8 +587,11 @@ export const fetchAdminJobs = async (options = {}) => {
   return data || [];
 };
 
-/** Admin-created or externally fetched listings (no employer owner). */
+/** Manually posted admin listings (excludes employer + external-fetch jobs). */
 export const fetchAdminCreatedJobs = () => fetchAdminJobs({ scope: 'admin' });
+
+/** Admin-created and externally fetched listings (used for fetch-page dedup). */
+export const fetchAdminPlatformJobs = () => fetchAdminJobs({ scope: 'platform' });
 
 /** Employer-submitted listings pending admin review or already published. */
 export const fetchEmployerSubmittedJobs = () => fetchAdminJobs({ scope: 'employer' });

@@ -12,19 +12,24 @@ const appSrc = readFileSync(path.join(repoRoot, 'src/App.jsx'), 'utf8');
 
 assert.match(adminJobsSrc, /scope === 'admin'/);
 assert.match(adminJobsSrc, /scope === 'employer'/);
+assert.match(adminJobsSrc, /scope === 'platform'/);
+assert.match(adminJobsSrc, /source_name\.is\.null,source_name\.eq\./);
 assert.match(adminJobsSrc, /export const fetchAdminCreatedJobs/);
+assert.match(adminJobsSrc, /export const fetchAdminPlatformJobs/);
 assert.match(adminJobsSrc, /export const fetchEmployerSubmittedJobs/);
 assert.match(adminJobsSrc, /export const getAdminJobsListPath/);
 
 assert.match(adminJobsPageSrc, /scope = 'employer'/);
 assert.match(adminJobsPageSrc, /fetchAdminCreatedJobs/);
 assert.match(adminJobsPageSrc, /fetchEmployerSubmittedJobs/);
+assert.doesNotMatch(adminJobsPageSrc, /fetchAdminPlatformJobs/);
 
 assert.match(adminShellSrc, /label: 'Admin Jobs'/);
 assert.match(adminShellSrc, /to: '\/admin\/admin-jobs'/);
 assert.match(adminShellSrc, /label: 'Employer submissions'/);
 
-assert.match(externalFetchSrc, /fetchAdminCreatedJobs/);
+assert.match(externalFetchSrc, /fetchAdminPlatformJobs/);
+assert.doesNotMatch(externalFetchSrc, /fetchAdminCreatedJobs/);
 assert.doesNotMatch(externalFetchSrc, /fetchAdminJobs\(/);
 
 assert.match(appSrc, /path="\/admin\/admin-jobs"/);

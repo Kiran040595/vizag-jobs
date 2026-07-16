@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
@@ -218,7 +218,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
       description={
         isAdminScope
-          ? 'Manage listings you created manually or published from external fetch.'
+          ? 'Manage jobs you posted manually from the admin form.'
           : 'Review employer submissions, approve jobs for the public portal, or reject listings.'
       }
     >
@@ -231,22 +231,6 @@ export default function AdminJobsPage({ scope = 'employer' }) {
         }
         canonical={jobsListPath}
       />
-
-      {isAdminScope ? (
-        <section className="mb-8 rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-6 shadow-lg shadow-cyan-100/40">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-700">External jobs</p>
-          <h2 className="mt-2 text-xl font-black text-slate-950">Fetch from LinkedIn, Naukri, Indeed, and more</h2>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Use the dedicated fetch page to pull one source at a time, review listings, run Make SEO, then publish.
-          </p>
-          <Link
-            to="/admin/fetch"
-            className="mt-4 inline-flex rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:bg-cyan-400"
-          >
-            Open fetch page →
-          </Link>
-        </section>
-      ) : null}
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -297,7 +281,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             <h3 className="text-lg font-bold text-slate-900">No jobs match this filter.</h3>
             <p className="mt-2 text-sm text-slate-600">
               {isAdminScope
-                ? 'Create a new job or fetch external listings to get started.'
+                ? 'Create a new job from New Job to get started. External fetch jobs stay on Fetch external jobs.'
                 : 'Try a different search or status filter.'}
             </p>
           </div>
