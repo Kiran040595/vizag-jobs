@@ -23,6 +23,10 @@ Registration collects **both email and mobile**. Sign-in uses your email and pas
 
 Visitors who click **Apply Now** without a session are sent to `/student/login?next=…&apply=1`. After sign-in they return to the job and the apply link opens automatically.
 
+### Full job details gate
+
+Visitors who click **Full Job Details** (or open a job URL directly) without a student session are sent to `/student/login?next=…`. They can sign in or create an account; after auth they return to the complete job page. Admins and employers already signed in can still open full details.
+
 ### Consent (registration)
 
 Students must agree at registration (stored with timestamps on `student_profiles`):

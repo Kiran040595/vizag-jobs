@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
 import {
   formatRelativePostedAt,
   shouldHighlightPostedTime,
 } from '../lib/jobFreshness';
 import { useSavedJob } from '../lib/useSavedJob';
+import FullJobDetailsLink from './FullJobDetailsLink';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -97,12 +97,7 @@ const JobCard = ({
       ) : null}
 
       <div className="mt-auto">
-        <Link
-          to={jobPath}
-          className="block w-full rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-        >
-          Full Job Details
-        </Link>
+        <FullJobDetailsLink jobPath={jobPath} />
       </div>
     </article>
   );

@@ -34,6 +34,11 @@ export default function StudentRegisterPage() {
   const [consents, setConsents] = useState(EMPTY_STUDENT_CONSENTS);
 
   const returnPath = resolvePostAuthDestination(searchParams, { profileComplete });
+  const nextPath = searchParams.get('next') || '';
+  const isJobDetailsReturn =
+    Boolean(nextPath) &&
+    !shouldAutoApplyAfterAuth(searchParams) &&
+    (/^\/jobs\//.test(nextPath) || /^\/job\//.test(nextPath));
   const loginPath = `/student/login${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
     apply: shouldAutoApplyAfterAuth(searchParams),
@@ -121,7 +126,11 @@ export default function StudentRegisterPage() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
       <SEO
         title="Student register | Vizag Jobs"
-        description="Create a student account to apply for fresher jobs in Vizag."
+        description={
+          isJobDetailsReturn
+            ? 'Create a free student account to view full job details in Vizag.'
+            : 'Create a student account to apply for fresher jobs in Vizag.'
+        }
         canonical={`/student/register${registerQuery}`}
       />
       <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
@@ -129,7 +138,9 @@ export default function StudentRegisterPage() {
         <p className="mt-3 text-sm text-slate-600">
           {shouldAutoApplyAfterAuth(searchParams)
             ? 'Register below — you will be signed in automatically and returned to the job you selected.'
-            : 'Enter your email and mobile number. Complete your skills and education in the next step.'}
+            : isJobDetailsReturn
+              ? 'Register below — you will be signed in automatically and returned to the full job details.'
+              : 'Enter your email and mobile number. Complete your skills and education in the next step.'}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
