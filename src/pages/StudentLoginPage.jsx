@@ -23,6 +23,11 @@ export default function StudentLoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const returnPath = resolvePostAuthDestination(searchParams, { profileComplete });
+  const nextPath = searchParams.get('next') || '';
+  const isJobDetailsReturn =
+    Boolean(nextPath) &&
+    !shouldAutoApplyAfterAuth(searchParams) &&
+    (/^\/jobs\//.test(nextPath) || /^\/job\//.test(nextPath));
   const registerPath = `/student/register${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
     apply: shouldAutoApplyAfterAuth(searchParams),
@@ -96,13 +101,25 @@ export default function StudentLoginPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
-      <SEO title="Student login | Vizag Jobs" description="Sign in to apply for jobs in Vizag." canonical="/student/login" />
+      <SEO
+        title="Student login | Vizag Jobs"
+        description={
+          isJobDetailsReturn
+            ? 'Sign in or create an account to view full job details in Vizag.'
+            : 'Sign in to apply for jobs in Vizag.'
+        }
+        canonical="/student/login"
+      />
       <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-300">For students</p>
-          <h1 className="mt-4 text-4xl font-black leading-tight">Sign in to apply</h1>
+          <h1 className="mt-4 text-4xl font-black leading-tight">
+            {isJobDetailsReturn ? 'Sign in to view full job details' : 'Sign in to apply'}
+          </h1>
           <p className="mt-5 text-sm leading-7 text-slate-300">
-            Sign in with the email or mobile number and password you used during registration.
+            {isJobDetailsReturn
+              ? 'Create a free student account or sign in to open the complete job posting. After that you can return here anytime while signed in.'
+              : 'Sign in with the email or mobile number and password you used during registration.'}
           </p>
         </section>
 

@@ -43,6 +43,7 @@ import StudentRegisterPage from './pages/StudentRegisterPage';
 import StudentProfilePage from './pages/StudentProfilePage';
 import StudentApplyPage from './pages/StudentApplyPage';
 import StudentApplicationsPage from './pages/StudentApplicationsPage';
+import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
@@ -180,9 +181,30 @@ function App() {
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
-      <Route path="/jobs/:jobSegment/:jobSlug" element={<JobDetailsPage />} />
-      <Route path="/job/:jobSlug" element={<JobDetailsPage />} />
-      <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
+      <Route
+        path="/jobs/:jobSegment/:jobSlug"
+        element={(
+          <JobDetailsAuthGate>
+            <JobDetailsPage />
+          </JobDetailsAuthGate>
+        )}
+      />
+      <Route
+        path="/job/:jobSlug"
+        element={(
+          <JobDetailsAuthGate>
+            <JobDetailsPage />
+          </JobDetailsAuthGate>
+        )}
+      />
+      <Route
+        path="/jobs/:jobId"
+        element={(
+          <JobDetailsAuthGate>
+            <JobDetailsPage />
+          </JobDetailsAuthGate>
+        )}
+      />
       <Route path="/jobs" element={<JobsInVizagPage />} />
       <Route path="/saved-jobs" element={<SavedJobsPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />

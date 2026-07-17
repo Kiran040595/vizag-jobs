@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import FullJobDetailsLink from '../components/FullJobDetailsLink';
 import { removeSavedJob } from '../lib/savedJobs';
 import { useSavedJobsList } from '../lib/useSavedJob';
 import { cardCompanyName, cardLocation } from '../lib/jobCardDisplay';
@@ -82,12 +83,12 @@ export default function SavedJobsPage() {
                     >
                       Remove
                     </button>
-                    <Link
-                      to={job.jobPath || `/job/${job.slug || job.id}`}
+                    <FullJobDetailsLink
+                      jobPath={job.jobPath || `/job/${job.slug || job.id}`}
                       className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 sm:text-sm"
                     >
                       View details
-                    </Link>
+                    </FullJobDetailsLink>
                   </div>
                 </div>
               </li>
