@@ -91,20 +91,20 @@ export async function getAuthenticatedChannel(accessToken) {
   };
 }
 
-export async function findRecentShortByMarker(accessToken, uploadsPlaylistId, marker) {
-  if (!uploadsPlaylistId || !marker) {
+async function findRecentShortByDescriptionNeedle(accessToken, uploadsPlaylistId, needle, maxResults = 25) {
+  if (!uploadsPlaylistId || !needle) {
     return null;
   }
 
   const data = await youtubeGet(accessToken, 'playlistItems', {
     part: 'snippet',
     playlistId: uploadsPlaylistId,
-    maxResults: 10,
+    maxResults,
   });
 
   const match = (data.items || []).find((item) => {
     const description = item.snippet?.description || '';
-    return description.includes(`vizag-jobs-short:${marker}`);
+    return description.includes(needle);
   });
 
   if (!match) {
@@ -114,7 +114,28 @@ export async function findRecentShortByMarker(accessToken, uploadsPlaylistId, ma
   return {
     videoId: match.snippet?.resourceId?.videoId || null,
     title: match.snippet?.title || '',
+    url: match.snippet?.resourceId?.videoId
+      ? `https://www.youtube.com/shorts/${match.snippet.resourceId.videoId}`
+      : null,
   };
+}
+
+export async function findRecentShortByMarker(accessToken, uploadsPlaylistId, marker) {
+  return findRecentShortByDescriptionNeedle(
+    accessToken,
+    uploadsPlaylistId,
+    `vizag-jobs-short:${marker}`,
+    10,
+  );
+}
+
+export async function findRecentShortByDriveFileId(accessToken, uploadsPlaylistId, driveFileId) {
+  return findRecentShortByDescriptionNeedle(
+    accessToken,
+    uploadsPlaylistId,
+    `drive-file:${driveFileId}`,
+    25,
+  );
 }
 
 export async function uploadYouTubeShort({
@@ -214,15 +235,98 @@ export async function exchangeAuthorizationCode({ clientId, clientSecret, code, 
   return data;
 }
 
+export const YOUTUBE_OAUTH_SCOPES = [
+  'https://www.googleapis.com/auth/youtube.upload',
+  'https://www.googleapis.com/auth/youtube.readonly',
+].join(' ');
+
+export const DRIVE_OAUTH_SCOPES = 'https://www.googleapis.com/auth/drive';
+
 export function buildYouTubeOAuthUrl({ clientId, redirectUri }) {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+    scope: YOUTUBE_OAUTH_SCOPES,
     access_type: 'offline',
-    prompt: 'consent',
+    prompt: 'consent select_account',
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+export function buildDriveOAuthUrl({ clientId, redirectUri }) {
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: DRIVE_OAUTH_SCOPES,
+    access_type: 'offline',
+    prompt: 'consent select_account',
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+export async function getGoogleAccessToken({ clientId, clientSecret, refreshToken, label = 'Google' }) {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: 'refresh_token',
+  });
+
+  const res = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error_description || data?.error || `${label} token refresh failed (${res.status})`);
+  }
+
+  if (!data.access_token) {
+    throw new Error(`${label} token refresh returned no access_token.`);
+  }
+
+  return data.access_token;
+}
+
+export function getDriveOAuthConfig() {
+  const clientId = process.env.YOUTUBE_CLIENT_ID || process.env.GOOGLE_DRIVE_CLIENT_ID || '';
+  const clientSecret = process.env.YOUTUBE_CLIENT_SECRET || process.env.GOOGLE_DRIVE_CLIENT_SECRET || '';
+  const refreshToken =
+    process.env.GOOGLE_DRIVE_REFRESH_TOKEN ||
+    process.env.YOUTUBE_REFRESH_TOKEN ||
+    '';
+
+  return { clientId, clientSecret, refreshToken };
+}
+
+export function assertDriveOAuthConfig() {
+  const { clientId, clientSecret, refreshToken } = getDriveOAuthConfig();
+  const missing = [];
+  if (!clientId) missing.push('YOUTUBE_CLIENT_ID');
+  if (!clientSecret) missing.push('YOUTUBE_CLIENT_SECRET');
+  if (!process.env.GOOGLE_DRIVE_REFRESH_TOKEN) missing.push('GOOGLE_DRIVE_REFRESH_TOKEN');
+  if (!refreshToken) missing.push('GOOGLE_DRIVE_REFRESH_TOKEN');
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing Drive OAuth env: ${[...new Set(missing)].join(', ')}. Run npm run drive:oauth-setup once with your normal Gmail (not Brand Account).`,
+    );
+  }
+}
+
+export async function getDriveAccessToken() {
+  assertDriveOAuthConfig();
+  const { clientId, clientSecret, refreshToken } = getDriveOAuthConfig();
+  return getGoogleAccessToken({
+    clientId,
+    clientSecret,
+    refreshToken,
+    label: 'Drive',
+  });
 }

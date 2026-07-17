@@ -94,6 +94,27 @@ export function assertYouTubeShortConfig() {
   }
 }
 
+export function assertDriveYouTubeConfig() {
+  const missing = [];
+  if (!process.env.YOUTUBE_CLIENT_ID) missing.push('YOUTUBE_CLIENT_ID');
+  if (!process.env.YOUTUBE_CLIENT_SECRET) missing.push('YOUTUBE_CLIENT_SECRET');
+  if (!process.env.YOUTUBE_REFRESH_TOKEN) missing.push('YOUTUBE_REFRESH_TOKEN');
+  if (!process.env.GOOGLE_DRIVE_REFRESH_TOKEN) missing.push('GOOGLE_DRIVE_REFRESH_TOKEN');
+  if (!process.env.GOOGLE_DRIVE_WATCH_FOLDER_ID) missing.push('GOOGLE_DRIVE_WATCH_FOLDER_ID');
+
+  const geminiKey =
+    process.env.GEMINI_API_KEY?.trim() ||
+    process.env.GEMINI_API_KEY_SHORT?.trim() ||
+    process.env.GEMINI_API_KEYS?.trim();
+  if (!geminiKey) missing.push('GEMINI_API_KEY');
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required env: ${missing.join(', ')}. YouTube: npm run youtube:oauth-setup · Drive: npm run drive:oauth-setup (normal Gmail, not Brand Account).`,
+    );
+  }
+}
+
 export function getSupabaseReadKey() {
   return pipelineConfig.supabaseServiceRoleKey || pipelineConfig.supabaseAnonKey;
 }

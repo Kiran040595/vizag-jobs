@@ -1,4 +1,5 @@
-# Sets YouTube GitHub Actions secrets from .env.local (requires: gh auth login)
+# Sets YouTube (+ optional Drive / Gemini) GitHub Actions secrets from .env.local
+# Requires: gh auth login
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $envFile = Join-Path $repoRoot '.env.local'
@@ -25,6 +26,8 @@ foreach ($name in $required) {
   }
 }
 
+$optional = @('GOOGLE_DRIVE_REFRESH_TOKEN', 'GOOGLE_DRIVE_WATCH_FOLDER_ID', 'GEMINI_API_KEY', 'GEMINI_API_KEYS')
+
 gh auth status | Out-Null
 if ($LASTEXITCODE -ne 0) {
   Write-Error "GitHub CLI not logged in. Run: gh auth login"
@@ -32,6 +35,18 @@ if ($LASTEXITCODE -ne 0) {
 
 Set-Location $repoRoot
 foreach ($name in $required) {
+  Write-Host "Setting secret $name ..."
+  $vars[$name] | gh secret set $name
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to set $name"
+  }
+}
+
+foreach ($name in $optional) {
+  if (-not $vars[$name]) {
+    Write-Host "Skipping optional secret $name (not in .env.local)"
+    continue
+  }
   Write-Host "Setting secret $name ..."
   $vars[$name] | gh secret set $name
   if ($LASTEXITCODE -ne 0) {

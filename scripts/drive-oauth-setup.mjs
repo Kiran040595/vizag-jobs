@@ -1,23 +1,31 @@
 #!/usr/bin/env node
 /**
- * One-time helper to obtain a YouTube refresh token for Short uploads.
+ * One-time helper to obtain a Google Drive refresh token.
  *
- * For Brand Account channels (e.g. Student Needs), sign in with the manager
- * Gmail and choose the Brand Account when Google asks which channel to use.
+ * Use your normal Gmail account that owns the Drive watch folder
+ * (NOT a YouTube Brand Account — Brand Accounts have no Drive).
  *
- * Drive uses a separate token: npm run drive:oauth-setup
+ * Usage:
+ *   1. Enable Google Drive API in Google Cloud
+ *   2. Same OAuth client as YouTube is fine
+ *   3. Run: npm run drive:oauth-setup
  */
 
 import http from 'node:http';
 import { URL } from 'node:url';
 
-import { buildYouTubeOAuthUrl, exchangeAuthorizationCode } from './lib/youtube-upload.mjs';
+import { buildDriveOAuthUrl, exchangeAuthorizationCode } from './lib/youtube-upload.mjs';
 import { loadEnvFile } from './lib/youtube-oauth-env.mjs';
 
 const env = loadEnvFile();
-const clientId = env.YOUTUBE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID || '';
-const clientSecret = env.YOUTUBE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET || '';
-const redirectUri = env.YOUTUBE_REDIRECT_URI || process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:8765/oauth2callback';
+const clientId = env.YOUTUBE_CLIENT_ID || env.GOOGLE_DRIVE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID || '';
+const clientSecret =
+  env.YOUTUBE_CLIENT_SECRET || env.GOOGLE_DRIVE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET || '';
+const redirectUri =
+  env.GOOGLE_DRIVE_REDIRECT_URI ||
+  env.YOUTUBE_REDIRECT_URI ||
+  process.env.YOUTUBE_REDIRECT_URI ||
+  'http://localhost:8765/oauth2callback';
 const port = Number(new URL(redirectUri).port || 8765);
 
 if (!clientId || !clientSecret) {
@@ -25,14 +33,14 @@ if (!clientId || !clientSecret) {
   process.exit(1);
 }
 
-const authUrl = buildYouTubeOAuthUrl({ clientId, redirectUri });
+const authUrl = buildDriveOAuthUrl({ clientId, redirectUri });
 
-console.log('\nYouTube OAuth setup\n');
-console.log('1. Open this URL and sign in with the account that manages your channel:\n');
+console.log('\nGoogle Drive OAuth setup (separate from YouTube)\n');
+console.log('IMPORTANT: Sign in with your normal Gmail that owns the Drive folder.');
+console.log('Do NOT pick the YouTube Brand Account (Student Needs) — Brand Accounts have no Drive.\n');
+console.log('1. Open this URL in your browser:\n');
 console.log(authUrl);
-console.log('\n2. If asked, choose the Brand Account / channel (e.g. Student Needs).');
-console.log('3. Approve YouTube access. You will be redirected to localhost.\n');
-console.log('Note: Drive needs a separate login: npm run drive:oauth-setup\n');
+console.log('\n2. Approve Drive access. You will be redirected to localhost.\n');
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -69,19 +77,17 @@ const server = http.createServer(async (req, res) => {
     });
 
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('<h1>YouTube connected</h1><p>You can close this tab and return to the terminal.</p>');
+    res.end('<h1>Google Drive connected</h1><p>You can close this tab and return to the terminal.</p>');
 
-    console.log('\nSuccess. Add these to .env.local and GitHub Actions secrets:\n');
-    console.log(`YOUTUBE_CLIENT_ID=${clientId}`);
-    console.log(`YOUTUBE_CLIENT_SECRET=${clientSecret}`);
-    console.log(`YOUTUBE_REFRESH_TOKEN=${tokens.refresh_token || '(missing — revoke app access and run again with prompt=consent)'}`);
+    console.log('\nSuccess. Add this to .env.local and GitHub Actions secrets:\n');
+    console.log(`GOOGLE_DRIVE_REFRESH_TOKEN=${tokens.refresh_token || '(missing — revoke app access and run again)'}`);
     if (tokens.access_token) {
       console.log('\n(access token expires quickly; keep the refresh token)');
     }
+    console.log('\nKeep your existing YOUTUBE_REFRESH_TOKEN for the Brand Account / channel.');
     console.log('\nThen test with:');
-    console.log('  AUTO_YOUTUBE_SHORT_DRY_RUN=true npm run auto:youtube-short');
-    console.log('  npm run auto:youtube-short');
-    console.log('\nFor Drive → Shorts, also run: npm run drive:oauth-setup\n');
+    console.log('  AUTO_DRIVE_YT_DRY_RUN=true npm run auto:drive-youtube-short');
+    console.log('  npm run auto:drive-youtube-short\n');
 
     server.close();
     process.exit(0);

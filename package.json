@@ -13,7 +13,9 @@
     "auto:linkedin-posts": "AUTO_FETCH_CHANNEL=linkedin_posts node scripts/auto-external-pipeline.mjs",
     "auto:daily-blog": "node scripts/generate-daily-blog.mjs",
     "auto:youtube-short": "node scripts/generate-daily-youtube-short.mjs",
+    "auto:drive-youtube-short": "node scripts/upload-drive-youtube-shorts.mjs",
     "youtube:oauth-setup": "node scripts/youtube-oauth-setup.mjs",
+    "drive:oauth-setup": "node scripts/drive-oauth-setup.mjs",
     "prune:jobs": "node scripts/prune-stale-jobs.mjs"
   },
   "dependencies": {
