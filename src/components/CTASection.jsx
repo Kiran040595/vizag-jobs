@@ -44,16 +44,16 @@ export default function CTASection() {
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Get the latest job updates by email or browse new openings anytime.
           </p>
-          <div className="mt-5 flex flex-nowrap items-center gap-3 overflow-x-auto">
+          <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <a
               href={emailSubscribeHref}
-              className="inline-flex whitespace-nowrap rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:w-auto sm:py-2.5"
             >
               Subscribe by Email
             </a>
             <Link
               to="/jobs"
-              className="inline-flex whitespace-nowrap rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 sm:w-auto sm:py-2.5"
             >
               Browse Latest Jobs
             </Link>
@@ -61,7 +61,7 @@ export default function CTASection() {
               href="https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 sm:w-auto sm:py-2.5"
             >
               <svg
                 aria-hidden="true"

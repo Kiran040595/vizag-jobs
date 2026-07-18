@@ -48,7 +48,7 @@ export default function BranchJobsInVizagPage({ categoryId }) {
       />
       <Navbar />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-3 py-5 pb-mobile-chrome sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">{config.headline}</h1>
           <p className="mt-4 text-lg text-slate-600">{config.subheadline}</p>

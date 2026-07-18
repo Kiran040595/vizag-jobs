@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   CATEGORY_OPTIONS,
   FRESHNESS_OPTIONS,
@@ -19,7 +20,7 @@ function FilterPill({ id, label, current, onSelect, color = 'blue' }) {
       type="button"
       onClick={() => onSelect(id)}
       aria-pressed={isOn}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+      className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition sm:px-3 sm:py-1.5 sm:text-xs ${
         isOn ? PILL_ON_COLOR[color] : PILL_OFF
       }`}
     >
@@ -30,13 +31,13 @@ function FilterPill({ id, label, current, onSelect, color = 'blue' }) {
 
 function ActiveFilterChip({ label, onRemove }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800">
       {label}
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${label} filter`}
-        className="rounded-full p-0.5 text-blue-700 transition hover:bg-blue-200 hover:text-blue-900"
+        className="rounded-full p-1 text-blue-700 transition hover:bg-blue-200 hover:text-blue-900"
       >
         <svg
           className="h-3 w-3"
@@ -53,6 +54,19 @@ function ActiveFilterChip({ label, onRemove }) {
   );
 }
 
+function PillRow({ children, label }) {
+  return (
+    <div>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <div className="mobile-chip-scroll sm:flex sm:flex-wrap sm:overflow-visible">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const labelFor = (id, options) => options.find((o) => o.id === id)?.label ?? id;
 
 /**
@@ -61,12 +75,8 @@ const labelFor = (id, options) => options.find((o) => o.id === id)?.label ?? id;
  * (job type, freshness) and surfaces removable chips for active filters so
  * the user can always see — and undo — what's applied.
  *
- * Props:
- * - filters: { q, category, jobType, freshness }
- * - onUpdate(partial): merges into filters, resets page to 1
- * - onClearAll(): resets all filters
- * - resultCount: number — shown in the "X jobs" pill
- * - isRefreshing: optional boolean — renders a subtle "Updating..." spinner
+ * On mobile the full pill grids collapse behind a "Filters" toggle so the
+ * job list stays above the fold.
  */
 export default function JobFilters({
   filters,
@@ -76,11 +86,84 @@ export default function JobFilters({
   isRefreshing = false,
 }) {
   const active = isAnyFilterActive(filters);
+  // Start collapsed on mobile so jobs stay above the fold; user can expand.
+  // Active filter chips remain visible even when collapsed.
+  const [expanded, setExpanded] = useState(false);
+
+  const activeChips = (
+    <>
+      {filters.q?.trim() ? (
+        <ActiveFilterChip
+          label={`Search: "${filters.q.trim()}"`}
+          onRemove={() => onUpdate({ q: '' })}
+        />
+      ) : null}
+      {filters.category !== 'all' ? (
+        <ActiveFilterChip
+          label={labelFor(filters.category, CATEGORY_OPTIONS)}
+          onRemove={() => onUpdate({ category: 'all' })}
+        />
+      ) : null}
+      {filters.jobType !== 'all' ? (
+        <ActiveFilterChip
+          label={labelFor(filters.jobType, JOB_TYPE_OPTIONS)}
+          onRemove={() => onUpdate({ jobType: 'all' })}
+        />
+      ) : null}
+      {filters.freshness !== 'all' ? (
+        <ActiveFilterChip
+          label={labelFor(filters.freshness, FRESHNESS_OPTIONS)}
+          onRemove={() => onUpdate({ freshness: 'all' })}
+        />
+      ) : null}
+    </>
+  );
+
+  const filterPanels = (
+    <div className="grid gap-4 sm:gap-5">
+      <PillRow label="Category / field">
+        {CATEGORY_OPTIONS.map((opt) => (
+          <FilterPill
+            key={opt.id}
+            id={opt.id}
+            label={opt.label}
+            current={filters.category}
+            onSelect={(next) => onUpdate({ category: next })}
+          />
+        ))}
+      </PillRow>
+
+      <PillRow label="Job type">
+        {JOB_TYPE_OPTIONS.map((opt) => (
+          <FilterPill
+            key={opt.id}
+            id={opt.id}
+            label={opt.label}
+            current={filters.jobType}
+            onSelect={(next) => onUpdate({ jobType: next })}
+          />
+        ))}
+      </PillRow>
+
+      <PillRow label="Posted">
+        {FRESHNESS_OPTIONS.map((opt) => (
+          <FilterPill
+            key={opt.id}
+            id={opt.id}
+            label={opt.label}
+            current={filters.freshness}
+            onSelect={(next) => onUpdate({ freshness: next })}
+            color="emerald"
+          />
+        ))}
+      </PillRow>
+    </div>
+  );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Refine results</p>
           <p className="mt-1 text-sm text-slate-700">
             <span className="font-semibold text-slate-900">{resultCount}</span>{' '}
@@ -105,100 +188,59 @@ export default function JobFilters({
             ) : null}
           </p>
         </div>
-        {active ? (
+
+        <div className="flex flex-wrap items-center gap-2">
+          {active ? (
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            >
+              Clear all
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={onClearAll}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 sm:hidden"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
           >
-            Clear all filters
+            {expanded ? 'Hide filters' : 'Show filters'}
+            <svg
+              className={`h-3.5 w-3.5 transition ${expanded ? 'rotate-180' : ''}`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
           </button>
-        ) : null}
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:gap-5">
-        <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            Category / field
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORY_OPTIONS.map((opt) => (
-              <FilterPill
-                key={opt.id}
-                id={opt.id}
-                label={opt.label}
-                current={filters.category}
-                onSelect={(next) => onUpdate({ category: next })}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            Job type
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {JOB_TYPE_OPTIONS.map((opt) => (
-              <FilterPill
-                key={opt.id}
-                id={opt.id}
-                label={opt.label}
-                current={filters.jobType}
-                onSelect={(next) => onUpdate({ jobType: next })}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            Posted
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {FRESHNESS_OPTIONS.map((opt) => (
-              <FilterPill
-                key={opt.id}
-                id={opt.id}
-                label={opt.label}
-                current={filters.freshness}
-                onSelect={(next) => onUpdate({ freshness: next })}
-                color="emerald"
-              />
-            ))}
-          </div>
         </div>
       </div>
 
       {active ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             Active:
           </span>
-          {filters.q?.trim() ? (
-            <ActiveFilterChip
-              label={`Search: "${filters.q.trim()}"`}
-              onRemove={() => onUpdate({ q: '' })}
-            />
-          ) : null}
-          {filters.category !== 'all' ? (
-            <ActiveFilterChip
-              label={labelFor(filters.category, CATEGORY_OPTIONS)}
-              onRemove={() => onUpdate({ category: 'all' })}
-            />
-          ) : null}
-          {filters.jobType !== 'all' ? (
-            <ActiveFilterChip
-              label={labelFor(filters.jobType, JOB_TYPE_OPTIONS)}
-              onRemove={() => onUpdate({ jobType: 'all' })}
-            />
-          ) : null}
-          {filters.freshness !== 'all' ? (
-            <ActiveFilterChip
-              label={labelFor(filters.freshness, FRESHNESS_OPTIONS)}
-              onRemove={() => onUpdate({ freshness: 'all' })}
-            />
-          ) : null}
+          {activeChips}
+        </div>
+      ) : null}
+
+      <div className={`mt-4 ${expanded ? 'block' : 'hidden'} sm:block`}>
+        {filterPanels}
+      </div>
+
+      {active ? (
+        <div className="mt-4 hidden flex-wrap items-center gap-2 border-t border-slate-100 pt-3 sm:flex">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            Active:
+          </span>
+          {activeChips}
         </div>
       ) : null}
     </section>

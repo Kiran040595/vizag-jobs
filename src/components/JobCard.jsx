@@ -46,7 +46,7 @@ const JobCard = ({
       <button
         type="button"
         onClick={toggle}
-        className={`absolute right-3 top-3 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:right-4 sm:top-4 ${
+        className={`absolute right-2.5 top-2.5 z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:right-4 sm:top-4 sm:h-9 sm:w-9 ${
           saved
             ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100'
             : 'border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600'

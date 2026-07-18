@@ -261,8 +261,8 @@ export default function JobDetailsPage() {
         structuredData={structuredData}
       />
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+      <main className="mx-auto w-full max-w-5xl px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">
+        <Link to="/" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-600 hover:text-blue-700">
           ← Back to jobs
         </Link>
 
@@ -300,15 +300,15 @@ export default function JobDetailsPage() {
         ) : null}
 
         {job ? (
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:mt-6 sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">{job.title}</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl font-extrabold leading-snug text-slate-900 sm:text-3xl">{job.title}</h1>
                 <p className="mt-1 text-sm text-slate-600 sm:text-base">
                   {displayCompanyName(job.company)} · {displayLocation(job.location)}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="hidden flex-wrap items-center gap-2 sm:flex">
                 {jobSupportsApply(job) ? (
                   <StudentApplyButton
                     applyLink={job.applyLink}
@@ -322,7 +322,11 @@ export default function JobDetailsPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2 sm:hidden">
+              <JobShareButtons job={job} />
+            </div>
+
+            <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm text-slate-700 sm:grid-cols-2 sm:p-4">
               <p><span className="font-semibold text-slate-900">Category:</span> {displayJobCategory(job.category)}</p>
               <p><span className="font-semibold text-slate-900">Job Type:</span> {displayJobType(job.jobType)}</p>
               {workModeLabel ? (
@@ -423,6 +427,20 @@ export default function JobDetailsPage() {
 
         {job ? <SimilarJobs job={job} /> : null}
       </main>
+
+      {job && jobSupportsApply(job) ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-8px_30px_rgba(15,23,42,0.12)] backdrop-blur sm:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <StudentApplyButton
+            applyLink={job.applyLink}
+            applyMode={job.applyMode}
+            jobId={job.id}
+            jobPath={jobDetailPath}
+            alreadyApplied={Boolean(existingApplication)}
+            className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-blue-700"
+          />
+        </div>
+      ) : null}
+
       <Footer />
     </div>
   );

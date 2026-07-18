@@ -29,7 +29,8 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
         <Link
           to="/student/profile"
           onClick={handleNavigate}
-          className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700"
+          className="max-w-[7.5rem] truncate rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-xs font-semibold text-indigo-700 sm:max-w-[10rem]"
+          title={profileLabel}
         >
           {profileLabel}
         </Link>
@@ -37,18 +38,18 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
     }
 
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Link
           to={loginPath}
           onClick={handleNavigate}
-          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700"
+          className="rounded-xl border border-slate-200 px-2.5 py-2 text-xs font-semibold text-slate-700"
         >
           Sign in
         </Link>
         <Link
           to={registerPath}
           onClick={handleNavigate}
-          className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white"
+          className="rounded-xl bg-indigo-600 px-2.5 py-2 text-xs font-semibold text-white"
         >
           Sign up
         </Link>
