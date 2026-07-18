@@ -120,7 +120,7 @@ export default function JobFilters({
   );
 
   const filterPanels = (
-    <div className="grid gap-4 sm:gap-5">
+    <div className="grid gap-4 lg:gap-5">
       <PillRow label="Category / field">
         {CATEGORY_OPTIONS.map((opt) => (
           <FilterPill
@@ -133,35 +133,37 @@ export default function JobFilters({
         ))}
       </PillRow>
 
-      <PillRow label="Job type">
-        {JOB_TYPE_OPTIONS.map((opt) => (
-          <FilterPill
-            key={opt.id}
-            id={opt.id}
-            label={opt.label}
-            current={filters.jobType}
-            onSelect={(next) => onUpdate({ jobType: next })}
-          />
-        ))}
-      </PillRow>
+      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+        <PillRow label="Job type">
+          {JOB_TYPE_OPTIONS.map((opt) => (
+            <FilterPill
+              key={opt.id}
+              id={opt.id}
+              label={opt.label}
+              current={filters.jobType}
+              onSelect={(next) => onUpdate({ jobType: next })}
+            />
+          ))}
+        </PillRow>
 
-      <PillRow label="Posted">
-        {FRESHNESS_OPTIONS.map((opt) => (
-          <FilterPill
-            key={opt.id}
-            id={opt.id}
-            label={opt.label}
-            current={filters.freshness}
-            onSelect={(next) => onUpdate({ freshness: next })}
-            color="emerald"
-          />
-        ))}
-      </PillRow>
+        <PillRow label="Posted">
+          {FRESHNESS_OPTIONS.map((opt) => (
+            <FilterPill
+              key={opt.id}
+              id={opt.id}
+              label={opt.label}
+              current={filters.freshness}
+              onSelect={(next) => onUpdate({ freshness: next })}
+              color="emerald"
+            />
+          ))}
+        </PillRow>
+      </div>
     </div>
   );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5">
+    <section className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5 lg:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Refine results</p>
