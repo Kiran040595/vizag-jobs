@@ -4,9 +4,15 @@ const RESUME_BUCKET = 'student-resumes';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const CONTENT_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
 const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Max-Age': '86400',
 };
@@ -21,6 +27,16 @@ function textResponse(message: string, status = 400) {
 function fileNameFromPath(path: string) {
   const base = path.split('/').pop() || 'resume';
   return base.replace(/[^\w.\-]+/g, '_') || 'resume';
+}
+
+function contentTypeForFileName(fileName: string) {
+  const extension = fileName.includes('.') ? fileName.split('.').pop()!.toLowerCase() : '';
+  return CONTENT_TYPES[extension] || 'application/octet-stream';
+}
+
+function contentDisposition(fileName: string) {
+  const safe = fileName.replace(/"/g, '');
+  return `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
 }
 
 Deno.serve(async (req) => {
@@ -64,24 +80,55 @@ Deno.serve(async (req) => {
     return textResponse('No resume is available for this link.', 404);
   }
 
-  // Fresh short-lived URL on every click so Excel links never "expire".
-  const { data: signed, error: signError } = await supabaseAdmin.storage
-    .from(RESUME_BUCKET)
-    .createSignedUrl(resumePath, 60 * 60, {
-      download: fileNameFromPath(resumePath),
-    });
+  const fileName = fileNameFromPath(resumePath);
 
-  if (signError || !signed?.signedUrl) {
-    console.error('resume-share sign failed:', signError?.message);
+  // Legacy site middleware fetches this function with an Authorization header and
+  // expects a 302 to a storage signed URL. Keep that path until the middleware
+  // deploy that redirects browsers here directly is live.
+  const legacyMiddleware = Boolean(req.headers.get('authorization'));
+  if (legacyMiddleware) {
+    const { data: signed, error: signError } = await supabaseAdmin.storage
+      .from(RESUME_BUCKET)
+      .createSignedUrl(resumePath, 60 * 60, {
+        download: fileName,
+      });
+
+    if (signError || !signed?.signedUrl) {
+      console.error('resume-share sign failed:', signError?.message);
+      return textResponse('Could not open resume file.', 500);
+    }
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        Location: signed.signedUrl,
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
+  // Browser / Excel: stream the file so clients don't need a second hop to storage.
+  const { data: fileBlob, error: downloadError } = await supabaseAdmin.storage
+    .from(RESUME_BUCKET)
+    .download(resumePath);
+
+  if (downloadError || !fileBlob) {
+    console.error('resume-share download failed:', downloadError?.message);
     return textResponse('Could not open resume file.', 500);
   }
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      ...corsHeaders,
-      Location: signed.signedUrl,
-      'Cache-Control': 'no-store',
-    },
-  });
+  const headers = {
+    ...corsHeaders,
+    'Content-Type': contentTypeForFileName(fileName),
+    'Content-Disposition': contentDisposition(fileName),
+    'Cache-Control': 'no-store',
+    'Content-Length': String(fileBlob.size),
+  };
+
+  if (req.method === 'HEAD') {
+    return new Response(null, { status: 200, headers });
+  }
+
+  return new Response(fileBlob.stream(), { status: 200, headers });
 });
