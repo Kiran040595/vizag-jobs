@@ -61,6 +61,10 @@
   ],
   "rewrites": [
     {
+      "source": "/r/:token",
+      "destination": "/api/r/:token"
+    },
+    {
       "source": "/((?!api/|r/|assets/|favicon\\.|robots\\.txt|sitemap\\.xml|manifest\\.|sw\\.js|workbox-|registerSW\\.|.*\\.(?:js|css|map|png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf|eot|json|xml|txt|webmanifest|html)).*)",
       "destination": "/index.html"
     }

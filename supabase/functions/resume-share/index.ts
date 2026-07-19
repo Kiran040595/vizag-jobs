@@ -82,33 +82,8 @@ Deno.serve(async (req) => {
 
   const fileName = fileNameFromPath(resumePath);
 
-  // Legacy site middleware fetches this function with an Authorization header and
-  // expects a 302 to a storage signed URL. Keep that path until the middleware
-  // deploy that redirects browsers here directly is live.
-  const legacyMiddleware = Boolean(req.headers.get('authorization'));
-  if (legacyMiddleware) {
-    const { data: signed, error: signError } = await supabaseAdmin.storage
-      .from(RESUME_BUCKET)
-      .createSignedUrl(resumePath, 60 * 60, {
-        download: fileName,
-      });
-
-    if (signError || !signed?.signedUrl) {
-      console.error('resume-share sign failed:', signError?.message);
-      return textResponse('Could not open resume file.', 500);
-    }
-
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...corsHeaders,
-        Location: signed.signedUrl,
-        'Cache-Control': 'no-store',
-      },
-    });
-  }
-
-  // Browser / Excel: stream the file so clients don't need a second hop to storage.
+  // Always stream the file. The site proxies this through /api/r/:token so Excel
+  // and browsers stay on jobsinvizag.in instead of following off-site redirects.
   const { data: fileBlob, error: downloadError } = await supabaseAdmin.storage
     .from(RESUME_BUCKET)
     .download(resumePath);

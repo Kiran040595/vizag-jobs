@@ -42,7 +42,6 @@ export const config = {
     '/privacy-policy',
     '/terms-of-service',
     '/disclaimer',
-    '/r/:token',
   ],
 };
 
@@ -416,37 +415,10 @@ const handleHomePage = async (env, request) => {
   });
 };
 
-const handleResumeShareLink = async (token, env) => {
-  if (!UUID_PATTERN.test(token)) {
-    return new Response('Invalid resume link.', {
-      status: 400,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
-    });
-  }
-
-  if (!env.supabaseUrl) {
-    return new Response('Resume sharing is not configured.', {
-      status: 500,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
-    });
-  }
-
-  // Send browsers straight to the public edge function, which streams the file.
-  // Avoids a fragile second hop to a short-lived storage signed URL (breaks in Excel).
-  const target = new URL(`${env.supabaseUrl.replace(/\/+$/, '')}/functions/v1/resume-share`);
-  target.searchParams.set('t', token);
-  return Response.redirect(target.toString(), 302);
-};
-
 export default async function middleware(request) {
   const url = new URL(request.url);
   const env = getEnvConfig();
   const path = url.pathname.replace(/\/+$/, '') || '/';
-
-  const resumeShareMatch = path.match(/^\/r\/([^/]+)$/);
-  if (resumeShareMatch) {
-    return handleResumeShareLink(decodeURIComponent(resumeShareMatch[1]), env);
-  }
 
   if (path === '/') {
     const category = (url.searchParams.get('category') || '').toLowerCase().trim();
