@@ -1,0 +1,4 @@
+# JobsInVizag.in ads.txt
+# Set VITE_ADSENSE_CLIENT_ID=ca-pub-XXXXXXXX in .env / Vercel, then rebuild.
+# Example:
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

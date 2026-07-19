@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getJobDetailPath } from '../src/lib/jobRoutes.js';
 import { getMinPostedAtIsoForPublicDisplay } from '../src/lib/jobDisplayWindow.js';
 import { JOB_CATEGORY_PAGES } from '../src/lib/jobCategoryPages.js';
+import { isJobExpired } from '../src/lib/jobPostingSchema.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -137,7 +138,7 @@ const fetchPublishedJobs = async () => {
 
     const { data, error } = await supabase
       .from(jobsTable)
-      .select('id, slug, title, company, category, job_type, work_mode, is_fresher, short_description, description, skills, source_name, posted_at, updated_at, status')
+      .select('id, slug, title, company, category, job_type, work_mode, is_fresher, short_description, description, skills, source_name, posted_at, expires_at, updated_at, status')
       .eq('status', 'published')
       .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
       .not('slug', 'is', null)
@@ -148,7 +149,8 @@ const fetchPublishedJobs = async () => {
       throw new Error(`Failed to fetch jobs for sitemap: ${error.message}`);
     }
 
-    const currentBatch = (data || []).filter((job) => job.slug);
+    // Keep sitemap aligned with indexable inventory (skip expired / soft-404 candidates).
+    const currentBatch = (data || []).filter((job) => job.slug && !isJobExpired(job));
     jobs.push(...currentBatch);
 
     if (currentBatch.length < PAGE_SIZE) {

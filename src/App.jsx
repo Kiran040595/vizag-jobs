@@ -181,6 +181,18 @@ function App() {
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
+      <Route path="/jobs" element={<JobsInVizagPage />} />
+      <Route path="/saved-jobs" element={<SavedJobsPage />} />
+      <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
+      <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
+      <Route path="/jobs/part-time" element={<PartTimeJobsVizagPage />} />
+      {JOB_CATEGORY_PAGES.map((page) => (
+        <Route
+          key={page.id}
+          path={page.path}
+          element={<BranchJobsInVizagPage categoryId={page.id} />}
+        />
+      ))}
       <Route
         path="/jobs/:jobSegment/:jobSlug"
         element={(
@@ -205,18 +217,6 @@ function App() {
           </JobDetailsAuthGate>
         )}
       />
-      <Route path="/jobs" element={<JobsInVizagPage />} />
-      <Route path="/saved-jobs" element={<SavedJobsPage />} />
-      <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
-      <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
-      <Route path="/jobs/part-time" element={<PartTimeJobsVizagPage />} />
-      {JOB_CATEGORY_PAGES.map((page) => (
-        <Route
-          key={page.id}
-          path={page.path}
-          element={<BranchJobsInVizagPage categoryId={page.id} />}
-        />
-      ))}
       {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([from, to]) => (
         <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}

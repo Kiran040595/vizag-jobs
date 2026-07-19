@@ -13,30 +13,30 @@ export default function AboutPage() {
     <LegalPageLayout
       title="About Us"
       seoTitle="About Us | Jobs in Vizag"
-      description="Learn who runs JobsInVizag.in — an independent job board for Visakhapatnam, operated from Andhra Pradesh, India."
+      description="JobsInVizag.in is a Visakhapatnam job portal where employers post openings, students apply on-site, track application status, and browse featured local jobs."
       canonical="/about"
       showLastUpdated={false}
     >
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-slate-900">Welcome to JobsInVizag.in</h2>
         <p>
-          {SITE_LEGAL_NAME} is a regional job portal built for one purpose: making it easier for people in
-          Visakhapatnam to find genuine, relevant job opportunities — without wading through national job
-          boards that bury local listings under thousands of irrelevant results.
+          {SITE_LEGAL_NAME} is a regional job portal for Visakhapatnam. Employers post openings based on
+          their hiring requirements, and students and job seekers apply directly on our website — then track
+          the status of those applications in their account.
         </p>
       </section>
 
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-slate-900">Why We Started</h2>
         <p>
-          Vizag has a growing job market across IT, manufacturing, government, healthcare, and local
-          businesses — but most large job platforms aren&apos;t built with this city in mind. Listings get
-          lost, search filters don&apos;t reflect local context, and job seekers end up scrolling endlessly
-          to find roles that are actually based here.
+          Vizag has a growing job market across IT, manufacturing, healthcare, and local businesses — but
+          many platforms are not built around this city. Candidates struggle to find local roles, and
+          employers need a simple place to post requirements and receive applications.
         </p>
         <p>
-          {SITE_LEGAL_NAME} was created to fix that: a focused, easy-to-use platform where every listing is
-          relevant to Vizag and the surrounding region.
+          {SITE_LEGAL_NAME} was created to fix that: a focused platform where companies can post jobs for
+          Vizag, candidates can apply on-site, and both sides stay connected through clear application
+          status.
         </p>
       </section>
 
@@ -44,27 +44,34 @@ export default function AboutPage() {
         <h2 className="text-xl font-bold text-slate-900">What We Do</h2>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Curated local listings</strong> — We gather job openings from across the web and present
-            them in one place, organized specifically for Vizag job seekers.
+            <strong>Employer job posting</strong> — Companies post openings on our portal according to their
+            requirements for Visakhapatnam roles.
+          </li>
+          <li>
+            <strong>On-site student applications</strong> — Job seekers register, apply directly on{' '}
+            {SITE_LEGAL_NAME}, and view the status of applied jobs in their account.
+          </li>
+          <li>
+            <strong>Featured local jobs</strong> — We feature employer-posted roles (and other relevant local
+            openings) so candidates can discover opportunities across IT, engineering, fresher, and more.
           </li>
           <li>
             <strong>Original local guides</strong> — We publish category pages and blog articles about the
-            Vizag job market, written for local job seekers.
-          </li>
-          <li>
-            <strong>Focused discovery</strong> — Filters and categories help you find IT, fresher, part-time,
-            and other roles relevant to Visakhapatnam faster than on national job boards.
+            Vizag job market for local job seekers.
           </li>
         </ul>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900">How We Source Listings</h2>
+        <h2 className="text-xl font-bold text-slate-900">How Listings Appear on the Site</h2>
         <p>
-          We use a combination of automated tools and manual review to gather job postings from publicly
-          available sources across the internet. We do not act as the employer for any listing on this site
-          — see our <Link to="/disclaimer" className="font-semibold text-cyan-700 hover:text-cyan-800">Disclaimer</Link>{' '}
-          page for full details on how this works.
+          Most active hiring on {SITE_LEGAL_NAME} is driven by employers who post jobs on our portal. We also
+          feature selected local openings to help job seekers browse more opportunities. We are not the
+          hiring employer for those roles — see our{' '}
+          <Link to="/disclaimer" className="font-semibold text-cyan-700 hover:text-cyan-800">
+            Disclaimer
+          </Link>{' '}
+          for details.
         </p>
       </section>
 
@@ -99,15 +106,15 @@ export default function AboutPage() {
         </div>
         <p>
           {SITE_LEGAL_NAME} is operated independently by {SITE_PUBLISHER_NAME}, based in {SITE_LOCATION_CITY}.
-          We are not a recruitment agency or employer for the listings shown here — we aggregate publicly
-          available openings and present them in a format tailored to local job seekers.
+          We provide the platform for posting, applying, and tracking applications; hiring decisions remain
+          with the employer.
         </p>
       </section>
 
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-slate-900">Get in Touch</h2>
         <p>
-          Have feedback, a job to post, or found an issue with a listing? Visit our{' '}
+          Have feedback, want to post a job, or need help with an application? Visit our{' '}
           <Link to="/contact" className="font-semibold text-cyan-700 hover:text-cyan-800">
             Contact
           </Link>{' '}

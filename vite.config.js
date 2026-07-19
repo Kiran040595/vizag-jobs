@@ -18,6 +18,7 @@ export default defineConfig({
         'logo.png',
         'robots.txt',
         'sitemap.xml',
+        'ads.txt',
       ],
       manifest: {
         name: 'Jobs in Vizag',

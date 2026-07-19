@@ -14,7 +14,8 @@ const SEO = ({
   twitterTitle,
   twitterDescription,
   twitterImage,
-  structuredData
+  structuredData,
+  noindex = false,
 }) => {
   const defaultTitle = 'Jobs in Vizag | Latest Job Openings in Visakhapatnam'
   const defaultDescription = 'Jobs in Vizag — find the latest IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam. Updated daily.'
@@ -41,6 +42,7 @@ const SEO = ({
       <meta name="keywords" content={finalKeywords} />
       <meta name="application-name" content={siteName} />
       <link rel="canonical" href={finalCanonical} />
+      {noindex ? <meta name="robots" content="noindex, follow" /> : null}
 
       {/* Open Graph */}
       <meta property="og:site_name" content={siteName} />

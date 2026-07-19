@@ -5,4 +5,4 @@ export const SITE_LOCATION_CITY = 'Visakhapatnam';
 export const SITE_LOCATION_REGION = 'Andhra Pradesh, India';
 export const SITE_LOCATION_DISPLAY = `${SITE_LOCATION_CITY}, ${SITE_LOCATION_REGION}`;
 export const SITE_CONTACT_EMAIL = 'kkumardadi@gmail.com';
-export const SITE_LEGAL_LAST_UPDATED = '3 July 2026';
+export const SITE_LEGAL_LAST_UPDATED = '19 July 2026';

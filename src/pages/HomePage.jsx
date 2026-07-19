@@ -14,6 +14,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
 import { computeSiteStats } from '../lib/siteStats';
 import {
   CATEGORY_OPTIONS,
@@ -35,12 +36,20 @@ const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_M
 const CATEGORY_LABEL_TO_ID = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.label, o.id]));
 const CATEGORY_ID_TO_LABEL = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.id, o.label]));
 
+const initialBootstrapJobs = (() => {
+  try {
+    return readHomeBootstrapJobs();
+  } catch {
+    return null;
+  }
+})();
+
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => readFiltersFromSearchParams(searchParams), [searchParams]);
 
-  const [allJobs, setAllJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allJobs, setAllJobs] = useState(() => initialBootstrapJobs || []);
+  const [isLoading, setIsLoading] = useState(() => !initialBootstrapJobs?.length);
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
 
@@ -131,6 +140,29 @@ export default function HomePage() {
           console.error('Error parsing cached jobs:', err);
         }
       }
+
+      // Edge middleware left a first-paint snapshot — show it, then load the full list.
+      if (initialBootstrapJobs?.length) {
+        setAllJobs(initialBootstrapJobs);
+        setIsLoading(false);
+        setIsBackgroundRefreshing(true);
+        try {
+          const jobs = await fetchJobs({}, true);
+          if (!isMounted) return;
+          if (jobs.length > 0) {
+            setAllJobs(jobs);
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
+            setLoadError('');
+          }
+        } catch (error) {
+          if (!isMounted) return;
+          console.warn('Full job refresh after SSR bootstrap failed:', error);
+        } finally {
+          if (isMounted) setIsBackgroundRefreshing(false);
+        }
+        return;
+      }
+
       await fetchFreshJobs();
     };
 
@@ -218,7 +250,7 @@ export default function HomePage() {
       alternateName: 'Vizag Jobs',
       url: 'https://jobsinvizag.in',
       description:
-        'Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.',
+        'Find latest jobs in Vizag including IT, fresher, and private jobs in Visakhapatnam. Employers post openings; candidates apply on-site and track status.',
       potentialAction: {
         '@type': 'SearchAction',
         target: 'https://jobsinvizag.in/?q={search_term_string}',
@@ -247,7 +279,7 @@ export default function HomePage() {
       />
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-5 pb-mobile-chrome sm:gap-6 sm:px-6 sm:py-10 lg:px-8">
-        {isLoading ? <LoadingSpinner /> : null}
+        {isLoading && allJobs.length === 0 ? <LoadingSpinner /> : null}
 
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">
@@ -255,17 +287,17 @@ export default function HomePage() {
           </p>
         ) : null}
 
-        {!isLoading ? (
+        {!isLoading || allJobs.length > 0 ? (
           <>
             <JobCategoryBrowse />
             <BlogTeaserSection />
             <JobFilters
-            filters={filters}
-            onUpdate={updateFilters}
-            onClearAll={clearAllFilters}
-            resultCount={filteredJobs.length}
-            isRefreshing={isBackgroundRefreshing}
-          />
+              filters={filters}
+              onUpdate={updateFilters}
+              onClearAll={clearAllFilters}
+              resultCount={filteredJobs.length}
+              isRefreshing={isBackgroundRefreshing}
+            />
           </>
         ) : null}
 
@@ -274,15 +306,18 @@ export default function HomePage() {
           total={filteredJobs.length}
           onResetFilters={clearAllFilters}
           headerRef={listSectionRef}
+          isLoading={isLoading && allJobs.length === 0}
         />
 
-        <Pagination
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          onPageChange={handlePageChange}
-        />
+        {!isLoading || allJobs.length > 0 ? (
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        ) : null}
 
-        <StatsSection stats={siteStats} isLoading={isLoading} />
+        <StatsSection stats={siteStats} isLoading={isLoading && allJobs.length === 0} />
         <CTASection />
       </main>
 

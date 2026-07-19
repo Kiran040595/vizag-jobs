@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
     <LegalPageLayout
       title="Privacy Policy"
       seoTitle="Privacy Policy | Jobs in Vizag"
-      description="Privacy Policy for JobsInVizag.in — how we collect, use, and protect your information, including cookies and advertising."
+      description="Privacy Policy for JobsInVizag.in — how we collect and use data for employer posting, student applications, cookies, and advertising."
       canonical="/privacy-policy"
     >
       <p>
@@ -46,15 +46,15 @@ export default function PrivacyPolicyPage() {
           <li>Cookies and similar tracking technologies (see Section 4)</li>
         </ul>
 
-        <h3 className="text-lg font-semibold text-slate-800">Job listing data</h3>
+        <h3 className="text-lg font-semibold text-slate-800">Job listing and application data</h3>
         <p>
-          {SITE_LEGAL_NAME} aggregates publicly available job listings using automated tools (including Apify
-          and Firecrawl) alongside manual review. This data relates to job postings, not to individual site
-          visitors. See our{' '}
+          {SITE_LEGAL_NAME} hosts jobs posted by employers on our portal and may feature other local openings.
+          When you apply on-site, we store your application and related profile details so you can track
+          status and so employers can review candidates who applied. See our{' '}
           <Link to="/disclaimer" className="font-semibold text-cyan-700 hover:text-cyan-800">
             Disclaimer
           </Link>{' '}
-          page for more on how listings are sourced.
+          for more on how listings appear on the site.
         </p>
       </section>
 
@@ -65,9 +65,10 @@ export default function PrivacyPolicyPage() {
           <li>Operate and improve the job portal (showing relevant local listings)</li>
           <li>Respond to inquiries submitted through our Contact page</li>
           <li>Manage employer accounts and job postings submitted by employers</li>
+          <li>Process on-site job applications and show applicants their application status</li>
           <li>
-            Match student profiles with employer job requirements in Vizag and share relevant candidate
-            details with employers when students have agreed to this during registration
+            Share relevant candidate details with employers for roles students have applied to (or agreed to
+            be considered for) during registration
           </li>
           <li>Analyze site usage to improve performance and content</li>
           <li>Display relevant advertising through Google AdSense (see Section 4)</li>
@@ -92,7 +93,9 @@ export default function PrivacyPolicyPage() {
             <tbody className="divide-y divide-slate-200 bg-white">
               <tr>
                 <td className="px-4 py-3 font-medium text-slate-900">Supabase</td>
-                <td className="px-4 py-3 text-slate-700">Database and authentication for employer accounts</td>
+                <td className="px-4 py-3 text-slate-700">
+                  Database and authentication for employer accounts, student accounts, and applications
+                </td>
               </tr>
               <tr>
                 <td className="px-4 py-3 font-medium text-slate-900">Vercel</td>
@@ -109,7 +112,8 @@ export default function PrivacyPolicyPage() {
               <tr>
                 <td className="px-4 py-3 font-medium text-slate-900">Apify / Firecrawl</td>
                 <td className="px-4 py-3 text-slate-700">
-                  Automated tools used by our team to source publicly available job listing data
+                  Optional tools our team may use when researching or featuring additional public job
+                  information
                 </td>
               </tr>
             </tbody>

@@ -40,7 +40,7 @@ export default function Footer() {
         <div>
           <h3 className="text-xl font-black text-white">JobsInVizag.in</h3>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">
-            A focused local job board for Visakhapatnam — IT, civil, mechanical, engineering, fresher, and part-time roles.
+            Visakhapatnam job portal — employers post openings, students apply on-site and track status, plus featured local roles.
           </p>
           <a
             href="https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/"

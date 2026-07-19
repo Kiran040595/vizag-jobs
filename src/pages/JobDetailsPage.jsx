@@ -15,7 +15,7 @@ import {
   looksLikeStructuredJobDescription,
   stripMarkdownForPlainText,
 } from '../lib/jobDescriptionDisplay';
-import { buildJobPostingSchema } from '../lib/jobPostingSchema';
+import { buildJobPostingSchema, isJobExpired } from '../lib/jobPostingSchema';
 import { buildBreadcrumbSchema } from '../lib/breadcrumbSchema';
 import { SITE_URL } from '../lib/site';
 import { useAdminAuth } from '../hooks/useAdminAuth';
@@ -229,12 +229,15 @@ export default function JobDetailsPage() {
     [job],
   );
 
+  const jobExpired = Boolean(job && isJobExpired(job));
+
   const structuredData = useMemo(() => {
     if (!job) {
       return undefined;
     }
 
-    const jobPosting = buildJobPostingSchema(job, { siteUrl: SITE_URL });
+    // Match edge middleware: omit JobPosting when expired; keep breadcrumb.
+    const jobPosting = jobExpired ? null : buildJobPostingSchema(job, { siteUrl: SITE_URL });
     const breadcrumb = buildBreadcrumbSchema(job, { siteUrl: SITE_URL });
     const graph = [jobPosting, breadcrumb].filter(Boolean);
 
@@ -250,7 +253,7 @@ export default function JobDetailsPage() {
       '@context': 'https://schema.org',
       '@graph': graph,
     };
-  }, [job]);
+  }, [job, jobExpired]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
@@ -259,6 +262,7 @@ export default function JobDetailsPage() {
         description={jobDescription}
         canonical={job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`}
         structuredData={structuredData}
+        noindex={!job || jobExpired}
       />
       <Navbar />
       <main className="mx-auto w-full max-w-5xl px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">

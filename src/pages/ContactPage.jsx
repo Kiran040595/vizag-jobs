@@ -12,13 +12,14 @@ export default function ContactPage() {
     <LegalPageLayout
       title="Contact Us"
       seoTitle="Contact | Jobs in Vizag"
-      description={`Contact ${SITE_LEGAL_NAME} in ${SITE_LOCATION_DISPLAY} for listing corrections, feedback, partnerships, or general enquiries.`}
+      description={`Contact ${SITE_LEGAL_NAME} in ${SITE_LOCATION_DISPLAY} for listing corrections, employer posting help, student account support, or general enquiries.`}
       canonical="/contact"
       showLastUpdated={false}
     >
       <p>
-        We welcome questions, corrections, and feedback about {SITE_LEGAL_NAME}. If you found an incorrect
-        listing, want a job removed, or have a suggestion to improve the site, please reach out.
+        We welcome questions about employer job posting, student applications and status tracking, listing
+        corrections, or general feedback on {SITE_LEGAL_NAME}. If you found an incorrect listing, want a job
+        removed, or need account help, please reach out.
       </p>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -81,7 +82,7 @@ export default function ContactPage() {
       </section>
 
       <p className="text-sm text-slate-600">
-        {SITE_LEGAL_NAME} is an independent job aggregator operated by {SITE_PUBLISHER_NAME} from{' '}
+        {SITE_LEGAL_NAME} is an independent Visakhapatnam job portal operated by {SITE_PUBLISHER_NAME} from{' '}
         {SITE_LOCATION_DISPLAY}. We are not the hiring employer for listings on this site. See our{' '}
         <Link to="/disclaimer" className="font-semibold text-cyan-700 hover:text-cyan-800">
           Disclaimer

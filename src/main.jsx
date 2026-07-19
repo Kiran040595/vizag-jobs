@@ -15,6 +15,7 @@ import { EmployerAuthProvider } from './context/EmployerAuthContext.jsx'
 import { StudentAuthProvider } from './context/StudentAuthContext.jsx'
 import { CookieConsentProvider } from './context/CookieConsentContext.jsx'
 import ConditionalAnalytics from './components/ConditionalAnalytics.jsx'
+import ConditionalAdSense from './components/ConditionalAdSense.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')).render(
                 <HelmetProvider>
                   <App />
                   <ConditionalAnalytics />
+                  <ConditionalAdSense />
                 </HelmetProvider>
               </CookieConsentProvider>
             </StudentAuthProvider>
