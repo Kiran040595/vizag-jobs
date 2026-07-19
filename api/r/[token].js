@@ -36,21 +36,88 @@ function downloadPageHtml(token) {
     body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background: #f8fafc; color: #0f172a; }
     main { max-width: 28rem; margin: 0 auto; padding: 3rem 1.25rem; text-align: center; }
     h1 { font-size: 1.35rem; margin: 0 0 0.75rem; }
-    p { color: #475569; line-height: 1.5; margin: 0 0 1.5rem; }
-    a { display: inline-block; background: #06b6d4; color: #0f172a; font-weight: 700; text-decoration: none; border-radius: 0.75rem; padding: 0.85rem 1.25rem; }
-    a:hover { background: #22d3ee; }
+    p { color: #475569; line-height: 1.5; margin: 0 0 1.25rem; }
+    .status { min-height: 1.25rem; font-size: 0.95rem; color: #0e7490; margin-bottom: 1.25rem; }
+    .error { color: #b91c1c; }
+    button, a.button {
+      display: inline-block; border: 0; cursor: pointer;
+      background: #06b6d4; color: #0f172a; font-weight: 700; font-size: 1rem;
+      text-decoration: none; border-radius: 0.75rem; padding: 0.85rem 1.25rem;
+    }
+    button:hover, a.button:hover { background: #22d3ee; }
+    button:disabled { opacity: 0.7; cursor: wait; }
   </style>
 </head>
 <body>
   <main>
     <h1>Your resume is ready</h1>
-    <p>If the download does not start automatically, use the button below.</p>
-    <a id="download" href="${escapeHtml(fileUrl)}">Download resume</a>
+    <p>Tap the button if the file does not download automatically.</p>
+    <p id="status" class="status">Starting download…</p>
+    <p>
+      <button id="download" type="button">Download resume</button>
+    </p>
+    <p style="margin-top:1.5rem">
+      <a class="button" id="fallback" href="${escapeHtml(fileUrl)}" download>Open file directly</a>
+    </p>
   </main>
   <script>
-    setTimeout(function () {
-      window.location.replace(${JSON.stringify(fileUrl)});
-    }, 80);
+    (function () {
+      var fileUrl = ${JSON.stringify(fileUrl)};
+      var statusEl = document.getElementById('status');
+      var button = document.getElementById('download');
+
+      function setStatus(message, isError) {
+        statusEl.textContent = message;
+        statusEl.className = isError ? 'status error' : 'status';
+      }
+
+      function filenameFromDisposition(value) {
+        if (!value) return 'resume.pdf';
+        var utf = /filename\\*=UTF-8''([^;]+)/i.exec(value);
+        if (utf && utf[1]) {
+          try { return decodeURIComponent(utf[1].trim()); } catch (e) {}
+        }
+        var plain = /filename=\"?([^\";]+)\"?/i.exec(value);
+        return (plain && plain[1]) ? plain[1].trim() : 'resume.pdf';
+      }
+
+      async function downloadResume() {
+        button.disabled = true;
+        setStatus('Starting download…', false);
+        try {
+          var response = await fetch(fileUrl, {
+            credentials: 'omit',
+            cache: 'no-store',
+            headers: { Accept: 'application/pdf,application/octet-stream,*/*' },
+          });
+          if (!response.ok) {
+            throw new Error('Download failed (' + response.status + ').');
+          }
+          var blob = await response.blob();
+          if (!blob || !blob.size) {
+            throw new Error('The resume file was empty.');
+          }
+          var objectUrl = URL.createObjectURL(blob);
+          var link = document.createElement('a');
+          link.href = objectUrl;
+          link.download = filenameFromDisposition(response.headers.get('Content-Disposition'));
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 2000);
+          setStatus('Download started. Check your Downloads folder.', false);
+        } catch (error) {
+          setStatus((error && error.message) || 'Could not download. Use “Open file directly”.', true);
+          // Last resort: navigate to the raw file URL.
+          window.location.href = fileUrl;
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      button.addEventListener('click', function () { downloadResume(); });
+      downloadResume();
+    })();
   </script>
 </body>
 </html>`;

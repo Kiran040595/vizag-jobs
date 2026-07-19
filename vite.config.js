@@ -79,11 +79,22 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: '/index.html',
+        // Resume share + API routes must hit the network, not the SPA shell.
+        navigateFallbackDenylist: [/^\/r\//, /^\/api\//],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
         runtimeCaching: [
           {
+            // Resume downloads: never cache; never fall back to the app shell.
+            urlPattern: ({ url }) => url.pathname.startsWith('/r/') || url.pathname.startsWith('/api/r/'),
+            handler: 'NetworkOnly',
+            method: 'GET',
+          },
+          {
             // Prefer fresh HTML shell after deploys; fall back to cache offline.
-            urlPattern: ({ request }) => request.mode === 'navigate',
+            urlPattern: ({ request, url }) =>
+              request.mode === 'navigate' &&
+              !url.pathname.startsWith('/r/') &&
+              !url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'pages-cache',
