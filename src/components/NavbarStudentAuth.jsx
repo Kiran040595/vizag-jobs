@@ -3,7 +3,7 @@ import { useStudentAuth } from '../hooks/useStudentAuth';
 import { buildStudentAuthPath } from '../lib/studentApplyRedirect';
 
 const buttonBase =
-  'rounded-xl px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2';
+  'inline-flex h-9 items-center rounded-xl px-3.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2';
 
 export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
   const location = useLocation();
@@ -29,7 +29,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
         <Link
           to="/student/profile"
           onClick={handleNavigate}
-          className="max-w-[7.5rem] truncate rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-xs font-semibold text-indigo-700 sm:max-w-[10rem]"
+          className="max-w-[7.5rem] truncate rounded-xl border border-cyan-200 bg-cyan-50 px-2.5 py-2 text-xs font-semibold text-cyan-800 sm:max-w-[10rem]"
           title={profileLabel}
         >
           {profileLabel}
@@ -49,7 +49,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
         <Link
           to={registerPath}
           onClick={handleNavigate}
-          className="rounded-xl bg-indigo-600 px-2.5 py-2 text-xs font-semibold text-white"
+          className="rounded-xl bg-slate-900 px-2.5 py-2 text-xs font-semibold text-white"
         >
           Sign up
         </Link>
@@ -66,7 +66,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
           <Link
             to="/student/profile"
             onClick={handleNavigate}
-            className={`${buttonBase} border border-indigo-200 bg-indigo-50 text-center text-indigo-700 hover:bg-indigo-100`}
+            className={`${buttonBase} justify-center border border-cyan-200 bg-cyan-50 text-center text-cyan-800 hover:bg-cyan-100`}
           >
             {profileLabel}
           </Link>
@@ -76,7 +76,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
               await signOut();
               handleNavigate();
             }}
-            className={`${buttonBase} border border-slate-200 text-center text-slate-700 hover:border-slate-300 hover:bg-slate-50`}
+            className={`${buttonBase} justify-center border border-slate-200 text-center text-slate-700 hover:border-slate-300 hover:bg-slate-50`}
           >
             Sign out
           </button>
@@ -88,7 +88,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
       <div className="flex items-center gap-2">
         <Link
           to="/student/profile"
-          className={`${buttonBase} border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100`}
+          className={`${buttonBase} border border-cyan-200 bg-cyan-50 text-cyan-800 hover:bg-cyan-100`}
         >
           {profileLabel}
         </Link>
@@ -109,14 +109,14 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
         <Link
           to={loginPath}
           onClick={handleNavigate}
-          className={`${buttonBase} border border-slate-200 text-center text-slate-700 hover:border-slate-300 hover:bg-slate-50`}
+          className={`${buttonBase} justify-center border border-slate-200 text-center text-slate-700 hover:border-slate-300 hover:bg-slate-50`}
         >
           Sign in
         </Link>
         <Link
           to={registerPath}
           onClick={handleNavigate}
-          className={`${buttonBase} bg-indigo-600 text-center text-white hover:bg-indigo-700`}
+          className={`${buttonBase} justify-center bg-slate-900 text-center text-white hover:bg-slate-800`}
         >
           Sign up
         </Link>
@@ -134,7 +134,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
       </Link>
       <Link
         to={registerPath}
-        className={`${buttonBase} bg-indigo-600 text-white hover:bg-indigo-700`}
+        className={`${buttonBase} bg-slate-900 text-white hover:bg-slate-800`}
       >
         Sign up
       </Link>

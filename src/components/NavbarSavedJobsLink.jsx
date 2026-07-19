@@ -24,7 +24,7 @@ export default function NavbarSavedJobsLink({ className = '', onClick }) {
     <Link
       to="/saved-jobs"
       onClick={onClick}
-      className={`relative inline-flex items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 ${className}`}
+      className={`relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 ${className}`}
       aria-label={count > 0 ? `Saved jobs (${count})` : 'Saved jobs'}
       title="Saved jobs"
     >
