@@ -35,3 +35,7 @@ verify_jwt = false
 
 [functions.generate-daily-blog]
 verify_jwt = false
+
+[functions.admin-create-employer]
+# Auth is enforced inside the function (admin JWT in Authorization header).
+verify_jwt = false

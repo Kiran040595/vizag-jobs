@@ -6,6 +6,7 @@ import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   approveAdminJob,
+  assignJobsToEmployer,
   fetchAdminCreatedJobs,
   fetchEmployerSubmittedJobs,
   isExternalFetchSourceName,
@@ -13,6 +14,7 @@ import {
   toggleAdminJobFeatured,
   updateAdminJobStatus,
 } from '../services/adminJobs';
+import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
 
 const STATUS_STYLES = {
@@ -78,7 +80,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [searchParams] = useSearchParams();
   useAdminAuth();
   const [jobs, setJobs] = useState([]);
+  const [employers, setEmployers] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
+  const [selectedJobIds, setSelectedJobIds] = useState(() => new Set());
+  const [assignEmployerId, setAssignEmployerId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
@@ -87,12 +93,16 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'all');
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+
   useEffect(() => {
     let ignore = false;
 
     const loadJobs = async () => {
       try {
-        const data = isAdminScope ? await fetchAdminCreatedJobs() : await fetchEmployerSubmittedJobs();
+        const [data, employerRows] = await Promise.all([
+          isAdminScope ? fetchAdminCreatedJobs() : fetchEmployerSubmittedJobs(),
+          fetchAdminEmployerProfiles(),
+        ]);
         const internalPublishedIds = data
           .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
           .map((job) => job.id);
@@ -102,6 +112,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
         }
 
         setJobs(sortJobs(data));
+        setEmployers(employerRows.filter((row) => row.isActive));
         setApplicationCounts(counts);
         setLoadError('');
       } catch (error) {
@@ -143,6 +154,85 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   }, [deferredSearchTerm, jobs, statusFilter]);
 
   const pendingCount = useMemo(() => jobs.filter((job) => job.status === 'pending').length, [jobs]);
+  const selectedCount = selectedJobIds.size;
+
+  const employerLabelById = useMemo(() => {
+    const map = new Map();
+    for (const employer of employers) {
+      map.set(employer.userId, employer.companyName || employer.contactEmail || employer.userId);
+    }
+    return map;
+  }, [employers]);
+
+  const toggleJobSelected = (jobId) => {
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectFiltered = () => {
+    const filteredIds = filteredJobs.map((job) => job.id);
+    const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedJobIds.has(id));
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      if (allSelected) {
+        for (const id of filteredIds) next.delete(id);
+      } else {
+        for (const id of filteredIds) next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleAssignSelected = async () => {
+    if (selectedCount === 0 || !assignEmployerId) {
+      setLoadError('Select jobs and an employer before assigning.');
+      return;
+    }
+
+    setIsAssigning(true);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJobs = await assignJobsToEmployer({
+        jobIds: [...selectedJobIds],
+        employerUserId: assignEmployerId,
+      });
+      const employerName =
+        employerLabelById.get(assignEmployerId) || 'the selected employer';
+
+      if (isAdminScope) {
+        // Assigned jobs leave the admin-created list (they now have created_by).
+        const assignedIds = new Set(updatedJobs.map((job) => job.id));
+        setJobs((current) => current.filter((job) => !assignedIds.has(job.id)));
+      } else {
+        setJobs((current) => {
+          let next = current;
+          for (const updated of updatedJobs) {
+            next = upsertJob(next, updated);
+          }
+          return next;
+        });
+      }
+
+      setSelectedJobIds(new Set());
+      setAssignEmployerId('');
+      setNotice(
+        `Assigned ${updatedJobs.length} job${updatedJobs.length === 1 ? '' : 's'} to ${employerName}.`,
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not assign jobs.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const handleStatusChange = async (jobId, status) => {
     setBusyJobId(jobId);
@@ -219,8 +309,8 @@ export default function AdminJobsPage({ scope = 'employer' }) {
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
       description={
         isAdminScope
-          ? 'Manage jobs you posted manually from the admin form.'
-          : 'Review employer submissions, approve jobs for the public portal, or reject listings.'
+          ? 'Manage jobs you posted manually from the admin form. Assign them to employers so companies can review applications.'
+          : 'Review employer submissions, approve jobs for the public portal, or reassign ownership.'
       }
     >
       <SEO
@@ -265,6 +355,48 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           </div>
         </div>
 
+        {!isLoading && filteredJobs.length > 0 ? (
+          <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <input
+                type="checkbox"
+                checked={
+                  filteredJobs.length > 0 && filteredJobs.every((job) => selectedJobIds.has(job.id))
+                }
+                onChange={toggleSelectFiltered}
+                className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400"
+              />
+              Select filtered ({selectedCount} selected)
+            </label>
+            <label className="block min-w-[14rem] flex-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Assign to employer
+              </span>
+              <select
+                value={assignEmployerId}
+                onChange={(event) => setAssignEmployerId(event.target.value)}
+                className="mt-1 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+              >
+                <option value="">Choose employer…</option>
+                {employers.map((employer) => (
+                  <option key={employer.userId} value={employer.userId}>
+                    {employer.companyName}
+                    {employer.contactEmail ? ` · ${employer.contactEmail}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={isAssigning || selectedCount === 0 || !assignEmployerId}
+              onClick={handleAssignSelected}
+              className="h-11 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isAssigning ? 'Assigning…' : `Assign ${selectedCount || ''} job${selectedCount === 1 ? '' : 's'}`}
+            </button>
+          </div>
+        ) : null}
+
         {loadError ? (
           <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{loadError}</p>
         ) : null}
@@ -291,61 +423,78 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             {filteredJobs.map((job) => {
               const isBusy = busyJobId === job.id;
               const isPending = job.status === 'pending';
+              const isSelected = selectedJobIds.has(job.id);
+              const ownerLabel = job.created_by ? employerLabelById.get(job.created_by) : '';
 
               return (
                 <article
                   key={job.id}
-                  className={`rounded-3xl border p-5 ${isPending ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-slate-50/70'}`}
+                  className={`rounded-3xl border p-5 ${
+                    isSelected
+                      ? 'border-violet-300 bg-violet-50/40'
+                      : isPending
+                        ? 'border-blue-200 bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50/70'
+                  }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
-                        <span
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
-                            STATUS_STYLES[job.status] || STATUS_STYLES.draft
-                          }`}
-                        >
-                          {job.status}
-                        </span>
-                        {job.created_by ? (
-                          <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
-                            Employer submitted
+                    <div className="flex min-w-0 gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleJobSelected(job.id)}
+                        className="mt-1.5 h-4 w-4 shrink-0 rounded border-slate-300 text-violet-600 focus:ring-violet-400"
+                        aria-label={`Select ${job.title}`}
+                      />
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                              STATUS_STYLES[job.status] || STATUS_STYLES.draft
+                            }`}
+                          >
+                            {job.status}
                           </span>
-                        ) : isExternalFetchSourceName(job.source_name) ? (
-                          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
-                            External fetch
-                          </span>
-                        ) : (
-                          <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                            Admin created
-                          </span>
-                        )}
-                        {job.is_featured ? (
-                          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
-                            Featured
-                          </span>
+                          {job.created_by ? (
+                            <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+                              {ownerLabel ? `Owner: ${ownerLabel}` : 'Employer submitted'}
+                            </span>
+                          ) : isExternalFetchSourceName(job.source_name) ? (
+                            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
+                              External fetch
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                              Admin created
+                            </span>
+                          )}
+                          {job.is_featured ? (
+                            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
+                              Featured
+                            </span>
+                          ) : null}
+                          {job.apply_mode === 'internal' ? (
+                            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
+                              On-platform apply
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {job.company} / {job.location || 'Visakhapatnam'} / {job.category || 'No category'}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">Slug: {job.slug}</p>
+                        <p className="mt-1 text-xs text-slate-500">Posted: {formatDateTime(job.posted_at)}</p>
+                        {job.rejection_reason ? (
+                          <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                         ) : null}
-                        {job.apply_mode === 'internal' ? (
-                          <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
-                            On-platform apply
-                          </span>
+                        {job.status === 'published' && job.apply_mode === 'internal' ? (
+                          <p className="mt-2 text-sm font-semibold text-indigo-700">
+                            {applicationCounts[job.id] || 0} application
+                            {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
+                          </p>
                         ) : null}
                       </div>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {job.company} / {job.location || 'Visakhapatnam'} / {job.category || 'No category'}
-                      </p>
-                      <p className="mt-2 text-xs text-slate-500">Slug: {job.slug}</p>
-                      <p className="mt-1 text-xs text-slate-500">Posted: {formatDateTime(job.posted_at)}</p>
-                      {job.rejection_reason ? (
-                        <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
-                      ) : null}
-                      {job.status === 'published' && job.apply_mode === 'internal' ? (
-                        <p className="mt-2 text-sm font-semibold text-indigo-700">
-                          {applicationCounts[job.id] || 0} application
-                          {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
-                        </p>
-                      ) : null}
                     </div>
 
                     <div className="flex flex-wrap gap-2">

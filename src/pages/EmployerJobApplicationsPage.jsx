@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
 import EmployerShell from '../components/employer/EmployerShell';
+import ApplicationExportDialog from '../components/jobApplications/ApplicationExportDialog';
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
+import { summarizeApplicationStatuses } from '../lib/applicationExport';
 import {
   fetchJobApplications,
+  formatApplicationStatus,
   updateApplicationStatus,
 } from '../services/jobApplications';
 import { fetchMyJobs } from '../services/employerJobs';
@@ -17,6 +20,7 @@ function EmployerJobApplicationsContent() {
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -46,6 +50,8 @@ function EmployerJobApplicationsContent() {
     };
   }, [jobId]);
 
+  const statusCounts = useMemo(() => summarizeApplicationStatuses(applications), [applications]);
+
   const handleStatusChange = async (applicationId, status) => {
     const updated = await updateApplicationStatus({ applicationId, status });
     setApplications((current) =>
@@ -60,10 +66,19 @@ function EmployerJobApplicationsContent() {
     >
       <SEO title="Job applications | Vizag Jobs Employer" canonical={`/employer/jobs/${jobId}/applications`} />
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <Link to="/employer/jobs" className="text-sm font-semibold text-cyan-700 hover:text-cyan-800">
           ← Back to my jobs
         </Link>
+        {!isLoading && applications.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setExportOpen(true)}
+            className="rounded-2xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+          >
+            Download Excel
+          </button>
+        ) : null}
       </div>
 
       {error ? (
@@ -71,6 +86,30 @@ function EmployerJobApplicationsContent() {
       ) : null}
 
       {isLoading ? <LoadingSpinner message="Loading applications..." /> : null}
+
+      {!isLoading ? (
+        <div className="mb-6 rounded-3xl border border-cyan-100 bg-cyan-50/60 px-5 py-4">
+          <p className="text-2xl font-black text-slate-950">
+            {applications.length} application{applications.length === 1 ? '' : 's'}
+          </p>
+          {applications.length > 0 ? (
+            <p className="mt-2 flex flex-wrap gap-2 text-sm text-slate-700">
+              {Object.entries(statusCounts).map(([status, count]) => (
+                <span
+                  key={status}
+                  className="rounded-full border border-white/80 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
+                >
+                  {formatApplicationStatus(status)}: {count}
+                </span>
+              ))}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-slate-600">
+              Applicants will appear here once students apply on Vizag Jobs.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {!isLoading && applications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
@@ -90,6 +129,13 @@ function EmployerJobApplicationsContent() {
           ))}
         </div>
       ) : null}
+
+      <ApplicationExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        applications={applications}
+        job={job}
+      />
     </EmployerShell>
   );
 }

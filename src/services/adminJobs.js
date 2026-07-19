@@ -623,6 +623,65 @@ export const fetchEmployerSubmittedJobs = () => fetchAdminJobs({ scope: 'employe
 /** Route back to the correct admin jobs list for a job row. */
 export const getAdminJobsListPath = (job) => (job?.created_by ? '/admin/jobs' : '/admin/admin-jobs');
 
+/**
+ * Assign one or more jobs to an employer account (sets jobs.created_by).
+ * Syncs jobs.company to the employer company name when available.
+ * @param {{ jobIds: string[], employerUserId: string }} params
+ */
+export const assignJobsToEmployer = async ({ jobIds, employerUserId }) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const ids = Array.isArray(jobIds) ? [...new Set(jobIds.filter(Boolean))] : [];
+  const ownerId = String(employerUserId || '').trim();
+
+  if (ids.length === 0) {
+    throw new Error('Select at least one job to assign.');
+  }
+  if (!ownerId) {
+    throw new Error('Select an employer to assign jobs to.');
+  }
+
+  const { data: employer, error: employerError } = await supabase
+    .from('employer_profiles')
+    .select('user_id, company_name, is_active')
+    .eq('user_id', ownerId)
+    .maybeSingle();
+
+  if (employerError) {
+    throw mapError(employerError, 'Could not load the selected employer.');
+  }
+  if (!employer?.user_id) {
+    throw new Error('Employer not found.');
+  }
+  if (employer.is_active === false) {
+    throw new Error('That employer account is deactivated. Activate it before assigning jobs.');
+  }
+
+  const companyName = String(employer.company_name || '').trim();
+  const updates = {
+    created_by: ownerId,
+    updated_at: new Date().toISOString(),
+  };
+  if (companyName) {
+    updates.company = companyName;
+  }
+
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update(updates)
+    .in('id', ids)
+    .select('*');
+
+  if (error) {
+    throw mapError(error, 'Could not assign jobs to the employer.');
+  }
+
+  invalidatePublicJobCache();
+  return data || [];
+};
+
 export const fetchAdminJobById = async (jobId) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');

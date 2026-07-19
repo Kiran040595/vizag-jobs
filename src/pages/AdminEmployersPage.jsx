@@ -6,11 +6,20 @@ import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
+  createAdminEmployerAccount,
   employerSearchBlob,
   fetchAdminEmployerProfiles,
   formatEmployerRegisteredAt,
   setEmployerActiveStatus,
 } from '../services/adminEmployers';
+
+const emptyForm = {
+  companyName: '',
+  contactName: '',
+  email: '',
+  phone: '',
+  password: '',
+};
 
 const upsertEmployer = (employers, nextEmployer) => {
   const index = employers.findIndex((row) => row.userId === nextEmployer.userId);
@@ -46,7 +55,10 @@ export default function AdminEmployersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
+  const [formError, setFormError] = useState('');
   const [busyUserId, setBusyUserId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [form, setForm] = useState(emptyForm);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
@@ -101,12 +113,44 @@ export default function AdminEmployersPage() {
     }
   };
 
+  const handleCreateEmployer = async (event) => {
+    event.preventDefault();
+    setFormError('');
+    setNotice('');
+    setIsCreating(true);
+
+    try {
+      const result = await createAdminEmployerAccount({
+        companyName: form.companyName.trim(),
+        contactName: form.contactName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        password: form.password,
+      });
+
+      if (result.employer) {
+        setEmployers((current) => upsertEmployer(current, result.employer));
+      } else {
+        await loadEmployers();
+      }
+
+      setNotice(
+        `${result.message} Login: ${result.email}. Share this email and password with the employer.`,
+      );
+      setForm(emptyForm);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Could not create employer.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <>
       <SEO title="Employer registrations" noindex />
       <AdminShell
         title="Employer registrations"
-        description="Company profiles created when employers sign up or complete their profile."
+        description="Create employer logins and review company profiles from sign-up."
       >
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -124,6 +168,86 @@ export default function AdminEmployersPage() {
             </div>
           ))}
         </div>
+
+        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-lg font-bold text-slate-950">Create employer login</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Create an account with email and password, then share those credentials with the company.
+            You can assign jobs to them from the jobs list.
+          </p>
+
+          <form onSubmit={handleCreateEmployer} className="mt-5 grid gap-4 sm:grid-cols-2">
+            <label className="block sm:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">Company name</span>
+              <input
+                required
+                value={form.companyName}
+                onChange={(event) => setForm((current) => ({ ...current, companyName: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="Acme Technologies"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Contact name (optional)</span>
+              <input
+                value={form.contactName}
+                onChange={(event) => setForm((current) => ({ ...current, contactName: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="Hiring manager"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Phone</span>
+              <input
+                required
+                value={form.phone}
+                onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="9876543210"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Login email</span>
+              <input
+                required
+                type="email"
+                autoComplete="off"
+                value={form.email}
+                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="hr@company.com"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Temporary password</span>
+              <input
+                required
+                type="text"
+                autoComplete="new-password"
+                minLength={8}
+                value={form.password}
+                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                placeholder="At least 8 characters"
+              />
+            </label>
+            <div className="flex items-end sm:col-span-2">
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+              >
+                {isCreating ? 'Creating…' : 'Create employer account'}
+              </button>
+            </div>
+          </form>
+
+          {formError ? (
+            <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {formError}
+            </p>
+          ) : null}
+        </section>
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <input
@@ -154,14 +278,14 @@ export default function AdminEmployersPage() {
         ) : null}
 
         {isLoading ? (
-          <LoadingSpinner label="Loading employer registrations…" />
+          <LoadingSpinner message="Loading employer registrations…" />
         ) : filteredEmployers.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
             <p className="text-lg font-semibold text-slate-900">No employer registrations found</p>
             <p className="mt-2 text-sm text-slate-600">
               {searchTerm
                 ? 'Try another search term.'
-                : 'Employer sign-ups will appear here with company and contact details.'}
+                : 'Create an employer above, or wait for self-serve sign-ups.'}
             </p>
           </div>
         ) : (
