@@ -84,6 +84,7 @@ export default function ApplicationExportDialog({
               Choose columns, then download {applications.length} applicant
               {applications.length === 1 ? '' : 's'} for{' '}
               <span className="font-semibold text-slate-800">{job?.title || 'this job'}</span>.
+              Resume links stay valid so you can share this Excel with companies.
             </p>
           </div>
           <button

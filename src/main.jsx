@@ -1,7 +1,12 @@
-import { unregisterLegacyServiceWorkers, registerStaleAssetRecovery } from './lib/pwaRecovery.js';
+import {
+  unregisterLegacyServiceWorkers,
+  registerStaleAssetRecovery,
+  registerPwaAutoUpdate,
+} from './lib/pwaRecovery.js';
 
 unregisterLegacyServiceWorkers();
 registerStaleAssetRecovery();
+registerPwaAutoUpdate();
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

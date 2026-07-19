@@ -30,5 +30,8 @@ verify_jwt = false
 [functions.notify-reply]
 verify_jwt = false
 
+[functions.resume-share]
+verify_jwt = false
+
 [functions.generate-daily-blog]
 verify_jwt = false

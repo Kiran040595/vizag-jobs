@@ -15,6 +15,7 @@ const APPLICATION_COLUMNS = `
   status,
   cover_note,
   resume_path,
+  resume_share_token,
   profile_snapshot,
   submitted_at,
   updated_at
@@ -44,6 +45,7 @@ const mapApplication = (row) => {
     status: normalizeApplicationStatus(row.status),
     coverNote: row.cover_note || '',
     resumePath: row.resume_path || '',
+    resumeShareToken: row.resume_share_token || '',
     profileSnapshot: row.profile_snapshot || {},
     submittedAt: row.submitted_at,
     updatedAt: row.updated_at,

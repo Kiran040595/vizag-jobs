@@ -1,5 +1,16 @@
 import { formatApplicationStatus } from './applicationStatus.js';
+import { toAbsoluteUrl } from './site.js';
 import { normalizeWhatsAppDigits } from './whatsappContact.js';
+
+/** Stable public link companies can open from a shared Excel sheet. */
+export const getApplicationResumeShareUrl = (application) => {
+  const token = String(application?.resumeShareToken || '').trim();
+  const hasResume = Boolean(String(application?.resumePath || '').trim());
+  if (!token || !hasResume) {
+    return '';
+  }
+  return toAbsoluteUrl(`/r/${token}`);
+};
 
 /** @typedef {{ id: string, label: string, group: string, defaultSelected?: boolean, getValue: (application: object) => string }} ApplicationExportColumn */
 
@@ -121,6 +132,13 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     group: 'Application',
     defaultSelected: false,
     getValue: (app) => app.coverNote || '',
+  },
+  {
+    id: 'resumeLink',
+    label: 'Resume link',
+    group: 'Application',
+    defaultSelected: true,
+    getValue: (app) => getApplicationResumeShareUrl(app),
   },
   {
     id: 'status',
