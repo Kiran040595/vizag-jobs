@@ -1,11 +1,13 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getJobDetailPath } from '../lib/jobRoutes';
+import { notifyReplyByEmailSafe } from '../lib/replyNotification';
 
 const QUESTION_COLUMNS = `
   id,
   job_id,
   asker_name,
   asker_email,
+  asker_user_id,
   body,
   status,
   answer_body,
@@ -24,6 +26,7 @@ const mapQuestion = (row) => {
     jobId: row.job_id,
     askerName: row.asker_name || '',
     askerEmail: row.asker_email || '',
+    askerUserId: row.asker_user_id || null,
     body: row.body,
     status: row.status,
     answerBody: row.answer_body || '',
@@ -80,7 +83,7 @@ export const validateQuestionInput = ({ askerName, askerEmail, body }) => {
   return '';
 };
 
-export const submitJobQuestion = async ({ jobId, askerName, askerEmail, body }) => {
+export const submitJobQuestion = async ({ jobId, askerName, askerEmail, body, askerUserId = null }) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured.');
   }
@@ -90,12 +93,19 @@ export const submitJobQuestion = async ({ jobId, askerName, askerEmail, body }) 
     throw new Error(validationError);
   }
 
+  let resolvedUserId = askerUserId || null;
+  if (!resolvedUserId) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    resolvedUserId = sessionData?.session?.user?.id || null;
+  }
+
   const { error } = await supabase
     .from('job_questions')
     .insert({
       job_id: jobId,
       asker_name: (askerName || '').trim() || null,
       asker_email: (askerEmail || '').trim() || null,
+      asker_user_id: resolvedUserId,
       body: body.trim(),
       status: 'pending',
     });
@@ -146,6 +156,26 @@ export const fetchModeratorJobQuestions = async (jobId) => {
   return (data || []).map(mapQuestion);
 };
 
+const maybeNotifyQuestionReply = async ({
+  questionId,
+  askerEmail,
+  answerBody,
+  previousAnswer,
+  status,
+}) => {
+  const shouldNotify =
+    status === 'published' &&
+    Boolean((askerEmail || '').trim()) &&
+    Boolean((answerBody || '').trim()) &&
+    (answerBody || '').trim() !== (previousAnswer || '').trim();
+
+  if (!shouldNotify) return;
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  await notifyReplyByEmailSafe(accessToken, { kind: 'job_question', id: questionId });
+};
+
 export const saveJobQuestionAnswer = async ({ questionId, answerBody, userId }) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured.');
@@ -154,6 +184,16 @@ export const saveJobQuestionAnswer = async ({ questionId, answerBody, userId }) 
   const trimmedAnswer = (answerBody || '').trim();
   if (!trimmedAnswer) {
     throw new Error('Please enter an answer.');
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('job_questions')
+    .select('answer_body, asker_email, status')
+    .eq('id', questionId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
   }
 
   const { data, error } = await supabase
@@ -171,12 +211,31 @@ export const saveJobQuestionAnswer = async ({ questionId, answerBody, userId }) 
     throw new Error(error.message);
   }
 
-  return mapQuestion(data);
+  const mapped = mapQuestion(data);
+  await maybeNotifyQuestionReply({
+    questionId,
+    askerEmail: mapped.askerEmail || existing?.asker_email,
+    answerBody: mapped.answerBody,
+    previousAnswer: existing?.answer_body,
+    status: mapped.status,
+  });
+
+  return mapped;
 };
 
 export const publishJobQuestion = async ({ questionId, userId, answerBody }) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured.');
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('job_questions')
+    .select('answer_body, asker_email, status')
+    .eq('id', questionId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
   }
 
   const patch = {
@@ -203,7 +262,19 @@ export const publishJobQuestion = async ({ questionId, userId, answerBody }) => 
     throw new Error(error.message);
   }
 
-  return mapQuestion(data);
+  const mapped = mapQuestion(data);
+  // First publish with an answer should notify even if the answer was saved while pending.
+  const previousAnswerForNotify =
+    existing?.status === 'published' ? existing?.answer_body || '' : '';
+  await maybeNotifyQuestionReply({
+    questionId,
+    askerEmail: mapped.askerEmail || existing?.asker_email,
+    answerBody: mapped.answerBody,
+    previousAnswer: previousAnswerForNotify,
+    status: mapped.status,
+  });
+
+  return mapped;
 };
 
 export const deleteJobQuestion = async (questionId) => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
   fetchQuestionNotifications,
   fetchUnreadQuestionNotificationCount,
@@ -17,57 +18,99 @@ import {
   formatFeedbackTime,
   markFeedbackNotificationRead,
 } from '../services/siteFeedback';
+import {
+  fetchReplyNotifications,
+  fetchUnreadReplyNotificationCount,
+  formatReplyNotificationTime,
+  markReplyNotificationRead,
+} from '../services/replyNotifications';
 
 export default function QuestionNotificationBell() {
   const { isAdmin, user: adminUser, isLoading: isAdminLoading } = useAdminAuth();
   const { isEmployer, user: employerUser, isLoading: isEmployerLoading } = useEmployerAuth();
+  const { isStudent, session: studentSession, isLoading: isStudentLoading } = useStudentAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [questionNotifications, setQuestionNotifications] = useState([]);
   const [feedbackNotifications, setFeedbackNotifications] = useState([]);
+  const [replyNotifications, setReplyNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const panelRef = useRef(null);
 
-  const user = adminUser || employerUser;
-  const canModerate = Boolean(user && (isAdmin || isEmployer));
-  const authLoading = isAdminLoading || isEmployerLoading;
+  const moderatorUser = adminUser || employerUser;
+  const studentUser = studentSession?.user || null;
+  const canModerate = Boolean(moderatorUser && (isAdmin || isEmployer));
+  const isStudentViewer = Boolean(studentUser && isStudent);
+  const canViewBell = canModerate || isStudentViewer;
+  const authLoading = isAdminLoading || isEmployerLoading || isStudentLoading;
 
   const loadNotifications = useCallback(async () => {
-    if (!user?.id || !canModerate) {
+    if (!canViewBell) {
       setQuestionNotifications([]);
       setFeedbackNotifications([]);
+      setReplyNotifications([]);
       setUnreadCount(0);
       return;
     }
 
     setIsLoading(true);
     try {
-      const questionPromise = Promise.all([
-        fetchQuestionNotifications(user.id),
-        fetchUnreadQuestionNotificationCount(user.id),
-      ]);
+      let questionUnread = 0;
+      let feedbackUnread = 0;
+      let replyUnread = 0;
 
-      const feedbackPromise = isAdmin
-        ? Promise.all([
-            fetchFeedbackNotifications(user.id),
-            fetchUnreadFeedbackNotificationCount(user.id),
-          ])
-        : Promise.resolve([[], 0]);
+      if (canModerate && moderatorUser?.id) {
+        const questionPromise = Promise.all([
+          fetchQuestionNotifications(moderatorUser.id),
+          fetchUnreadQuestionNotificationCount(moderatorUser.id),
+        ]);
 
-      const [[questions, questionUnread], [feedback, feedbackUnread]] = await Promise.all([
-        questionPromise,
-        feedbackPromise,
-      ]);
+        const feedbackPromise = isAdmin
+          ? Promise.all([
+              fetchFeedbackNotifications(moderatorUser.id),
+              fetchUnreadFeedbackNotificationCount(moderatorUser.id),
+            ])
+          : Promise.resolve([[], 0]);
 
-      setQuestionNotifications(questions);
-      setFeedbackNotifications(feedback);
-      setUnreadCount(questionUnread + feedbackUnread);
+        const [[questions, qUnread], [feedback, fUnread]] = await Promise.all([
+          questionPromise,
+          feedbackPromise,
+        ]);
+
+        setQuestionNotifications(questions);
+        setFeedbackNotifications(feedback);
+        questionUnread = qUnread;
+        feedbackUnread = fUnread;
+      } else {
+        setQuestionNotifications([]);
+        setFeedbackNotifications([]);
+      }
+
+      if (isStudentViewer && studentUser?.id) {
+        const [replies, rUnread] = await Promise.all([
+          fetchReplyNotifications(studentUser.id),
+          fetchUnreadReplyNotificationCount(studentUser.id),
+        ]);
+        setReplyNotifications(replies);
+        replyUnread = rUnread;
+      } else {
+        setReplyNotifications([]);
+      }
+
+      setUnreadCount(questionUnread + feedbackUnread + replyUnread);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [canModerate, isAdmin, user?.id]);
+  }, [
+    canModerate,
+    canViewBell,
+    isAdmin,
+    isStudentViewer,
+    moderatorUser?.id,
+    studentUser?.id,
+  ]);
 
   useEffect(() => {
     if (authLoading) return undefined;
@@ -92,6 +135,14 @@ export default function QuestionNotificationBell() {
 
   const combinedNotifications = useMemo(() => {
     const items = [
+      ...replyNotifications.map((notification) => ({
+        kind: 'reply',
+        id: `reply-${notification.id}`,
+        notificationId: notification.id,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt,
+        data: notification,
+      })),
       ...questionNotifications.map((notification) => ({
         kind: 'job_question',
         id: `question-${notification.id}`,
@@ -115,20 +166,20 @@ export default function QuestionNotificationBell() {
       const rightTime = new Date(right.createdAt).getTime();
       return rightTime - leftTime;
     });
-  }, [feedbackNotifications, questionNotifications]);
+  }, [feedbackNotifications, questionNotifications, replyNotifications]);
 
-  if (authLoading || !canModerate) {
+  if (authLoading || !canViewBell) {
     return null;
   }
 
   const handleOpenQuestionNotification = async (notification) => {
-    if (!user?.id) return;
+    if (!moderatorUser?.id) return;
 
     try {
       if (!notification.isRead) {
         await markQuestionNotificationRead({
           notificationId: notification.id,
-          userId: user.id,
+          userId: moderatorUser.id,
         });
       }
     } catch (error) {
@@ -140,13 +191,13 @@ export default function QuestionNotificationBell() {
   };
 
   const handleOpenFeedbackNotification = async (notification) => {
-    if (!user?.id) return;
+    if (!moderatorUser?.id) return;
 
     try {
       if (!notification.isRead) {
         await markFeedbackNotificationRead({
           notificationId: notification.id,
-          userId: user.id,
+          userId: moderatorUser.id,
         });
       }
     } catch (error) {
@@ -156,6 +207,32 @@ export default function QuestionNotificationBell() {
     setIsOpen(false);
     loadNotifications();
   };
+
+  const handleOpenReplyNotification = async (notification) => {
+    if (!studentUser?.id) return;
+
+    try {
+      if (!notification.isRead) {
+        await markReplyNotificationRead({
+          notificationId: notification.id,
+          userId: studentUser.id,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to mark reply notification read:', error);
+    }
+
+    setIsOpen(false);
+    loadNotifications();
+  };
+
+  const subtitle = isStudentViewer && !canModerate
+    ? 'Replies to your questions and feedback'
+    : 'Pending moderation items and your replies';
+
+  const emptyLabel = isStudentViewer && !canModerate
+    ? 'No replies yet. Ask a question or send feedback while signed in to get notified here.'
+    : 'No pending items right now.';
 
   return (
     <div className="relative" ref={panelRef}>
@@ -186,7 +263,7 @@ export default function QuestionNotificationBell() {
         <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
           <div className="border-b border-slate-100 px-4 py-3">
             <p className="text-sm font-bold text-slate-900">Notifications</p>
-            <p className="text-xs text-slate-500">Pending job questions and site feedback</p>
+            <p className="text-xs text-slate-500">{subtitle}</p>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
@@ -195,11 +272,41 @@ export default function QuestionNotificationBell() {
             ) : null}
 
             {!isLoading && combinedNotifications.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-slate-500">No pending items right now.</p>
+              <p className="px-4 py-6 text-sm text-slate-500">{emptyLabel}</p>
             ) : null}
 
             {!isLoading
               ? combinedNotifications.map((item) => {
+                  if (item.kind === 'reply') {
+                    const notification = item.data;
+                    const kindLabel =
+                      notification.kind === 'job_question' ? 'Job question reply' : 'Feedback reply';
+
+                    return (
+                      <Link
+                        key={item.id}
+                        to={notification.linkPath}
+                        onClick={() => handleOpenReplyNotification(notification)}
+                        className={`block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 ${
+                          item.isRead ? 'bg-white' : 'bg-emerald-50/50'
+                        }`}
+                      >
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                          {kindLabel}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-900">
+                          {notification.title}
+                        </p>
+                        {notification.preview ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-600">{notification.preview}</p>
+                        ) : null}
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatReplyNotificationTime(notification.createdAt)}
+                        </p>
+                      </Link>
+                    );
+                  }
+
                   if (item.kind === 'job_question') {
                     const notification = item.data;
                     const question = notification.question;

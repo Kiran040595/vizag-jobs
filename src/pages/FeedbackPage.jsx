@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -9,12 +10,20 @@ import {
   formatFeedbackAuthor,
   formatFeedbackTime,
 } from '../services/siteFeedback';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 
-function PublishedFeedbackCard({ feedback }) {
+function PublishedFeedbackCard({ feedback, highlighted = false }) {
   const typeLabel = FEEDBACK_TYPE_LABELS[feedback.feedbackType] || 'Feedback';
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <article
+      id={`site-feedback-${feedback.id}`}
+      className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${
+        highlighted
+          ? 'border-cyan-300 bg-cyan-50/60 ring-2 ring-cyan-200'
+          : 'border-slate-200 bg-white'
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">
           {typeLabel}
@@ -38,6 +47,9 @@ function PublishedFeedbackCard({ feedback }) {
 }
 
 export default function FeedbackPage() {
+  const [searchParams] = useSearchParams();
+  const highlightFeedbackId = searchParams.get('feedback');
+  const { isStudent, session } = useStudentAuth();
   const [publishedFeedback, setPublishedFeedback] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -58,6 +70,17 @@ export default function FeedbackPage() {
     loadPublished();
   }, [loadPublished]);
 
+  useEffect(() => {
+    if (!highlightFeedbackId || isLoading) return undefined;
+
+    const timer = window.setTimeout(() => {
+      const element = document.getElementById(`site-feedback-${highlightFeedbackId}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [highlightFeedbackId, isLoading, publishedFeedback.length]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cyan-50/20 to-white">
       <SEO
@@ -72,6 +95,17 @@ export default function FeedbackPage() {
           <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">Feedback &amp; feature requests</h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
             Help us improve Jobs in Vizag. Your submission stays private until we review and approve it for the public board.
+            {session && isStudent
+              ? ' When we reply, you will see it on the notification bell.'
+              : (
+                <>
+                  {' '}
+                  <Link to="/student/login" className="font-semibold text-cyan-700 hover:text-cyan-800">
+                    Sign in
+                  </Link>{' '}
+                  before submitting to get replies on the notification bell.
+                </>
+              )}
           </p>
         </div>
 
@@ -101,7 +135,10 @@ export default function FeedbackPage() {
             <ul className="mt-4 space-y-3">
               {publishedFeedback.map((feedback) => (
                 <li key={feedback.id}>
-                  <PublishedFeedbackCard feedback={feedback} />
+                  <PublishedFeedbackCard
+                    feedback={feedback}
+                    highlighted={highlightFeedbackId === feedback.id}
+                  />
                 </li>
               ))}
             </ul>
