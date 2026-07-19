@@ -15,14 +15,6 @@ function text(res, status, message) {
   res.end(message);
 }
 
-function wantsHtmlPage(req) {
-  if (String(req.query?.dl || '') === '1') return false;
-  const accept = String(req.headers.accept || '').toLowerCase();
-  // Excel / curl / download managers often omit HTML preference.
-  if (!accept || accept === '*/*') return false;
-  return accept.includes('text/html');
-}
-
 function downloadPageHtml(token) {
   const fileUrl = `/r/${encodeURIComponent(token)}?dl=1`;
   return `<!DOCTYPE html>
@@ -57,7 +49,7 @@ function downloadPageHtml(token) {
       <button id="download" type="button">Download resume</button>
     </p>
     <p style="margin-top:1.5rem">
-      <a class="button" id="fallback" href="${escapeHtml(fileUrl)}" download>Open file directly</a>
+      <a class="button" id="fallback" href="${escapeHtml(fileUrl)}">Open file directly</a>
     </p>
   </main>
   <script>
@@ -108,8 +100,6 @@ function downloadPageHtml(token) {
           setStatus('Download started. Check your Downloads folder.', false);
         } catch (error) {
           setStatus((error && error.message) || 'Could not download. Use “Open file directly”.', true);
-          // Last resort: navigate to the raw file URL.
-          window.location.href = fileUrl;
         } finally {
           button.disabled = false;
         }
@@ -123,26 +113,7 @@ function downloadPageHtml(token) {
 </html>`;
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    text(res, 405, 'Method not allowed.');
-    return;
-  }
-
-  const token = String(req.query?.token || '').trim();
-  if (!UUID_RE.test(token)) {
-    text(res, 400, 'Invalid resume link.');
-    return;
-  }
-
-  if (wantsHtmlPage(req)) {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-store');
-    res.end(downloadPageHtml(token));
-    return;
-  }
-
+async function proxyResumeFile(req, res, token) {
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '')
     .trim()
     .replace(/\/+$/, '');
@@ -192,4 +163,29 @@ export default async function handler(req, res) {
   const buffer = Buffer.from(await upstream.arrayBuffer());
   res.setHeader('Content-Length', String(buffer.length));
   res.end(buffer);
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    text(res, 405, 'Method not allowed.');
+    return;
+  }
+
+  const token = String(req.query?.token || '').trim();
+  if (!UUID_RE.test(token)) {
+    text(res, 400, 'Invalid resume link.');
+    return;
+  }
+
+  // Always show an HTML download page for /r/:token.
+  // Excel opens raw .docx/.pdf links itself and fails; the page forces a real browser download.
+  if (String(req.query?.dl || '') !== '1') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(downloadPageHtml(token));
+    return;
+  }
+
+  await proxyResumeFile(req, res, token);
 }
