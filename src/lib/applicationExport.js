@@ -196,18 +196,54 @@ const applyTextColumnFormats = (XLSX, worksheet, columns, rowCount) => {
   }
 };
 
+/** Turn resume URLs into real Excel hyperlinks that open in the browser on click. */
+const applyResumeHyperlinks = (XLSX, worksheet, columns, rowCount) => {
+  const resumeColumnIndexes = columns
+    .map((column, index) => (column.id === 'resumeLink' ? index : -1))
+    .filter((index) => index >= 0);
+
+  if (resumeColumnIndexes.length === 0 || rowCount < 1) {
+    return;
+  }
+
+  for (let rowIndex = 1; rowIndex <= rowCount; rowIndex += 1) {
+    for (const columnIndex of resumeColumnIndexes) {
+      const cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
+      const cell = worksheet[cellRef];
+      const url = String(cell?.v || '').trim();
+      if (!cell || !/^https?:\/\//i.test(url)) {
+        continue;
+      }
+
+      // Friendly clickable link that opens the system browser from Excel.
+      const label = 'Open resume';
+      const safeUrl = url.replace(/"/g, '');
+      cell.t = 's';
+      cell.v = label;
+      cell.f = `HYPERLINK("${safeUrl}","${label}")`;
+      cell.l = { Target: safeUrl, Tooltip: 'Open resume in browser' };
+    }
+  }
+};
+
 /** Build a real .xlsx workbook that Excel, Google Sheets, and LibreOffice can open. */
 export const buildApplicationWorkbook = (applications, columnIds, XLSX) => {
   const { headers, rows, columns } = buildApplicationExportRows(applications, columnIds);
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   applyTextColumnFormats(XLSX, worksheet, columns, rows.length);
+  applyResumeHyperlinks(XLSX, worksheet, columns, rows.length);
 
-  worksheet['!cols'] = columns.map((column, columnIndex) => ({
-    wch: Math.min(
-      48,
-      Math.max(column.label.length, ...rows.map((row) => String(row[columnIndex] || '').length)),
-    ),
-  }));
+  worksheet['!cols'] = columns.map((column, columnIndex) => {
+    if (column.id === 'resumeLink') {
+      return { wch: 16 };
+    }
+    return {
+      wch: Math.min(
+        48,
+        Math.max(column.label.length, ...rows.map((row) => String(row[columnIndex] || '').length)),
+      ),
+    };
+  });
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Applicants');
