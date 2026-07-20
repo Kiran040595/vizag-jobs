@@ -286,6 +286,9 @@ export function StudentAuthProvider({ children }) {
       if (!signInError && signInData.session) {
         session = signInData.session;
       } else if (signInError) {
+        if (/email not confirmed/i.test(signInError.message)) {
+          return { ...data, session: null, needsEmailConfirmation: true };
+        }
         throw signInError;
       }
     }

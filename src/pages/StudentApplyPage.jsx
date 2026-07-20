@@ -11,6 +11,9 @@ import { getJobDetailPath } from '../lib/jobRoutes';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
 import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
 import { validateResumeFile } from '../services/studentResume';
+import { pushToast } from '../lib/toast';
+import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
+import { clearPendingApplyJobMeta } from '../lib/studentApplyRedirect';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -98,6 +101,9 @@ function StudentApplyContent() {
         existingResumePath: useSavedResume ? profile?.resume_path : null,
       });
       setNotice('Your application was submitted successfully.');
+      pushToast({ message: 'Application submitted successfully.', type: 'success' });
+      clearPendingApplyJobMeta();
+      trackStudentFunnel('student_apply_submitted', { jobId });
       setTimeout(() => {
         navigate(returnPath, { replace: true });
       }, 1200);

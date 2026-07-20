@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import { buildStudentAuthPath } from '../lib/studentApplyRedirect';
+import { pushToast } from '../lib/toast';
 
 const buttonBase =
   'inline-flex h-9 items-center rounded-xl px-3.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2';
@@ -16,6 +17,14 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
 
   const handleNavigate = () => {
     onNavigate?.();
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch {
+      pushToast({ message: 'Could not sign out. Please try again.', type: 'error' });
+    }
   };
 
   if (isLoading) {
@@ -73,7 +82,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
           <button
             type="button"
             onClick={async () => {
-              await signOut();
+              await handleSignOut();
               handleNavigate();
             }}
             className={`${buttonBase} justify-center border border-slate-200 text-center text-slate-700 hover:border-slate-300 hover:bg-slate-50`}
@@ -94,7 +103,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
         </Link>
         <button
           type="button"
-          onClick={() => signOut()}
+          onClick={() => handleSignOut()}
           className={`${buttonBase} border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50`}
         >
           Sign out

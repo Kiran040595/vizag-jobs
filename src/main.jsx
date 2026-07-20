@@ -21,6 +21,7 @@ import { StudentAuthProvider } from './context/StudentAuthContext.jsx'
 import { CookieConsentProvider } from './context/CookieConsentContext.jsx'
 import ConditionalAnalytics from './components/ConditionalAnalytics.jsx'
 import ConditionalAdSense from './components/ConditionalAdSense.jsx'
+import ToastViewport from './components/ToastViewport.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')).render(
               <CookieConsentProvider>
                 <HelmetProvider>
                   <App />
+                  <ToastViewport />
                   <ConditionalAnalytics />
                   <ConditionalAdSense />
                 </HelmetProvider>

@@ -30,6 +30,7 @@ import {
   openExternalApplyLink,
   shouldAutoApplyAfterAuth,
 } from '../lib/studentApplyRedirect';
+import { consumeStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
@@ -67,6 +68,7 @@ export default function JobDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [existingApplication, setExistingApplication] = useState(null);
+  const [authWelcome] = useState(() => consumeStudentAuthSuccess());
 
   const routeJobIdentifier = jobSlug || jobId || '';
   const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
@@ -270,6 +272,13 @@ export default function JobDetailsPage() {
           ← Back to jobs
         </Link>
 
+        {authWelcome ? (
+          <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {authWelcome.type === 'register' ? 'Welcome! Your account is ready.' : "You're signed in."}{' '}
+            {authWelcome.apply ? 'Tap Apply to continue with this job.' : 'You can now view full job details and apply.'}
+          </p>
+        ) : null}
+
         {isAdmin && job ? (
           <AdminJobActionsBar
             job={job}
@@ -319,6 +328,8 @@ export default function JobDetailsPage() {
                     applyMode={job.applyMode}
                     jobId={job.id}
                     jobPath={jobDetailPath}
+                    jobTitle={job.title}
+                    jobCompany={displayCompanyName(job.company)}
                     alreadyApplied={Boolean(existingApplication)}
                   />
                 ) : null}
@@ -439,6 +450,8 @@ export default function JobDetailsPage() {
             applyMode={job.applyMode}
             jobId={job.id}
             jobPath={jobDetailPath}
+            jobTitle={job.title}
+            jobCompany={displayCompanyName(job.company)}
             alreadyApplied={Boolean(existingApplication)}
             className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-blue-700"
           />

@@ -4,6 +4,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import FullJobDetailsLink from '../components/FullJobDetailsLink';
 import { removeSavedJob } from '../lib/savedJobs';
+import { pushToast } from '../lib/toast';
 import { useSavedJobsList } from '../lib/useSavedJob';
 import { cardCompanyName, cardLocation } from '../lib/jobCardDisplay';
 
@@ -78,7 +79,10 @@ export default function SavedJobsPage() {
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => removeSavedJob(job.id)}
+                      onClick={() => {
+                        removeSavedJob(job.id);
+                        pushToast({ message: 'Job removed from saved jobs.', type: 'success' });
+                      }}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 sm:text-sm"
                     >
                       Remove

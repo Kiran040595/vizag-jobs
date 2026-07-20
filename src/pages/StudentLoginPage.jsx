@@ -12,6 +12,8 @@ import {
   shouldAutoApplyAfterAuth,
   buildStudentAuthPath,
 } from '../lib/studentApplyRedirect';
+import { markStudentAuthSuccess } from '../lib/studentAuthSuccess';
+import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 
 export default function StudentLoginPage() {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ export default function StudentLoginPage() {
     Boolean(nextPath) &&
     !shouldAutoApplyAfterAuth(searchParams) &&
     (/^\/jobs\//.test(nextPath) || /^\/job\//.test(nextPath));
+  const isApplyReturn = shouldAutoApplyAfterAuth(searchParams) && Boolean(nextPath);
   const registerPath = `/student/register${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
     apply: shouldAutoApplyAfterAuth(searchParams),
@@ -37,6 +40,15 @@ export default function StudentLoginPage() {
     if (!session || !isStudent || isLoading) {
       return;
     }
+
+    markStudentAuthSuccess({
+      apply: shouldAutoApplyAfterAuth(searchParams),
+      type: 'sign_in',
+    });
+    trackStudentFunnel('student_auth_success', {
+      type: 'sign_in',
+      apply: shouldAutoApplyAfterAuth(searchParams),
+    });
 
     const pendingJobId = consumePendingApplyJobId();
     if (pendingJobId && profileComplete) {
@@ -104,9 +116,11 @@ export default function StudentLoginPage() {
       <SEO
         title="Student login | Vizag Jobs"
         description={
-          isJobDetailsReturn
-            ? 'Sign in or create an account to view full job details in Vizag.'
-            : 'Sign in to apply for jobs in Vizag.'
+          isApplyReturn
+            ? 'Sign in to return to the job and apply in Vizag.'
+            : isJobDetailsReturn
+              ? 'Sign in or create an account to view full job details in Vizag.'
+              : 'Sign in to apply for jobs in Vizag.'
         }
         canonical="/student/login"
       />
@@ -114,17 +128,28 @@ export default function StudentLoginPage() {
         <section className="rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-300">For students</p>
           <h1 className="mt-4 text-4xl font-black leading-tight">
-            {isJobDetailsReturn ? 'Sign in to view full job details' : 'Sign in to apply'}
+            {isApplyReturn
+              ? 'Sign in to apply for this job'
+              : isJobDetailsReturn
+                ? 'Sign in to view full job details'
+                : 'Sign in to apply'}
           </h1>
           <p className="mt-5 text-sm leading-7 text-slate-300">
-            {isJobDetailsReturn
-              ? 'Create a free student account or sign in to open the complete job posting. After that you can return here anytime while signed in.'
-              : 'Sign in with the email or mobile number and password you used during registration.'}
+            {isApplyReturn
+              ? 'After you sign in, you will return to the job you selected so you can apply right away.'
+              : isJobDetailsReturn
+                ? 'Create a free student account or sign in to open the complete job posting. After that you can return here anytime while signed in.'
+                : 'Sign in with the email or mobile number and password you used during registration.'}
           </p>
         </section>
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
           <h2 className="text-2xl font-black text-slate-950">Sign in</h2>
+          {isApplyReturn ? (
+            <p className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+              You started applying for a job. Sign in below and we will take you back to it.
+            </p>
+          ) : null}
           {authError ? (
             <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{authError}</p>
           ) : null}

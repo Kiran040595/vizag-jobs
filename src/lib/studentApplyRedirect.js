@@ -1,5 +1,6 @@
 const PENDING_APPLY_KEY = 'vizagjobs:pending-apply-url';
 const PENDING_APPLY_JOB_KEY = 'vizagjobs:pending-apply-job-id';
+const PENDING_APPLY_META_KEY = 'vizagjobs:pending-apply-meta';
 
 export const buildStudentAuthPath = ({ pathname, search = '', apply = false } = {}) => {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
@@ -73,6 +74,55 @@ export const stashPendingApplyJobId = (jobId) => {
   try {
     sessionStorage.setItem(PENDING_APPLY_JOB_KEY, jobId);
     sessionStorage.removeItem(PENDING_APPLY_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+export const stashPendingApplyJobMeta = ({ jobId, title, company, jobPath } = {}) => {
+  if (!jobId && !title && !company && !jobPath) {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(
+      PENDING_APPLY_META_KEY,
+      JSON.stringify({
+        jobId: jobId || '',
+        title: title || '',
+        company: company || '',
+        jobPath: jobPath || '',
+      }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+export const readPendingApplyJobMeta = () => {
+  try {
+    const raw = sessionStorage.getItem(PENDING_APPLY_META_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+    return {
+      jobId: parsed.jobId || '',
+      title: parsed.title || '',
+      company: parsed.company || '',
+      jobPath: parsed.jobPath || '',
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const clearPendingApplyJobMeta = () => {
+  try {
+    sessionStorage.removeItem(PENDING_APPLY_META_KEY);
   } catch {
     // Ignore storage failures.
   }

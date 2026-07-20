@@ -3,6 +3,7 @@ import {
   shouldHighlightPostedTime,
 } from '../lib/jobFreshness';
 import { useSavedJob } from '../lib/useSavedJob';
+import { pushToast } from '../lib/toast';
 import FullJobDetailsLink from './FullJobDetailsLink';
 
 const BookmarkIcon = ({ filled = false }) => (
@@ -35,6 +36,15 @@ const JobCard = ({
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
 
+  const handleToggleSaved = (event) => {
+    const wasSaved = saved;
+    toggle(event);
+    pushToast({
+      message: wasSaved ? 'Job removed from saved jobs.' : 'Job saved.',
+      type: 'success',
+    });
+  };
+
   return (
     <article
       className={`group relative flex h-full flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-4 ${
@@ -45,7 +55,7 @@ const JobCard = ({
     >
       <button
         type="button"
-        onClick={toggle}
+        onClick={handleToggleSaved}
         className={`absolute right-2.5 top-2.5 z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:right-4 sm:top-4 sm:h-9 sm:w-9 ${
           saved
             ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100'

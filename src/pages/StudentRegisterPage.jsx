@@ -15,6 +15,8 @@ import {
   resolvePostAuthDestination,
   shouldAutoApplyAfterAuth,
 } from '../lib/studentApplyRedirect';
+import { markStudentAuthSuccess } from '../lib/studentAuthSuccess';
+import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 
 const INPUT_CLASS =
   'mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -39,6 +41,7 @@ export default function StudentRegisterPage() {
     Boolean(nextPath) &&
     !shouldAutoApplyAfterAuth(searchParams) &&
     (/^\/jobs\//.test(nextPath) || /^\/job\//.test(nextPath));
+  const isApplyReturn = shouldAutoApplyAfterAuth(searchParams) && Boolean(nextPath);
   const loginPath = `/student/login${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
     apply: shouldAutoApplyAfterAuth(searchParams),
@@ -49,6 +52,15 @@ export default function StudentRegisterPage() {
   });
 
   const completePostAuthNavigation = () => {
+    markStudentAuthSuccess({
+      apply: shouldAutoApplyAfterAuth(searchParams),
+      type: 'register',
+    });
+    trackStudentFunnel('student_auth_success', {
+      type: 'register',
+      apply: shouldAutoApplyAfterAuth(searchParams),
+    });
+
     const destination = resolvePostAuthDestination(searchParams, { profileComplete });
     const pendingJobId = consumePendingApplyJobId();
     if (pendingJobId && profileComplete) {
@@ -111,7 +123,19 @@ export default function StudentRegisterPage() {
         consents,
         returnPath: postAuthPath,
       });
+      if (result?.needsEmailConfirmation) {
+        setNotice(
+          'Account created! Check your email to confirm your address, then sign in to apply for this job.',
+        );
+        return;
+      }
       if (result?.session) {
+        return;
+      }
+      if (result?.user) {
+        setNotice(
+          'Account created! Check your email if confirmation is required, then sign in to continue.',
+        );
         return;
       }
       throw new Error('Account created but sign-in did not complete. Try signing in.');
@@ -127,21 +151,31 @@ export default function StudentRegisterPage() {
       <SEO
         title="Student register | Vizag Jobs"
         description={
-          isJobDetailsReturn
-            ? 'Create a free student account to view full job details in Vizag.'
-            : 'Create a student account to apply for fresher jobs in Vizag.'
+          isApplyReturn
+            ? 'Create a free student account to apply for the job you selected in Vizag.'
+            : isJobDetailsReturn
+              ? 'Create a free student account to view full job details in Vizag.'
+              : 'Create a student account to apply for fresher jobs in Vizag.'
         }
         canonical={`/student/register${registerQuery}`}
       />
       <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
         <h1 className="text-3xl font-black text-slate-950">Create student account</h1>
         <p className="mt-3 text-sm text-slate-600">
-          {shouldAutoApplyAfterAuth(searchParams)
-            ? 'Register below — you will be signed in automatically and returned to the job you selected.'
-            : isJobDetailsReturn
-              ? 'Register below — you will be signed in automatically and returned to the full job details.'
-              : 'Enter your email and mobile number. Complete your skills and education in the next step.'}
+          {isApplyReturn
+            ? 'Register below — after sign-in you will return to the job so you can apply.'
+            : shouldAutoApplyAfterAuth(searchParams)
+              ? 'Register below — you will be signed in automatically and returned to the job you selected.'
+              : isJobDetailsReturn
+                ? 'Register below — you will be signed in automatically and returned to the full job details.'
+                : 'Enter your email and mobile number. Complete your skills and education in the next step.'}
         </p>
+
+        {isApplyReturn ? (
+          <p className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+            You started applying for a job. Create your account below and we will bring you back to it.
+          </p>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <label className="block">
