@@ -30,3 +30,13 @@ export const buildWhatsAppContactUrl = (phone, message) => {
 
   return base;
 };
+
+/** Build a tel: URL so the device dialer opens with this number. */
+export const buildPhoneDialUrl = (phone) => {
+  const withCountry = normalizeWhatsAppDigits(phone);
+  if (!withCountry) {
+    return null;
+  }
+
+  return `tel:+${withCountry}`;
+};

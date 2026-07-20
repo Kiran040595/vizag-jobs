@@ -1,3 +1,4 @@
+import PhoneDialLink from '../PhoneDialLink';
 import WhatsAppContactLink from '../WhatsAppContactLink';
 import {
   ADMIN_STATUS_OPTIONS,
@@ -58,7 +59,12 @@ export default function JobApplicationCard({ application, onStatusChange, canUpd
           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone / WhatsApp</dt>
           <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-800">
             <span>{snapshot.phone || 'Not provided'}</span>
-            {snapshot.phone ? <WhatsAppContactLink phone={snapshot.phone} /> : null}
+            {snapshot.phone ? (
+              <>
+                <PhoneDialLink phone={snapshot.phone} />
+                <WhatsAppContactLink phone={snapshot.phone} />
+              </>
+            ) : null}
           </dd>
         </div>
         <div>
