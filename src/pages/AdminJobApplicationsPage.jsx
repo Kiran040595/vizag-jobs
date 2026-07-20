@@ -4,8 +4,13 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import ApplicationExportDialog from '../components/jobApplications/ApplicationExportDialog';
+import ApplicationFilters from '../components/jobApplications/ApplicationFilters';
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import {
+  EMPTY_APPLICATION_FILTERS,
+  filterApplications,
+} from '../lib/applicationFilters';
 import { summarizeApplicationStatuses } from '../lib/applicationExport';
 import { fetchAdminJobById, getAdminJobsListPath } from '../services/adminJobs';
 import {
@@ -19,6 +24,7 @@ export default function AdminJobApplicationsPage() {
   useAdminAuth();
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [filters, setFilters] = useState(EMPTY_APPLICATION_FILTERS);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
@@ -51,7 +57,14 @@ export default function AdminJobApplicationsPage() {
     };
   }, [jobId]);
 
-  const statusCounts = useMemo(() => summarizeApplicationStatuses(applications), [applications]);
+  const filteredApplications = useMemo(
+    () => filterApplications(applications, filters),
+    [applications, filters],
+  );
+  const statusCounts = useMemo(
+    () => summarizeApplicationStatuses(filteredApplications),
+    [filteredApplications],
+  );
 
   const handleStatusChange = async (applicationId, status) => {
     const updated = await updateApplicationStatus({ applicationId, status });
@@ -101,7 +114,12 @@ export default function AdminJobApplicationsPage() {
       {!isLoading ? (
         <div className="mb-6 rounded-3xl border border-indigo-100 bg-indigo-50/60 px-5 py-4">
           <p className="text-2xl font-black text-slate-950">
-            {applications.length} application{applications.length === 1 ? '' : 's'}
+            {filteredApplications.length} application{filteredApplications.length === 1 ? '' : 's'}
+            {filteredApplications.length !== applications.length ? (
+              <span className="ml-2 text-base font-semibold text-slate-600">
+                of {applications.length}
+              </span>
+            ) : null}
           </p>
           {applications.length > 0 ? (
             <p className="mt-2 flex flex-wrap gap-2 text-sm text-slate-700">
@@ -122,6 +140,16 @@ export default function AdminJobApplicationsPage() {
         </div>
       ) : null}
 
+      {!isLoading && applications.length > 0 ? (
+        <ApplicationFilters
+          applications={applications}
+          filters={filters}
+          onChange={setFilters}
+          filteredCount={filteredApplications.length}
+          totalCount={applications.length}
+        />
+      ) : null}
+
       {!isLoading && applications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No applications yet</h3>
@@ -129,9 +157,16 @@ export default function AdminJobApplicationsPage() {
         </div>
       ) : null}
 
-      {!isLoading && applications.length > 0 ? (
+      {!isLoading && applications.length > 0 && filteredApplications.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
+          <h3 className="text-lg font-bold text-slate-900">No matching applicants</h3>
+          <p className="mt-2 text-sm text-slate-600">Try clearing filters or adjusting your search.</p>
+        </div>
+      ) : null}
+
+      {!isLoading && filteredApplications.length > 0 ? (
         <div className="space-y-4">
-          {applications.map((application) => (
+          {filteredApplications.map((application) => (
             <JobApplicationCard
               key={application.id}
               application={application}
@@ -144,7 +179,7 @@ export default function AdminJobApplicationsPage() {
       <ApplicationExportDialog
         open={exportOpen}
         onClose={() => setExportOpen(false)}
-        applications={applications}
+        applications={filteredApplications}
         job={job}
       />
     </AdminShell>
