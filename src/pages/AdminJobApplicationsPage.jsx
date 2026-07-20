@@ -8,8 +8,8 @@ import ApplicationFilters from '../components/jobApplications/ApplicationFilters
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
-  EMPTY_APPLICATION_FILTERS,
-  filterApplications,
+  ALL_APPLICATION_STATUSES,
+  filterApplicationsByStatus,
 } from '../lib/applicationFilters';
 import { summarizeApplicationStatuses } from '../lib/applicationExport';
 import { fetchAdminJobById, getAdminJobsListPath } from '../services/adminJobs';
@@ -24,7 +24,7 @@ export default function AdminJobApplicationsPage() {
   useAdminAuth();
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [filters, setFilters] = useState(EMPTY_APPLICATION_FILTERS);
+  const [statusFilter, setStatusFilter] = useState(ALL_APPLICATION_STATUSES);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
@@ -58,8 +58,8 @@ export default function AdminJobApplicationsPage() {
   }, [jobId]);
 
   const filteredApplications = useMemo(
-    () => filterApplications(applications, filters),
-    [applications, filters],
+    () => filterApplicationsByStatus(applications, statusFilter),
+    [applications, statusFilter],
   );
   const statusCounts = useMemo(
     () => summarizeApplicationStatuses(filteredApplications),
@@ -142,9 +142,8 @@ export default function AdminJobApplicationsPage() {
 
       {!isLoading && applications.length > 0 ? (
         <ApplicationFilters
-          applications={applications}
-          filters={filters}
-          onChange={setFilters}
+          status={statusFilter}
+          onStatusChange={setStatusFilter}
           filteredCount={filteredApplications.length}
           totalCount={applications.length}
         />
@@ -160,7 +159,7 @@ export default function AdminJobApplicationsPage() {
       {!isLoading && applications.length > 0 && filteredApplications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No matching applicants</h3>
-          <p className="mt-2 text-sm text-slate-600">Try clearing filters or adjusting your search.</p>
+          <p className="mt-2 text-sm text-slate-600">Try selecting a different status or clear the filter.</p>
         </div>
       ) : null}
 
