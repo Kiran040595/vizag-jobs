@@ -10,6 +10,7 @@ import {
   fetchAdminCreatedJobs,
   fetchEmployerSubmittedJobs,
   isExternalFetchSourceName,
+  moveJobsToAdmin,
   rejectAdminJob,
   toggleAdminJobFeatured,
   updateAdminJobStatus,
@@ -234,6 +235,45 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     }
   };
 
+  const handleMoveSelectedToAdmin = async () => {
+    if (selectedCount === 0) {
+      setLoadError('Select at least one job to move to admin.');
+      return;
+    }
+
+    setIsAssigning(true);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJobs = await moveJobsToAdmin({ jobIds: [...selectedJobIds] });
+      const movedIds = new Set(updatedJobs.map((job) => job.id));
+
+      if (!isAdminScope) {
+        // Unassigned jobs leave the employer submissions list.
+        setJobs((current) => current.filter((job) => !movedIds.has(job.id)));
+      } else {
+        setJobs((current) => {
+          let next = current;
+          for (const updated of updatedJobs) {
+            next = upsertJob(next, updated);
+          }
+          return next;
+        });
+      }
+
+      setSelectedJobIds(new Set());
+      setAssignEmployerId('');
+      setNotice(
+        `Moved ${updatedJobs.length} job${updatedJobs.length === 1 ? '' : 's'} back to admin ownership.`,
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not move jobs to admin.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const handleStatusChange = async (jobId, status) => {
     setBusyJobId(jobId);
     setLoadError('');
@@ -309,8 +349,8 @@ export default function AdminJobsPage({ scope = 'employer' }) {
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
       description={
         isAdminScope
-          ? 'Manage jobs you posted manually from the admin form. Assign them to employers so companies can review applications.'
-          : 'Review employer submissions, approve jobs for the public portal, or reassign ownership.'
+          ? 'Manage jobs you posted manually from the admin form. Assign them to employers, or take jobs back under admin ownership.'
+          : 'Review employer submissions, approve jobs, assign ownership, or move jobs back to admin.'
       }
     >
       <SEO
@@ -392,7 +432,15 @@ export default function AdminJobsPage({ scope = 'employer' }) {
               onClick={handleAssignSelected}
               className="h-11 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isAssigning ? 'Assigning…' : `Assign ${selectedCount || ''} job${selectedCount === 1 ? '' : 's'}`}
+              {isAssigning ? 'Working…' : `Assign to employer`}
+            </button>
+            <button
+              type="button"
+              disabled={isAssigning || selectedCount === 0}
+              onClick={handleMoveSelectedToAdmin}
+              className="h-11 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Move to admin
             </button>
           </div>
         ) : null}

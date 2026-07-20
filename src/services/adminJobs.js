@@ -682,6 +682,38 @@ export const assignJobsToEmployer = async ({ jobIds, employerUserId }) => {
   return data || [];
 };
 
+/**
+ * Move jobs back to admin ownership (clears jobs.created_by).
+ * Employer can no longer see or manage these jobs.
+ * @param {{ jobIds: string[] }} params
+ */
+export const moveJobsToAdmin = async ({ jobIds }) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const ids = Array.isArray(jobIds) ? [...new Set(jobIds.filter(Boolean))] : [];
+  if (ids.length === 0) {
+    throw new Error('Select at least one job to move to admin.');
+  }
+
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update({
+      created_by: null,
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', ids)
+    .select('*');
+
+  if (error) {
+    throw mapError(error, 'Could not move jobs to admin.');
+  }
+
+  invalidatePublicJobCache();
+  return data || [];
+};
+
 export const fetchAdminJobById = async (jobId) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
