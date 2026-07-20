@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import LoadingSpinner from '../LoadingSpinner';
+import StudentAuthRequiredAlert from './StudentAuthRequiredAlert';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
@@ -150,8 +151,14 @@ export default function JobDetailsAuthGate({ children }) {
     );
   }
 
-  const loginPath = `/student/login${buildStudentAuthPath({
-    pathname: `${location.pathname}${location.search}`,
-  })}`;
-  return <Navigate to={loginPath} replace />;
+  const returnPath = `${location.pathname}${location.search}`;
+
+  return (
+    <div className="min-h-screen bg-slate-50 px-4 py-12">
+      <div className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <LoadingSpinner message="Loading job details..." />
+      </div>
+      <StudentAuthRequiredAlert returnPath={returnPath} />
+    </div>
+  );
 }
