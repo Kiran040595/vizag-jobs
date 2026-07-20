@@ -12,16 +12,13 @@ const emailSubscribeHref = `mailto:${SITE_CONTACT_EMAIL}?subject=${encodeURIComp
 export default function CTASection() {
   const { isEmployer, session } = useEmployerAuth();
 
-  const employerHref = !session
+  const postJobHref = !session
     ? '/employer/register'
     : isEmployer
       ? '/employer/jobs/new'
       : '/employer/login';
-  const employerLabel = !session
-    ? 'Post a Job'
-    : isEmployer
-      ? 'Post a Job'
-      : 'Employer sign in';
+  const employerLoginHref = session && isEmployer ? '/employer/jobs' : '/employer/login';
+  const employerLoginLabel = session && isEmployer ? 'Employer dashboard' : 'Employer login';
 
   return (
     <section>
@@ -29,14 +26,23 @@ export default function CTASection() {
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Are you an Employer?</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Post your job and reach skilled candidates in Visakhapatnam.
+            Post your job and reach skilled candidates in Visakhapatnam. Already registered? Sign in to
+            manage your listings and applications.
           </p>
-          <Link
-            to={employerHref}
-            className="mt-5 inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-          >
-            {employerLabel}
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            <Link
+              to={employerLoginHref}
+              className="inline-flex rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+            >
+              {employerLoginLabel}
+            </Link>
+            <Link
+              to={postJobHref}
+              className="inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+            >
+              Post a Job
+            </Link>
+          </div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

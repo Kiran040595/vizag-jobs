@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function NavbarPostJobLink({ className, onClick }) {
-  const { isEmployer, isLoading, session } = useEmployerAuth();
+  const { isEmployer, session } = useEmployerAuth();
 
-  const to = session && isEmployer ? '/employer/jobs' : '/employer/login';
+  const signedInAsEmployer = Boolean(session && isEmployer);
+  const to = signedInAsEmployer ? '/employer/jobs/new' : '/employer/register';
 
   return (
     <Link to={to} className={className} onClick={onClick}>
-      {isLoading ? 'Post a job' : session && isEmployer ? 'Employer dashboard' : 'Post a job'}
+      Post a job
     </Link>
   );
 }
