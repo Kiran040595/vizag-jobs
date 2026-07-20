@@ -379,20 +379,44 @@ export default function AdminEmployersPage() {
                   </div>
 
                   <div className="flex shrink-0 flex-col gap-3 lg:items-end">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                      <p>
-                        <span className="font-semibold text-slate-900">{employer.jobStats.total}</span> jobs
-                        submitted
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {employer.jobStats.pending} pending · {employer.jobStats.published} published
-                      </p>
-                    </div>
+                    {employer.jobStats.total > 0 ? (
+                      <Link
+                        to={`/admin/jobs?employerId=${encodeURIComponent(employer.userId)}`}
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-900"
+                      >
+                        <p>
+                          <span className="font-semibold text-slate-900">{employer.jobStats.total}</span> jobs
+                          submitted
+                        </p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {employer.jobStats.pending} pending · {employer.jobStats.published} published
+                        </p>
+                        <p className="mt-2 text-xs font-semibold text-cyan-700">Open &amp; manage jobs →</p>
+                      </Link>
+                    ) : (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        <p>
+                          <span className="font-semibold text-slate-900">{employer.jobStats.total}</span> jobs
+                          submitted
+                        </p>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {employer.jobStats.pending} pending · {employer.jobStats.published} published
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap gap-2">
+                      {employer.jobStats.total > 0 ? (
+                        <Link
+                          to={`/admin/jobs?employerId=${encodeURIComponent(employer.userId)}`}
+                          className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100"
+                        >
+                          View jobs
+                        </Link>
+                      ) : null}
                       {employer.jobStats.pending > 0 ? (
                         <Link
-                          to={`/admin/jobs?status=pending&q=${encodeURIComponent(employer.companyName)}`}
+                          to={`/admin/jobs?status=pending&employerId=${encodeURIComponent(employer.userId)}`}
                           className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800 transition hover:bg-blue-100"
                         >
                           Review pending jobs

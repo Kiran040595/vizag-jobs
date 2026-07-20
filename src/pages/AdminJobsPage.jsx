@@ -92,6 +92,8 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [busyJobId, setBusyJobId] = useState('');
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('q') || '');
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'all');
+  const [employerIdFilter, setEmployerIdFilter] = useState(() => searchParams.get('employerId') || '');
+  const [employerLabelById, setEmployerLabelById] = useState(() => new Map());
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -114,6 +116,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
         setJobs(sortJobs(data));
         setEmployers(employerRows.filter((row) => row.isActive));
+        const labelMap = new Map();
+        for (const row of employerRows) {
+          labelMap.set(row.userId, row.companyName || row.contactEmail || row.userId);
+        }
+        setEmployerLabelById(labelMap);
         setApplicationCounts(counts);
         setLoadError('');
       } catch (error) {
@@ -136,12 +143,22 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     };
   }, [isAdminScope]);
 
+  useEffect(() => {
+    setSearchTerm(searchParams.get('q') || '');
+    setStatusFilter(searchParams.get('status') || 'all');
+    setEmployerIdFilter(searchParams.get('employerId') || '');
+  }, [searchParams]);
+
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const filteredJobs = useMemo(() => {
     const normalizedTerm = deferredSearchTerm.trim().toLowerCase();
 
     return jobs.filter((job) => {
+      if (employerIdFilter && job.created_by !== employerIdFilter) {
+        return false;
+      }
+
       if (statusFilter === 'pending' && job.status !== 'pending') {
         return false;
       }
@@ -152,18 +169,27 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
       return normalizeSearchText(job).includes(normalizedTerm);
     });
-  }, [deferredSearchTerm, jobs, statusFilter]);
+  }, [deferredSearchTerm, employerIdFilter, jobs, statusFilter]);
 
-  const pendingCount = useMemo(() => jobs.filter((job) => job.status === 'pending').length, [jobs]);
+  const pendingCount = useMemo(() => {
+    const scoped = employerIdFilter
+      ? jobs.filter((job) => job.created_by === employerIdFilter)
+      : jobs;
+    return scoped.filter((job) => job.status === 'pending').length;
+  }, [employerIdFilter, jobs]);
   const selectedCount = selectedJobIds.size;
 
-  const employerLabelById = useMemo(() => {
-    const map = new Map();
-    for (const employer of employers) {
-      map.set(employer.userId, employer.companyName || employer.contactEmail || employer.userId);
-    }
-    return map;
-  }, [employers]);
+  const activeEmployerLabel = employerIdFilter
+    ? employerLabelById.get(employerIdFilter) || 'Selected employer'
+    : '';
+
+  const clearEmployerFilter = () => {
+    setEmployerIdFilter('');
+    const next = new URLSearchParams(searchParams);
+    next.delete('employerId');
+    const query = next.toString();
+    navigate(query ? `${jobsListPath}?${query}` : jobsListPath, { replace: true });
+  };
 
   const toggleJobSelected = (jobId) => {
     setSelectedJobIds((current) => {
@@ -395,6 +421,24 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           </div>
         </div>
 
+        {employerIdFilter ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+            <p>
+              Showing jobs for{' '}
+              <span className="font-semibold">{activeEmployerLabel}</span>
+              {filteredJobs.length > 0 ? ` (${filteredJobs.length})` : ''}. Edit, publish, feature,
+              or manage applications as usual.
+            </p>
+            <button
+              type="button"
+              onClick={clearEmployerFilter}
+              className="rounded-xl border border-cyan-300 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100"
+            >
+              Clear employer filter
+            </button>
+          </div>
+        ) : null}
+
         {!isLoading && filteredJobs.length > 0 ? (
           <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 sm:flex-row sm:flex-wrap sm:items-end">
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -461,7 +505,9 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
             <h3 className="text-lg font-bold text-slate-900">No jobs match this filter.</h3>
             <p className="mt-2 text-sm text-slate-600">
-              {isAdminScope
+              {employerIdFilter
+                ? 'This employer has no jobs matching the current status/search filters.'
+                : isAdminScope
                 ? 'Create a new job from New Job to get started. External fetch jobs stay on Fetch external jobs.'
                 : 'Try a different search or status filter.'}
             </p>
