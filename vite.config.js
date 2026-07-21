@@ -106,15 +106,18 @@ export default defineConfig({
             },
           },
           {
+            // Public job/API traffic must not go through Workbox. NetworkFirst
+            // without a timeout can hang after the SW installs (incognito/first
+            // visit has no SW and loads fine; later visits show the spinner longer).
+            // The app already caches lists in memory + sessionStorage.
             urlPattern: /^https:\/\/(?:[a-z0-9-]+\.)?supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 3600
-              }
-            }
+            handler: 'NetworkOnly',
+            method: 'GET',
+          },
+          {
+            urlPattern: /^https:\/\/(?:[a-z0-9-]+\.)?supabase\.co\/.*/i,
+            handler: 'NetworkOnly',
+            method: 'POST',
           },
           {
             urlPattern: /.*\.(?:jpg|jpeg|png|gif)$/,

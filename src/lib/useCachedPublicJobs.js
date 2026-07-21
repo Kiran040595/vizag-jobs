@@ -1,40 +1,32 @@
 import { useEffect, useState } from 'react';
-import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
+import { fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from './jobDisplayWindow';
+import { readCachedPublicJobs, writeCachedPublicJobs } from './publicJobsSessionCache';
 
-const CACHE_KEY = 'vizagJobs_v2';
+export { PUBLIC_JOBS_CACHE_KEY, readCachedPublicJobs, writeCachedPublicJobs } from './publicJobsSessionCache';
 
 /**
  * Load published jobs with sessionStorage cache (shared across listing pages).
  */
 export function useCachedPublicJobs() {
-  const [allJobs, setAllJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allJobs, setAllJobs] = useState(() => readCachedPublicJobs()?.jobs || []);
+  const [isLoading, setIsLoading] = useState(() => {
+    // Re-read is cheap; keep initializer self-contained for Strict Mode remounts.
+    return !(readCachedPublicJobs()?.jobs?.length > 0);
+  });
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
 
     const loadJobs = async () => {
-      const cachedData = sessionStorage.getItem(CACHE_KEY);
-
-      if (cachedData) {
-        try {
-          const { jobs, timestamp } = JSON.parse(cachedData);
-          const age = Date.now() - Number(timestamp);
-          if (Array.isArray(jobs) && jobs.length > 0 && age < JOB_LIST_SESSION_CACHE_TTL_MS) {
-            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
-            if (visibleJobs.length > 0) {
-              if (isMounted) {
-                setAllJobs(visibleJobs);
-                setIsLoading(false);
-              }
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error parsing cached jobs:', error);
+      const cached = readCachedPublicJobs();
+      if (cached?.jobs?.length) {
+        if (isMounted) {
+          setAllJobs(cached.jobs);
+          setIsLoading(false);
         }
+        return;
       }
 
       try {
@@ -44,7 +36,7 @@ export function useCachedPublicJobs() {
         if (jobs.length > 0) {
           const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
           setAllJobs(visibleJobs);
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
+          writeCachedPublicJobs(jobs);
           setLoadError('');
           return;
         }

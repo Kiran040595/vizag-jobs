@@ -1,99 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
-import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { sortJobsForListing } from '../lib/jobFilters';
 import { isItRelatedJob } from '../lib/jobItMatch';
 import { toAbsoluteUrl } from '../lib/site';
-
-const jobMatchesSearchText = (job, raw) => {
-  const q = raw.trim().toLowerCase();
-  if (!q) return true;
-  // Listing payload is slim — full `description` lives only on the detail
-  // page now. Search the metadata fields actually present on the card.
-  const blob = [
-    job.title,
-    job.company,
-    job.skills,
-    job.shortDescription,
-    job.category,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  return blob.includes(q);
-};
+import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
 
 export default function ItJobsInVizagPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [allJobs, setAllJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadJobs = async () => {
-      const cachedData = sessionStorage.getItem('vizagJobs_v2');
-      const CACHE_DURATION = JOB_LIST_SESSION_CACHE_TTL_MS;
-
-      if (cachedData) {
-        try {
-          const { jobs, timestamp } = JSON.parse(cachedData);
-          const now = Date.now();
-
-          if (jobs && jobs.length > 0 && (now - timestamp) < CACHE_DURATION) {
-            const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
-            if (visibleJobs.length > 0) {
-              setAllJobs(visibleJobs);
-              setIsLoading(false);
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error parsing cached jobs:', error);
-        }
-      }
-
-      // If no cache, expired cache, or empty cache, fetch from API
-      try {
-        const jobs = await fetchJobs();
-        if (!isMounted) return;
-
-        if (jobs.length > 0) {
-          setAllJobs(jobs);
-          // Cache with timestamp
-          const cacheData = {
-            jobs,
-            timestamp: Date.now()
-          };
-          sessionStorage.setItem('vizagJobs_v2', JSON.stringify(cacheData));
-          setLoadError('');
-          return;
-        }
-
-        setLoadError('No jobs found. Please check back later.');
-      } catch (error) {
-        if (!isMounted) return;
-        setLoadError(error instanceof Error ? error.message : 'Could not load jobs. Please check your connection.');
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadJobs();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { allJobs, isLoading, loadError } = useCachedPublicJobs();
 
   const filteredJobs = useMemo(
     () =>

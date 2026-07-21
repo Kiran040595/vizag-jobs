@@ -13,8 +13,11 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
-import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
+import {
+  readCachedPublicJobs,
+  writeCachedPublicJobs,
+} from '../lib/publicJobsSessionCache';
 import { computeSiteStats } from '../lib/siteStats';
 import {
   CATEGORY_OPTIONS,
@@ -27,7 +30,6 @@ import {
 } from '../lib/jobFilters';
 
 const SEARCH_DEBOUNCE_MS = 300;
-const CACHE_KEY = 'vizagJobs_v2';
 const CACHE_TTL_MS = JOB_LIST_SESSION_CACHE_TTL_MS;
 // Trigger a background refresh once we're within the last minute of the TTL.
 const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_MS * 0.8));
@@ -36,20 +38,30 @@ const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_M
 const CATEGORY_LABEL_TO_ID = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.label, o.id]));
 const CATEGORY_ID_TO_LABEL = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.id, o.label]));
 
-const initialBootstrapJobs = (() => {
+const initialJobsState = (() => {
   try {
-    return readHomeBootstrapJobs();
+    const bootstrap = readHomeBootstrapJobs();
+    if (bootstrap?.length) {
+      return { jobs: bootstrap, fromCache: false, cacheAge: 0 };
+    }
   } catch {
-    return null;
+    // ignore bootstrap parse errors
   }
+
+  const cached = readCachedPublicJobs();
+  if (cached?.jobs?.length) {
+    return { jobs: cached.jobs, fromCache: true, cacheAge: cached.age };
+  }
+
+  return { jobs: [], fromCache: false, cacheAge: 0 };
 })();
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = useMemo(() => readFiltersFromSearchParams(searchParams), [searchParams]);
 
-  const [allJobs, setAllJobs] = useState(() => initialBootstrapJobs || []);
-  const [isLoading, setIsLoading] = useState(() => !initialBootstrapJobs?.length);
+  const [allJobs, setAllJobs] = useState(() => initialJobsState.jobs);
+  const [isLoading, setIsLoading] = useState(() => initialJobsState.jobs.length === 0);
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
 
@@ -87,7 +99,7 @@ export default function HomePage() {
       const jobs = await fetchJobs({}, true);
       if (jobs.length > 0) {
         setAllJobs(jobs);
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
+        writeCachedPublicJobs(jobs);
       }
     } catch (error) {
       console.warn('Background refresh failed:', error);
@@ -105,7 +117,7 @@ export default function HomePage() {
         if (!isMounted) return;
         if (jobs.length > 0) {
           setAllJobs(jobs);
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
+          writeCachedPublicJobs(jobs);
           setLoadError('');
           return;
         }
@@ -122,28 +134,19 @@ export default function HomePage() {
     };
 
     const loadJobs = async () => {
-      const cachedRaw = sessionStorage.getItem(CACHE_KEY);
-      if (cachedRaw) {
-        try {
-          const { jobs, timestamp } = JSON.parse(cachedRaw);
-          const age = Date.now() - Number(timestamp);
-          if (Array.isArray(jobs) && jobs.length > 0 && age < CACHE_TTL_MS) {
-            const visible = filterProcessedJobsForPublicDisplay(jobs);
-            if (visible.length > 0) {
-              setAllJobs(visible);
-              setIsLoading(false);
-              if (age > CACHE_STALE_AT_MS) refreshJobsInBackground();
-              return;
-            }
-          }
-        } catch (err) {
-          console.error('Error parsing cached jobs:', err);
+      const cached = readCachedPublicJobs();
+      if (cached?.jobs?.length) {
+        setAllJobs(cached.jobs);
+        setIsLoading(false);
+        if (cached.age > CACHE_STALE_AT_MS) {
+          void refreshJobsInBackground();
         }
+        return;
       }
 
       // Edge middleware left a first-paint snapshot — show it, then load the full list.
-      if (initialBootstrapJobs?.length) {
-        setAllJobs(initialBootstrapJobs);
+      if (initialJobsState.jobs.length > 0 && !initialJobsState.fromCache) {
+        setAllJobs(initialJobsState.jobs);
         setIsLoading(false);
         setIsBackgroundRefreshing(true);
         try {
@@ -151,7 +154,7 @@ export default function HomePage() {
           if (!isMounted) return;
           if (jobs.length > 0) {
             setAllJobs(jobs);
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
+            writeCachedPublicJobs(jobs);
             setLoadError('');
           }
         } catch (error) {

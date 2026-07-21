@@ -1,7 +1,12 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseClient';
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
+
+export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache';
+
+/** Prefer the anon client so public lists never block on auth session refresh. */
+const getPublicClient = () => supabasePublic || supabase;
 
 const CACHE_DURATION = 60_000;
 const DEFAULT_TABLE_NAME = 'jobs';
@@ -16,14 +21,6 @@ export const DEFAULT_LIST_LIMIT = null;
 
 /** Supabase/PostgREST page size for paginated job list fetches. */
 const JOB_LIST_PAGE_SIZE = 1000;
-
-/**
- * Shared session-storage TTL for the public listing pages. Bumped from 5 min
- * to 20 min to reduce repeat fetches per session — the public site doesn't
- * need fresher-than-this data, and the in-memory cache (60s) still keeps
- * navigation snappy.
- */
-export const JOB_LIST_SESSION_CACHE_TTL_MS = 20 * 60 * 1000;
 
 /**
  * Slim column allow-list for listing queries. Anything the home-page card,
@@ -171,8 +168,9 @@ const escapeIlike = (value) => value.replaceAll('%', '\\%').replaceAll(',', '\\,
 const buildSupabaseQuery = (filters = {}, options = {}) => {
   const { applyLimit = true } = options;
   const limit = filters.limit ?? DEFAULT_LIST_LIMIT;
+  const client = getPublicClient();
 
-  let query = supabase
+  let query = client
     .from(jobsTable)
     .select(LIST_COLUMNS)
     .eq('status', 'published')
@@ -246,7 +244,7 @@ const fetchJobsPaginated = async (filters = {}) => {
 };
 
 export const fetchJobs = async (filters = {}, forceRefresh = false) => {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured || !getPublicClient()) {
     throw new Error(
       'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
@@ -302,14 +300,18 @@ const jobByIdCache = new Map();
 export const fetchJobById = async (idOrSlug, options = {}) => {
   const { forceRefresh = false } = options;
   if (!idOrSlug) return null;
-  if (!isSupabaseConfigured || !supabase) {
+
+  const key = String(idOrSlug);
+  const includeAllStatuses = Boolean(options.includeAllStatuses);
+  // Admin/draft lookups need the authenticated client (RLS); public reads use
+  // the anon client so they never wait on session refresh.
+  const client = includeAllStatuses ? supabase : getPublicClient();
+  if (!isSupabaseConfigured || !client) {
     throw new Error(
       'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
   }
 
-  const key = String(idOrSlug);
-  const includeAllStatuses = Boolean(options.includeAllStatuses);
   // Cache buckets are per-scope so a public miss followed by an admin hit
   // (or vice-versa) doesn't return stale data from the wrong bucket.
   const cacheKey = includeAllStatuses ? `admin:${key}` : `public:${key}`;
@@ -321,7 +323,7 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   const lookupColumn = UUID_RE.test(key) ? 'id' : 'slug';
 
   const data = await retryWithBackoff(async () => {
-    let query = supabase.from(jobsTable).select('*').eq(lookupColumn, key).limit(1);
+    let query = client.from(jobsTable).select('*').eq(lookupColumn, key).limit(1);
 
     // Admin viewers can read drafts/archived rows (RLS still gates this);
     // public viewers only see published jobs within the display window.
@@ -348,14 +350,15 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
 
 /** Published jobs marked for the Instagram bio page (/ig), newest first. */
 export const fetchInstagramJobs = async () => {
-  if (!isSupabaseConfigured || !supabase) {
+  const client = getPublicClient();
+  if (!isSupabaseConfigured || !client) {
     throw new Error(
       'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
   }
 
   const data = await retryWithBackoff(async () => {
-    const { data: rows, error } = await supabase
+    const { data: rows, error } = await client
       .from(jobsTable)
       .select(LIST_COLUMNS)
       .eq('status', 'published')

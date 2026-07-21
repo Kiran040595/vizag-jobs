@@ -1,5 +1,20 @@
 import { registerSW } from 'virtual:pwa-register';
 
+const LEGACY_RUNTIME_CACHES = ['supabase-api-cache'];
+
+/** Drop obsolete Workbox runtime caches that used to intercept Supabase. */
+export const clearLegacyRuntimeCaches = async () => {
+  if (!('caches' in window)) {
+    return;
+  }
+
+  try {
+    await Promise.all(LEGACY_RUNTIME_CACHES.map((name) => caches.delete(name)));
+  } catch (error) {
+    console.warn('[PWA] Could not clear legacy runtime caches:', error);
+  }
+};
+
 /** Clear legacy service workers that can serve stale index.html after deploys. */
 export const unregisterLegacyServiceWorkers = async () => {
   if (!('serviceWorker' in navigator)) {
@@ -32,6 +47,8 @@ export const registerPwaAutoUpdate = () => {
   }
 
   try {
+    void clearLegacyRuntimeCaches();
+
     registerSW({
       immediate: true,
       onRegisteredSW(_swUrl, registration) {
