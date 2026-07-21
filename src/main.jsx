@@ -22,6 +22,7 @@ import { CookieConsentProvider } from './context/CookieConsentContext.jsx'
 import ConditionalAnalytics from './components/ConditionalAnalytics.jsx'
 import ConditionalAdSense from './components/ConditionalAdSense.jsx'
 import ToastViewport from './components/ToastViewport.jsx'
+import ExternalApplyPromptHost from './components/ExternalApplyPromptHost.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')).render(
                 <HelmetProvider>
                   <App />
                   <ToastViewport />
+                  <ExternalApplyPromptHost />
                   <ConditionalAnalytics />
                   <ConditionalAdSense />
                 </HelmetProvider>

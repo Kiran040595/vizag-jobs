@@ -14,6 +14,7 @@ import {
   rejectAdminJob,
   toggleAdminJobFeatured,
   toggleAdminJobInstagram,
+  updateAdminJobGroupLink,
   updateAdminJobStatus,
 } from '../services/adminJobs';
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
@@ -392,6 +393,35 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     }
   };
 
+  const handleGroupLink = async (job) => {
+    const current = String(job.group_link || '').trim();
+    const next = window.prompt(
+      'Recruitment group link (WhatsApp or Instagram). Leave empty to clear. Shown after on-platform apply only.',
+      current,
+    );
+    if (next === null) {
+      return;
+    }
+
+    setBusyJobId(job.id);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJob = await updateAdminJobGroupLink(job.id, next);
+      setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+      setNotice(
+        updatedJob.group_link
+          ? 'Group link saved. Applicants will see it after applying on-platform.'
+          : 'Group link cleared.',
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not update group link.');
+    } finally {
+      setBusyJobId('');
+    }
+  };
+
   return (
     <AdminShell
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
@@ -595,6 +625,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                               Instagram
                             </span>
                           ) : null}
+                          {job.group_link ? (
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+                              Group link
+                            </span>
+                          ) : null}
                           {job.apply_mode === 'internal' ? (
                             <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
                               On-platform apply
@@ -677,6 +712,19 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {job.is_featured ? 'Unfeature' : 'Feature'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleGroupLink(job)}
+                        className={`rounded-2xl px-3.5 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          job.group_link
+                            ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800'
+                        }`}
+                        title="WhatsApp/Instagram group shown after students apply on-platform"
+                      >
+                        {job.group_link ? 'Edit group link' : 'Add group link'}
                       </button>
                       <button
                         type="button"

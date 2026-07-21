@@ -14,6 +14,8 @@ import { validateResumeFile } from '../services/studentResume';
 import { pushToast } from '../lib/toast';
 import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 import { clearPendingApplyJobMeta } from '../lib/studentApplyRedirect';
+import { getJobGroupLink } from '../lib/jobGroupLink';
+import ApplySuccessGroupModal from '../components/ApplySuccessGroupModal';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -32,6 +34,7 @@ function StudentApplyContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
   const returnPath = searchParams.get('next') || (job ? getJobDetailPath(job) : '/jobs');
 
@@ -104,9 +107,15 @@ function StudentApplyContent() {
       pushToast({ message: 'Application submitted successfully.', type: 'success' });
       clearPendingApplyJobMeta();
       trackStudentFunnel('student_apply_submitted', { jobId });
-      setTimeout(() => {
-        navigate(returnPath, { replace: true });
-      }, 1200);
+
+      const groupLink = getJobGroupLink(job);
+      if (groupLink) {
+        setShowGroupModal(true);
+      } else {
+        setTimeout(() => {
+          navigate(returnPath, { replace: true });
+        }, 1200);
+      }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not submit your application.');
     } finally {
@@ -254,6 +263,18 @@ function StudentApplyContent() {
             </form>
           )}
         </div>
+      ) : null}
+
+      {showGroupModal && getJobGroupLink(job) ? (
+        <ApplySuccessGroupModal
+          jobTitle={job?.title || ''}
+          jobCompany={displayCompanyName(job?.company)}
+          groupLink={getJobGroupLink(job)}
+          onClose={() => {
+            setShowGroupModal(false);
+            navigate(returnPath, { replace: true });
+          }}
+        />
       ) : null}
     </StudentShell>
   );

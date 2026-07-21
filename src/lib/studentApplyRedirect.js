@@ -1,3 +1,5 @@
+import { getDailyUpdatesChannelUrl, stashExternalApplyPrompt } from './jobGroupLink';
+
 const PENDING_APPLY_KEY = 'vizagjobs:pending-apply-url';
 const PENDING_APPLY_JOB_KEY = 'vizagjobs:pending-apply-job-id';
 const PENDING_APPLY_META_KEY = 'vizagjobs:pending-apply-meta';
@@ -157,9 +159,14 @@ export const buildInternalApplyPath = (jobId, jobPath = '') => {
   return `/student/apply/${jobId}${query ? `?${query}` : ''}`;
 };
 
-export const openExternalApplyLink = (url) => {
+/** Show Instagram channel prompt, then open external apply URL. */
+export const openExternalApplyLink = (url, options = {}) => {
   if (!url) {
     return;
   }
-  window.open(url, '_blank', 'noopener,noreferrer');
+  stashExternalApplyPrompt({
+    applyUrl: url,
+    channelUrl: options.channelUrl || getDailyUpdatesChannelUrl(),
+    jobTitle: options.jobTitle || options.job?.title || '',
+  });
 };

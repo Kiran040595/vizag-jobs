@@ -12,6 +12,7 @@ import {
   consumePendingApplyJobId,
   consumePendingApplyUrl,
   openExternalApplyLink,
+  readPendingApplyJobMeta,
   resolvePostAuthDestination,
   shouldAutoApplyAfterAuth,
   buildStudentAuthPath,
@@ -118,7 +119,8 @@ function StudentLoginPanel({ searchParams }) {
 
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply && profileComplete) {
-      openExternalApplyLink(pendingApply);
+      const meta = readPendingApplyJobMeta();
+      openExternalApplyLink(pendingApply, { jobTitle: meta?.title || '' });
     }
 
     navigate(returnPath, { replace: true });

@@ -403,6 +403,20 @@ export default function AdminJobForm({
         </label>
       </div>
 
+      <div className="mt-5">
+        <Field label="Recruitment group link (optional)">
+          <TextInput
+            name="group_link"
+            value={formValues.group_link}
+            onChange={handleFieldChange}
+            placeholder="https://chat.whatsapp.com/... or Instagram group URL"
+          />
+        </Field>
+        <p className="mt-2 text-xs text-slate-500">
+          If set, students see a join-group prompt after they apply on-platform. Leave blank to skip.
+        </p>
+      </div>
+
       <div className="mt-6 flex flex-wrap gap-3">
         <button
           type="button"

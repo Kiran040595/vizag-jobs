@@ -5,6 +5,7 @@ import { applyButtonLabel, isInternalApplyJob } from '../../lib/jobApplyMode';
 import {
   buildInternalApplyPath,
   buildStudentAuthPath,
+  openExternalApplyLink,
   stashPendingApplyJobId,
   stashPendingApplyJobMeta,
   stashPendingApplyUrl,
@@ -51,7 +52,7 @@ export default function StudentApplyButton({
         return;
       }
 
-      window.open(applyLink, '_blank', 'noopener,noreferrer');
+      openExternalApplyLink(applyLink, { jobTitle });
       return;
     }
 

@@ -12,6 +12,7 @@ import {
   consumePendingApplyJobId,
   consumePendingApplyUrl,
   openExternalApplyLink,
+  readPendingApplyJobMeta,
   resolvePostAuthDestination,
   shouldAutoApplyAfterAuth,
 } from '../lib/studentApplyRedirect';
@@ -69,7 +70,8 @@ export default function StudentRegisterPage() {
     }
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply && profileComplete) {
-      openExternalApplyLink(pendingApply);
+      const meta = readPendingApplyJobMeta();
+      openExternalApplyLink(pendingApply, { jobTitle: meta?.title || '' });
     }
     navigate(destination, { replace: true });
   };

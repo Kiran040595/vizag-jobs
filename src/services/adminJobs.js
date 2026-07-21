@@ -63,6 +63,7 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'status',
   'is_featured',
   'is_instagram',
+  'group_link',
   'json_ld',
   'seo_meta',
 ]);
@@ -450,6 +451,7 @@ export const getEmptyJobForm = () => {
     status: 'draft',
     is_featured: false,
     is_instagram: false,
+    group_link: '',
   };
 };
 
@@ -469,6 +471,7 @@ export const serializeJobForm = (values, statusOverride) => {
     status: statusOverride || values.status || 'draft',
     is_featured: toBoolean(values.is_featured),
     is_instagram: toBoolean(values.is_instagram),
+    group_link: normalizeOptionalText(values.group_link),
     apply_mode: values.apply_mode === 'internal' ? 'internal' : 'external',
   };
 
@@ -511,6 +514,7 @@ export const deserializeJobForForm = (job) => {
     is_fresher: Boolean(job.is_fresher),
     is_featured: Boolean(job.is_featured),
     is_instagram: Boolean(job.is_instagram),
+    group_link: job.group_link || '',
   };
 };
 
@@ -993,6 +997,28 @@ export const toggleAdminJobInstagram = async (jobId, isInstagram) => {
 
   if (error) {
     throw mapError(error, 'Could not update Instagram listing.');
+  }
+
+  invalidatePublicJobCache();
+  return data;
+};
+
+export const updateAdminJobGroupLink = async (jobId, groupLink) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const trimmed = String(groupLink || '').trim();
+
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update({ group_link: trimmed || null })
+    .eq('id', jobId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw mapError(error, 'Could not update group link.');
   }
 
   invalidatePublicJobCache();
