@@ -75,7 +75,10 @@ export default function InstagramJobsPage() {
         {!isLoading && !loadError && jobs.length === 0 ? (
           <div className="mt-10 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
             <h2 className="text-lg font-bold text-slate-900">No Instagram jobs right now</h2>
-            <p className="mt-2 text-sm text-slate-600">Check back soon, or browse all openings on the site.</p>
+            <p className="mt-2 text-sm text-slate-600">
+              In admin, open a job and tap <span className="font-semibold">Insta</span> (or{' '}
+              <span className="font-semibold">Copy Instagram</span>) to list it here.
+            </p>
             <Link
               to="/jobs"
               className="mt-6 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"

@@ -71,7 +71,7 @@ export default function JobShareButtons({ job }) {
     try {
       await navigator.clipboard.writeText(buildInstagramJobCaption(job));
       pushToast({
-        message: 'Caption copied. Use Link in bio: jobsinvizag.in/ig (mark job as Insta in admin).',
+        message: 'Caption copied. Use Link in bio: jobsinvizag.in/ig',
         type: 'success',
         durationMs: 6500,
       });

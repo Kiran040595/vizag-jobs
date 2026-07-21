@@ -655,7 +655,15 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
                     <div className="flex flex-wrap gap-2">
                       {job.status === 'published' ? (
-                        <CopyInstagramCaptionButton job={job} disabled={isBusy} />
+                        <CopyInstagramCaptionButton
+                          job={job}
+                          disabled={isBusy}
+                          onInstagramMarked={() => {
+                            setJobs((currentJobs) =>
+                              upsertJob(currentJobs, { ...job, is_instagram: true }),
+                            );
+                          }}
+                        />
                       ) : null}
                       {job.status === 'published' && job.apply_mode === 'internal' ? (
                         <button
