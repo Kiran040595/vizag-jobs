@@ -3,8 +3,11 @@ import { afterEach, describe, it } from 'node:test';
 import {
   JOB_LIST_SESSION_CACHE_TTL_MS,
   PUBLIC_JOBS_CACHE_KEY,
+  INSTAGRAM_JOBS_CACHE_KEY,
   readCachedPublicJobs,
   writeCachedPublicJobs,
+  readCachedInstagramJobs,
+  writeCachedInstagramJobs,
 } from '../src/lib/publicJobsSessionCache.js';
 
 const memoryStore = new Map();
@@ -78,5 +81,51 @@ describe('public jobs session cache', () => {
     );
 
     assert.equal(readCachedPublicJobs(), null);
+  });
+
+  it('hydrates Instagram jobs from dedicated cache', () => {
+    installSessionStorage();
+    const jobs = [
+      {
+        id: 'ig-1',
+        title: 'Insta role',
+        company: 'Acme',
+        isInstagram: true,
+        postedAt: new Date().toISOString(),
+      },
+    ];
+
+    writeCachedInstagramJobs(jobs);
+    const cached = readCachedInstagramJobs();
+
+    assert.ok(cached);
+    assert.equal(cached.jobs.length, 1);
+    assert.equal(cached.jobs[0].id, 'ig-1');
+  });
+
+  it('falls back to Instagram-flagged rows from the public list cache', () => {
+    installSessionStorage();
+    writeCachedPublicJobs([
+      {
+        id: 'a',
+        title: 'Normal',
+        company: 'Acme',
+        isInstagram: false,
+        postedAt: new Date().toISOString(),
+      },
+      {
+        id: 'b',
+        title: 'Bio link',
+        company: 'Acme',
+        isInstagram: true,
+        postedAt: new Date().toISOString(),
+      },
+    ]);
+
+    const cached = readCachedInstagramJobs();
+    assert.ok(cached);
+    assert.equal(cached.jobs.length, 1);
+    assert.equal(cached.jobs[0].id, 'b');
+    assert.equal(sessionStorage.getItem(INSTAGRAM_JOBS_CACHE_KEY), null);
   });
 });

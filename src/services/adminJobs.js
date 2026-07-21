@@ -320,7 +320,8 @@ const invalidatePublicJobCache = () => {
   clearJobsCache();
   sessionStorage.removeItem('vizagJobs');
   sessionStorage.removeItem('vizagJobs_v2');
-  // Keep in sync with PUBLIC_JOBS_CACHE_KEY in useCachedPublicJobs.js
+  sessionStorage.removeItem('vizagJobs_ig_v1');
+  // Keep in sync with PUBLIC_JOBS_CACHE_KEY / INSTAGRAM_JOBS_CACHE_KEY
 };
 
 const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;

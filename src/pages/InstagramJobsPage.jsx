@@ -6,36 +6,82 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobList from '../components/JobList';
 import { fetchInstagramJobs } from '../services/jobs';
+import {
+  JOB_LIST_SESSION_CACHE_TTL_MS,
+  readCachedInstagramJobs,
+} from '../lib/publicJobsSessionCache';
+
+const CACHE_STALE_AT_MS = Math.max(
+  JOB_LIST_SESSION_CACHE_TTL_MS - 60_000,
+  Math.floor(JOB_LIST_SESSION_CACHE_TTL_MS * 0.8),
+);
+
+const initialCached = (() => {
+  try {
+    return readCachedInstagramJobs();
+  } catch {
+    return null;
+  }
+})();
 
 /**
  * Compact landing used as the social / bio link (route stays /ig).
  * Public copy matches Jobs in Vizag — no third-party brand names.
+ *
+ * Bio-link traffic often reopens this page repeatedly; hydrate from session
+ * cache on first paint so leaving and coming back does not re-show the spinner.
  */
 export default function InstagramJobsPage() {
-  const [jobs, setJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [jobs, setJobs] = useState(() => initialCached?.jobs || []);
+  const [isLoading, setIsLoading] = useState(() => !(initialCached?.jobs?.length > 0));
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     let ignore = false;
 
-    fetchInstagramJobs()
-      .then((rows) => {
+    const loadJobs = async () => {
+      const cached = readCachedInstagramJobs();
+      if (cached?.jobs?.length) {
+        setJobs(cached.jobs);
+        setIsLoading(false);
+        // Fresh enough — skip network. Near TTL end, refresh quietly in background.
+        if (cached.age <= CACHE_STALE_AT_MS) {
+          return;
+        }
+        setIsRefreshing(true);
+        try {
+          const rows = await fetchInstagramJobs({ forceRefresh: true });
+          if (!ignore) {
+            setJobs(rows);
+            setLoadError('');
+          }
+        } catch (error) {
+          console.warn('Background Instagram jobs refresh failed:', error);
+        } finally {
+          if (!ignore) setIsRefreshing(false);
+        }
+        return;
+      }
+
+      try {
+        const rows = await fetchInstagramJobs();
         if (!ignore) {
           setJobs(rows);
           setLoadError('');
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!ignore) {
           setLoadError(error instanceof Error ? error.message : 'Could not load jobs.');
         }
-      })
-      .finally(() => {
+      } finally {
         if (!ignore) {
           setIsLoading(false);
         }
-      });
+      }
+    };
+
+    void loadJobs();
 
     return () => {
       ignore = true;
@@ -57,6 +103,9 @@ export default function InstagramJobsPage() {
         <h1 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">Latest openings</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
           Fresh roles in Visakhapatnam. Open a job to view details and apply.
+          {isRefreshing ? (
+            <span className="ml-2 text-xs font-medium text-blue-600">Updating…</span>
+          ) : null}
         </p>
 
         {isLoading ? (

@@ -2,6 +2,7 @@ import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseC
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
+import { writeCachedInstagramJobs } from '../lib/publicJobsSessionCache';
 
 export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache';
 
@@ -9,6 +10,7 @@ export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache';
 const getPublicClient = () => supabasePublic || supabase;
 
 const CACHE_DURATION = 60_000;
+const instagramJobsCache = { jobs: null, timestamp: 0 };
 const DEFAULT_TABLE_NAME = 'jobs';
 const jobsTable = import.meta.env.VITE_SUPABASE_JOBS_TABLE || DEFAULT_TABLE_NAME;
 
@@ -349,12 +351,21 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
 };
 
 /** Published jobs marked for the Instagram bio page (/ig), newest first. */
-export const fetchInstagramJobs = async () => {
+export const fetchInstagramJobs = async (options = {}) => {
+  const { forceRefresh = false } = options;
   const client = getPublicClient();
   if (!isSupabaseConfigured || !client) {
     throw new Error(
       'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
+  }
+
+  if (
+    !forceRefresh &&
+    Array.isArray(instagramJobsCache.jobs) &&
+    Date.now() - instagramJobsCache.timestamp < CACHE_DURATION
+  ) {
+    return instagramJobsCache.jobs;
   }
 
   const data = await retryWithBackoff(async () => {
@@ -372,7 +383,11 @@ export const fetchInstagramJobs = async () => {
     return rows || [];
   });
 
-  return data.map((row, index) => processJobData(row, index));
+  const processed = data.map((row, index) => processJobData(row, index));
+  instagramJobsCache.jobs = processed;
+  instagramJobsCache.timestamp = Date.now();
+  writeCachedInstagramJobs(processed);
+  return processed;
 };
 
 export const getAllJobs = async (limit, forceRefresh = false) =>
@@ -393,4 +408,6 @@ export const searchJobs = async (searchTerm, limit, forceRefresh = false) =>
 export const clearJobsCache = () => {
   jobsCache.clear();
   jobByIdCache.clear();
+  instagramJobsCache.jobs = null;
+  instagramJobsCache.timestamp = 0;
 };
