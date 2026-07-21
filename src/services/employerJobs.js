@@ -110,23 +110,28 @@ export const upsertEmployerProfile = async (profile) => {
   return data;
 };
 
-export const fetchMyJobs = async () => {
+export const fetchMyJobs = async (userId) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let currentUserId = userId;
 
-  if (!user) {
+  if (!currentUserId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  }
+
+  if (!currentUserId) {
     throw new Error('You must be signed in.');
   }
 
   const { data, error } = await supabase
     .from(JOBS_TABLE)
     .select('*')
-    .eq('created_by', user.id)
+    .eq('created_by', currentUserId)
     .order('created_at', { ascending: false });
 
   if (error) {

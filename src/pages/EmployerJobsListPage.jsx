@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
 import EmployerShell from '../components/employer/EmployerShell';
+import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import { fetchMyJobs } from '../services/employerJobs';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
 
@@ -24,6 +25,7 @@ const statusLabel = (job) => {
 
 function EmployerJobsListContent() {
   const navigate = useNavigate();
+  const { user } = useEmployerAuth();
   const [jobs, setJobs] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -33,19 +35,35 @@ function EmployerJobsListContent() {
     let ignore = false;
 
     const load = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const data = await fetchMyJobs();
-        const publishedIds = data.filter((job) => job.status === 'published').map((job) => job.id);
-        const counts = await fetchJobApplicationCounts(publishedIds);
+        const data = await fetchMyJobs(user.id);
 
         if (!ignore) {
           setJobs(data);
-          setApplicationCounts(counts);
           setLoadError('');
+          setIsLoading(false);
+        }
+
+        const publishedIds = data.filter((job) => job.status === 'published').map((job) => job.id);
+        if (publishedIds.length > 0) {
+          try {
+            const counts = await fetchJobApplicationCounts(publishedIds);
+            if (!ignore) {
+              setApplicationCounts(counts);
+            }
+          } catch (error) {
+            console.warn('Could not load employer application counts:', error);
+          }
         }
       } catch (error) {
         if (!ignore) {
           setLoadError(error instanceof Error ? error.message : 'Could not load jobs.');
+          setIsLoading(false);
         }
       } finally {
         if (!ignore) {
@@ -58,7 +76,7 @@ function EmployerJobsListContent() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [user?.id]);
 
   return (
     <EmployerShell title="My job submissions" description="Track pending, live, and rejected listings.">

@@ -206,8 +206,6 @@ export function EmployerAuthProvider({ children }) {
         }
 
         const shouldShowLoader =
-          event === 'INITIAL_SESSION' ||
-          event === 'SIGNED_IN' ||
           event === 'SIGNED_OUT' ||
           event === 'USER_UPDATED' ||
           event === 'PASSWORD_RECOVERY';
@@ -227,10 +225,18 @@ export function EmployerAuthProvider({ children }) {
       throw new Error('Supabase is not configured.');
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       throw error;
     }
+
+    if (data.session?.user) {
+      setSession(data.session);
+      await refreshEmployerAccess(data.session.user.id);
+      setIsLoading(false);
+    }
+
+    return data;
   };
 
   const signUp = async ({ email, password, companyName }) => {

@@ -1,4 +1,4 @@
-import { getDailyUpdatesChannelUrl, stashExternalApplyPrompt } from './jobGroupLink';
+import { getDailyUpdatesChannelUrl, stashExternalApplyPrompt } from './jobGroupLink.js';
 
 const PENDING_APPLY_KEY = 'vizagjobs:pending-apply-url';
 const PENDING_APPLY_JOB_KEY = 'vizagjobs:pending-apply-job-id';

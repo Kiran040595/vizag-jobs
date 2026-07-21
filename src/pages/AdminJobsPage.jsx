@@ -105,27 +105,41 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
     const loadJobs = async () => {
       try {
-        const [data, employerRows] = await Promise.all([
-          isAdminScope ? fetchAdminCreatedJobs() : fetchEmployerSubmittedJobs(),
-          fetchAdminEmployerProfiles(),
-        ]);
-        const internalPublishedIds = data
-          .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
-          .map((job) => job.id);
-        const counts = await fetchJobApplicationCounts(internalPublishedIds);
+        const data = isAdminScope ? await fetchAdminCreatedJobs() : await fetchEmployerSubmittedJobs();
         if (ignore) {
           return;
         }
 
         setJobs(sortJobs(data));
-        setEmployers(employerRows.filter((row) => row.isActive));
-        const labelMap = new Map();
-        for (const row of employerRows) {
-          labelMap.set(row.userId, row.companyName || row.contactEmail || row.userId);
-        }
-        setEmployerLabelById(labelMap);
-        setApplicationCounts(counts);
         setLoadError('');
+        setIsLoading(false);
+
+        const internalPublishedIds = data
+          .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
+          .map((job) => job.id);
+
+        Promise.all([
+          fetchAdminEmployerProfiles(),
+          internalPublishedIds.length > 0
+            ? fetchJobApplicationCounts(internalPublishedIds)
+            : Promise.resolve({}),
+        ])
+          .then(([employerRows, counts]) => {
+            if (ignore) {
+              return;
+            }
+
+            setEmployers(employerRows.filter((row) => row.isActive));
+            const labelMap = new Map();
+            for (const row of employerRows) {
+              labelMap.set(row.userId, row.companyName || row.contactEmail || row.userId);
+            }
+            setEmployerLabelById(labelMap);
+            setApplicationCounts(counts);
+          })
+          .catch((error) => {
+            console.warn('Could not load admin job secondary data:', error);
+          });
       } catch (error) {
         if (ignore) {
           return;
@@ -147,9 +161,13 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   }, [isAdminScope]);
 
   useEffect(() => {
-    setSearchTerm(searchParams.get('q') || '');
-    setStatusFilter(searchParams.get('status') || 'all');
-    setEmployerIdFilter(searchParams.get('employerId') || '');
+    const handle = window.setTimeout(() => {
+      setSearchTerm(searchParams.get('q') || '');
+      setStatusFilter(searchParams.get('status') || 'all');
+      setEmployerIdFilter(searchParams.get('employerId') || '');
+    }, 0);
+
+    return () => window.clearTimeout(handle);
   }, [searchParams]);
 
   const deferredSearchTerm = useDeferredValue(searchTerm);
