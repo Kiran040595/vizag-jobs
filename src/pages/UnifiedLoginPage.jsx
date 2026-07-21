@@ -335,7 +335,7 @@ function EmployerLoginPanel({ searchParams }) {
       <p className="mt-6 text-sm text-slate-600">
         New employer?{' '}
         <Link to="/employer/register" className="font-semibold text-cyan-600 hover:text-cyan-700">
-          Create an account
+          Create a company account
         </Link>
       </p>
     </>
@@ -464,74 +464,62 @@ export default function UnifiedLoginPage() {
     navigate(query ? `${path}?${query}` : path, { replace: true });
   };
 
-  const copy = {
+  const seo = {
     student: {
-      eyebrow: 'Sign in',
-      title: 'Sign in to Vizag Jobs',
-      body: 'Students sign in by default. Employers or admins can switch using the toggles.',
-      seoTitle: 'Sign in | Vizag Jobs',
-      seoDescription: 'Sign in to Vizag Jobs as a student, employer, or admin.',
+      title: 'Sign in | Vizag Jobs',
+      description: 'Sign in to Vizag Jobs to apply for jobs in Vizag.',
       canonical: '/student/login',
+      heading: 'Sign in',
+      hint: 'For students by default. Use the toggles only if you have a company or admin account.',
     },
     employer: {
-      eyebrow: 'Employer',
-      title: 'Employer sign in',
-      body: 'Post jobs and manage applications for your company in Vizag.',
-      seoTitle: 'Employer login | Vizag Jobs',
-      seoDescription: 'Sign in to post jobs for your company.',
+      title: 'Company login | Vizag Jobs',
+      description: 'Sign in to post jobs for your company.',
       canonical: '/employer/login',
+      heading: 'Company sign in',
+      hint: 'Sign in to post jobs and manage applications.',
     },
     admin: {
-      eyebrow: 'Admin',
-      title: 'Admin sign in',
-      body: 'Manage job posts, approvals, and the Vizag Jobs dashboard.',
-      seoTitle: 'Admin Login | Vizag Jobs',
-      seoDescription: 'Sign in to the Vizag Jobs admin panel.',
+      title: 'Admin Login | Vizag Jobs',
+      description: 'Sign in to the Vizag Jobs admin panel.',
       canonical: '/admin/login',
+      heading: 'Admin sign in',
+      hint: 'Sign in to manage the Vizag Jobs dashboard.',
     },
   }[role];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.16),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
-      <SEO title={copy.seoTitle} description={copy.seoDescription} canonical={copy.canonical} />
-      <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-indigo-300">{copy.eyebrow}</p>
-          <h1 className="mt-4 text-4xl font-black leading-tight">{copy.title}</h1>
-          <p className="mt-5 text-sm leading-7 text-slate-300">{copy.body}</p>
-        </section>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_55%,_#f1f5f9_100%)] px-4 py-10 sm:py-14">
+      <SEO title={seo.title} description={seo.description} canonical={seo.canonical} />
 
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
-          <h2 className="text-2xl font-black text-slate-950">Sign in</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Default is student. Turn on Admin or Employer if that is your account.
-          </p>
+      <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+        <h1 className="text-2xl font-black text-slate-950 sm:text-3xl">{seo.heading}</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{seo.hint}</p>
 
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <RoleToggle
-              label="Admin"
-              accent="admin"
-              active={role === 'admin'}
-              onChange={(on) => setRole(on ? 'admin' : 'student')}
-            />
-            <RoleToggle
-              label="Employer"
-              accent="employer"
-              active={role === 'employer'}
-              onChange={(on) => setRole(on ? 'employer' : 'student')}
-            />
-          </div>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <RoleToggle
+            label="Admin"
+            accent="admin"
+            active={role === 'admin'}
+            onChange={(on) => setRole(on ? 'admin' : 'student')}
+          />
+          <RoleToggle
+            label="Company"
+            accent="employer"
+            active={role === 'employer'}
+            onChange={(on) => setRole(on ? 'employer' : 'student')}
+          />
+        </div>
 
-          {role === 'student' ? <StudentLoginPanel searchParams={searchParams} /> : null}
-          {role === 'employer' ? <EmployerLoginPanel searchParams={searchParams} /> : null}
-          {role === 'admin' ? <AdminLoginPanel /> : null}
+        {role === 'student' ? <StudentLoginPanel searchParams={searchParams} /> : null}
+        {role === 'employer' ? <EmployerLoginPanel searchParams={searchParams} /> : null}
+        {role === 'admin' ? <AdminLoginPanel /> : null}
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            <Link to="/" className="hover:text-slate-700">
-              Back to job listings
-            </Link>
-          </p>
-        </section>
+        <p className="mt-6 text-center text-sm text-slate-500">
+          <Link to="/" className="hover:text-slate-700">
+            Back to job listings
+          </Link>
+        </p>
       </div>
     </div>
   );
