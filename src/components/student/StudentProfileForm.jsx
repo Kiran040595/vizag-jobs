@@ -6,6 +6,11 @@ import { EMPTY_STUDENT_CONSENTS, hasStudentRegistrationConsents, validateStudent
 import StudentRegistrationConsent from './StudentRegistrationConsent';
 import StudentSkillMatchNotice from './StudentSkillMatchNotice';
 import {
+  STUDENT_AVAILABILITY_OPTIONS,
+  STUDENT_JOB_CATEGORY_OPTIONS,
+  STUDENT_ROLE_EXPERIENCE_OPTIONS,
+} from '../../lib/studentCareerPreferences';
+import {
   groupSkillOptions,
   STUDENT_BRANCH_OPTIONS,
   STUDENT_DEGREE_OPTIONS,
@@ -30,6 +35,13 @@ export default function StudentProfileForm({ onSaved }) {
     skills: [],
     certifications: '',
     is_fresher: null,
+    target_job_categories: [],
+    primary_target_role: '',
+    role_experience_level: '',
+    preferred_locations: '',
+    availability: '',
+    expected_salary_min: '',
+    expected_salary_max: '',
   });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -54,6 +66,17 @@ export default function StudentProfileForm({ onSaved }) {
           ? profile.certifications.join(', ')
           : '',
         is_fresher: typeof profile.is_fresher === 'boolean' ? profile.is_fresher : null,
+        target_job_categories: Array.isArray(profile.target_job_categories)
+          ? profile.target_job_categories
+          : [],
+        primary_target_role: profile.primary_target_role || '',
+        role_experience_level: profile.role_experience_level || '',
+        preferred_locations: Array.isArray(profile.preferred_locations)
+          ? profile.preferred_locations.join(', ')
+          : '',
+        availability: profile.availability || '',
+        expected_salary_min: profile.expected_salary_min ? String(profile.expected_salary_min) : '',
+        expected_salary_max: profile.expected_salary_max ? String(profile.expected_salary_max) : '',
       });
     } else if (user?.email) {
       setForm((current) => ({
@@ -90,6 +113,18 @@ export default function StudentProfileForm({ onSaved }) {
     });
   };
 
+  const toggleTargetCategory = (categoryValue) => {
+    setForm((current) => {
+      const selected = new Set(current.target_job_categories);
+      if (selected.has(categoryValue)) {
+        selected.delete(categoryValue);
+      } else {
+        selected.add(categoryValue);
+      }
+      return { ...current, target_job_categories: [...selected] };
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -118,8 +153,8 @@ export default function StudentProfileForm({ onSaved }) {
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
       <h2 className="text-2xl font-black text-slate-950">Student profile</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Complete every field below before applying to jobs. Accurate skills and certifications help us pass
-        your profile to matching employers in Vizag (Java, frontend, delivery, BPO, and more).
+        Complete every field below before applying to jobs. Target roles, experience, skills, and
+        certifications help admins match you with employers in Vizag.
       </p>
 
       {notice ? (
@@ -262,6 +297,123 @@ export default function StudentProfileForm({ onSaved }) {
             </label>
           </div>
         </fieldset>
+
+        <fieldset className="block sm:col-span-2">
+          <legend className="text-sm font-semibold text-slate-700">
+            What type of jobs are you trying for? *
+          </legend>
+          <p className="mt-1 text-xs text-slate-500">
+            Admins use this to find students for roles like telecaller, backend, frontend, medical,
+            mechanical, and more.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {STUDENT_JOB_CATEGORY_OPTIONS.map((option) => {
+              const selected = form.target_job_categories.includes(option.value);
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleTargetCategory(option.value)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    selected
+                      ? 'border-cyan-500 bg-cyan-500 text-white'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <label className="block sm:col-span-2">
+          <span className="text-sm font-semibold text-slate-700">Primary target role *</span>
+          <input
+            name="primary_target_role"
+            value={form.primary_target_role}
+            onChange={handleChange}
+            required
+            className={INPUT_CLASS}
+            placeholder="Backend Developer, Telecaller, Mechanical Technician, Nurse, Accountant..."
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Experience in this role *</span>
+          <select
+            name="role_experience_level"
+            value={form.role_experience_level}
+            onChange={handleChange}
+            required
+            className={SELECT_CLASS}
+          >
+            <option value="">Select experience</option>
+            {STUDENT_ROLE_EXPERIENCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">When can you join? *</span>
+          <select
+            name="availability"
+            value={form.availability}
+            onChange={handleChange}
+            required
+            className={SELECT_CLASS}
+          >
+            <option value="">Select availability</option>
+            {STUDENT_AVAILABILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block sm:col-span-2">
+          <span className="text-sm font-semibold text-slate-700">Preferred work locations</span>
+          <input
+            name="preferred_locations"
+            value={form.preferred_locations}
+            onChange={handleChange}
+            className={INPUT_CLASS}
+            placeholder="Vizag, Gajuwaka, Madhurawada, Remote"
+          />
+        </label>
+
+        <div className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Expected salary min / month</span>
+            <input
+              name="expected_salary_min"
+              type="number"
+              min="1"
+              inputMode="numeric"
+              value={form.expected_salary_min}
+              onChange={handleChange}
+              className={INPUT_CLASS}
+              placeholder="15000"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Expected salary max / month</span>
+            <input
+              name="expected_salary_max"
+              type="number"
+              min="1"
+              inputMode="numeric"
+              value={form.expected_salary_max}
+              onChange={handleChange}
+              className={INPUT_CLASS}
+              placeholder="25000"
+            />
+          </label>
+        </div>
 
         <fieldset className="block sm:col-span-2">
           <legend className="text-sm font-semibold text-slate-700">Skills * (select all that apply)</legend>

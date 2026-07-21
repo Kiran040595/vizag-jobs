@@ -1,4 +1,15 @@
 import {
+  formatAvailabilityLabel,
+  formatJobCategoryLabel,
+  formatRoleExperienceLabel,
+  isAllowedAvailability,
+  isAllowedRoleExperienceLevel,
+  normalizeCareerText,
+  parseExpectedSalary,
+  parsePreferredLocations,
+  parseTargetJobCategories,
+} from './studentCareerPreferences.js';
+import {
   formatSkillLabel,
   isAllowedBranch,
   isAllowedDegree,
@@ -6,7 +17,7 @@ import {
   normalizeSkillValue,
   parseSkillSelection,
 } from './studentProfileOptions.js';
-import { isValidStudentPhone, normalizeStudentPhone } from './studentPhoneAuth.js';
+import { isValidStudentPhone } from './studentPhoneAuth.js';
 
 const PLACEHOLDER_NAME = 'your name';
 
@@ -26,6 +37,14 @@ export const mapStudentProfileRow = (row) => {
     ? row.certifications.map((item) => String(item || '').trim()).filter(Boolean)
     : [];
   const certificationsText = certifications.join('; ');
+  const targetJobCategories = parseTargetJobCategories(row.target_job_categories);
+  const targetJobCategoryLabels = targetJobCategories.map(formatJobCategoryLabel);
+  const primaryTargetRole = normalizeCareerText(row.primary_target_role);
+  const roleExperienceLevel = String(row.role_experience_level || '').trim();
+  const preferredLocations = parsePreferredLocations(row.preferred_locations);
+  const availability = String(row.availability || '').trim();
+  const expectedSalaryMin = parseExpectedSalary(row.expected_salary_min);
+  const expectedSalaryMax = parseExpectedSalary(row.expected_salary_max);
   const isFresher = row.is_fresher !== false;
   const hasRegistrationConsents =
     Boolean(row.consent_terms_at) &&
@@ -44,6 +63,10 @@ export const mapStudentProfileRow = (row) => {
     skills.length > 0 &&
     certifications.length > 0 &&
     typeof row.is_fresher === 'boolean' &&
+    targetJobCategories.length > 0 &&
+    Boolean(primaryTargetRole) &&
+    isAllowedRoleExperienceLevel(roleExperienceLevel) &&
+    isAllowedAvailability(availability) &&
     hasRegistrationConsents;
 
   return {
@@ -59,6 +82,16 @@ export const mapStudentProfileRow = (row) => {
     skillLabels: skills.map(formatSkillLabel),
     certifications,
     certificationsText,
+    targetJobCategories,
+    targetJobCategoryLabels,
+    primaryTargetRole,
+    roleExperienceLevel,
+    roleExperienceLabel: formatRoleExperienceLabel(roleExperienceLevel),
+    preferredLocations,
+    availability,
+    availabilityLabel: formatAvailabilityLabel(availability),
+    expectedSalaryMin,
+    expectedSalaryMax,
     isFresher,
     isActive: Boolean(row.is_active),
     hasRegistrationConsents,
@@ -80,6 +113,11 @@ export const studentSearchBlob = (student) =>
     student.phone,
     student.skillLabels?.join(' ') || student.skills?.join(' '),
     student.certificationsText,
+    student.targetJobCategoryLabels?.join(' ') || student.targetJobCategories?.join(' '),
+    student.primaryTargetRole,
+    student.roleExperienceLabel,
+    student.preferredLocations?.join(' '),
+    student.availabilityLabel,
     student.userId,
   ]
     .filter(Boolean)

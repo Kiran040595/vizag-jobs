@@ -27,7 +27,7 @@ function StudentProfileContent() {
   return (
     <StudentShell
       title="Student profile"
-      description="Complete your education, skills, and certifications before applying to jobs in Vizag."
+      description="Complete your education, target roles, experience, skills, and certifications before applying to jobs in Vizag."
     >
       <SEO title="Student profile | Vizag Jobs" canonical="/student/profile" />
       {!profileComplete ? (
@@ -35,8 +35,8 @@ function StudentProfileContent() {
           {needsApply && pendingJobLabel
             ? `You started applying for ${pendingJobLabel}. Complete your profile below to continue.`
             : needsApply
-              ? 'Complete your profile below to apply for this job. All fields marked * are required.'
-              : 'Complete your profile below before applying to jobs. All fields marked * are required.'}
+              ? 'Complete your profile and career preferences below to apply for this job. All fields marked * are required.'
+              : 'Complete your profile and career preferences before applying to jobs. All fields marked * are required.'}
         </p>
       ) : null}
       <StudentProfileForm onSaved={handleSaved} />

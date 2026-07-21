@@ -1,5 +1,13 @@
 import { supabase } from '../lib/supabaseClient';
 import {
+  isAllowedAvailability,
+  isAllowedRoleExperienceLevel,
+  normalizeCareerText,
+  parseExpectedSalary,
+  parsePreferredLocations,
+  parseTargetJobCategories,
+} from '../lib/studentCareerPreferences';
+import {
   isAllowedBranch,
   isAllowedDegree,
   isAllowedGraduationYear,
@@ -38,6 +46,13 @@ const validateStudentProfilePayload = (profile) => {
   const phone = normalizeStudentPhone(profile.phone);
   const skills = parseSkillSelection(profile.skills);
   const certifications = parseCertifications(profile.certifications);
+  const targetJobCategories = parseTargetJobCategories(profile.target_job_categories);
+  const primaryTargetRole = normalizeCareerText(profile.primary_target_role);
+  const roleExperienceLevel = String(profile.role_experience_level || '').trim();
+  const preferredLocations = parsePreferredLocations(profile.preferred_locations);
+  const availability = String(profile.availability || '').trim();
+  const expectedSalaryMin = parseExpectedSalary(profile.expected_salary_min);
+  const expectedSalaryMax = parseExpectedSalary(profile.expected_salary_max);
 
   if (!fullName) {
     throw new Error('Full name is required.');
@@ -66,6 +81,25 @@ const validateStudentProfilePayload = (profile) => {
   if (typeof profile.is_fresher !== 'boolean') {
     throw new Error('Select whether you are a fresher.');
   }
+  if (targetJobCategories.length === 0) {
+    throw new Error('Select at least one target job category.');
+  }
+  if (!primaryTargetRole) {
+    throw new Error('Enter the main job role you are trying for.');
+  }
+  if (!isAllowedRoleExperienceLevel(roleExperienceLevel)) {
+    throw new Error('Select your experience in this target role.');
+  }
+  if (!isAllowedAvailability(availability)) {
+    throw new Error('Select when you can join.');
+  }
+  if (
+    expectedSalaryMin !== null &&
+    expectedSalaryMax !== null &&
+    expectedSalaryMax < expectedSalaryMin
+  ) {
+    throw new Error('Expected maximum salary must be greater than minimum salary.');
+  }
 
   return {
     full_name: fullName,
@@ -78,6 +112,13 @@ const validateStudentProfilePayload = (profile) => {
     certifications,
     is_fresher: profile.is_fresher,
     contact_email: profile.contact_email?.trim() || null,
+    target_job_categories: targetJobCategories,
+    primary_target_role: primaryTargetRole,
+    role_experience_level: roleExperienceLevel,
+    preferred_locations: preferredLocations,
+    availability,
+    expected_salary_min: expectedSalaryMin,
+    expected_salary_max: expectedSalaryMax,
   };
 };
 

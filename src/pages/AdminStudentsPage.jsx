@@ -4,6 +4,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import { STUDENT_JOB_CATEGORY_OPTIONS, formatJobCategoryLabel } from '../lib/studentCareerPreferences';
 import {
   fetchAdminStudentProfiles,
   formatStudentRegisteredAt,
@@ -21,6 +22,32 @@ const upsertStudent = (students, nextStudent) => {
   return copy;
 };
 
+const countByValue = (students, getValues) => {
+  const counts = new Map();
+  for (const student of students) {
+    for (const value of getValues(student)) {
+      if (!value) continue;
+      counts.set(value, (counts.get(value) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
+};
+
+const formatSalaryRange = (student) => {
+  if (student.expectedSalaryMin && student.expectedSalaryMax) {
+    return `₹${student.expectedSalaryMin} - ₹${student.expectedSalaryMax}`;
+  }
+  if (student.expectedSalaryMin) {
+    return `From ₹${student.expectedSalaryMin}`;
+  }
+  if (student.expectedSalaryMax) {
+    return `Up to ₹${student.expectedSalaryMax}`;
+  }
+  return 'Not provided';
+};
+
 export default function AdminStudentsPage() {
   useAdminAuth();
   const [students, setStudents] = useState([]);
@@ -29,6 +56,7 @@ export default function AdminStudentsPage() {
   const [notice, setNotice] = useState('');
   const [busyUserId, setBusyUserId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
   const loadStudents = useCallback(async () => {
@@ -49,16 +77,31 @@ export default function AdminStudentsPage() {
   }, [loadStudents]);
 
   const filteredStudents = useMemo(() => {
-    if (!deferredSearch) return students;
-    return students.filter((student) => studentSearchBlob(student).includes(deferredSearch));
-  }, [students, deferredSearch]);
+    return students.filter((student) => {
+      const matchesSearch = !deferredSearch || studentSearchBlob(student).includes(deferredSearch);
+      const matchesCategory =
+        !categoryFilter || student.targetJobCategories?.includes(categoryFilter);
+      return matchesSearch && matchesCategory;
+    });
+  }, [students, deferredSearch, categoryFilter]);
 
   const summary = useMemo(() => {
     const total = students.length;
     const complete = students.filter((row) => row.profileComplete).length;
     const active = students.filter((row) => row.isActive).length;
     const freshers = students.filter((row) => row.isFresher).length;
-    return { total, complete, active, freshers };
+    const withCareerPreference = students.filter(
+      (row) => row.targetJobCategories?.length > 0 && row.primaryTargetRole,
+    ).length;
+    return { total, complete, active, freshers, withCareerPreference };
+  }, [students]);
+
+  const availabilityBreakdown = useMemo(() => {
+    const activeStudents = students.filter((student) => student.isActive);
+    return {
+      categories: countByValue(activeStudents, (student) => student.targetJobCategories || []),
+      roles: countByValue(activeStudents, (student) => [student.primaryTargetRole].filter(Boolean)),
+    };
   }, [students]);
 
   const handleToggleActive = async (student) => {
@@ -87,14 +130,15 @@ export default function AdminStudentsPage() {
       <SEO title="Student registrations" noindex />
       <AdminShell
         title="Student registrations"
-        description="Education and contact details from student sign-ups."
+        description="Education, contact details, and career preferences from student sign-ups."
       >
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {[
             { label: 'Registered', value: summary.total },
             { label: 'Profile complete', value: summary.complete },
             { label: 'Active accounts', value: summary.active },
             { label: 'Fresher flag', value: summary.freshers },
+            { label: 'Career preference', value: summary.withCareerPreference },
           ].map((item) => (
             <div
               key={item.label}
@@ -106,21 +150,81 @@ export default function AdminStudentsPage() {
           ))}
         </div>
 
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-950">Available by job category</h2>
+                <p className="mt-1 text-xs text-slate-500">Active student counts by selected target categories.</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {availabilityBreakdown.categories.length > 0 ? (
+                availabilityBreakdown.categories.slice(0, 12).map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setCategoryFilter((current) => (current === item.value ? '' : item.value))}
+                    className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-100"
+                  >
+                    {formatJobCategoryLabel(item.value)}: {item.count}
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No career preferences yet.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-bold text-slate-950">Top target roles</h2>
+            <p className="mt-1 text-xs text-slate-500">Free-text roles students say they are trying for.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {availabilityBreakdown.roles.length > 0 ? (
+                availabilityBreakdown.roles.slice(0, 12).map((item) => (
+                  <span
+                    key={item.value}
+                    className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-900"
+                  >
+                    {item.value}: {item.count}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No target roles yet.</p>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <input
             type="search"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search name, college, branch, skills…"
+            placeholder="Search name, college, role, category, skills…"
             className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
-          <button
-            type="button"
-            onClick={loadStudents}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-          >
-            Refresh
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            >
+              <option value="">All job categories</option>
+              {STUDENT_JOB_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={loadStudents}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         {notice ? (
@@ -217,6 +321,38 @@ export default function AdminStudentsPage() {
                         <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-800">
                           <span>{student.phone || 'Not provided'}</span>
                           {student.phone ? <WhatsAppContactLink phone={student.phone} /> : null}
+                        </dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Career preference</dt>
+                        <dd className="mt-0.5 text-slate-800">
+                          {student.targetJobCategoryLabels?.length > 0
+                            ? student.targetJobCategoryLabels.join(', ')
+                            : 'Not provided'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Target role</dt>
+                        <dd className="mt-0.5 text-slate-800">{student.primaryTargetRole || 'Not provided'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Role experience</dt>
+                        <dd className="mt-0.5 text-slate-800">{student.roleExperienceLabel || 'Not provided'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Availability</dt>
+                        <dd className="mt-0.5 text-slate-800">{student.availabilityLabel || 'Not provided'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expected salary</dt>
+                        <dd className="mt-0.5 text-slate-800">{formatSalaryRange(student)}</dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred locations</dt>
+                        <dd className="mt-0.5 text-slate-800">
+                          {student.preferredLocations?.length > 0
+                            ? student.preferredLocations.join(', ')
+                            : 'Not provided'}
                         </dd>
                       </div>
                       <div className="sm:col-span-2">

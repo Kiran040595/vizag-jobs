@@ -65,6 +65,17 @@ const buildProfileSnapshot = (profile) => ({
   skills: Array.isArray(profile.skills) ? profile.skills : [],
   certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
   isFresher: Boolean(profile.is_fresher),
+  targetJobCategories: Array.isArray(profile.target_job_categories)
+    ? profile.target_job_categories
+    : [],
+  primaryTargetRole: profile.primary_target_role || '',
+  roleExperienceLevel: profile.role_experience_level || '',
+  preferredLocations: Array.isArray(profile.preferred_locations)
+    ? profile.preferred_locations
+    : [],
+  availability: profile.availability || '',
+  expectedSalaryMin: profile.expected_salary_min || null,
+  expectedSalaryMax: profile.expected_salary_max || null,
 });
 
 export const fetchMyApplicationForJob = async (jobId) => {

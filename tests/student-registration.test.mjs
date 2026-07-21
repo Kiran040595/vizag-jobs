@@ -20,6 +20,13 @@ const completeRow = {
   skills: ['java', 'react'],
   certifications: ['Java Full Stack (Udemy)'],
   is_fresher: true,
+  target_job_categories: ['software_frontend', 'software_backend'],
+  primary_target_role: 'Frontend Developer',
+  role_experience_level: 'fresher',
+  preferred_locations: ['Vizag', 'Remote'],
+  availability: 'immediate',
+  expected_salary_min: 15000,
+  expected_salary_max: 25000,
   is_active: true,
   consent_terms_at: '2026-07-10T08:00:00.000Z',
   consent_share_with_employers_at: '2026-07-10T08:00:00.000Z',
@@ -35,6 +42,10 @@ assert.equal(mapped.college, 'Andhra University');
 assert.equal(mapped.profileComplete, true);
 assert.equal(mapped.isFresher, true);
 assert.equal(mapped.skillLabels.join(', '), 'Java, React');
+assert.equal(mapped.targetJobCategoryLabels.join(', '), 'Software Frontend, Software Backend');
+assert.equal(mapped.primaryTargetRole, 'Frontend Developer');
+assert.equal(mapped.roleExperienceLabel, 'Fresher');
+assert.equal(mapped.availabilityLabel, 'Immediate');
 
 const incomplete = mapStudentProfileRow({
   ...completeRow,
@@ -42,10 +53,14 @@ const incomplete = mapStudentProfileRow({
   college: '',
   certifications: [],
   skills: [],
+  target_job_categories: [],
+  primary_target_role: '',
 });
 assert.equal(incomplete.profileComplete, false);
 
 assert.ok(studentSearchBlob(mapped).includes('andhra university'));
 assert.ok(studentSearchBlob(mapped).includes('java full stack'));
+assert.ok(studentSearchBlob(mapped).includes('software frontend'));
+assert.ok(studentSearchBlob(mapped).includes('frontend developer'));
 
 console.log('student-registration.test.mjs: OK');

@@ -1,5 +1,10 @@
 import { formatApplicationStatus } from './applicationStatus.js';
 import { toAbsoluteUrl } from './site.js';
+import {
+  formatAvailabilityLabel,
+  formatJobCategoryLabel,
+  formatRoleExperienceLabel,
+} from './studentCareerPreferences.js';
 import { normalizeWhatsAppDigits } from './whatsappContact.js';
 
 /** Stable public link companies can open from a shared Excel sheet. */
@@ -105,6 +110,61 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     group: 'Education',
     defaultSelected: false,
     getValue: (app) => (snapshot(app).isFresher ? 'Yes' : 'No'),
+  },
+  {
+    id: 'targetJobCategories',
+    label: 'Target job categories',
+    group: 'Career preference',
+    defaultSelected: true,
+    getValue: (app) => {
+      const categories = snapshot(app).targetJobCategories;
+      return Array.isArray(categories) ? categories.map(formatJobCategoryLabel).join('; ') : '';
+    },
+  },
+  {
+    id: 'primaryTargetRole',
+    label: 'Primary target role',
+    group: 'Career preference',
+    defaultSelected: true,
+    getValue: (app) => snapshot(app).primaryTargetRole || '',
+  },
+  {
+    id: 'roleExperienceLevel',
+    label: 'Role experience',
+    group: 'Career preference',
+    defaultSelected: true,
+    getValue: (app) => formatRoleExperienceLabel(snapshot(app).roleExperienceLevel),
+  },
+  {
+    id: 'availability',
+    label: 'Availability',
+    group: 'Career preference',
+    defaultSelected: false,
+    getValue: (app) => formatAvailabilityLabel(snapshot(app).availability),
+  },
+  {
+    id: 'preferredLocations',
+    label: 'Preferred locations',
+    group: 'Career preference',
+    defaultSelected: false,
+    getValue: (app) => {
+      const locations = snapshot(app).preferredLocations;
+      return Array.isArray(locations) ? locations.join('; ') : '';
+    },
+  },
+  {
+    id: 'expectedSalary',
+    label: 'Expected salary / month',
+    group: 'Career preference',
+    defaultSelected: false,
+    getValue: (app) => {
+      const min = snapshot(app).expectedSalaryMin;
+      const max = snapshot(app).expectedSalaryMax;
+      if (min && max) return `${min} - ${max}`;
+      if (min) return `From ${min}`;
+      if (max) return `Up to ${max}`;
+      return '';
+    },
   },
   {
     id: 'skills',
