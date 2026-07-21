@@ -150,6 +150,11 @@ export default function StudentLoginPage() {
               You started applying for a job. Sign in below and we will take you back to it.
             </p>
           ) : null}
+          {searchParams.get('reset') === '1' ? (
+            <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              Password updated. Sign in with your new password.
+            </p>
+          ) : null}
           {authError ? (
             <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{authError}</p>
           ) : null}
@@ -179,6 +184,14 @@ export default function StudentLoginPage() {
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               />
             </label>
+            <p className="-mt-2 text-right text-sm">
+              <Link
+                to="/student/forgot-password"
+                className="font-semibold text-indigo-600 hover:text-indigo-700"
+              >
+                Forgot password?
+              </Link>
+            </p>
             {submitError ? (
               <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
             ) : null}

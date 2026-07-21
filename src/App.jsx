@@ -27,6 +27,8 @@ import DisclaimerPage from './pages/DisclaimerPage';
 import AdminRoute from './components/admin/AdminRoute';
 import EmployerLoginPage from './pages/EmployerLoginPage';
 import EmployerRegisterPage from './pages/EmployerRegisterPage';
+import EmployerForgotPasswordPage from './pages/EmployerForgotPasswordPage';
+import EmployerResetPasswordPage from './pages/EmployerResetPasswordPage';
 import EmployerProfilePage from './pages/EmployerProfilePage';
 import EmployerJobsListPage from './pages/EmployerJobsListPage';
 import EmployerNewJobPage from './pages/EmployerNewJobPage';
@@ -40,6 +42,8 @@ import AdminEmployersPage from './pages/AdminEmployersPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
+import StudentForgotPasswordPage from './pages/StudentForgotPasswordPage';
+import StudentResetPasswordPage from './pages/StudentResetPasswordPage';
 import StudentProfilePage from './pages/StudentProfilePage';
 import StudentApplyPage from './pages/StudentApplyPage';
 import StudentApplicationsPage from './pages/StudentApplicationsPage';
@@ -56,6 +60,8 @@ function App() {
       <Route path="/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/employer/login" element={<EmployerLoginPage />} />
       <Route path="/employer/register" element={<EmployerRegisterPage />} />
+      <Route path="/employer/forgot-password" element={<EmployerForgotPasswordPage />} />
+      <Route path="/employer/reset-password" element={<EmployerResetPasswordPage />} />
       <Route path="/employer" element={<Navigate to="/employer/jobs" replace />} />
       <Route path="/employer/profile" element={<EmployerProfilePage />} />
       <Route path="/employer/jobs" element={<EmployerJobsListPage />} />
@@ -64,6 +70,8 @@ function App() {
       <Route path="/employer/jobs/:jobId/applications" element={<EmployerJobApplicationsPage />} />
       <Route path="/student/login" element={<StudentLoginPage />} />
       <Route path="/student/register" element={<StudentRegisterPage />} />
+      <Route path="/student/forgot-password" element={<StudentForgotPasswordPage />} />
+      <Route path="/student/reset-password" element={<StudentResetPasswordPage />} />
       <Route path="/student" element={<Navigate to="/student/profile" replace />} />
       <Route path="/student/profile" element={<StudentProfilePage />} />
       <Route path="/student/applied-jobs" element={<StudentApplicationsPage />} />

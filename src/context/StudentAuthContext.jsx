@@ -314,6 +314,36 @@ export function StudentAuthProvider({ children }) {
     clearStudentAccessCache();
   };
 
+  const requestPasswordReset = async (identifier) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const loginEmail = await resolveStudentLoginEmail(supabase, identifier);
+    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: getAuthRedirectUrl('/student/reset-password'),
+    });
+    if (error) {
+      throw error;
+    }
+  };
+
+  const updatePassword = async (password) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const nextPassword = String(password || '');
+    if (nextPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters.');
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: nextPassword });
+    if (error) {
+      throw error;
+    }
+  };
+
   return (
     <StudentAuthContext.Provider
       value={{
@@ -324,10 +354,12 @@ export function StudentAuthProvider({ children }) {
         profile,
         profileComplete,
         refreshStudentAccess,
+        requestPasswordReset,
         session,
         signIn,
         signOut,
         signUp,
+        updatePassword,
         user: session?.user ?? null,
       }}
     >

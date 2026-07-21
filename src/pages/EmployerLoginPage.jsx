@@ -74,6 +74,11 @@ export default function EmployerLoginPage() {
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
           <h2 className="text-2xl font-black text-slate-950">Sign in</h2>
+          {searchParams.get('reset') === '1' ? (
+            <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              Password updated. Sign in with your new password.
+            </p>
+          ) : null}
 
           {SHOW_EMPLOYER_GOOGLE_AUTH ? (
             <>
@@ -112,6 +117,14 @@ export default function EmployerLoginPage() {
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
               />
             </label>
+            <p className="-mt-2 text-right text-sm">
+              <Link
+                to="/employer/forgot-password"
+                className="font-semibold text-cyan-600 hover:text-cyan-700"
+              >
+                Forgot password?
+              </Link>
+            </p>
             {submitError ? (
               <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
             ) : null}

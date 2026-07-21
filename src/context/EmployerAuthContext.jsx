@@ -296,6 +296,40 @@ export function EmployerAuthProvider({ children }) {
     clearEmployerAccessCache();
   };
 
+  const requestPasswordReset = async (email) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const trimmed = String(email || '').trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      throw new Error('Enter the email address for your employer account.');
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: getAuthRedirectUrl('/employer/reset-password'),
+    });
+    if (error) {
+      throw error;
+    }
+  };
+
+  const updatePassword = async (password) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const nextPassword = String(password || '');
+    if (nextPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters.');
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: nextPassword });
+    if (error) {
+      throw error;
+    }
+  };
+
   return (
     <EmployerAuthContext.Provider
       value={{
@@ -305,11 +339,13 @@ export function EmployerAuthProvider({ children }) {
         isSupabaseConfigured,
         profile,
         refreshEmployerAccess,
+        requestPasswordReset,
         session,
         signIn,
         signInWithGoogle,
         signOut,
         signUp,
+        updatePassword,
         user: session?.user ?? null,
       }}
     >
