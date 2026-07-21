@@ -113,6 +113,7 @@ export default function StudentApplyButton({
           intent="apply"
           source="apply_button"
           apply
+          onDismiss={() => setShowAuthAlert(false)}
         />
       ) : null}
     </>
