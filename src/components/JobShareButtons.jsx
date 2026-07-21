@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import { toAbsoluteUrl } from '../lib/site';
 import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
+import { buildInstagramJobCaption } from '../lib/instagramJobCaption';
+import { pushToast } from '../lib/toast';
 
 const buildSharePayload = (job = {}) => {
   const path = getJobDetailPath(job);
@@ -65,6 +67,15 @@ export default function JobShareButtons({ job }) {
     window.setTimeout(() => setCopyStatus('idle'), 2200);
   }, [fullMessage]);
 
+  const handleCopyInstagram = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(buildInstagramJobCaption(job));
+      pushToast({ message: 'Instagram caption copied. Paste it into your reel.', type: 'success' });
+    } catch {
+      pushToast({ message: 'Could not copy. Try again.', type: 'error' });
+    }
+  }, [job]);
+
   const handleNativeShare = useCallback(async () => {
     try {
       await navigator.share({ title, text, url });
@@ -104,6 +115,12 @@ export default function JobShareButtons({ job }) {
       <ShareButton label="Share on Telegram" href={telegramUrl} accent="telegram">
         <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="currentColor" aria-hidden="true">
           <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+        </svg>
+      </ShareButton>
+
+      <ShareButton label="Copy Instagram caption" onClick={handleCopyInstagram} accent="copy">
+        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="currentColor" aria-hidden="true">
+          <path d="M7.5 2A5.5 5.5 0 0 0 2 7.5v9A5.5 5.5 0 0 0 7.5 22h9a5.5 5.5 0 0 0 5.5-5.5v-9A5.5 5.5 0 0 0 16.5 2h-9zm0 2h9A3.5 3.5 0 0 1 20 7.5v9a3.5 3.5 0 0 1-3.5 3.5h-9A3.5 3.5 0 0 1 4 16.5v-9A3.5 3.5 0 0 1 7.5 4zm9.25 1.75a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" />
         </svg>
       </ShareButton>
 

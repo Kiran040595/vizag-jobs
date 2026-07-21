@@ -12,6 +12,7 @@ import {
 import { seoOptimizeExternalJob, fetchSeoGeminiKeys } from '../../services/externalJobFetch';
 import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
 import { buildGeminiSeoKeySelectOptions, parseGeminiSeoKeySelectValue } from '../../lib/geminiSeoKeyOptions';
+import CopyInstagramCaptionButton from '../CopyInstagramCaptionButton';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -264,6 +265,13 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
           >
             Edit
           </a>
+          {isPublished ? (
+            <CopyInstagramCaptionButton
+              job={job}
+              disabled={Boolean(busyAction)}
+              className={`${baseBtn} border-pink-200 bg-pink-50 text-pink-800 hover:bg-pink-100 disabled:opacity-50`}
+            />
+          ) : null}
           <select
             value={String(seoGeminiKeyIndex || 0)}
             onChange={(e) => setSeoGeminiKeyIndex(parseGeminiSeoKeySelectValue(e.target.value))}

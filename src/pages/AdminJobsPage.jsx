@@ -17,6 +17,7 @@ import {
 } from '../services/adminJobs';
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
+import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -592,6 +593,9 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {job.status === 'published' ? (
+                        <CopyInstagramCaptionButton job={job} disabled={isBusy} />
+                      ) : null}
                       {job.status === 'published' && job.apply_mode === 'internal' ? (
                         <button
                           type="button"
