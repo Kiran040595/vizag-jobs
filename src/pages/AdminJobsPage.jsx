@@ -13,6 +13,7 @@ import {
   moveJobsToAdmin,
   rejectAdminJob,
   toggleAdminJobFeatured,
+  toggleAdminJobInstagram,
   updateAdminJobStatus,
 } from '../services/adminJobs';
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
@@ -371,6 +372,26 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     }
   };
 
+  const handleInstagramToggle = async (job) => {
+    setBusyJobId(job.id);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJob = await toggleAdminJobInstagram(job.id, !job.is_instagram);
+      setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+      setNotice(
+        updatedJob.is_instagram
+          ? 'Job added to the Instagram bio page (/ig).'
+          : 'Job removed from the Instagram bio page.',
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not update Instagram listing.');
+    } finally {
+      setBusyJobId('');
+    }
+  };
+
   return (
     <AdminShell
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
@@ -569,6 +590,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                               Featured
                             </span>
                           ) : null}
+                          {job.is_instagram ? (
+                            <span className="rounded-full border border-pink-200 bg-pink-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-pink-800">
+                              Instagram
+                            </span>
+                          ) : null}
                           {job.apply_mode === 'internal' ? (
                             <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
                               On-platform apply
@@ -651,6 +677,19 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {job.is_featured ? 'Unfeature' : 'Feature'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleInstagramToggle(job)}
+                        className={`rounded-2xl px-3.5 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          job.is_instagram
+                            ? 'border border-pink-300 bg-pink-50 text-pink-800 hover:bg-pink-100'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:border-pink-200 hover:bg-pink-50 hover:text-pink-800'
+                        }`}
+                        title="Show this job on the Instagram bio page (/ig)"
+                      >
+                        {job.is_instagram ? 'Remove Insta' : 'Insta'}
                       </button>
                       {!isPending || isAdminScope ? (
                         <button

@@ -47,6 +47,7 @@ const LIST_COLUMNS = [
   'experience',
   'is_fresher',
   'is_featured',
+  'is_instagram',
   'salary',
   'short_description',
   'skills',
@@ -132,6 +133,7 @@ const processJobData = (job, index) => {
     experience: normalizeText(job.experience),
     isFresher,
     isFeatured: Boolean(job.is_featured),
+    isInstagram: Boolean(job.is_instagram),
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
     applyMode: job.apply_mode === 'internal' ? 'internal' : 'external',
@@ -340,6 +342,32 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
 
   jobByIdCache.set(cacheKey, { job, timestamp: Date.now() });
   return job;
+};
+
+/** Published jobs marked for the Instagram bio page (/ig), newest first. */
+export const fetchInstagramJobs = async () => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error(
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
+    );
+  }
+
+  const data = await retryWithBackoff(async () => {
+    const { data: rows, error } = await supabase
+      .from(jobsTable)
+      .select(LIST_COLUMNS)
+      .eq('status', 'published')
+      .eq('is_instagram', true)
+      .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+      .order('posted_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Supabase Instagram jobs fetch failed: ${error.message}`);
+    }
+    return rows || [];
+  });
+
+  return data.map((row, index) => processJobData(row, index));
 };
 
 export const getAllJobs = async (limit, forceRefresh = false) =>

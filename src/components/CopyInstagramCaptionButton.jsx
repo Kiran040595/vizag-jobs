@@ -25,7 +25,11 @@ export default function CopyInstagramCaptionButton({
     setBusy(true);
     try {
       await copyInstagramJobCaption(job);
-      pushToast({ message: 'Instagram caption copied. Paste it into your reel.', type: 'success' });
+      pushToast({
+        message: 'Caption copied. Paste into your reel. Put jobsinvizag.in/ig in your Instagram bio, and mark this job as Insta in admin.',
+        type: 'success',
+        durationMs: 6500,
+      });
     } catch {
       pushToast({ message: 'Could not copy. Try again.', type: 'error' });
     } finally {

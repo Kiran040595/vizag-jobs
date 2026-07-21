@@ -8,6 +8,7 @@ import {
   toggleAdminJobFeatured,
   updateAdminJob,
   updateAdminJobStatus,
+  toggleAdminJobInstagram,
 } from '../../services/adminJobs';
 import { seoOptimizeExternalJob, fetchSeoGeminiKeys } from '../../services/externalJobFetch';
 import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
@@ -95,6 +96,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
   const status = job?.status || 'draft';
   const isPublished = status === 'published';
   const isFeatured = Boolean(job?.isFeatured ?? job?.is_featured);
+  const isInstagram = Boolean(job?.isInstagram ?? job?.is_instagram);
 
   const runAction = async (key, action, successMessage, patch) => {
     setBusyAction(key);
@@ -138,6 +140,18 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
       () => toggleAdminJobFeatured(job.id, nextFeatured),
       nextFeatured ? 'Marked as featured.' : 'Removed from featured listings.',
       { isFeatured: nextFeatured },
+    );
+  };
+
+  const handleInstagramToggle = () => {
+    const nextInstagram = !isInstagram;
+    runAction(
+      'instagram',
+      () => toggleAdminJobInstagram(job.id, nextInstagram),
+      nextInstagram
+        ? 'Added to Instagram bio page (/ig).'
+        : 'Removed from Instagram bio page.',
+      { isInstagram: nextInstagram },
     );
   };
 
@@ -248,6 +262,11 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
               Featured
             </span>
           ) : null}
+          {isInstagram ? (
+            <span className="rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-pink-800">
+              Instagram
+            </span>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -310,6 +329,19 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
             disabled={Boolean(busyAction)}
           >
             {busyAction === 'featured' ? 'Working…' : isFeatured ? 'Unfeature' : 'Feature'}
+          </button>
+          <button
+            type="button"
+            className={`${baseBtn} ${
+              isInstagram
+                ? 'border-pink-300 bg-pink-50 text-pink-800 hover:bg-pink-100 focus:ring-pink-300'
+                : 'border-pink-200 bg-white text-pink-800 hover:bg-pink-50 focus:ring-pink-300'
+            }`}
+            onClick={handleInstagramToggle}
+            disabled={Boolean(busyAction)}
+            title="Show this job on the Instagram bio page (/ig)"
+          >
+            {busyAction === 'instagram' ? 'Working…' : isInstagram ? 'Remove Insta' : 'Insta'}
           </button>
           <button
             type="button"

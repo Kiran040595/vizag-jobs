@@ -70,7 +70,11 @@ export default function JobShareButtons({ job }) {
   const handleCopyInstagram = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(buildInstagramJobCaption(job));
-      pushToast({ message: 'Instagram caption copied. Paste it into your reel.', type: 'success' });
+      pushToast({
+        message: 'Caption copied. Use Link in bio: jobsinvizag.in/ig (mark job as Insta in admin).',
+        type: 'success',
+        durationMs: 6500,
+      });
     } catch {
       pushToast({ message: 'Could not copy. Try again.', type: 'error' });
     }

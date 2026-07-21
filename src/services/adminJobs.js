@@ -62,6 +62,7 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'company_logo_url',
   'status',
   'is_featured',
+  'is_instagram',
   'json_ld',
   'seo_meta',
 ]);
@@ -448,6 +449,7 @@ export const getEmptyJobForm = () => {
     company_logo_url: '',
     status: 'draft',
     is_featured: false,
+    is_instagram: false,
   };
 };
 
@@ -466,6 +468,7 @@ export const serializeJobForm = (values, statusOverride) => {
     expires_at: toIsoString(values.expires_at),
     status: statusOverride || values.status || 'draft',
     is_featured: toBoolean(values.is_featured),
+    is_instagram: toBoolean(values.is_instagram),
     apply_mode: values.apply_mode === 'internal' ? 'internal' : 'external',
   };
 
@@ -507,6 +510,7 @@ export const deserializeJobForForm = (job) => {
     skills: Array.isArray(job.skills) ? job.skills.join('\n') : '',
     is_fresher: Boolean(job.is_fresher),
     is_featured: Boolean(job.is_featured),
+    is_instagram: Boolean(job.is_instagram),
   };
 };
 
@@ -969,6 +973,26 @@ export const toggleAdminJobFeatured = async (jobId, isFeatured) => {
 
   if (error) {
     throw mapError(error, 'Could not update featured status.');
+  }
+
+  invalidatePublicJobCache();
+  return data;
+};
+
+export const toggleAdminJobInstagram = async (jobId, isInstagram) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update({ is_instagram: isInstagram })
+    .eq('id', jobId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw mapError(error, 'Could not update Instagram listing.');
   }
 
   invalidatePublicJobCache();

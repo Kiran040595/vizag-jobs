@@ -47,6 +47,7 @@ import StudentResetPasswordPage from './pages/StudentResetPasswordPage';
 import StudentProfilePage from './pages/StudentProfilePage';
 import StudentApplyPage from './pages/StudentApplyPage';
 import StudentApplicationsPage from './pages/StudentApplicationsPage';
+import InstagramJobsPage from './pages/InstagramJobsPage';
 import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import CookieConsentBanner from './components/CookieConsentBanner';
@@ -56,6 +57,7 @@ function App() {
     <>
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/ig" element={<InstagramJobsPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/employer/login" element={<EmployerLoginPage />} />
