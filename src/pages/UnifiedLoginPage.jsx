@@ -92,10 +92,6 @@ function StudentLoginPanel({ searchParams }) {
 
   const returnPath = resolvePostAuthDestination(searchParams, { profileComplete });
   const nextPath = searchParams.get('next') || '';
-  const isJobDetailsReturn =
-    Boolean(nextPath) &&
-    !shouldAutoApplyAfterAuth(searchParams) &&
-    (/^\/jobs\//.test(nextPath) || /^\/job\//.test(nextPath));
   const isApplyReturn = shouldAutoApplyAfterAuth(searchParams) && Boolean(nextPath);
   const registerPath = `/student/register${buildStudentAuthPath({
     pathname: searchParams.get('next') || undefined,
