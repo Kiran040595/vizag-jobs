@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import NavbarEmployerLoginLink from './NavbarEmployerLoginLink';
 import NavbarPostJobLink from './NavbarPostJobLink';
 import NavbarSavedJobsLink from './NavbarSavedJobsLink';
 import NavbarAppliedJobsLink from './NavbarAppliedJobsLink';
@@ -196,7 +195,6 @@ export default function Navbar() {
         <div className="ml-auto hidden items-center gap-2 lg:flex">
           <NavbarSavedJobsLink />
           <QuestionNotificationBell />
-          <NavbarEmployerLoginLink className="inline-flex h-9 items-center whitespace-nowrap rounded-xl border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50" />
           <NavbarPostJobLink className="inline-flex h-9 items-center whitespace-nowrap rounded-xl border border-cyan-200 bg-cyan-50 px-3.5 text-sm font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100" />
           <Link
             to="/contact"
@@ -273,10 +271,6 @@ export default function Navbar() {
               <NavbarSavedJobsLink onClick={() => setIsOpen(false)} />
               <QuestionNotificationBell />
             </div>
-            <NavbarEmployerLoginLink
-              onClick={() => setIsOpen(false)}
-              className="rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-            />
             <NavbarPostJobLink
               onClick={() => setIsOpen(false)}
               className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-center text-base font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100"

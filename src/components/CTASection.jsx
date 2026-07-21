@@ -18,7 +18,7 @@ export default function CTASection() {
       ? '/employer/jobs/new'
       : '/employer/login';
   const employerLoginHref = session && isEmployer ? '/employer/jobs' : '/employer/login';
-  const employerLoginLabel = session && isEmployer ? 'Employer dashboard' : 'Employer login';
+  const employerLoginLabel = session && isEmployer ? 'Employer dashboard' : 'Sign in';
 
   return (
     <section>
