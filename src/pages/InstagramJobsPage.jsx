@@ -4,12 +4,13 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import FullJobDetailsLink from '../components/FullJobDetailsLink';
+import JobList from '../components/JobList';
 import { fetchInstagramJobs } from '../services/jobs';
-import { getJobDetailPath } from '../lib/jobRoutes';
-import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
-import { SITE_URL } from '../lib/site';
 
+/**
+ * Compact landing used as the social / bio link (route stays /ig).
+ * Public copy matches Jobs in Vizag — no third-party brand names.
+ */
 export default function InstagramJobsPage() {
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +28,7 @@ export default function InstagramJobsPage() {
       })
       .catch((error) => {
         if (!ignore) {
-          setLoadError(error instanceof Error ? error.message : 'Could not load Instagram jobs.');
+          setLoadError(error instanceof Error ? error.message : 'Could not load jobs.');
         }
       })
       .finally(() => {
@@ -42,27 +43,25 @@ export default function InstagramJobsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-slate-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/30 to-white">
       <SEO
-        title="Instagram jobs | Vizag Jobs"
-        description="Jobs shared on the Vizag Jobs Instagram. Open a role and apply on jobsinvizag.in."
+        title="Latest jobs in Vizag | Jobs in Vizag"
+        description="Browse the latest job openings in Visakhapatnam and apply on Jobs in Vizag."
         canonical="/ig"
         noindex
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-pink-600">From Instagram</p>
-        <h1 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">Jobs from our Instagram</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-600">
-          These are the openings we are promoting on Instagram. Tap a job to view details and apply on Vizag
-          Jobs.
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-700">Jobs in Vizag</p>
+        <h1 className="mt-3 text-3xl font-black text-slate-950 sm:text-4xl">Latest openings</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+          Fresh roles in Visakhapatnam. Open a job to view details and apply.
         </p>
-        <p className="mt-2 text-xs text-slate-500">Bio link: {SITE_URL.replace(/^https?:\/\//, '')}/ig</p>
 
         {isLoading ? (
           <div className="mt-10">
-            <LoadingSpinner message="Loading Instagram jobs..." />
+            <LoadingSpinner message="Loading jobs..." />
           </div>
         ) : null}
 
@@ -73,15 +72,12 @@ export default function InstagramJobsPage() {
         ) : null}
 
         {!isLoading && !loadError && jobs.length === 0 ? (
-          <div className="mt-10 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-            <h2 className="text-lg font-bold text-slate-900">No Instagram jobs right now</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              In admin, open a job and tap <span className="font-semibold">Insta</span> (or{' '}
-              <span className="font-semibold">Copy Instagram</span>) to list it here.
-            </p>
+          <div className="mt-10 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+            <h2 className="text-lg font-bold text-slate-900">No openings listed here yet</h2>
+            <p className="mt-2 text-sm text-slate-600">Browse all current jobs on Jobs in Vizag.</p>
             <Link
               to="/jobs"
-              className="mt-6 inline-flex rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              className="mt-6 inline-flex rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               Browse all jobs
             </Link>
@@ -89,33 +85,17 @@ export default function InstagramJobsPage() {
         ) : null}
 
         {!isLoading && jobs.length > 0 ? (
-          <ul className="mt-8 space-y-4">
-            {jobs.map((job) => {
-              const jobPath = getJobDetailPath(job);
-              return (
-                <li
-                  key={job.id}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60"
-                >
-                  <h2 className="text-lg font-extrabold leading-snug text-slate-950">{job.title}</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {displayCompanyName(job.company)} · {displayLocation(job.location)}
-                  </p>
-                  {job.shortDescription ? (
-                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{job.shortDescription}</p>
-                  ) : null}
-                  <div className="mt-4">
-                    <FullJobDetailsLink
-                      jobPath={jobPath}
-                      className="block w-full rounded-2xl bg-pink-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-pink-500"
-                    >
-                      View &amp; apply
-                    </FullJobDetailsLink>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="mt-8">
+            <JobList jobs={jobs} />
+            <div className="mt-8 text-center">
+              <Link
+                to="/jobs"
+                className="inline-flex rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                View all jobs
+              </Link>
+            </div>
+          </div>
         ) : null}
       </main>
 
