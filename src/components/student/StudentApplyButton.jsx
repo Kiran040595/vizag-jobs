@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
+import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
 import { applyButtonLabel, isInternalApplyJob } from '../../lib/jobApplyMode';
+import { isStaffApplicantSession } from '../../lib/staffApplyAccess';
 import {
   buildInternalApplyPath,
   buildStudentAuthPath,
@@ -25,9 +28,12 @@ export default function StudentApplyButton({
 }) {
   const navigate = useNavigate();
   const { isLoading, isStudent, profileComplete, session } = useStudentAuth();
+  const { isAdmin } = useAdminAuth();
+  const { isEmployer } = useEmployerAuth();
   const [showAuthAlert, setShowAuthAlert] = useState(false);
   const internalApply = isInternalApplyJob({ applyMode });
   const canApply = internalApply || Boolean(applyLink);
+  const staffApplicant = isStaffApplicantSession({ session, isStudent, isAdmin, isEmployer });
 
   if (!canApply) {
     return null;
@@ -47,6 +53,17 @@ export default function StudentApplyButton({
     }
 
     if (session && isStudent && profileComplete) {
+      if (internalApply) {
+        navigate(buildInternalApplyPath(jobId, jobPath));
+        return;
+      }
+
+      openExternalApplyLink(applyLink, { jobTitle });
+      return;
+    }
+
+    // Admin/employer are already signed in — don't show the guest login modal.
+    if (staffApplicant) {
       if (internalApply) {
         navigate(buildInternalApplyPath(jobId, jobPath));
         return;

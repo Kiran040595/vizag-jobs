@@ -4,6 +4,8 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StudentShell from '../components/student/StudentShell';
 import StudentSessionRoute from '../components/student/StudentSessionRoute';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import { fetchJobById } from '../services/jobs';
 import { fetchMyApplicationForJob, formatApplicationStatus, submitJobApplication } from '../services/jobApplications';
@@ -14,6 +16,7 @@ import { validateResumeFile } from '../services/studentResume';
 import { pushToast } from '../lib/toast';
 import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 import { clearPendingApplyJobMeta } from '../lib/studentApplyRedirect';
+import { isStaffApplicantSession } from '../lib/staffApplyAccess';
 import { getJobGroupLink } from '../lib/jobGroupLink';
 import ApplySuccessGroupModal from '../components/ApplySuccessGroupModal';
 
@@ -24,7 +27,10 @@ function StudentApplyContent() {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { profile, profileComplete } = useStudentAuth();
+  const { profile, profileComplete, isStudent, session } = useStudentAuth();
+  const { isAdmin } = useAdminAuth();
+  const { isEmployer } = useEmployerAuth();
+  const staffApplicant = isStaffApplicantSession({ session, isStudent, isAdmin, isEmployer });
   const [job, setJob] = useState(null);
   const [existingApplication, setExistingApplication] = useState(null);
   const [coverNote, setCoverNote] = useState('');
@@ -170,7 +176,14 @@ function StudentApplyContent() {
             </section>
           ) : (
             <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              {!profileComplete ? (
+              {staffApplicant ? (
+                <p className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  You are signed in as {isAdmin ? 'an admin' : 'a company account'}. On-platform applications
+                  use a <span className="font-semibold">student account</span>. Sign out and sign in as a
+                  student to apply, or use an external apply link when the job provides one.
+                </p>
+              ) : null}
+              {!profileComplete && !staffApplicant ? (
                 <p className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   Complete your{' '}
                   <Link to="/student/profile" className="font-semibold underline">
@@ -255,7 +268,7 @@ function StudentApplyContent() {
 
               <button
                 type="submit"
-                disabled={isSubmitting || !profileComplete}
+                disabled={isSubmitting || !profileComplete || staffApplicant}
                 className="mt-6 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit application'}
