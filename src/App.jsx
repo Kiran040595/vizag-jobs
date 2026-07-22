@@ -40,6 +40,7 @@ import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
+import StudentShareCardPage from './pages/StudentShareCardPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
 import StudentForgotPasswordPage from './pages/StudentForgotPasswordPage';
@@ -183,6 +184,7 @@ function App() {
           </AdminRoute>
         )}
       />
+      <Route path="/s/:token" element={<StudentShareCardPage />} />
       <Route path="/blog" element={<BlogListPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/about" element={<AboutPage />} />
