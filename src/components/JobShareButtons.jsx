@@ -3,6 +3,7 @@ import { getJobDetailPath } from '../lib/jobRoutes';
 import { toAbsoluteUrl } from '../lib/site';
 import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
 import { buildInstagramJobCaption } from '../lib/instagramJobCaption';
+import { getInstagramBioJobsDisplayUrl } from '../lib/instagramBioJobsPath';
 import { pushToast } from '../lib/toast';
 
 const buildSharePayload = (job = {}) => {
@@ -71,7 +72,7 @@ export default function JobShareButtons({ job }) {
     try {
       await navigator.clipboard.writeText(buildInstagramJobCaption(job));
       pushToast({
-        message: 'Caption copied. Use Link in bio: jobsinvizag.in/ig',
+        message: `Caption copied. Use Link in bio: ${getInstagramBioJobsDisplayUrl()}`,
         type: 'success',
         durationMs: 6500,
       });

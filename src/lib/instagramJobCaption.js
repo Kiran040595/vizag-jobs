@@ -1,15 +1,14 @@
 import { getJobDetailPath } from './jobRoutes';
-import { toAbsoluteUrl, SITE_URL } from './site';
+import { toAbsoluteUrl } from './site';
 import { displayCompanyName, displayLocation } from './jobDisplayLabels';
+import { getInstagramBioJobsDisplayUrl } from './instagramBioJobsPath';
 
 /** Absolute public job URL for sharing (clean link, no tracking params). */
 export const buildJobShareUrl = (job = {}) => toAbsoluteUrl(getJobDetailPath(job));
 
-const bioHost = SITE_URL.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-
 /**
  * Ready-to-paste Instagram reel caption.
- * Captions often cannot have clickable links — point people to Link in bio (/ig).
+ * Captions often cannot have clickable links — point people to Link in bio (/jobs/latest).
  */
 export const buildInstagramJobCaption = (job = {}) => {
   const title = String(job.title || 'Job opening').trim();
@@ -21,7 +20,7 @@ export const buildInstagramJobCaption = (job = {}) => {
     `Location: ${location}`,
     '',
     'Apply from Link in bio 👆',
-    `${bioHost}/ig`,
+    getInstagramBioJobsDisplayUrl(),
   ].join('\n');
 };
 

@@ -15,6 +15,7 @@ import { seoOptimizeExternalJob, fetchSeoGeminiKeys } from '../../services/exter
 import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
 import { buildGeminiSeoKeySelectOptions, parseGeminiSeoKeySelectValue } from '../../lib/geminiSeoKeyOptions';
 import CopyInstagramCaptionButton from '../CopyInstagramCaptionButton';
+import { INSTAGRAM_BIO_JOBS_PATH } from '../../lib/instagramBioJobsPath';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -151,7 +152,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
       'instagram',
       () => toggleAdminJobInstagram(job.id, nextInstagram),
       nextInstagram
-        ? 'Added to Instagram bio page (/ig).'
+        ? `Added to Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH}).`
         : 'Removed from Instagram bio page.',
       { isInstagram: nextInstagram },
     );
@@ -377,7 +378,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
             }`}
             onClick={handleInstagramToggle}
             disabled={Boolean(busyAction)}
-            title="Show this job on the Instagram bio page (/ig)"
+            title={`Show this job on the Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH})`}
           >
             {busyAction === 'instagram' ? 'Working…' : isInstagram ? 'Remove Insta' : 'Insta'}
           </button>

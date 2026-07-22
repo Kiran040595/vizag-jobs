@@ -58,7 +58,7 @@ export const INSTAGRAM_JOBS_CACHE_KEY = 'vizagJobs_ig_v1';
 const isInstagramListedJob = (job) => Boolean(job?.isInstagram ?? job?.is_instagram);
 
 /**
- * Instant /ig paint: dedicated Instagram cache, or Instagram-flagged rows from
+ * Instant /jobs/latest paint: dedicated Instagram cache, or Instagram-flagged rows from
  * the shared public list cache (after someone already loaded the home page).
  */
 export const readCachedInstagramJobs = () => {
