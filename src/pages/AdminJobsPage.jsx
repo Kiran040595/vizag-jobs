@@ -20,6 +20,7 @@ import {
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
 import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
+import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -401,7 +402,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
       setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
       setNotice(
         updatedJob.is_instagram
-          ? 'Job added to the Instagram bio page (/ig).'
+          ? `Job added to the Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH}).`
           : 'Job removed from the Instagram bio page.',
       );
     } catch (error) {
@@ -761,7 +762,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                             ? 'border border-pink-300 bg-pink-50 text-pink-800 hover:bg-pink-100'
                             : 'border border-slate-200 bg-white text-slate-700 hover:border-pink-200 hover:bg-pink-50 hover:text-pink-800'
                         }`}
-                        title="Show this job on the Instagram bio page (/ig)"
+                        title={`Show this job on the Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH})`}
                       >
                         {job.is_instagram ? 'Remove Insta' : 'Insta'}
                       </button>

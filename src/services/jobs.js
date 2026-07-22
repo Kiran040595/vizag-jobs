@@ -350,7 +350,7 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   return job;
 };
 
-/** Published jobs marked for the Instagram bio page (/ig), newest first. */
+/** Published jobs marked for the Instagram bio page (/jobs/latest), newest first. */
 export const fetchInstagramJobs = async (options = {}) => {
   const { forceRefresh = false } = options;
   const client = getPublicClient();

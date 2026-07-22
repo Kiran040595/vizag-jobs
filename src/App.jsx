@@ -57,7 +57,6 @@ function App() {
     <>
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/ig" element={<InstagramJobsPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/employer/login" element={<EmployerLoginPage />} />
@@ -192,6 +191,7 @@ function App() {
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
+      <Route path="/jobs/latest" element={<InstagramJobsPage />} />
       <Route path="/saved-jobs" element={<SavedJobsPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
       <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />

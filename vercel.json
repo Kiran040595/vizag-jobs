@@ -71,6 +71,11 @@
   ],
   "redirects": [
     {
+      "source": "/ig",
+      "destination": "/jobs/latest",
+      "permanent": true
+    },
+    {
       "source": "/jobs-in-vizag",
       "destination": "/jobs",
       "permanent": true

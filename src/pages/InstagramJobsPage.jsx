@@ -10,6 +10,7 @@ import {
   JOB_LIST_SESSION_CACHE_TTL_MS,
   readCachedInstagramJobs,
 } from '../lib/publicJobsSessionCache';
+import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
 
 const CACHE_STALE_AT_MS = Math.max(
   JOB_LIST_SESSION_CACHE_TTL_MS - 60_000,
@@ -25,7 +26,7 @@ const initialCached = (() => {
 })();
 
 /**
- * Compact landing used as the social / bio link (route stays /ig).
+ * Compact landing used as the social / bio link (/jobs/latest).
  * Public copy matches Jobs in Vizag — no third-party brand names.
  *
  * Bio-link traffic often reopens this page repeatedly; hydrate from session
@@ -93,7 +94,7 @@ export default function InstagramJobsPage() {
       <SEO
         title="Latest jobs in Vizag | Jobs in Vizag"
         description="Browse the latest job openings in Visakhapatnam and apply on Jobs in Vizag."
-        canonical="/ig"
+        canonical={INSTAGRAM_BIO_JOBS_PATH}
         noindex
       />
       <Navbar />

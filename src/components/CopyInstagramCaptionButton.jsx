@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { copyInstagramJobCaption } from '../lib/instagramJobCaption';
+import {
+  INSTAGRAM_BIO_JOBS_PATH,
+  getInstagramBioJobsDisplayUrl,
+} from '../lib/instagramBioJobsPath';
 import { pushToast } from '../lib/toast';
 import { toggleAdminJobInstagram } from '../services/adminJobs';
 
 /**
  * One-click copy of Instagram reel caption + job apply link.
- * Also marks the job for the /ig bio page when it is not already listed.
+ * Also marks the job for the /jobs/latest bio page when it is not already listed.
  */
 export default function CopyInstagramCaptionButton({
   job,
@@ -28,6 +32,7 @@ export default function CopyInstagramCaptionButton({
     setBusy(true);
     try {
       await copyInstagramJobCaption(job);
+      const bioUrl = getInstagramBioJobsDisplayUrl();
 
       const alreadyInstagram = Boolean(job.isInstagram ?? job.is_instagram);
       if (job.id && !alreadyInstagram) {
@@ -35,21 +40,20 @@ export default function CopyInstagramCaptionButton({
           await toggleAdminJobInstagram(job.id, true);
           onInstagramMarked?.(true);
           pushToast({
-            message: 'Caption copied. Job added to jobsinvizag.in/ig for your Instagram bio.',
+            message: `Caption copied. Job added to ${bioUrl} for your Instagram bio.`,
             type: 'success',
             durationMs: 6500,
           });
         } catch {
           pushToast({
-            message:
-              'Caption copied. Put jobsinvizag.in/ig in your bio, and tap Insta on this job if it is missing from /ig.',
+            message: `Caption copied. Put ${bioUrl} in your bio, and tap Insta on this job if it is missing from ${INSTAGRAM_BIO_JOBS_PATH}.`,
             type: 'success',
             durationMs: 6500,
           });
         }
       } else {
         pushToast({
-          message: 'Caption copied. Paste into your reel. Bio link: jobsinvizag.in/ig',
+          message: `Caption copied. Paste into your reel. Bio link: ${bioUrl}`,
           type: 'success',
           durationMs: 5000,
         });
@@ -67,7 +71,7 @@ export default function CopyInstagramCaptionButton({
       onClick={handleClick}
       disabled={disabled || busy}
       className={className}
-      title="Copy a ready-to-paste Instagram caption and list this job on /ig"
+      title={`Copy a ready-to-paste Instagram caption and list this job on ${INSTAGRAM_BIO_JOBS_PATH}`}
     >
       {busy ? 'Copying…' : label}
     </button>
