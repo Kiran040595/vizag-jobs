@@ -4,16 +4,21 @@ import {
   getStudentShareFieldGroups,
   STUDENT_SHARE_FIELDS,
 } from '../../lib/studentProfileShare';
-import { createStudentProfileShare } from '../../services/studentProfileShares';
+import {
+  downloadStudentShareFile,
+  exportStudentShareImage,
+  exportStudentSharePdf,
+  shareStudentCardOnWhatsApp,
+} from '../../lib/studentShareExport';
 import StudentShareCard from '../StudentShareCard';
 
 export default function ShareStudentDialog({ open, student, onClose }) {
   const [selectedIds, setSelectedIds] = useState(() => getDefaultStudentShareFieldIds());
   const [companyLabel, setCompanyLabel] = useState('');
+  const [format, setFormat] = useState('image');
   const [error, setError] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [shareResult, setShareResult] = useState(null);
-  const [copyStatus, setCopyStatus] = useState('idle');
+  const [notice, setNotice] = useState('');
+  const [isSharing, setIsSharing] = useState(false);
 
   const groupedFields = useMemo(() => getStudentShareFieldGroups(), []);
 
@@ -23,7 +28,7 @@ export default function ShareStudentDialog({ open, student, onClose }) {
 
   const toggleField = (fieldId) => {
     setError('');
-    setShareResult(null);
+    setNotice('');
     setSelectedIds((current) =>
       current.includes(fieldId)
         ? current.filter((id) => id !== fieldId)
@@ -33,61 +38,80 @@ export default function ShareStudentDialog({ open, student, onClose }) {
 
   const selectDefaults = () => {
     setError('');
-    setShareResult(null);
+    setNotice('');
     setSelectedIds(getDefaultStudentShareFieldIds());
   };
 
   const selectAll = () => {
     setError('');
-    setShareResult(null);
+    setNotice('');
     setSelectedIds(STUDENT_SHARE_FIELDS.map((field) => field.id));
   };
 
   const clearAll = () => {
     setError('');
-    setShareResult(null);
+    setNotice('');
     setSelectedIds([]);
   };
 
-  const handleCreate = async () => {
+  const buildExport = async () => {
+    const exporter = format === 'pdf' ? exportStudentSharePdf : exportStudentShareImage;
+    return exporter({
+      student,
+      fieldIds: selectedIds,
+      companyLabel,
+    });
+  };
+
+  const handleShareWhatsApp = async () => {
     setError('');
-    setIsCreating(true);
+    setNotice('');
+    setIsSharing(true);
     try {
-      const result = await createStudentProfileShare({
+      const exported = await buildExport();
+      const result = await shareStudentCardOnWhatsApp({
+        ...exported,
         student,
-        fieldIds: selectedIds,
         companyLabel,
       });
-      setShareResult(result);
-    } catch (createError) {
+      setNotice(
+        result.mode === 'native-share'
+          ? 'Share sheet opened. Choose WhatsApp to send the card.'
+          : `Downloaded ${exported.fileName}. WhatsApp opened — attach that file in the chat.`,
+      );
+    } catch (shareError) {
+      if (shareError?.name === 'AbortError') {
+        setNotice('Share cancelled.');
+      } else {
+        setError(
+          shareError instanceof Error
+            ? shareError.message
+            : 'Could not share the student card.',
+        );
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    setError('');
+    setNotice('');
+    setIsSharing(true);
+    try {
+      const exported = await buildExport();
+      downloadStudentShareFile(exported.blob, exported.fileName);
+      setNotice(`Downloaded ${exported.fileName}.`);
+    } catch (downloadError) {
       setError(
-        createError instanceof Error
-          ? createError.message
-          : 'Could not create share link.',
+        downloadError instanceof Error
+          ? downloadError.message
+          : 'Could not download the student card.',
       );
     } finally {
-      setIsCreating(false);
+      setIsSharing(false);
     }
   };
-
-  const handleCopy = async () => {
-    if (!shareResult?.shareUrl) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(shareResult.shareUrl);
-      setCopyStatus('copied');
-    } catch {
-      setCopyStatus('error');
-    }
-    window.setTimeout(() => setCopyStatus('idle'), 2200);
-  };
-
-  const whatsappHref = shareResult?.shareUrl
-    ? `https://wa.me/?text=${encodeURIComponent(
-        `Student profile card${companyLabel.trim() ? ` for ${companyLabel.trim()}` : ''}: ${shareResult.shareUrl}`,
-      )}`
-    : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
@@ -103,8 +127,7 @@ export default function ShareStudentDialog({ open, student, onClose }) {
               Share student card
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Choose which details to include, then create a link you can send to any company.
-              Only selected fields are shared.
+              Choose fields, then share the card as an image or PDF on WhatsApp.
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-800">{student.fullName}</p>
           </div>
@@ -126,13 +149,41 @@ export default function ShareStudentDialog({ open, student, onClose }) {
             value={companyLabel}
             onChange={(event) => {
               setCompanyLabel(event.target.value);
-              setShareResult(null);
+              setNotice('');
             }}
             placeholder="e.g. Acme Hiring Team"
             maxLength={120}
             className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>
+
+        <fieldset className="mt-4">
+          <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Share format
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              { id: 'image', label: 'Image (PNG)' },
+              { id: 'pdf', label: 'PDF' },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  setFormat(option.id);
+                  setNotice('');
+                }}
+                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                  format === option.id
+                    ? 'border-cyan-300 bg-cyan-50 text-cyan-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -208,43 +259,10 @@ export default function ShareStudentDialog({ open, student, onClose }) {
             {error}
           </p>
         ) : null}
-
-        {shareResult ? (
-          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-            <p className="text-sm font-semibold text-emerald-900">Share link ready</p>
-            <p className="mt-1 break-all text-sm text-emerald-800">{shareResult.shareUrl}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
-              >
-                {copyStatus === 'copied'
-                  ? 'Copied'
-                  : copyStatus === 'error'
-                    ? 'Copy failed'
-                    : 'Copy link'}
-              </button>
-              {whatsappHref ? (
-                <a
-                  href={whatsappHref}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
-                >
-                  Share on WhatsApp
-                </a>
-              ) : null}
-              <a
-                href={shareResult.shareUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
-              >
-                Open card
-              </a>
-            </div>
-          </div>
+        {notice ? (
+          <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            {notice}
+          </p>
         ) : null}
 
         <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -253,20 +271,26 @@ export default function ShareStudentDialog({ open, student, onClose }) {
             onClick={onClose}
             className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            {shareResult ? 'Done' : 'Cancel'}
+            Cancel
           </button>
-          {!shareResult ? (
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={selectedIds.length === 0 || isCreating}
-              className="rounded-2xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isCreating
-                ? 'Creating link…'
-                : `Create share link (${selectedIds.length} field${selectedIds.length === 1 ? '' : 's'})`}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={selectedIds.length === 0 || isSharing}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Download {format === 'pdf' ? 'PDF' : 'image'}
+          </button>
+          <button
+            type="button"
+            onClick={handleShareWhatsApp}
+            disabled={selectedIds.length === 0 || isSharing}
+            className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSharing
+              ? 'Preparing…'
+              : `Share ${format === 'pdf' ? 'PDF' : 'image'} on WhatsApp`}
+          </button>
         </div>
       </div>
     </div>

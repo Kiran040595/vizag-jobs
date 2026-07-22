@@ -3,7 +3,6 @@ import {
   formatJobCategoryLabel,
   formatRoleExperienceLabel,
 } from './studentCareerPreferences.js';
-import { toAbsoluteUrl } from './site.js';
 
 const GROUP_ORDER = ['Contact', 'Education', 'Career preference', 'Profile'];
 
@@ -157,8 +156,6 @@ export const STUDENT_SHARE_FIELDS = [
   },
 ];
 
-const FIELD_BY_ID = new Map(STUDENT_SHARE_FIELDS.map((field) => [field.id, field]));
-
 export const getDefaultStudentShareFieldIds = () =>
   STUDENT_SHARE_FIELDS.filter((field) => field.defaultSelected).map((field) => field.id);
 
@@ -185,7 +182,7 @@ export const resolveStudentShareFields = (fieldIds = []) => {
   return fields;
 };
 
-/** Display-ready snapshot stored with the share link. */
+/** Display-ready card payload from the selected student fields. */
 export const buildStudentShareCardSnapshot = (student, fieldIds = []) => {
   const fields = resolveStudentShareFields(fieldIds);
   const cardFields = fields
@@ -216,22 +213,11 @@ export const buildStudentShareCardSnapshot = (student, fieldIds = []) => {
   };
 };
 
-export const getStudentSharePath = (token) => {
-  const normalized = String(token || '').trim();
-  if (!normalized) {
-    return '';
-  }
-  return `/s/${encodeURIComponent(normalized)}`;
+export const buildStudentShareFileBaseName = (student) => {
+  const raw = String(student?.fullName || 'student-profile')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return raw || 'student-profile';
 };
-
-export const getStudentShareUrl = (token) => {
-  const path = getStudentSharePath(token);
-  return path ? toAbsoluteUrl(path) : '';
-};
-
-export const isStudentShareToken = (value) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    String(value || '').trim(),
-  );
-
-export const getShareFieldLabel = (fieldId) => FIELD_BY_ID.get(fieldId)?.label || fieldId;
