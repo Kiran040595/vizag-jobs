@@ -3,6 +3,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
+import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { STUDENT_JOB_CATEGORY_OPTIONS, formatJobCategoryLabel } from '../lib/studentCareerPreferences';
 import {
@@ -57,6 +58,7 @@ export default function AdminStudentsPage() {
   const [busyUserId, setBusyUserId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [shareStudent, setShareStudent] = useState(null);
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
   const loadStudents = useCallback(async () => {
@@ -377,6 +379,13 @@ export default function AdminStudentsPage() {
                   <div className="flex shrink-0 flex-wrap gap-2 lg:flex-col">
                     <button
                       type="button"
+                      onClick={() => setShareStudent(student)}
+                      className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100"
+                    >
+                      Share
+                    </button>
+                    <button
+                      type="button"
                       disabled={busyUserId === student.userId}
                       onClick={() => handleToggleActive(student)}
                       className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
@@ -389,6 +398,15 @@ export default function AdminStudentsPage() {
             ))}
           </div>
         )}
+
+        {shareStudent ? (
+          <ShareStudentDialog
+            key={shareStudent.userId}
+            open
+            student={shareStudent}
+            onClose={() => setShareStudent(null)}
+          />
+        ) : null}
       </AdminShell>
     </>
   );
