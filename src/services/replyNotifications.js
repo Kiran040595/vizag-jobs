@@ -69,3 +69,18 @@ export const formatReplyNotificationTime = (value) => {
     minute: '2-digit',
   });
 };
+
+export const replyNotificationKindLabel = (kind) => {
+  switch (String(kind || '').trim()) {
+    case 'application_status':
+      return 'Application status';
+    case 'new_application':
+      return 'New application';
+    case 'job_question':
+      return 'Job question reply';
+    case 'site_feedback':
+      return 'Feedback reply';
+    default:
+      return 'Notification';
+  }
+};

@@ -23,9 +23,10 @@ import {
   fetchUnreadReplyNotificationCount,
   formatReplyNotificationTime,
   markReplyNotificationRead,
+  replyNotificationKindLabel,
 } from '../services/replyNotifications';
 
-export default function QuestionNotificationBell() {
+export default function QuestionNotificationBell({ className = '' }) {
   const { isAdmin, user: adminUser, isLoading: isAdminLoading } = useAdminAuth();
   const { isEmployer, user: employerUser, isLoading: isEmployerLoading } = useEmployerAuth();
   const { isStudent, session: studentSession, isLoading: isStudentLoading } = useStudentAuth();
@@ -41,6 +42,7 @@ export default function QuestionNotificationBell() {
   const studentUser = studentSession?.user || null;
   const canModerate = Boolean(moderatorUser && (isAdmin || isEmployer));
   const isStudentViewer = Boolean(studentUser && isStudent);
+  const inboxUserId = studentUser?.id || (isEmployer ? employerUser?.id : null) || null;
   const canViewBell = canModerate || isStudentViewer;
   const authLoading = isAdminLoading || isEmployerLoading || isStudentLoading;
 
@@ -86,10 +88,11 @@ export default function QuestionNotificationBell() {
         setFeedbackNotifications([]);
       }
 
-      if (isStudentViewer && studentUser?.id) {
+      // Students: replies + application status. Employers: new applications.
+      if (inboxUserId && (isStudentViewer || isEmployer)) {
         const [replies, rUnread] = await Promise.all([
-          fetchReplyNotifications(studentUser.id),
-          fetchUnreadReplyNotificationCount(studentUser.id),
+          fetchReplyNotifications(inboxUserId),
+          fetchUnreadReplyNotificationCount(inboxUserId),
         ]);
         setReplyNotifications(replies);
         replyUnread = rUnread;
@@ -106,10 +109,11 @@ export default function QuestionNotificationBell() {
   }, [
     canModerate,
     canViewBell,
+    inboxUserId,
     isAdmin,
+    isEmployer,
     isStudentViewer,
     moderatorUser?.id,
-    studentUser?.id,
   ]);
 
   useEffect(() => {
@@ -209,13 +213,13 @@ export default function QuestionNotificationBell() {
   };
 
   const handleOpenReplyNotification = async (notification) => {
-    if (!studentUser?.id) return;
+    if (!inboxUserId) return;
 
     try {
       if (!notification.isRead) {
         await markReplyNotificationRead({
           notificationId: notification.id,
-          userId: studentUser.id,
+          userId: inboxUserId,
         });
       }
     } catch (error) {
@@ -226,16 +230,20 @@ export default function QuestionNotificationBell() {
     loadNotifications();
   };
 
-  const subtitle = isStudentViewer && !canModerate
-    ? 'Replies to your questions and feedback'
-    : 'Pending moderation items and your replies';
+  const subtitle = isEmployer && !isStudentViewer
+    ? 'New applications and job questions'
+    : isStudentViewer && !canModerate
+      ? 'Application updates and replies'
+      : 'Pending moderation items and your replies';
 
-  const emptyLabel = isStudentViewer && !canModerate
-    ? 'No replies yet. Ask a question or send feedback while signed in to get notified here.'
-    : 'No pending items right now.';
+  const emptyLabel = isEmployer && !isStudentViewer
+    ? 'No new applications yet. When students apply to your jobs, they show up here.'
+    : isStudentViewer && !canModerate
+      ? 'No updates yet. Apply to jobs or ask a question while signed in to get notified here.'
+      : 'No pending items right now.';
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div className={`relative ${className}`.trim()} ref={panelRef}>
       <button
         type="button"
         onClick={() => {
@@ -279,8 +287,19 @@ export default function QuestionNotificationBell() {
               ? combinedNotifications.map((item) => {
                   if (item.kind === 'reply') {
                     const notification = item.data;
-                    const kindLabel =
-                      notification.kind === 'job_question' ? 'Job question reply' : 'Feedback reply';
+                    const kindLabel = replyNotificationKindLabel(notification.kind);
+                    const accentClass =
+                      notification.kind === 'new_application'
+                        ? 'text-cyan-700'
+                        : notification.kind === 'application_status'
+                          ? 'text-indigo-700'
+                          : 'text-emerald-700';
+                    const unreadBg =
+                      notification.kind === 'new_application'
+                        ? 'bg-cyan-50/50'
+                        : notification.kind === 'application_status'
+                          ? 'bg-indigo-50/50'
+                          : 'bg-emerald-50/50';
 
                     return (
                       <Link
@@ -288,10 +307,10 @@ export default function QuestionNotificationBell() {
                         to={notification.linkPath}
                         onClick={() => handleOpenReplyNotification(notification)}
                         className={`block border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 ${
-                          item.isRead ? 'bg-white' : 'bg-emerald-50/50'
+                          item.isRead ? 'bg-white' : unreadBg
                         }`}
                       >
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        <p className={`text-[11px] font-semibold uppercase tracking-wide ${accentClass}`}>
                           {kindLabel}
                         </p>
                         <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-900">

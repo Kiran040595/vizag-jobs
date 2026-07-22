@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StudentShell from '../components/student/StudentShell';
@@ -17,6 +17,8 @@ import {
 } from '../lib/applicationStatus';
 
 function StudentApplicationsContent() {
+  const [searchParams] = useSearchParams();
+  const highlightApplicationId = searchParams.get('application') || '';
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,6 +68,15 @@ function StudentApplicationsContent() {
       return counts;
     }, {});
   }, [applications]);
+
+  useEffect(() => {
+    if (!highlightApplicationId || isLoading) return undefined;
+    const node = document.getElementById(`application-${highlightApplicationId}`);
+    if (node) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return undefined;
+  }, [highlightApplicationId, isLoading, filteredApplications]);
 
   return (
     <StudentShell
@@ -137,7 +148,15 @@ function StudentApplicationsContent() {
               application.updatedAt !== application.submittedAt;
 
             return (
-              <article key={application.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <article
+                key={application.id}
+                id={`application-${application.id}`}
+                className={`rounded-3xl border bg-white p-5 shadow-sm ${
+                  highlightApplicationId === application.id
+                    ? 'border-indigo-300 ring-2 ring-indigo-100'
+                    : 'border-slate-200'
+                }`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-bold text-slate-950">
