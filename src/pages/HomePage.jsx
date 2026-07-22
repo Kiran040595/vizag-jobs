@@ -12,6 +12,7 @@ import BlogTeaserSection from '../components/BlogTeaserSection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
+import JobsForYou from '../components/JobsForYou';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
 import {
@@ -292,6 +293,7 @@ export default function HomePage() {
 
         {!isLoading || allJobs.length > 0 ? (
           <>
+            <JobsForYou jobs={allJobs} />
             <JobCategoryBrowse />
             <BlogTeaserSection />
             <JobFilters

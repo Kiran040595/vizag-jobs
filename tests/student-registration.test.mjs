@@ -55,8 +55,15 @@ const incomplete = mapStudentProfileRow({
   skills: [],
   target_job_categories: [],
   primary_target_role: '',
+  preferred_locations: [],
 });
 assert.equal(incomplete.profileComplete, false);
+
+const missingLocation = mapStudentProfileRow({
+  ...completeRow,
+  preferred_locations: [],
+});
+assert.equal(missingLocation.profileComplete, false);
 
 assert.ok(studentSearchBlob(mapped).includes('andhra university'));
 assert.ok(studentSearchBlob(mapped).includes('java full stack'));

@@ -1,19 +1,26 @@
-# Student registration (phase 1)
+# Student registration
 
-Lean student accounts for fresher job seekers in Vizag. Designed to stay within Supabase **free tier** database limits (~500 MB).
+Lean student accounts for job seekers in Vizag. Designed to stay within Supabase **free tier** database limits (~500 MB).
 
-## Student features (phase 1)
+## Student features
 
-- Register at `/student/register` (name, college, **email and mobile**, password)
+- Register at `/student/register` (name, college, **email and mobile**, password) — lean signup only
 - Sign in at `/student/login` with **email + password**
 - **Apply Now** requires sign-in **and** a complete student profile
-- Complete profile at `/student/profile` — **all fields mandatory**:
+- Complete profile at `/student/profile` — required for applying:
   - Degree, branch, graduation year (dropdowns)
   - Mobile number
-  - Skills (multi-select, stored lowercase for matching)
   - Fresher yes/no
+  - **Target job categories** (multi-select chips: frontend, BPO, mechanical, etc.)
+  - **Primary target role**, **role experience level**, **availability**
+  - **Preferred work locations** (Vizag-first chips: Visakhapatnam, Gajuwaka, Remote, …)
+  - Skills (multi-select, stored lowercase for matching)
   - Certifications / courses completed
-- Admin list at `/admin/students` (shows complete vs incomplete profiles)
+  - Optional expected salary min/max
+- Resume / CV upload on apply (Supabase Storage; path stored on `student_profiles.resume_path`)
+- On-platform applications with status tracking (`job_applications`)
+- Admin list at `/admin/students` (complete vs incomplete, search by skills/categories/roles)
+- Signed-in students with a complete profile see **Jobs matching your profile** on the home page (ranked by category, skills, fresher fit, location, and target role)
 
 ### Mobile sign-in (no SMS)
 
@@ -36,20 +43,26 @@ Students must agree at registration (stored with timestamps on `student_profiles
 - Information is accurate
 - Age 18 or older
 
-## Deferred (phase 2)
+## Personalized job matching
 
-These are **not** implemented yet to avoid filling the 1 GB Storage bucket and adding complexity:
+Matching data is collected on the profile. Ranking lives in `src/lib/studentJobMatch.js`:
 
-- Resume / CV upload (Supabase Storage)
+- Bridges student categories (`software_frontend`, `telecaller_bpo`, …) to job categories (`IT & Software`, `BPO / Customer Support`, …)
+- Scores published jobs on category overlap, skill tokens, fresher-friendly flag, preferred locations, and primary role text in the job title
+- Home page surfaces the top ranked jobs for complete student profiles only; guests keep public filters unchanged
+
+Admin student search remains the ops path for finding candidates by skill/category text.
+
+## Deferred (later)
+
 - Saved jobs synced to account (still browser `localStorage` via `savedJobs.js`)
 - Email job alerts
-- Apply tracking through the portal
-
-Revisit phase 2 when job retention is running and database size is monitored in the Supabase dashboard.
+- Employer talent-pool browser (filter applicants by skill/category beyond status)
 
 ## Database
 
-- Table: `student_profiles` (see `supabase/migrations/20260710_job_retention_and_student_profiles.sql`)
+- Table: `student_profiles` (see `supabase/migrations/20260710_job_retention_and_student_profiles.sql` plus later migrations for certifications, consent, resume path, career preferences)
+- Career prefs migration: `supabase/migrations/20260721_student_career_preferences.sql`
 - Signup metadata: `user_type: 'student'` in `auth.users.raw_user_meta_data`
 - Employer signups use `user_type: 'employer'` (default when omitted)
 

@@ -67,6 +67,7 @@ export const mapStudentProfileRow = (row) => {
     Boolean(primaryTargetRole) &&
     isAllowedRoleExperienceLevel(roleExperienceLevel) &&
     isAllowedAvailability(availability) &&
+    preferredLocations.length > 0 &&
     hasRegistrationConsents;
 
   return {

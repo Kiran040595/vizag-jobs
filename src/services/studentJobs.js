@@ -93,6 +93,9 @@ const validateStudentProfilePayload = (profile) => {
   if (!isAllowedAvailability(availability)) {
     throw new Error('Select when you can join.');
   }
+  if (preferredLocations.length === 0) {
+    throw new Error('Select at least one preferred work location.');
+  }
   if (
     expectedSalaryMin !== null &&
     expectedSalaryMax !== null &&

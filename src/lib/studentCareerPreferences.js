@@ -37,6 +37,18 @@ export const STUDENT_AVAILABILITY_OPTIONS = [
   { value: 'more_than_30_days', label: 'More than 30 days' },
 ];
 
+/** Vizag-first preferred location chips (stored as label text). */
+export const STUDENT_PREFERRED_LOCATION_OPTIONS = [
+  'Visakhapatnam',
+  'Vizag',
+  'Gajuwaka',
+  'Madhurawada',
+  'Anakapalle',
+  'Remote',
+  'Hybrid',
+  'Other (Andhra Pradesh)',
+];
+
 const CATEGORY_LABEL_BY_VALUE = new Map(
   STUDENT_JOB_CATEGORY_OPTIONS.map((option) => [option.value, option.label]),
 );

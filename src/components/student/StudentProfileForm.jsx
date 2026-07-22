@@ -8,6 +8,7 @@ import StudentSkillMatchNotice from './StudentSkillMatchNotice';
 import {
   STUDENT_AVAILABILITY_OPTIONS,
   STUDENT_JOB_CATEGORY_OPTIONS,
+  STUDENT_PREFERRED_LOCATION_OPTIONS,
   STUDENT_ROLE_EXPERIENCE_OPTIONS,
 } from '../../lib/studentCareerPreferences';
 import {
@@ -38,7 +39,7 @@ export default function StudentProfileForm({ onSaved }) {
     target_job_categories: [],
     primary_target_role: '',
     role_experience_level: '',
-    preferred_locations: '',
+    preferred_locations: [],
     availability: '',
     expected_salary_min: '',
     expected_salary_max: '',
@@ -72,8 +73,8 @@ export default function StudentProfileForm({ onSaved }) {
         primary_target_role: profile.primary_target_role || '',
         role_experience_level: profile.role_experience_level || '',
         preferred_locations: Array.isArray(profile.preferred_locations)
-          ? profile.preferred_locations.join(', ')
-          : '',
+          ? profile.preferred_locations
+          : [],
         availability: profile.availability || '',
         expected_salary_min: profile.expected_salary_min ? String(profile.expected_salary_min) : '',
         expected_salary_max: profile.expected_salary_max ? String(profile.expected_salary_max) : '',
@@ -122,6 +123,18 @@ export default function StudentProfileForm({ onSaved }) {
         selected.add(categoryValue);
       }
       return { ...current, target_job_categories: [...selected] };
+    });
+  };
+
+  const togglePreferredLocation = (locationValue) => {
+    setForm((current) => {
+      const selected = new Set(current.preferred_locations);
+      if (selected.has(locationValue)) {
+        selected.delete(locationValue);
+      } else {
+        selected.add(locationValue);
+      }
+      return { ...current, preferred_locations: [...selected] };
     });
   };
 
@@ -375,16 +388,36 @@ export default function StudentProfileForm({ onSaved }) {
           </select>
         </label>
 
-        <label className="block sm:col-span-2">
-          <span className="text-sm font-semibold text-slate-700">Preferred work locations</span>
-          <input
-            name="preferred_locations"
-            value={form.preferred_locations}
-            onChange={handleChange}
-            className={INPUT_CLASS}
-            placeholder="Vizag, Gajuwaka, Madhurawada, Remote"
-          />
-        </label>
+        <fieldset className="block sm:col-span-2">
+          <legend className="text-sm font-semibold text-slate-700">Preferred work locations *</legend>
+          <p className="mt-1 text-xs text-slate-500">
+            Pick Vizag areas or Remote so we can suggest nearby openings.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[
+              ...STUDENT_PREFERRED_LOCATION_OPTIONS,
+              ...form.preferred_locations.filter(
+                (location) => !STUDENT_PREFERRED_LOCATION_OPTIONS.includes(location),
+              ),
+            ].map((option) => {
+              const selected = form.preferred_locations.includes(option);
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => togglePreferredLocation(option)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    selected
+                      ? 'border-cyan-500 bg-cyan-500 text-white'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200'
+                  }`}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
         <div className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
           <label className="block">
