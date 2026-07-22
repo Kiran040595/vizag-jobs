@@ -159,23 +159,37 @@ export const fetchJobApplications = async (jobId) => {
 };
 
 export const fetchJobApplicationCounts = async (jobIds = []) => {
+  const stats = await fetchJobApplicationStats(jobIds);
+  return stats.byJobId;
+};
+
+/** Aggregate application counts across jobs (per job + per status). */
+export const fetchJobApplicationStats = async (jobIds = []) => {
+  const empty = { total: 0, byJobId: {}, byStatus: {} };
+
   if (!isSupabaseConfigured || !supabase || jobIds.length === 0) {
-    return {};
+    return empty;
   }
 
   const { data, error } = await supabase
     .from('job_applications')
-    .select('job_id')
+    .select('job_id, status')
     .in('job_id', jobIds);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data || []).reduce((counts, row) => {
-    counts[row.job_id] = (counts[row.job_id] || 0) + 1;
-    return counts;
-  }, {});
+  return (data || []).reduce(
+    (stats, row) => {
+      const status = normalizeApplicationStatus(row.status);
+      stats.total += 1;
+      stats.byJobId[row.job_id] = (stats.byJobId[row.job_id] || 0) + 1;
+      stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
+      return stats;
+    },
+    { total: 0, byJobId: {}, byStatus: {} },
+  );
 };
 
 export const submitJobApplication = async ({ jobId, coverNote, resumeFile, existingResumePath }) => {

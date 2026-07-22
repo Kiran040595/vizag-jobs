@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
 import EmployerShell from '../components/employer/EmployerShell';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
+import {
+  formatApplicationStatus,
+  getApplicationStatusStyle,
+} from '../lib/applicationStatus';
 import { fetchMyJobs } from '../services/employerJobs';
-import { fetchJobApplicationCounts } from '../services/jobApplications';
+import { fetchJobApplicationStats } from '../services/jobApplications';
 
 const STATUS_STYLES = {
   pending: 'border-blue-200 bg-blue-50 text-blue-700',
@@ -14,6 +18,8 @@ const STATUS_STYLES = {
   draft: 'border-amber-200 bg-amber-50 text-amber-700',
   archived: 'border-slate-200 bg-slate-100 text-slate-600',
 };
+
+const SUMMARY_STATUS_ORDER = ['applied', 'viewed', 'processing', 'hired', 'rejected'];
 
 const statusLabel = (job) => {
   if (job.status === 'published') return 'Live on portal';
@@ -28,6 +34,8 @@ function EmployerJobsListContent() {
   const { user } = useEmployerAuth();
   const [jobs, setJobs] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
+  const [statusCounts, setStatusCounts] = useState({});
+  const [totalApplications, setTotalApplications] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -52,12 +60,14 @@ function EmployerJobsListContent() {
         const publishedIds = data.filter((job) => job.status === 'published').map((job) => job.id);
         if (publishedIds.length > 0) {
           try {
-            const counts = await fetchJobApplicationCounts(publishedIds);
+            const stats = await fetchJobApplicationStats(publishedIds);
             if (!ignore) {
-              setApplicationCounts(counts);
+              setApplicationCounts(stats.byJobId);
+              setStatusCounts(stats.byStatus);
+              setTotalApplications(stats.total);
             }
           } catch (error) {
-            console.warn('Could not load employer application counts:', error);
+            console.warn('Could not load employer application stats:', error);
           }
         }
       } catch (error) {
@@ -78,17 +88,42 @@ function EmployerJobsListContent() {
     };
   }, [user?.id]);
 
+  const summaryStatuses = useMemo(
+    () =>
+      SUMMARY_STATUS_ORDER.filter((status) => (statusCounts[status] || 0) > 0).map((status) => ({
+        status,
+        count: statusCounts[status] || 0,
+      })),
+    [statusCounts],
+  );
+
   return (
     <EmployerShell title="My job submissions" description="Track pending, live, and rejected listings.">
       <SEO title="My jobs | Vizag Jobs Employer" canonical="/employer/jobs" />
 
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <Link
           to="/employer/jobs/new"
           className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
         >
           Post a new job
         </Link>
+
+        {!isLoading ? (
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <span className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800">
+              {totalApplications} application{totalApplications === 1 ? '' : 's'}
+            </span>
+            {summaryStatuses.map(({ status, count }) => (
+              <span
+                key={status}
+                className={`rounded-2xl border px-3.5 py-2.5 text-sm font-semibold ${getApplicationStatusStyle(status)}`}
+              >
+                {formatApplicationStatus(status)}: {count}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {loadError ? (

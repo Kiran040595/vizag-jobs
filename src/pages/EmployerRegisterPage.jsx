@@ -7,7 +7,7 @@ import { REQUIRE_EMAIL_CONFIRMATION, SHOW_EMPLOYER_GOOGLE_AUTH } from '../lib/em
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function EmployerRegisterPage() {
-  const { isLoading, isSupabaseConfigured, session, signUp } = useEmployerAuth();
+  const { isEmployer, isLoading, isSupabaseConfigured, session, signUp } = useEmployerAuth();
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +36,7 @@ export default function EmployerRegisterPage() {
   }
 
   if (session) {
-    return <Navigate to="/employer/profile" replace />;
+    return <Navigate to={isEmployer ? '/employer/jobs' : '/employer/profile'} replace />;
   }
 
   const handleSubmit = async (event) => {
