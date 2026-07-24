@@ -148,7 +148,7 @@ function StudentLoginPanel({ searchParams }) {
       const message = error instanceof Error ? error.message : 'Could not sign in.';
       if (/email not confirmed/i.test(message)) {
         setSubmitError(
-          'Email is not confirmed yet. Check your inbox for a confirmation link, or contact support if you already confirmed.',
+          'This account could not be signed in. Try again, or create a new student account / contact support.',
         );
       } else if (/invalid login credentials/i.test(message)) {
         setSubmitError('Wrong email/mobile or password. Try again, or create a student account.');

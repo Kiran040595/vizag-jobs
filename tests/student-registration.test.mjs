@@ -4,6 +4,7 @@ import {
   JOB_PURGE_ARCHIVED_AFTER_DAYS,
 } from '../src/lib/jobRetention.js';
 import { mapStudentProfileRow, studentSearchBlob } from '../src/lib/adminStudentProfile.js';
+import { validateStudentProfilePayload } from '../src/lib/studentProfileValidation.js';
 
 assert.equal(JOB_ARCHIVE_AFTER_DAYS, 90);
 assert.equal(JOB_PURGE_ARCHIVED_AFTER_DAYS, 180);
@@ -69,5 +70,51 @@ assert.ok(studentSearchBlob(mapped).includes('andhra university'));
 assert.ok(studentSearchBlob(mapped).includes('java full stack'));
 assert.ok(studentSearchBlob(mapped).includes('software frontend'));
 assert.ok(studentSearchBlob(mapped).includes('frontend developer'));
+
+const validated = validateStudentProfilePayload({
+  full_name: 'Priya Sharma',
+  college: 'Andhra University',
+  degree: 'B.Tech',
+  branch: 'Computer Science (CSE)',
+  graduation_year: '2026',
+  phone: '9876543210',
+  skills: ['java', 'react'],
+  certifications: 'Java Full Stack (Udemy)',
+  is_fresher: true,
+  contact_email: 'priya@example.com',
+  target_job_categories: ['software_frontend', 'software_backend'],
+  primary_target_role: 'Frontend Developer',
+  role_experience_level: 'fresher',
+  preferred_locations: ['Vizag', 'Remote'],
+  availability: 'immediate',
+  expected_salary_min: '15000',
+  expected_salary_max: '25000',
+});
+
+assert.equal(validated.full_name, 'Priya Sharma');
+assert.deepEqual(validated.skills, ['java', 'react']);
+assert.equal(validated.availability, 'immediate');
+assert.equal(validated.graduation_year, 2026);
+
+assert.throws(
+  () =>
+    validateStudentProfilePayload({
+      full_name: 'Priya Sharma',
+      college: 'Andhra University',
+      degree: 'B.Tech',
+      branch: 'Computer Science (CSE)',
+      graduation_year: '2026',
+      phone: '9876543210',
+      skills: ['java'],
+      certifications: 'None',
+      is_fresher: true,
+      target_job_categories: ['software_frontend'],
+      primary_target_role: 'Frontend Developer',
+      role_experience_level: 'fresher',
+      preferred_locations: [],
+      availability: 'immediate',
+    }),
+  /preferred work location/i,
+);
 
 console.log('student-registration.test.mjs: OK');

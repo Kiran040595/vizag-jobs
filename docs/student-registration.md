@@ -4,12 +4,9 @@ Lean student accounts for job seekers in Vizag. Designed to stay within Supabase
 
 ## Student features
 
-- Register at `/student/register` (name, college, **email and mobile**, password) — lean signup only
-- Sign in at `/student/login` with **email + password**
-- **Apply Now** requires sign-in **and** a complete student profile
-- Complete profile at `/student/profile` — required for applying:
-  - Degree, branch, graduation year (dropdowns)
-  - Mobile number
+- Register at `/student/register` with a **complete profile** in one step:
+  - Full name, college, degree, branch, graduation year
+  - Email, mobile, password
   - Fresher yes/no
   - **Target job categories** (multi-select chips: frontend, BPO, mechanical, etc.)
   - **Primary target role**, **role experience level**, **availability**
@@ -17,6 +14,10 @@ Lean student accounts for job seekers in Vizag. Designed to stay within Supabase
   - Skills (multi-select, stored lowercase for matching)
   - Certifications / courses completed
   - Optional expected salary min/max
+  - Registration consents
+- Sign in at `/student/login` with **email + password**
+- **Apply Now** requires sign-in **and** a complete student profile (new accounts are complete at register)
+- Update profile anytime at `/student/profile`
 - Resume / CV upload on apply (Supabase Storage; path stored on `student_profiles.resume_path`)
 - On-platform applications with status tracking (`job_applications`)
 - Admin list at `/admin/students` (complete vs incomplete, search by skills/categories/roles)
@@ -43,9 +44,11 @@ Students must agree at registration (stored with timestamps on `student_profiles
 - Information is accurate
 - Age 18 or older
 
+Email confirmation is **not** required. Students are signed in immediately after register (`supabase/config.toml` has `enable_confirmations = false`, and a DB trigger auto-confirms student auth users).
+
 ## Personalized job matching
 
-Matching data is collected on the profile. Ranking lives in `src/lib/studentJobMatch.js`:
+Matching data is collected at registration (and editable on the profile). Ranking lives in `src/lib/studentJobMatch.js`:
 
 - Bridges student categories (`software_frontend`, `telecaller_bpo`, …) to job categories (`IT & Software`, `BPO / Customer Support`, …)
 - Scores published jobs on category overlap, skill tokens, fresher-friendly flag, preferred locations, and primary role text in the job title
@@ -77,7 +80,7 @@ Published jobs older than **90 days** are archived (heavy SEO fields cleared). A
 ## Capacity (rough)
 
 | Records | Approx. DB use |
-|---------|----------------|
+| -------- | ---------------- |
 | 1 SEO job | 20–40 KB |
 | 1 student profile | ~5–7 KB (with auth row) |
 | 6,000 jobs + 20,000 students | ~300 MB |

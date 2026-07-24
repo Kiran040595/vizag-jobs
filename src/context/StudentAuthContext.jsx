@@ -3,12 +3,10 @@ import { StudentAuthContext } from './studentAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getAuthRedirectUrl } from '../lib/site';
 import { mapStudentProfileRow } from '../lib/adminStudentProfile';
+import { validateStudentProfilePayload } from '../lib/studentProfileValidation';
 import { recordStudentRegistrationConsents } from '../services/studentConsent';
-import {
-  isValidStudentPhone,
-  normalizeStudentPhone,
-  resolveStudentLoginEmail,
-} from '../lib/studentPhoneAuth';
+import { upsertStudentProfile } from '../services/studentJobs';
+import { resolveStudentLoginEmail } from '../lib/studentPhoneAuth';
 import { deferAuthWork } from '../lib/deferAuthWork';
 
 const STUDENT_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -233,23 +231,22 @@ export function StudentAuthProvider({ children }) {
     return data;
   };
 
-  const signUp = async ({ email, phone, password, fullName, college, consents, returnPath }) => {
+  const signUp = async ({ email, phone, password, profile, consents, returnPath }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
 
-    const name = String(fullName || '').trim();
-    const collegeName = String(college || '').trim();
     const signupEmail = String(email || '').trim();
-    const normalizedPhone = normalizeStudentPhone(phone);
-
     if (!signupEmail) {
       throw new Error('Email is required.');
     }
 
-    if (!isValidStudentPhone(normalizedPhone)) {
-      throw new Error('Enter a valid 10-digit Indian mobile number.');
-    }
+    const profileInput = {
+      ...(profile || {}),
+      contact_email: profile?.contact_email || signupEmail,
+      phone: profile?.phone || phone,
+    };
+    const validatedProfile = validateStudentProfilePayload(profileInput);
 
     const postAuthPath =
       returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
@@ -262,9 +259,9 @@ export function StudentAuthProvider({ children }) {
       options: {
         data: {
           user_type: 'student',
-          full_name: name,
-          college: collegeName,
-          phone: normalizedPhone,
+          full_name: validatedProfile.full_name,
+          college: validatedProfile.college,
+          phone: validatedProfile.phone,
           auth_method: 'email',
           registration_consents: Boolean(consents),
         },
@@ -283,22 +280,26 @@ export function StudentAuthProvider({ children }) {
         email: signupEmail,
         password,
       });
-      if (!signInError && signInData.session) {
-        session = signInData.session;
-      } else if (signInError) {
-        if (/email not confirmed/i.test(signInError.message)) {
-          return { ...data, session: null, needsEmailConfirmation: true };
-        }
+      if (signInError) {
         throw signInError;
       }
+      session = signInData.session;
     }
 
-    if (data.user) {
-      if (session && consents) {
-        await recordStudentRegistrationConsents(consents, { userId: data.user.id });
-      }
-      await refreshStudentAccess(data.user.id);
+    if (!data.user || !session) {
+      throw new Error('Account created but sign-in did not complete. Try signing in.');
     }
+
+    setSession(session);
+    if (consents) {
+      await recordStudentRegistrationConsents(consents, { userId: data.user.id });
+    }
+    await upsertStudentProfile({
+      ...profileInput,
+      contact_email: validatedProfile.contact_email || signupEmail,
+    });
+    await refreshStudentAccess(data.user.id);
+    setIsLoading(false);
 
     return { ...data, session };
   };

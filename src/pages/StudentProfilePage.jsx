@@ -27,7 +27,11 @@ function StudentProfileContent() {
   return (
     <StudentShell
       title="Student profile"
-      description="Complete your education, target roles, experience, skills, and certifications before applying to jobs in Vizag."
+      description={
+        profileComplete
+          ? 'Update your education, target roles, experience, skills, and certifications anytime.'
+          : 'Complete your education, target roles, experience, skills, and certifications before applying to jobs in Vizag.'
+      }
     >
       <SEO title="Student profile | Vizag Jobs" canonical="/student/profile" />
       {!profileComplete ? (
