@@ -51,6 +51,46 @@ ok(isElectricalRelatedJob(job({ category: 'EEE' })), 'eee category');
 console.log('\nECE branch');
 ok(isEceRelatedJob(job({ title: 'ECE Graduate Engineer Trainee' })), 'ece title');
 ok(isEceRelatedJob(job({ skills: 'embedded systems, vlsi' })), 'ece skills');
+ok(
+  !isEceRelatedJob(
+    job({
+      title: 'Sales Executive',
+      category: 'Sales & Marketing',
+      description: 'Excellent communication skills. Recently posted opening.',
+    }),
+  ),
+  'soft-skill communication is not ECE',
+);
+ok(
+  !isEceRelatedJob(
+    job({
+      title: 'HR Executive',
+      category: 'ECE / Electronics',
+      description: 'Recruitment and necessary coordination with candidates',
+    }),
+  ),
+  'mislabelled HR job is not ECE',
+);
+ok(
+  isEceRelatedJob(
+    job({
+      title: 'Graduate Engineer Trainee',
+      category: 'ECE / Electronics',
+      description: 'Campus hiring for electronics and communication graduates',
+    }),
+  ),
+  'ECE labelled role with evidence stays ECE',
+);
+ok(
+  !isEceRelatedJob(
+    job({
+      title: 'Graduate Engineer Trainee',
+      category: 'ECE / Electronics',
+      description: 'Campus hiring for engineering graduates',
+    }),
+  ),
+  'ECE label alone without role evidence is not enough',
+);
 
 console.log('\nEngineering umbrella');
 ok(isEngineeringRelatedJob(job({ title: 'Civil Site Engineer' })), 'civil under engineering');
