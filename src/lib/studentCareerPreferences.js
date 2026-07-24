@@ -72,10 +72,40 @@ export const normalizeCareerText = (value, maxLength = 120) =>
     .replace(/\s+/g, ' ')
     .slice(0, maxLength);
 
+const humanizeToken = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+/** Resolve preset or custom job-category token from chip value or typed text. */
+export const resolveTargetJobCategoryToken = (raw) => {
+  const text = String(raw || '').trim();
+  if (!text) {
+    return '';
+  }
+
+  const token = normalizeToken(text);
+  const known = STUDENT_JOB_CATEGORY_OPTIONS.find(
+    (option) =>
+      option.value === token || option.label.toLowerCase() === text.toLowerCase(),
+  );
+  if (known) {
+    return known.value;
+  }
+
+  if (token.length < 2 || token.length > 64) {
+    return '';
+  }
+  return token;
+};
+
 export const parseTargetJobCategories = (values) => {
-  const allowed = new Set(STUDENT_JOB_CATEGORY_OPTIONS.map((option) => option.value));
   const list = Array.isArray(values) ? values : [];
-  return [...new Set(list.map(normalizeToken).filter((item) => allowed.has(item)))].slice(0, 6);
+  return [
+    ...new Set(list.map(resolveTargetJobCategoryToken).filter(Boolean)),
+  ].slice(0, 8);
 };
 
 export const parsePreferredLocations = (value) => {
@@ -105,8 +135,10 @@ export const isAllowedRoleExperienceLevel = (value) =>
 export const isAllowedAvailability = (value) =>
   STUDENT_AVAILABILITY_OPTIONS.some((option) => option.value === String(value || '').trim());
 
-export const formatJobCategoryLabel = (value) =>
-  CATEGORY_LABEL_BY_VALUE.get(String(value || '').trim()) || String(value || '').trim();
+export const formatJobCategoryLabel = (value) => {
+  const key = String(value || '').trim();
+  return CATEGORY_LABEL_BY_VALUE.get(key) || humanizeToken(key) || key;
+};
 
 export const formatRoleExperienceLabel = (value) =>
   EXPERIENCE_LABEL_BY_VALUE.get(String(value || '').trim()) || String(value || '').trim();

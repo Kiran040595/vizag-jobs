@@ -133,6 +133,15 @@ export default function StudentRegisterPage() {
     });
   };
 
+  const addSkill = (skillValue) => {
+    setForm((current) => {
+      if (current.skills.includes(skillValue)) {
+        return current;
+      }
+      return { ...current, skills: [...current.skills, skillValue].slice(0, 16) };
+    });
+  };
+
   const toggleTargetCategory = (categoryValue) => {
     setForm((current) => {
       const selected = new Set(current.target_job_categories);
@@ -142,6 +151,18 @@ export default function StudentRegisterPage() {
         selected.add(categoryValue);
       }
       return { ...current, target_job_categories: [...selected] };
+    });
+  };
+
+  const addTargetCategory = (categoryValue) => {
+    setForm((current) => {
+      if (current.target_job_categories.includes(categoryValue)) {
+        return current;
+      }
+      return {
+        ...current,
+        target_job_categories: [...current.target_job_categories, categoryValue].slice(0, 8),
+      };
     });
   };
 
@@ -228,7 +249,9 @@ export default function StudentRegisterPage() {
             onChange={handleChange}
             onFresherChange={handleFresherChange}
             onToggleSkill={toggleSkill}
+            onAddSkill={addSkill}
             onToggleTargetCategory={toggleTargetCategory}
+            onAddTargetCategory={addTargetCategory}
             onTogglePreferredLocation={togglePreferredLocation}
             includeContactEmail={false}
             idPrefix="student-register"

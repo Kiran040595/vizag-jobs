@@ -1,21 +1,29 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
+  formatJobCategoryLabel,
+  resolveTargetJobCategoryToken,
   STUDENT_AVAILABILITY_OPTIONS,
   STUDENT_JOB_CATEGORY_OPTIONS,
   STUDENT_PREFERRED_LOCATION_OPTIONS,
   STUDENT_ROLE_EXPERIENCE_OPTIONS,
 } from '../../lib/studentCareerPreferences';
 import {
+  formatSkillLabel,
   groupSkillOptions,
+  resolveSkillToken,
   STUDENT_BRANCH_OPTIONS,
   STUDENT_DEGREE_OPTIONS,
   STUDENT_GRADUATION_YEAR_OPTIONS,
+  STUDENT_SKILL_OPTIONS,
 } from '../../lib/studentProfileOptions';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
 
 const SELECT_CLASS = `${INPUT_CLASS} h-12`;
+
+const CHIP_INPUT_CLASS =
+  'h-10 min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
 
 export const EMPTY_STUDENT_PROFILE_FORM = {
   full_name: '',
@@ -42,18 +50,64 @@ export default function StudentProfileFields({
   onChange,
   onFresherChange,
   onToggleSkill,
+  onAddSkill,
   onToggleTargetCategory,
+  onAddTargetCategory,
   onTogglePreferredLocation,
   includeContactEmail = true,
   idPrefix = 'student-profile',
 }) {
   const skillGroups = useMemo(() => groupSkillOptions(), []);
+  const [customCategoryDraft, setCustomCategoryDraft] = useState('');
+  const [customSkillDraft, setCustomSkillDraft] = useState('');
+
   const locationOptions = [
     ...STUDENT_PREFERRED_LOCATION_OPTIONS,
     ...form.preferred_locations.filter(
       (location) => !STUDENT_PREFERRED_LOCATION_OPTIONS.includes(location),
     ),
   ];
+
+  const categoryOptions = useMemo(() => {
+    const presetValues = new Set(STUDENT_JOB_CATEGORY_OPTIONS.map((option) => option.value));
+    const custom = form.target_job_categories
+      .filter((value) => !presetValues.has(value))
+      .map((value) => ({ value, label: formatJobCategoryLabel(value) }));
+    return [...STUDENT_JOB_CATEGORY_OPTIONS, ...custom];
+  }, [form.target_job_categories]);
+
+  const customSkills = useMemo(() => {
+    const presetValues = new Set(STUDENT_SKILL_OPTIONS.map((option) => option.value));
+    return form.skills
+      .filter((value) => !presetValues.has(value))
+      .map((value) => ({ value, label: formatSkillLabel(value) }));
+  }, [form.skills]);
+
+  const addCustomCategory = () => {
+    const token = resolveTargetJobCategoryToken(customCategoryDraft);
+    if (!token) {
+      return;
+    }
+    if (onAddTargetCategory) {
+      onAddTargetCategory(token);
+    } else {
+      onToggleTargetCategory(token);
+    }
+    setCustomCategoryDraft('');
+  };
+
+  const addCustomSkill = () => {
+    const token = resolveSkillToken(customSkillDraft);
+    if (!token) {
+      return;
+    }
+    if (onAddSkill) {
+      onAddSkill(token);
+    } else {
+      onToggleSkill(token);
+    }
+    setCustomSkillDraft('');
+  };
 
   return (
     <div className="grid gap-5 sm:grid-cols-2">
@@ -202,11 +256,10 @@ export default function StudentProfileFields({
           What type of jobs are you trying for? *
         </legend>
         <p className="mt-1 text-xs text-slate-500">
-          Admins use this to find students for roles like telecaller, backend, frontend, medical,
-          mechanical, and more.
+          Pick from the list or type another job type — it is added as a selected chip.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {STUDENT_JOB_CATEGORY_OPTIONS.map((option) => {
+          {categoryOptions.map((option) => {
             const selected = form.target_job_categories.includes(option.value);
             return (
               <button
@@ -223,6 +276,30 @@ export default function StudentProfileFields({
               </button>
             );
           })}
+        </div>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            id={`${idPrefix}-custom-job-category`}
+            type="text"
+            value={customCategoryDraft}
+            onChange={(event) => setCustomCategoryDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                addCustomCategory();
+              }
+            }}
+            className={CHIP_INPUT_CLASS}
+            placeholder="Type another job type, e.g. Hotel Management"
+            maxLength={64}
+          />
+          <button
+            type="button"
+            onClick={addCustomCategory}
+            className="h-10 shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100"
+          >
+            Add job type
+          </button>
         </div>
       </fieldset>
 
@@ -337,7 +414,7 @@ export default function StudentProfileFields({
       <fieldset className="block sm:col-span-2">
         <legend className="text-sm font-semibold text-slate-700">Skills * (select all that apply)</legend>
         <p className="mt-1 text-xs text-slate-500">
-          Stored in a standard format so recruiters can filter Java, React, delivery, etc.
+          Pick from the list or type another skill — it is added as a selected chip.
         </p>
         <div className="mt-4 space-y-4">
           {skillGroups.map(([groupName, options]) => (
@@ -364,6 +441,47 @@ export default function StudentProfileFields({
               </div>
             </div>
           ))}
+          {customSkills.length > 0 ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Custom</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {customSkills.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onToggleSkill(option.value)}
+                    className="rounded-full border border-indigo-500 bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            id={`${idPrefix}-custom-skill`}
+            type="text"
+            value={customSkillDraft}
+            onChange={(event) => setCustomSkillDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                addCustomSkill();
+              }
+            }}
+            className={CHIP_INPUT_CLASS}
+            placeholder="Type another skill, e.g. Power BI"
+            maxLength={48}
+          />
+          <button
+            type="button"
+            onClick={addCustomSkill}
+            className="h-10 shrink-0 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100"
+          >
+            Add skill
+          </button>
         </div>
       </fieldset>
 

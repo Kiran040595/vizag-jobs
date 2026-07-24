@@ -96,6 +96,26 @@ assert.deepEqual(validated.skills, ['java', 'react']);
 assert.equal(validated.availability, 'immediate');
 assert.equal(validated.graduation_year, 2026);
 
+const withCustom = validateStudentProfilePayload({
+  full_name: 'Priya Sharma',
+  college: 'Andhra University',
+  degree: 'B.Tech',
+  branch: 'Computer Science (CSE)',
+  graduation_year: '2026',
+  phone: '9876543210',
+  skills: ['java', 'Power BI'],
+  certifications: 'None',
+  is_fresher: true,
+  contact_email: 'priya@example.com',
+  target_job_categories: ['software_frontend', 'Hotel Management'],
+  primary_target_role: 'Frontend Developer',
+  role_experience_level: 'fresher',
+  preferred_locations: ['Vizag'],
+  availability: 'immediate',
+});
+assert.ok(withCustom.skills.includes('power bi'));
+assert.ok(withCustom.target_job_categories.includes('hotel_management'));
+
 assert.throws(
   () =>
     validateStudentProfilePayload({

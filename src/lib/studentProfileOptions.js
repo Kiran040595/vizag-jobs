@@ -89,15 +89,42 @@ export const normalizeSkillValue = (value) =>
     .toLowerCase()
     .replace(/\s+/g, ' ');
 
+const titleCaseSkill = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 export const formatSkillLabel = (value) => {
   const normalized = normalizeSkillValue(value);
-  return SKILL_LABEL_BY_VALUE.get(normalized) || value;
+  return SKILL_LABEL_BY_VALUE.get(normalized) || titleCaseSkill(normalized) || value;
+};
+
+/** Resolve preset or custom skill token from chip value or typed text. */
+export const resolveSkillToken = (raw) => {
+  const text = String(raw || '').trim();
+  if (!text) {
+    return '';
+  }
+
+  const normalized = normalizeSkillValue(text);
+  const known = STUDENT_SKILL_OPTIONS.find(
+    (item) =>
+      item.value === normalized || item.label.toLowerCase() === text.toLowerCase(),
+  );
+  if (known) {
+    return known.value;
+  }
+
+  if (normalized.length < 2 || normalized.length > 48) {
+    return '';
+  }
+  return normalized;
 };
 
 export const parseSkillSelection = (values) => {
-  const allowed = new Set(STUDENT_SKILL_OPTIONS.map((item) => item.value));
   const list = Array.isArray(values) ? values : [];
-  return [...new Set(list.map(normalizeSkillValue).filter((item) => allowed.has(item)))].slice(0, 12);
+  return [...new Set(list.map(resolveSkillToken).filter(Boolean))].slice(0, 16);
 };
 
 export const groupSkillOptions = () => {
