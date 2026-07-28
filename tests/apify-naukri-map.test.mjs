@@ -66,9 +66,9 @@ function naukriJobRecordFromFlat(flat, scrapedAt, fallbackSearchUrl) {
   const title = firstString(flat, ['title', 'jobTitle']) ?? null;
   if (!isUsableNaukriTitle(title)) return null;
   const company = firstString(flat, ['companyName', 'company']) ?? 'Unknown';
-  const applyUrl = normalizeNaukriJobUrl(firstString(flat, ['jdURL', 'jobUrl']));
+  const applyUrl = normalizeNaukriJobUrl(firstString(flat, ['link', 'jdURL', 'jobUrl']));
   const description = firstString(flat, ['jobDescription', 'description']) ?? '';
-  const posted_at = parseApifyDate(flat.createdDate ?? flat.postedDate, scrapedAt);
+  const posted_at = parseApifyDate(flat.createdDate ?? flat.postedDate ?? flat.postedAt, scrapedAt);
   const sourceUrl = applyUrl ?? fallbackSearchUrl;
   return {
     title,
@@ -80,7 +80,9 @@ function naukriJobRecordFromFlat(flat, scrapedAt, fallbackSearchUrl) {
     posted_at,
     description_markdown: description,
     source_kind: 'naukri',
-    skills: parseSkillsBlob(firstString(flat, ['tagsAndSkills'])),
+    skills: Array.isArray(flat.skills)
+      ? flat.skills
+      : parseSkillsBlob(firstString(flat, ['tagsAndSkills'])),
     salary: firstString(flat, ['salary']),
   };
 }
@@ -96,7 +98,7 @@ function apifyItemsToNaukriJobs(items, scrapedAt, fallbackSearchUrl) {
 }
 
 const sourceText = fs.readFileSync(SRC, 'utf8');
-assert.match(sourceText, /api-empire~naukri-job-scraper/);
+assert.match(sourceText, /dineshwadhwani~naukri-job-scrapper/);
 assert.match(sourceText, /APIFY_API_TOKEN_NAUKRI/);
 assert.match(sourceText, /keyword:\s*'vizag'/);
 assert.match(sourceText, /postedBy:\s*\[\s*'1'\s*\]/);
@@ -117,6 +119,22 @@ assert.equal(jobs[0].source_kind, 'naukri');
 assert.equal(jobs[0].posted_at, '2026-06-17T08:14:11.000Z');
 assert.ok(jobs[0].apply_url.includes('job-listings-software-engineer'));
 assert.deepEqual(jobs[0].skills, ['Java', 'Spring Boot', 'Microservices']);
+
+const dineshItem = {
+  jobId: '4426507200',
+  title: 'Account Executive',
+  company: 'Acme Corp',
+  location: 'Visakhapatnam',
+  experience: '0-2 Yrs',
+  salary: '3-5 Lakhs',
+  skills: ['Sales', 'Communication'],
+  postedAt: '2026-07-28',
+  link: 'https://www.naukri.com/job-listings-account-executive-acme-visakhapatnam-4426507200',
+};
+const dineshJobs = apifyItemsToNaukriJobs([dineshItem], scrapedAt, hub);
+assert.equal(dineshJobs.length, 1);
+assert.ok(dineshJobs[0].apply_url.includes('job-listings-account-executive'));
+assert.deepEqual(dineshJobs[0].skills, ['Sales', 'Communication']);
 
 assert.equal(isNaukriVizagJob(jobs[0]), true);
 assert.equal(

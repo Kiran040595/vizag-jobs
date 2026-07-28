@@ -45,7 +45,8 @@ jobs:
           FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
           AUTO_FETCH_CHANNEL: naukri
           AUTO_NAUKRI_SEO_GAP_MS: '180000'
-          AUTO_NAUKRI_COLLECT_WAIT_MS: '180000'
+          AUTO_NAUKRI_COLLECT_WAIT_MS: '60000'
+          AUTO_NAUKRI_MAX_JOBS: '35'
         run: node scripts/auto-external-pipeline.mjs naukri
 
       - name: Upload Naukri automation report

@@ -1,6 +1,7 @@
 /**
- * Apify Store actor for Naukri Vizag jobs (api-empire~naukri-job-scraper).
- * @see https://apify.com/api-empire/naukri-job-scraper
+ * Apify Store actor for Naukri Vizag jobs.
+ * Default: dineshwadhwani~naukri-job-scrapper (override with APIFY_NAUKRI_ACTOR).
+ * @see https://apify.com/dineshwadhwani/naukri-job-scrapper
  */
 
 import { apifyRunActor } from './apify-linkedin.ts';
@@ -11,7 +12,7 @@ import {
   prioritizeNaukriJobsByExperience,
 } from '../_shared/naukriExperienceSort.ts';
 
-export const DEFAULT_NAUKRI_APIFY_ACTOR = 'api-empire~naukri-job-scraper';
+export const DEFAULT_NAUKRI_APIFY_ACTOR = 'dineshwadhwani~naukri-job-scrapper';
 
 /** Curated Vizag hub — last 24h, city + functional-area filters (matches Firecrawl hub). */
 export const NAUKRI_VIZAG_24H_SEARCH_URL =
@@ -185,6 +186,22 @@ function parseSkillsBlob(raw: string | null): string[] {
     .slice(0, 24);
 }
 
+function parseSkillsField(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return [
+      ...new Set(
+        value
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter((item) => item.length >= 2 && item.length <= 60),
+      ),
+    ].slice(0, 24);
+  }
+  if (typeof value === 'string') {
+    return parseSkillsBlob(value);
+  }
+  return [];
+}
+
 function naukriJobRecordFromFlat(
   flat: Record<string, unknown>,
   scrapedAt: string,
@@ -199,15 +216,23 @@ function naukriJobRecordFromFlat(
   const location =
     firstString(flat, ['location', 'jobLocation', 'city', 'place']) ?? null;
   const applyRaw =
-    firstString(flat, ['jdURL', 'jdUrl', 'jobUrl', 'job_url', 'url', 'applyUrl', 'apply_url']) ??
-    null;
+    firstString(flat, [
+      'link',
+      'jdURL',
+      'jdUrl',
+      'jobUrl',
+      'job_url',
+      'url',
+      'applyUrl',
+      'apply_url',
+    ]) ?? null;
   const applyUrl = normalizeNaukriJobUrl(applyRaw);
   const description =
     firstString(flat, ['jobDescription', 'description', 'descriptionText', 'jd']) ?? '';
   const salary = firstString(flat, ['salary', 'salaryDetail', 'ctc']) ?? null;
-  const skills = parseSkillsBlob(
-    firstString(flat, ['tagsAndSkills', 'skills', 'keySkills', 'tags_and_skills']),
-  );
+  const skills =
+    parseSkillsField(flat.skills) ||
+    parseSkillsBlob(firstString(flat, ['tagsAndSkills', 'keySkills', 'tags_and_skills']));
   const posted_at =
     parseApifyDate(
       flat.createdDate ?? flat.postedDate ?? flat.posted_at ?? flat.postedAt,
