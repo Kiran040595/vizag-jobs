@@ -202,6 +202,31 @@ function parseSkillsField(value: unknown): string[] {
   return [];
 }
 
+function isNaukriCareersListingUrl(url: string): boolean {
+  return /jobs-careers/i.test(url);
+}
+
+function firstJobId(flat: Record<string, unknown>): string | null {
+  const raw = flat.jobId ?? flat.job_id ?? flat.jobID;
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return String(Math.trunc(raw));
+  }
+  if (typeof raw === 'string' && /^\d{6,}$/.test(raw.trim())) {
+    return raw.trim();
+  }
+  return null;
+}
+
+/** Build a real job-listings URL when the actor only returns a company careers page. */
+function buildNaukriJobListingsUrl(jobId: string, title: string | null): string {
+  const slug = (title ?? 'job')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'job';
+  return `https://www.naukri.com/job-listings-${slug}-visakhapatnam-${jobId}`;
+}
+
 function naukriJobRecordFromFlat(
   flat: Record<string, unknown>,
   scrapedAt: string,
@@ -213,8 +238,9 @@ function naukriJobRecordFromFlat(
   }
   const company =
     firstString(flat, ['companyName', 'company', 'company_name', 'employer']) ?? 'Unknown';
+  // dineshwadhwani actor often leaves location empty and only sets searchLocation.
   const location =
-    firstString(flat, ['location', 'jobLocation', 'city', 'place']) ?? null;
+    firstString(flat, ['location', 'jobLocation', 'city', 'place', 'searchLocation']) ?? null;
   const applyRaw =
     firstString(flat, [
       'link',
@@ -226,7 +252,11 @@ function naukriJobRecordFromFlat(
       'applyUrl',
       'apply_url',
     ]) ?? null;
-  const applyUrl = normalizeNaukriJobUrl(applyRaw);
+  let applyUrl = normalizeNaukriJobUrl(applyRaw);
+  const jobId = firstJobId(flat);
+  if ((!applyUrl || isNaukriCareersListingUrl(applyUrl)) && jobId) {
+    applyUrl = buildNaukriJobListingsUrl(jobId, title);
+  }
   const description =
     firstString(flat, ['jobDescription', 'description', 'descriptionText', 'jd']) ?? '';
   const salary = firstString(flat, ['salary', 'salaryDetail', 'ctc']) ?? null;
