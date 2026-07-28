@@ -4,7 +4,7 @@ export const AUTOMATION_CHANNELS = {
   naukri: {
     id: 'naukri',
     label: 'Naukri',
-    fetchHint: '2 Apify scrapes (fresher + roles, ~90s wait), then SEO + publish',
+    fetchHint: '2 sequential Apify scrapes (fresher, then roles), then SEO + publish',
   },
   linkedin_jobs: {
     id: 'linkedin_jobs',
@@ -29,7 +29,7 @@ export function buildAutomationConfirmMessage(channel, seoGapMs) {
   const gapMin = Math.round(seoGapMs / 60_000);
   let fetchStep = '1. Fetch listings from the source';
   if (channel === 'naukri') {
-    fetchStep = '1. Fetch Naukri jobs via Apify (fresher + roles, ~90s wait)';
+    fetchStep = '1. Fetch Naukri jobs via Apify (fresher finishes, then roles)';
   } else if (channel === 'linkedin_jobs') {
     fetchStep = '1. Fetch LinkedIn Jobs listings (Apify)';
   } else if (channel === 'linkedin_posts') {

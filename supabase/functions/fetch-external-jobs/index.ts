@@ -2569,6 +2569,8 @@ type FetchRequestBody = {
   /** Naukri async Apify: start (fire-and-forget) | collect (read dataset by run id) */
   naukri_action?: 'start' | 'collect';
   apify_naukri_run_id?: string;
+  /** Dual scrapes: fresher | roles — start one batch; next starts only after this finishes. */
+  naukri_batch?: string;
 };
 
 type GeminiKeyChannel = 'linkedin_posts' | 'seo' | 'default';
@@ -6017,7 +6019,7 @@ Deno.serve(async (req) => {
 
     const naukriAction = (requestBody.naukri_action ?? '').trim().toLowerCase();
     if (fetchChannel === 'naukri' && naukriAction === 'start') {
-      const started = await startNaukriApifyRunAsync();
+      const started = await startNaukriApifyRunAsync(requestBody.naukri_batch);
       if (!started.runId) {
         return jsonResponse(
           { ok: false, error: started.error ?? 'Failed to start Naukri Apify run.' },
@@ -6025,7 +6027,7 @@ Deno.serve(async (req) => {
         );
       }
       const collectAfterMs = NAUKRI_ASYNC_COLLECT_WAIT_MS;
-      const batchCount = started.runIds.length || 1;
+      const remaining = started.remainingBatches;
       return jsonResponse({
         ok: true,
         mode: 'fetch',
@@ -6036,6 +6038,8 @@ Deno.serve(async (req) => {
         provider_used: 'apify',
         apify_naukri_run_id: started.runId,
         apify_naukri_run_ids: started.runIds,
+        naukri_batch: started.batchKey,
+        naukri_remaining_batches: remaining,
         naukri_batch_labels: started.batchLabels,
         started_at: fetchInstant,
         collect_after_ms: collectAfterMs,
@@ -6047,8 +6051,8 @@ Deno.serve(async (req) => {
         fetch_channel_label: channelLabel('naukri'),
         jobs: [],
         message:
-          batchCount > 1
-            ? `Started ${batchCount} Apify scrapes (fresher + important roles). Check back in about ${Math.round(collectAfterMs / 60_000)} minute(s).`
+          remaining.length > 0
+            ? `Apify ${started.batchKey ?? 'batch'} scrape started. Next batch (${remaining.join(', ')}) starts only after this run finishes.`
             : `Apify scrape started. Check back in about ${Math.round(collectAfterMs / 60_000)} minutes.`,
       });
     }

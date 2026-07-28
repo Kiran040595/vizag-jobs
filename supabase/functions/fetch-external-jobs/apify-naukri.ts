@@ -495,6 +495,10 @@ export type NaukriApifyStartResult = {
   input: Record<string, unknown>;
   inputLabel: string;
   batchLabels: string[];
+  /** Which batch was started (fresher | roles | default). */
+  batchKey: string | null;
+  /** Later batches to start only after this run finishes. */
+  remainingBatches: string[];
   error: string | null;
 };
 
@@ -564,61 +568,66 @@ async function startSingleNaukriApifyRun(
   return { runId, error: null };
 }
 
-/** Fire-and-forget Apify actor run(s) — dual fresher + roles by default. */
-export async function startNaukriApifyRunAsync(): Promise<NaukriApifyStartResult> {
+/**
+ * Start a single Naukri Apify batch.
+ * Dual mode: pass batchKey ('fresher' | 'roles'). If omitted, starts the first batch only
+ * and returns remainingBatches so the client can start the next after this run completes.
+ */
+export async function startNaukriApifyRunAsync(
+  batchKey?: string | null,
+): Promise<NaukriApifyStartResult> {
   const token = getApifyTokenForNaukri();
   const actorId = getNaukriActorId();
-  const batches = listNaukriActorInputs();
-  const primaryInput = batches[0]?.input ?? DEFAULT_NAUKRI_APIFY_INPUT;
-  const inputLabel = batches.map((b) => `${b.key}:{${b.label}}`).join(' | ');
-  const batchLabels = batches.map((b) => `${b.key}: ${b.label}`);
+  const allBatches = listNaukriActorInputs();
+  const requested = typeof batchKey === 'string' ? batchKey.trim().toLowerCase() : '';
+  const selectedIndex = requested
+    ? allBatches.findIndex((b) => b.key === requested)
+    : 0;
+  const batch = selectedIndex >= 0 ? allBatches[selectedIndex] : null;
+  const remainingBatches =
+    selectedIndex >= 0
+      ? allBatches.slice(selectedIndex + 1).map((b) => b.key)
+      : allBatches.slice(1).map((b) => b.key);
+
+  const empty = (error: string | null): NaukriApifyStartResult => ({
+    runId: null,
+    runIds: [],
+    actorId,
+    input: batch?.input ?? DEFAULT_NAUKRI_APIFY_INPUT,
+    inputLabel: batch?.label ?? '',
+    batchLabels: batch ? [`${batch.key}: ${batch.label}`] : [],
+    batchKey: batch?.key ?? null,
+    remainingBatches,
+    error,
+  });
+
+  if (!batch) {
+    return empty(
+      requested
+        ? `Unknown naukri_batch "${requested}". Use: ${allBatches.map((b) => b.key).join(', ')}`
+        : 'No Naukri Apify input batches configured.',
+    );
+  }
 
   if (!token) {
-    return {
-      runId: null,
-      runIds: [],
-      actorId,
-      input: primaryInput,
-      inputLabel,
-      batchLabels,
-      error: 'APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set',
-    };
+    return empty('APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set');
   }
 
-  const runIds: string[] = [];
-  const errors: string[] = [];
-
-  // Start batches one after another so Apify billing/concurrency stays predictable.
-  for (const batch of batches) {
-    const started = await startSingleNaukriApifyRun(token, actorId, batch.input, batch.key);
-    if (started.runId) {
-      runIds.push(started.runId);
-    }
-    if (started.error) {
-      errors.push(started.error);
-    }
-  }
-
-  if (runIds.length === 0) {
-    return {
-      runId: null,
-      runIds: [],
-      actorId,
-      input: primaryInput,
-      inputLabel,
-      batchLabels,
-      error: errors.join('; ') || 'Failed to start Naukri Apify run(s).',
-    };
+  const started = await startSingleNaukriApifyRun(token, actorId, batch.input, batch.key);
+  if (!started.runId) {
+    return empty(started.error || `Failed to start Naukri Apify run (${batch.key}).`);
   }
 
   return {
-    runId: runIds.join(','),
-    runIds,
+    runId: started.runId,
+    runIds: [started.runId],
     actorId,
-    input: primaryInput,
-    inputLabel,
-    batchLabels,
-    error: errors.length > 0 ? `Partial start: ${errors.join('; ')}` : null,
+    input: batch.input,
+    inputLabel: `${batch.key}:{${batch.label}}`,
+    batchLabels: [`${batch.key}: ${batch.label}`],
+    batchKey: batch.key,
+    remainingBatches,
+    error: null,
   };
 }
 

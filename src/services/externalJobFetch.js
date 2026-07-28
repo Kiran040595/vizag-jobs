@@ -260,14 +260,19 @@ export const NAUKRI_ASYNC_COLLECT_WAIT_MS = 3 * 60 * 1000;
 /**
  * Start Naukri Apify scrape without waiting for completion.
  * @param {string} accessToken
+ * @param {{ batch?: string }} [options] — dual mode: 'fresher' | 'roles'
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function startNaukriApifyFetch(accessToken) {
-  return callFetchExternalJobsEdge(accessToken, {
+export async function startNaukriApifyFetch(accessToken, options = {}) {
+  const body = {
     mode: 'fetch',
     fetch_channel: 'naukri',
     naukri_action: 'start',
-  });
+  };
+  if (options.batch) {
+    body.naukri_batch = options.batch;
+  }
+  return callFetchExternalJobsEdge(accessToken, body);
 }
 
 /**

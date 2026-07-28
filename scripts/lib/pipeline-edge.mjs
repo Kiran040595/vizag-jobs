@@ -108,15 +108,16 @@ async function callEdgeFunction(body, timeoutMs) {
   }
 }
 
-export async function startNaukriFetch() {
-  return callEdgeFunction(
-    {
-      mode: 'fetch',
-      fetch_channel: 'naukri',
-      naukri_action: 'start',
-    },
-    pipelineConfig.fetchTimeoutMs,
-  );
+export async function startNaukriFetch(batch) {
+  const body = {
+    mode: 'fetch',
+    fetch_channel: 'naukri',
+    naukri_action: 'start',
+  };
+  if (batch) {
+    body.naukri_batch = batch;
+  }
+  return callEdgeFunction(body, pipelineConfig.fetchTimeoutMs);
 }
 
 export async function collectNaukriFetch(runId) {
@@ -131,15 +132,17 @@ export async function collectNaukriFetch(runId) {
   );
 }
 
-export async function fetchNaukriJobs() {
-  const started = await startNaukriFetch();
-  const runId = started.apify_naukri_run_id;
-  if (!runId) {
-    throw new Error('Naukri Apify run id missing from start response.');
-  }
+function naukriJobDedupeKey(job) {
+  return String(job?.apply_link || job?.source_url || job?.slug || '')
+    .trim()
+    .toLowerCase();
+}
 
-  const waitMs = Number(started.collect_after_ms) || pipelineConfig.naukriCollectWaitMs;
-  console.log(`[auto] Naukri Apify run ${runId} started; waiting ${Math.round(waitMs / 1000)}s before collect…`);
+async function waitAndCollectNaukriRun(runId, label) {
+  const waitMs = pipelineConfig.naukriCollectWaitMs;
+  console.log(
+    `[auto] Naukri ${label} run ${runId} started; waiting ${Math.round(waitMs / 1000)}s before collect…`,
+  );
   await sleepMs(waitMs);
 
   for (let attempt = 1; attempt <= pipelineConfig.naukriCollectMaxAttempts; attempt += 1) {
@@ -149,17 +152,73 @@ export async function fetchNaukriJobs() {
 
     if (pending || emptyWithRetry) {
       const retryMs = (Number(data.retry_after_sec) || 15) * 1000;
-      console.log(`[auto] Apify still running (attempt ${attempt}); retry in ${Math.round(retryMs / 1000)}s`);
+      console.log(
+        `[auto] Naukri ${label} still running (attempt ${attempt}); retry in ${Math.round(retryMs / 1000)}s`,
+      );
       await sleepMs(retryMs);
       continue;
     }
 
     const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-    console.log(`[auto] Collected ${jobs.length} Naukri job(s).`);
+    console.log(`[auto] Collected ${jobs.length} Naukri job(s) from ${label}.`);
     return { jobs, meta: data, apifyRunId: runId };
   }
 
-  throw new Error('Naukri Apify run did not finish in time.');
+  throw new Error(`Naukri Apify ${label} run did not finish in time.`);
+}
+
+/** Fresher scrape must finish before important-roles scrape starts. */
+export async function fetchNaukriJobs() {
+  const allJobs = [];
+  const runIds = [];
+  const metas = [];
+  let nextBatch = null;
+  let remaining = [];
+
+  // First start (defaults to fresher when dual is enabled).
+  const first = await startNaukriFetch();
+  if (!first.apify_naukri_run_id) {
+    throw new Error('Naukri Apify run id missing from start response.');
+  }
+  nextBatch = first.naukri_batch || 'fresher';
+  remaining = Array.isArray(first.naukri_remaining_batches) ? first.naukri_remaining_batches : [];
+
+  const firstCollected = await waitAndCollectNaukriRun(first.apify_naukri_run_id, nextBatch);
+  allJobs.push(...firstCollected.jobs);
+  runIds.push(firstCollected.apifyRunId);
+  metas.push(firstCollected.meta);
+
+  for (const batch of remaining) {
+    console.log(`[auto] Starting next Naukri batch after ${nextBatch} finished: ${batch}`);
+    const started = await startNaukriFetch(batch);
+    if (!started.apify_naukri_run_id) {
+      throw new Error(`Naukri Apify run id missing for batch ${batch}.`);
+    }
+    const collected = await waitAndCollectNaukriRun(started.apify_naukri_run_id, batch);
+    allJobs.push(...collected.jobs);
+    runIds.push(collected.apifyRunId);
+    metas.push(collected.meta);
+    nextBatch = batch;
+  }
+
+  const seen = new Set();
+  const jobs = [];
+  for (const job of allJobs) {
+    const key = naukriJobDedupeKey(job);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    jobs.push(job);
+  }
+
+  console.log(
+    `[auto] Naukri sequential batches done: ${runIds.length} run(s), ${jobs.length} unique job(s).`,
+  );
+
+  return {
+    jobs,
+    meta: metas[metas.length - 1] || {},
+    apifyRunId: runIds.join(','),
+  };
 }
 
 export async function fetchLinkedInJobs() {
