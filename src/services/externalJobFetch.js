@@ -12,6 +12,7 @@ import {
   parseGeminiKeyIndexFromError,
   parseSeoRetryWaitMs,
 } from '../lib/seoRetry';
+import { SEO_PUBLISH_SAFE_INSTRUCTIONS } from '../lib/seoPublishSafeInstructions';
 
 export function getFetchExternalJobsUrl() {
   const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
