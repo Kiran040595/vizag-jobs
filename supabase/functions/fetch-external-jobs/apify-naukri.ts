@@ -321,9 +321,13 @@ function defaultNaukriMaxJobs(fetchDetails: boolean): number {
   return Math.min(100, Math.max(1, fallback));
 }
 
-/** Default input for dineshwadhwani~naukri-job-scrapper — Vizag, all roles, last 24h. */
+/**
+ * Default input for dineshwadhwani~naukri-job-scrapper — Vizag, last 24h.
+ * Roles must be words that appear in job titles (actor title-filters on them).
+ * Avoid generic terms like "jobs" — they match almost nothing.
+ */
 export const DEFAULT_NAUKRI_APIFY_INPUT: Record<string, unknown> = {
-  roles: ['jobs'],
+  roles: ['Associate', 'Executive', 'Manager'],
   locations: ['Visakhapatnam'],
   skills: [],
   timeFrame: '1',

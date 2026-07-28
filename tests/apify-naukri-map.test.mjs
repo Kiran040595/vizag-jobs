@@ -100,7 +100,7 @@ function apifyItemsToNaukriJobs(items, scrapedAt, fallbackSearchUrl) {
 const sourceText = fs.readFileSync(SRC, 'utf8');
 assert.match(sourceText, /dineshwadhwani~naukri-job-scrapper/);
 assert.match(sourceText, /APIFY_API_TOKEN_NAUKRI/);
-assert.match(sourceText, /roles:\s*\[\s*'jobs'\s*\]/);
+assert.match(sourceText, /roles:\s*\[\s*'Associate',\s*'Executive',\s*'Manager'\s*\]/);
 assert.match(sourceText, /locations:\s*\[\s*'Visakhapatnam'\s*\]/);
 assert.match(sourceText, /isNaukriVizagJob/);
 assert.match(sourceText, /prioritizeNaukriJobsByExperience/);
