@@ -42,7 +42,17 @@ export async function getYouTubeAccessToken() {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data?.error_description || data?.error || `Token refresh failed (${res.status})`);
+    const detail = data?.error_description || data?.error || `Token refresh failed (${res.status})`;
+    const revoked =
+      /expired|revoked|invalid_grant/i.test(String(detail)) || data?.error === 'invalid_grant';
+    if (revoked) {
+      throw new Error(
+        `YouTube OAuth refresh token is expired or revoked (${detail}). ` +
+          `Fix: run npm run youtube:oauth-setup locally, then update GitHub secret YOUTUBE_REFRESH_TOKEN ` +
+          `(or run scripts/set-github-youtube-secrets.ps1).`,
+      );
+    }
+    throw new Error(detail);
   }
 
   if (!data.access_token) {
