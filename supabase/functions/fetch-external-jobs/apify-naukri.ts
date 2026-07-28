@@ -321,18 +321,12 @@ function defaultNaukriMaxJobs(fetchDetails: boolean): number {
   return Math.min(100, Math.max(1, fallback));
 }
 
-/** Default actor input — keyword + Visakhapatnam city id 26, last 24h, company HR posts. */
+/** Default input for dineshwadhwani~naukri-job-scrapper — Vizag, all roles, last 24h. */
 export const DEFAULT_NAUKRI_APIFY_INPUT: Record<string, unknown> = {
-  cities: ['26'],
-  experience: 'all',
-  fetchDetails: true,
-  freshness: '1',
-  keyword: 'vizag',
-  maxJobs: 12,
-  postedBy: ['1'],
-  proxyConfiguration: { useApifyProxy: false },
-  sortBy: 'date',
-  maxRequestRetries: 2,
+  roles: ['jobs'],
+  locations: ['Visakhapatnam'],
+  skills: [],
+  timeFrame: '1',
 };
 
 export function buildNaukriActorInput(): Record<string, unknown> {
@@ -342,31 +336,18 @@ export function buildNaukriActorInput(): Record<string, unknown> {
       return JSON.parse(override) as Record<string, unknown>;
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
-      throw new Error(`APIFY_NAUKRI_INPUT_JSON is not valid JSON (${detail}).`);
+      console.warn(
+        JSON.stringify({
+          event: 'apify_naukri_input_json_invalid',
+          error: detail,
+          fallback: 'DEFAULT_NAUKRI_APIFY_INPUT',
+        }),
+      );
+      return { ...DEFAULT_NAUKRI_APIFY_INPUT };
     }
   }
 
-  const keyword = Deno.env.get('APIFY_NAUKRI_KEYWORD')?.trim() || 'vizag';
-  const postedByRaw = Deno.env.get('APIFY_NAUKRI_POSTED_BY')?.trim();
-  const postedBy = postedByRaw
-    ? postedByRaw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean)
-    : ['1'];
-
-  const fetchDetails =
-    (Deno.env.get('APIFY_NAUKRI_FETCH_DETAILS') ?? 'true').toLowerCase() !== 'false';
-
-  const outputLimit = defaultNaukriMaxJobs(fetchDetails);
-
-  return {
-    ...DEFAULT_NAUKRI_APIFY_INPUT,
-    keyword,
-    experience: Deno.env.get('APIFY_NAUKRI_EXPERIENCE')?.trim() || 'all',
-    maxJobs: naukriApifyScrapePoolSize(outputLimit),
-    postedBy,
-    freshness: Deno.env.get('APIFY_NAUKRI_FRESHNESS')?.trim() || '1',
-    sortBy: Deno.env.get('APIFY_NAUKRI_SORT_BY')?.trim() || 'date',
-    fetchDetails,
-  };
+  return { ...DEFAULT_NAUKRI_APIFY_INPUT };
 }
 
 /** Jobs returned to admin/automation after fresher-first prioritization. */
