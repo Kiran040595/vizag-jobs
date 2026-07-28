@@ -6025,6 +6025,7 @@ Deno.serve(async (req) => {
         );
       }
       const collectAfterMs = NAUKRI_ASYNC_COLLECT_WAIT_MS;
+      const batchCount = started.runIds.length || 1;
       return jsonResponse({
         ok: true,
         mode: 'fetch',
@@ -6034,6 +6035,8 @@ Deno.serve(async (req) => {
         runtime_ms: budget.elapsedMs(),
         provider_used: 'apify',
         apify_naukri_run_id: started.runId,
+        apify_naukri_run_ids: started.runIds,
+        naukri_batch_labels: started.batchLabels,
         started_at: fetchInstant,
         collect_after_ms: collectAfterMs,
         collect_after_sec: Math.ceil(collectAfterMs / 1000),
@@ -6043,12 +6046,19 @@ Deno.serve(async (req) => {
         fetch_channel: 'naukri',
         fetch_channel_label: channelLabel('naukri'),
         jobs: [],
-        message: `Apify scrape started. Check back in about ${Math.round(collectAfterMs / 60_000)} minutes.`,
+        message:
+          batchCount > 1
+            ? `Started ${batchCount} Apify scrapes (fresher + important roles). Check back in about ${Math.round(collectAfterMs / 60_000)} minute(s).`
+            : `Apify scrape started. Check back in about ${Math.round(collectAfterMs / 60_000)} minutes.`,
       });
     }
 
     if (fetchChannel === 'naukri' && naukriAction === 'collect') {
-      const runId = requestBody.apify_naukri_run_id?.trim();
+      const runId =
+        requestBody.apify_naukri_run_id?.trim() ||
+        (Array.isArray((requestBody as { apify_naukri_run_ids?: string[] }).apify_naukri_run_ids)
+          ? (requestBody as { apify_naukri_run_ids?: string[] }).apify_naukri_run_ids!.join(',')
+          : '');
       if (!runId) {
         return jsonResponse(
           { ok: false, error: 'Missing apify_naukri_run_id for Naukri collect.' },
@@ -6063,7 +6073,8 @@ Deno.serve(async (req) => {
           naukri_async: true,
           naukri_action: 'pending',
           apify_status: collected.status,
-          apify_naukri_run_id: runId,
+          apify_naukri_run_id: collected.apify_naukri_run_id,
+          apify_naukri_run_ids: collected.apify_naukri_run_ids,
           retry_after_sec: 15,
           fetched_at: fetchInstant,
           runtime_ms: budget.elapsedMs(),
@@ -6076,7 +6087,13 @@ Deno.serve(async (req) => {
       }
       if (collected.error && collected.jobs.length === 0) {
         return jsonResponse(
-          { ok: false, error: collected.error, apify_status: collected.status, apify_naukri_run_id: runId },
+          {
+            ok: false,
+            error: collected.error,
+            apify_status: collected.status,
+            apify_naukri_run_id: collected.apify_naukri_run_id,
+            apify_naukri_run_ids: collected.apify_naukri_run_ids,
+          },
           502,
         );
       }
@@ -6095,7 +6112,8 @@ Deno.serve(async (req) => {
         provider_used: 'apify',
         fetch_channel: 'naukri',
         fetch_channel_label: channelLabel('naukri'),
-        apify_naukri_run_id: runId,
+        apify_naukri_run_id: collected.apify_naukri_run_id,
+        apify_naukri_run_ids: collected.apify_naukri_run_ids,
         apify_status: collected.status,
         apify_naukri_count: collected.apify_naukri_count,
         apify_naukri_raw_count: collected.apify_naukri_raw_count,
@@ -6113,7 +6131,7 @@ Deno.serve(async (req) => {
         seo_optimized_count: 0,
         message:
           mapped.siteJobs.length > 0
-            ? `Loaded ${mapped.siteJobs.length} Vizag Naukri job(s) from Apify.`
+            ? `Loaded ${mapped.siteJobs.length} Vizag Naukri job(s) from Apify (${collected.apify_naukri_run_ids.length} scrape(s)).`
             : collected.error ?? 'No Vizag jobs matched after Apify collect.',
       });
     }

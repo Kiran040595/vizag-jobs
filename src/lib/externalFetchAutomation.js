@@ -117,7 +117,7 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
   const waitMs = Number(started.collect_after_ms) || NAUKRI_ASYNC_COLLECT_WAIT_MS;
   onProgress?.({
     phase: 'waiting',
-    message: `Apify scrape started. Waiting ${Math.round(waitMs / 1000)}s before collecting…`,
+    message: `Apify scrapes started (fresher + roles). Waiting ${Math.round(waitMs / 1000)}s before collecting…`,
     waitSec: Math.ceil(waitMs / 1000),
     runId,
     report,

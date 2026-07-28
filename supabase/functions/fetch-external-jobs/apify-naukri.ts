@@ -322,36 +322,100 @@ function defaultNaukriMaxJobs(fetchDetails: boolean): number {
 }
 
 /**
- * Default input for dineshwadhwani~naukri-job-scrapper — Vizag, last 24h.
+ * Default inputs for dineshwadhwani~naukri-job-scrapper — Vizag, last 24h.
  * Roles must be words that appear in job titles (actor title-filters on them).
- * Avoid generic terms like "jobs" — they match almost nothing.
+ * Actor allows max 3 roles per run, so we run two scrapes: fresher + important roles.
  */
-export const DEFAULT_NAUKRI_APIFY_INPUT: Record<string, unknown> = {
-  roles: ['Associate', 'Executive', 'Manager'],
+export const DEFAULT_NAUKRI_FRESHER_INPUT: Record<string, unknown> = {
+  roles: ['Fresher', 'Trainee', 'Intern'],
   locations: ['Visakhapatnam'],
   skills: [],
   timeFrame: '1',
 };
 
-export function buildNaukriActorInput(): Record<string, unknown> {
-  const override = Deno.env.get('APIFY_NAUKRI_INPUT_JSON')?.trim();
-  if (override) {
-    try {
-      return JSON.parse(override) as Record<string, unknown>;
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
-      console.warn(
-        JSON.stringify({
-          event: 'apify_naukri_input_json_invalid',
-          error: detail,
-          fallback: 'DEFAULT_NAUKRI_APIFY_INPUT',
-        }),
-      );
-      return { ...DEFAULT_NAUKRI_APIFY_INPUT };
-    }
+export const DEFAULT_NAUKRI_ROLES_INPUT: Record<string, unknown> = {
+  roles: ['Developer', 'Associate', 'Executive'],
+  locations: ['Visakhapatnam'],
+  skills: [],
+  timeFrame: '1',
+};
+
+/** @deprecated Prefer listNaukriActorInputs(); kept as roles-batch default. */
+export const DEFAULT_NAUKRI_APIFY_INPUT: Record<string, unknown> = {
+  ...DEFAULT_NAUKRI_ROLES_INPUT,
+};
+
+function parseNaukriInputJson(
+  raw: string | undefined,
+  fallback: Record<string, unknown>,
+): Record<string, unknown> {
+  const override = raw?.trim();
+  if (!override) {
+    return { ...fallback };
+  }
+  try {
+    return JSON.parse(override) as Record<string, unknown>;
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    console.warn(
+      JSON.stringify({
+        event: 'apify_naukri_input_json_invalid',
+        error: detail,
+        fallback: 'built-in default',
+      }),
+    );
+    return { ...fallback };
+  }
+}
+
+export function naukriApifyInputLabel(input: Record<string, unknown>): string {
+  if (Array.isArray(input.roles) || Array.isArray(input.locations)) {
+    const roles = Array.isArray(input.roles) ? input.roles.map(String).join('+') : '';
+    const locs = Array.isArray(input.locations) ? input.locations.map(String).join('+') : '';
+    const tf = typeof input.timeFrame === 'string' ? input.timeFrame : '1';
+    return `roles=${roles};locations=${locs};timeFrame=${tf}`;
+  }
+  const keyword = typeof input.keyword === 'string' ? input.keyword : 'vizag';
+  const cities = Array.isArray(input.cities) ? input.cities.join(',') : '26';
+  const freshness = typeof input.freshness === 'string' ? input.freshness : '1';
+  return `keyword=${keyword};cities=${cities};freshness=${freshness}`;
+}
+
+export type NaukriActorInputBatch = {
+  key: 'fresher' | 'roles' | 'default';
+  label: string;
+  input: Record<string, unknown>;
+};
+
+/** Dual-run by default: fresher batch then important-roles batch (max 3 roles each). */
+export function naukriDualRunEnabled(): boolean {
+  return (Deno.env.get('APIFY_NAUKRI_DUAL_RUN') ?? 'true').toLowerCase() !== 'false';
+}
+
+export function listNaukriActorInputs(): NaukriActorInputBatch[] {
+  if (!naukriDualRunEnabled()) {
+    const singleOverride = Deno.env.get('APIFY_NAUKRI_INPUT_JSON');
+    const input = parseNaukriInputJson(singleOverride, DEFAULT_NAUKRI_APIFY_INPUT);
+    return [{ key: 'default', label: naukriApifyInputLabel(input), input }];
   }
 
-  return { ...DEFAULT_NAUKRI_APIFY_INPUT };
+  const fresher = parseNaukriInputJson(
+    Deno.env.get('APIFY_NAUKRI_FRESHER_INPUT_JSON') ?? Deno.env.get('APIFY_NAUKRI_INPUT_JSON_FRESHER'),
+    DEFAULT_NAUKRI_FRESHER_INPUT,
+  );
+  const roles = parseNaukriInputJson(
+    Deno.env.get('APIFY_NAUKRI_ROLES_INPUT_JSON') ?? Deno.env.get('APIFY_NAUKRI_INPUT_JSON'),
+    DEFAULT_NAUKRI_ROLES_INPUT,
+  );
+
+  return [
+    { key: 'fresher', label: naukriApifyInputLabel(fresher), input: fresher },
+    { key: 'roles', label: naukriApifyInputLabel(roles), input: roles },
+  ];
+}
+
+export function buildNaukriActorInput(): Record<string, unknown> {
+  return { ...listNaukriActorInputs()[0].input };
 }
 
 /** Jobs returned to admin/automation after fresher-first prioritization. */
@@ -367,13 +431,6 @@ function naukriMapOptions(): ApifyNaukriMapOptions {
     fresherRatio: naukriFresherCollectionRatio(),
     experienceSort: naukriExperienceSortEnabled(),
   };
-}
-
-export function naukriApifyInputLabel(input: Record<string, unknown>): string {
-  const keyword = typeof input.keyword === 'string' ? input.keyword : 'vizag';
-  const cities = Array.isArray(input.cities) ? input.cities.join(',') : '26';
-  const freshness = typeof input.freshness === 'string' ? input.freshness : '1';
-  return `keyword=${keyword};cities=${cities};freshness=${freshness}`;
 }
 
 function naukriApifySyncTimeoutSec(budget?: FetchBudgetLike): number {
@@ -403,9 +460,11 @@ function normalizeNaukriActorId(actorId: string): string {
 
 export type NaukriApifyStartResult = {
   runId: string | null;
+  runIds: string[];
   actorId: string;
   input: Record<string, unknown>;
   inputLabel: string;
+  batchLabels: string[];
   error: string | null;
 };
 
@@ -414,28 +473,32 @@ export type NaukriApifyCollectResult = {
   pending: boolean;
   jobs: ApifyNaukriJob[];
   apify_naukri_run_id: string;
+  apify_naukri_run_ids: string[];
   apify_naukri_raw_count: number;
   apify_naukri_count: number;
   naukri_search_url: string;
   error: string | null;
 };
 
-/** Fire-and-forget Apify actor run — returns immediately with run id. */
-export async function startNaukriApifyRunAsync(): Promise<NaukriApifyStartResult> {
-  const token = getApifyTokenForNaukri();
-  const actorId = getNaukriActorId();
-  const input = buildNaukriActorInput();
-  const inputLabel = naukriApifyInputLabel(input);
-  if (!token) {
-    return {
-      runId: null,
-      actorId,
-      input,
-      inputLabel,
-      error: 'APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set',
-    };
+function parseNaukriRunIds(raw: string | string[] | null | undefined): string[] {
+  if (Array.isArray(raw)) {
+    return raw.map((id) => String(id).trim()).filter(Boolean);
   }
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return [];
+  }
+  return raw
+    .split(/[,|\s]+/)
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
 
+async function startSingleNaukriApifyRun(
+  token: string,
+  actorId: string,
+  input: Record<string, unknown>,
+  batchKey: string,
+): Promise<{ runId: string | null; error: string | null }> {
   const normalized = normalizeNaukriActorId(actorId);
   const startUrl = `${APIFY_API_BASE}/acts/${normalized}/runs`;
   const startRes = await fetch(startUrl, {
@@ -450,47 +513,108 @@ export async function startNaukriApifyRunAsync(): Promise<NaukriApifyStartResult
   if (!startRes.ok) {
     const msg =
       startPayload?.error?.message ?? startPayload?.error ?? startRes.statusText;
-    return { runId: null, actorId, input, inputLabel, error: `Apify run start failed: ${msg}` };
+    return { runId: null, error: `Apify run start failed (${batchKey}): ${msg}` };
   }
   const runId = startPayload?.data?.id as string | undefined;
   if (!runId) {
-    return { runId: null, actorId, input, inputLabel, error: 'Apify run start returned no run id' };
+    return { runId: null, error: `Apify run start returned no run id (${batchKey})` };
   }
 
   console.log(
     JSON.stringify({
       event: 'apify_naukri_start',
+      batch: batchKey,
       actor: actorId,
       run_id: runId,
       apify_input: input,
-      input_label: inputLabel,
+      input_label: naukriApifyInputLabel(input),
     }),
   );
 
-  return { runId, actorId, input, inputLabel, error: null };
+  return { runId, error: null };
 }
 
-/** Read dataset items from a finished (or in-progress) Apify run. */
-export async function collectNaukriApifyRun(
+/** Fire-and-forget Apify actor run(s) — dual fresher + roles by default. */
+export async function startNaukriApifyRunAsync(): Promise<NaukriApifyStartResult> {
+  const token = getApifyTokenForNaukri();
+  const actorId = getNaukriActorId();
+  const batches = listNaukriActorInputs();
+  const primaryInput = batches[0]?.input ?? DEFAULT_NAUKRI_APIFY_INPUT;
+  const inputLabel = batches.map((b) => `${b.key}:{${b.label}}`).join(' | ');
+  const batchLabels = batches.map((b) => `${b.key}: ${b.label}`);
+
+  if (!token) {
+    return {
+      runId: null,
+      runIds: [],
+      actorId,
+      input: primaryInput,
+      inputLabel,
+      batchLabels,
+      error: 'APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set',
+    };
+  }
+
+  const runIds: string[] = [];
+  const errors: string[] = [];
+
+  // Start batches one after another so Apify billing/concurrency stays predictable.
+  for (const batch of batches) {
+    const started = await startSingleNaukriApifyRun(token, actorId, batch.input, batch.key);
+    if (started.runId) {
+      runIds.push(started.runId);
+    }
+    if (started.error) {
+      errors.push(started.error);
+    }
+  }
+
+  if (runIds.length === 0) {
+    return {
+      runId: null,
+      runIds: [],
+      actorId,
+      input: primaryInput,
+      inputLabel,
+      batchLabels,
+      error: errors.join('; ') || 'Failed to start Naukri Apify run(s).',
+    };
+  }
+
+  return {
+    runId: runIds.join(','),
+    runIds,
+    actorId,
+    input: primaryInput,
+    inputLabel,
+    batchLabels,
+    error: errors.length > 0 ? `Partial start: ${errors.join('; ')}` : null,
+  };
+}
+
+/** Collect one Apify run without applying the final output cap (used for dual-merge). */
+async function collectNaukriApifyRunRaw(
   runId: string,
   scrapedAt?: string,
-): Promise<NaukriApifyCollectResult> {
+): Promise<{
+  status: string;
+  pending: boolean;
+  jobs: ApifyNaukriJob[];
+  rawCount: number;
+  error: string | null;
+}> {
   const token = getApifyTokenForNaukri();
   const fallbackHubUrl =
     Deno.env.get('APIFY_NAUKRI_SEARCH_URL')?.trim() || NAUKRI_VIZAG_24H_SEARCH_URL;
-  const empty = (status: string, pending: boolean, error: string | null): NaukriApifyCollectResult => ({
-    status,
-    pending,
-    jobs: [],
-    apify_naukri_run_id: runId,
-    apify_naukri_raw_count: 0,
-    apify_naukri_count: 0,
-    naukri_search_url: fallbackHubUrl,
-    error,
-  });
 
   if (!token) {
-    return empty('MISSING_TOKEN', false, 'APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set');
+    return {
+      status: 'MISSING_TOKEN',
+      pending: false,
+      jobs: [],
+      rawCount: 0,
+      error: 'APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set',
+    };
   }
 
   const statusRes = await fetch(`${APIFY_API_BASE}/actor-runs/${runId}`, {
@@ -500,22 +624,40 @@ export async function collectNaukriApifyRun(
   if (!statusRes.ok) {
     const msg =
       statusPayload?.error?.message ?? statusPayload?.error ?? statusRes.statusText;
-    return empty('ERROR', false, `Apify run lookup failed: ${msg}`);
+    return {
+      status: 'ERROR',
+      pending: false,
+      jobs: [],
+      rawCount: 0,
+      error: `Apify run lookup failed: ${msg}`,
+    };
   }
 
   const status = String(statusPayload?.data?.status ?? 'UNKNOWN');
   const datasetId = statusPayload?.data?.defaultDatasetId as string | undefined;
 
   if (status === 'RUNNING' || status === 'READY') {
-    return empty(status, true, null);
+    return { status, pending: true, jobs: [], rawCount: 0, error: null };
   }
 
   if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
-    return empty(status, false, `Apify run ended with status ${status}`);
+    return {
+      status,
+      pending: false,
+      jobs: [],
+      rawCount: 0,
+      error: `Apify run ended with status ${status}`,
+    };
   }
 
   if (!datasetId) {
-    return empty(status, false, 'Apify run has no dataset');
+    return {
+      status,
+      pending: false,
+      jobs: [],
+      rawCount: 0,
+      error: 'Apify run has no dataset',
+    };
   }
 
   const itemsUrl = `${APIFY_API_BASE}/datasets/${datasetId}/items?format=json&clean=true`;
@@ -524,40 +666,120 @@ export async function collectNaukriApifyRun(
   });
   const items = await itemsRes.json().catch(() => []);
   if (!itemsRes.ok || !Array.isArray(items)) {
-    return empty(status, false, 'Failed to read Apify dataset items');
+    return {
+      status,
+      pending: false,
+      jobs: [],
+      rawCount: 0,
+      error: 'Failed to read Apify dataset items',
+    };
   }
 
   const instant = scrapedAt ?? new Date().toISOString();
-  const mapOpts = naukriMapOptions();
+  // Map without capping — final limit applied after dual-run merge.
   const jobs = apifyItemsToNaukriJobs(
     items as Record<string, unknown>[],
     instant,
     fallbackHubUrl,
-    mapOpts,
-  );
-
-  console.log(
-    JSON.stringify({
-      event: 'apify_naukri_collect',
-      run_id: runId,
-      status,
-      raw_items: items.length,
-      mapped_jobs: jobs.length,
-      experience_sort: mapOpts.experienceSort,
-      output_limit: mapOpts.maxJobs,
-      fresher_ratio: mapOpts.fresherRatio,
-    }),
+    { experienceSort: false },
   );
 
   return {
     status,
     pending: false,
     jobs,
-    apify_naukri_run_id: runId,
-    apify_naukri_raw_count: items.length,
+    rawCount: items.length,
+    error: null,
+  };
+}
+
+function mergeNaukriJobs(jobs: ApifyNaukriJob[]): ApifyNaukriJob[] {
+  const seen = new Set<string>();
+  const merged: ApifyNaukriJob[] = [];
+  for (const job of jobs) {
+    const key = (job.apply_url ?? job.source_url).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(job);
+  }
+  return prioritizeNaukriJobsByExperience(merged, naukriMapOptions());
+}
+
+/** Read dataset items from finished Apify run(s). Supports comma-joined dual run ids. */
+export async function collectNaukriApifyRun(
+  runId: string,
+  scrapedAt?: string,
+): Promise<NaukriApifyCollectResult> {
+  const runIds = parseNaukriRunIds(runId);
+  const fallbackHubUrl =
+    Deno.env.get('APIFY_NAUKRI_SEARCH_URL')?.trim() || NAUKRI_VIZAG_24H_SEARCH_URL;
+  const joined = runIds.join(',') || runId;
+
+  if (runIds.length === 0) {
+    return {
+      status: 'ERROR',
+      pending: false,
+      jobs: [],
+      apify_naukri_run_id: runId,
+      apify_naukri_run_ids: [],
+      apify_naukri_raw_count: 0,
+      apify_naukri_count: 0,
+      naukri_search_url: fallbackHubUrl,
+      error: 'Missing apify_naukri_run_id',
+    };
+  }
+
+  const parts = await Promise.all(runIds.map((id) => collectNaukriApifyRunRaw(id, scrapedAt)));
+  if (parts.some((p) => p.pending)) {
+    const pendingStatus = parts.find((p) => p.pending)?.status ?? 'RUNNING';
+    return {
+      status: pendingStatus,
+      pending: true,
+      jobs: [],
+      apify_naukri_run_id: joined,
+      apify_naukri_run_ids: runIds,
+      apify_naukri_raw_count: 0,
+      apify_naukri_count: 0,
+      naukri_search_url: fallbackHubUrl,
+      error: null,
+    };
+  }
+
+  const allJobs = parts.flatMap((p) => p.jobs);
+  const rawCount = parts.reduce((sum, p) => sum + p.rawCount, 0);
+  const errors = parts.map((p) => p.error).filter(Boolean) as string[];
+  const statuses = [...new Set(parts.map((p) => p.status))];
+  const jobs = mergeNaukriJobs(allJobs);
+
+  console.log(
+    JSON.stringify({
+      event: 'apify_naukri_collect',
+      run_ids: runIds,
+      status: statuses.join(','),
+      raw_items: rawCount,
+      mapped_before_cap: allJobs.length,
+      mapped_jobs: jobs.length,
+      batches: runIds.length,
+    }),
+  );
+
+  return {
+    status: statuses.join(',') || 'SUCCEEDED',
+    pending: false,
+    jobs,
+    apify_naukri_run_id: joined,
+    apify_naukri_run_ids: runIds,
+    apify_naukri_raw_count: rawCount,
     apify_naukri_count: jobs.length,
-    naukri_search_url: naukriApifyInputLabel(buildNaukriActorInput()),
-    error: jobs.length > 0 ? null : 'No Vizag Naukri jobs in Apify dataset yet',
+    naukri_search_url: listNaukriActorInputs()
+      .map((b) => `${b.key}:{${b.label}}`)
+      .join(' | '),
+    error:
+      jobs.length > 0
+        ? errors.length
+          ? `Partial collect: ${errors.join('; ')}`
+          : null
+        : errors.join('; ') || 'No Vizag Naukri jobs in Apify dataset yet',
   };
 }
 
@@ -588,29 +810,40 @@ export async function discoverNaukriViaApify(
 
   const instant = scrapedAt ?? new Date().toISOString();
   const actorId = getNaukriActorId();
-  const input = buildNaukriActorInput();
-  const inputLabel = naukriApifyInputLabel(input);
-  const run = await apifyRunActor(actorId, input, token, budget, {
-    timeoutSec: naukriApifySyncTimeoutSec(budget),
-    syncOnly: true,
-  });
-  const mapOpts = naukriMapOptions();
-  const jobs = apifyItemsToNaukriJobs(run.items, instant, fallbackHubUrl, mapOpts);
+  const batches = listNaukriActorInputs();
+  const inputLabel = batches.map((b) => `${b.key}:{${b.label}}`).join(' | ');
+  const allItems: Record<string, unknown>[] = [];
+  const runIds: string[] = [];
+  const errors: string[] = [];
 
-  console.log(
-    JSON.stringify({
-      event: 'apify_naukri_jobs',
-      actor: actorId,
-      run_id: run.runId,
-      apify_input: input,
-      input_label: inputLabel,
-      raw_items: run.items.length,
-      mapped_jobs: jobs.length,
-      experience_sort: mapOpts.experienceSort,
-      output_limit: mapOpts.maxJobs,
-      fresher_ratio: mapOpts.fresherRatio,
-      error: run.error,
-    }),
+  for (const batch of batches) {
+    if (budget && !budget.hasTime(55_000)) {
+      errors.push(`Skipped ${batch.key} batch — insufficient time budget`);
+      break;
+    }
+    const run = await apifyRunActor(actorId, batch.input, token, budget, {
+      timeoutSec: naukriApifySyncTimeoutSec(budget),
+      syncOnly: true,
+    });
+    if (run.runId) runIds.push(run.runId);
+    allItems.push(...run.items);
+    if (run.error) errors.push(`${batch.key}: ${run.error}`);
+    console.log(
+      JSON.stringify({
+        event: 'apify_naukri_jobs',
+        batch: batch.key,
+        actor: actorId,
+        run_id: run.runId,
+        apify_input: batch.input,
+        input_label: batch.label,
+        raw_items: run.items.length,
+        error: run.error,
+      }),
+    );
+  }
+
+  const jobs = mergeNaukriJobs(
+    apifyItemsToNaukriJobs(allItems, instant, fallbackHubUrl, { experienceSort: false }),
   );
 
   const job_urls = jobs
@@ -622,14 +855,14 @@ export async function discoverNaukriViaApify(
     jobs,
     job_urls,
     naukri_search_url: inputLabel,
-    apify_naukri_run_id: run.runId,
+    apify_naukri_run_id: runIds.join(',') || null,
     apify_naukri_count: jobs.length,
-    apify_naukri_raw_count: run.items.length,
+    apify_naukri_raw_count: allItems.length,
     apify_naukri_error:
       jobs.length > 0
-        ? run.error
-          ? `Partial Apify run (${jobs.length} Vizag jobs): ${run.error}`
+        ? errors.length
+          ? `Partial Apify run (${jobs.length} Vizag jobs): ${errors.join('; ')}`
           : null
-        : run.error ?? 'Naukri Apify actor returned no mappable jobs',
+        : errors.join('; ') || 'Naukri Apify actor returned no mappable jobs',
   };
 }

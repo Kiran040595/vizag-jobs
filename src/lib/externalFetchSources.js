@@ -6,7 +6,7 @@ export const EXTERNAL_FETCH_SOURCES = [
     id: 'naukri',
     title: 'Naukri',
     description:
-      'Starts Apify scrape in the background (~3 min). Countdown on screen, then loads Vizag jobs (city 26, freshness 1 day). Firecrawl fallback only on manual sync path.',
+      'Two Apify scrapes (fresher + important roles), then loads Vizag jobs from the last 24h. Wait ~90s before collect.',
     providerHint: 'Apify (recommended) + Firecrawl fallback',
     secretHint: 'APIFY_API_TOKEN_NAUKRI, FIRECRAWL_API_KEY_NAUKRI',
     accent: 'border-amber-200 bg-amber-50 hover:border-amber-300',
