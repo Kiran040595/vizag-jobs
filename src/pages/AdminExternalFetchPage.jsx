@@ -127,6 +127,8 @@ export default function AdminExternalFetchPage() {
     if (Date.now() > pending.readyAt + 30 * 60_000) return null;
     return pending;
   });
+  /** Comma-separated Apify run IDs — collect without starting a new paid scrape. */
+  const [naukriExistingRunIds, setNaukriExistingRunIds] = useState('');
   const [naukriCountdownSec, setNaukriCountdownSec] = useState(() => {
     const readyAt = initialSnapshot?.naukriPending?.readyAt;
     if (!readyAt) return 0;
@@ -963,6 +965,50 @@ export default function AdminExternalFetchPage() {
                       </>
                     ) : null}
                   </>
+                ) : null}
+
+                {isNaukri ? (
+                  <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/70 p-3">
+                    <label
+                      className="block text-xs font-semibold text-slate-700"
+                      htmlFor="naukri-existing-run-ids"
+                    >
+                      Or reuse existing Apify run IDs (no new scrape / no extra cost)
+                    </label>
+                    <input
+                      id="naukri-existing-run-ids"
+                      type="text"
+                      value={naukriExistingRunIds}
+                      disabled={fetchDisabled}
+                      onChange={(e) => setNaukriExistingRunIds(e.target.value)}
+                      placeholder="e.g. IgDek8vwz4ODma0Ll,PFM5VhEQvS5SXn9Ch"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Paste one or more run IDs from Apify Console (comma-separated). Loads dataset only.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={
+                        fetchDisabled ||
+                        !naukriExistingRunIds.trim() ||
+                        naukriCollecting
+                      }
+                      onClick={() => {
+                        const ids = naukriExistingRunIds
+                          .split(/[,|\s]+/)
+                          .map((id) => id.trim())
+                          .filter(Boolean)
+                          .join(',');
+                        if (!ids) return;
+                        setNotice('Loading jobs from existing Apify run(s) — no new scrape.');
+                        collectNaukriResults(ids);
+                      }}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {naukriCollecting ? 'Loading…' : 'Load from existing runs (free) →'}
+                    </button>
+                  </div>
                 ) : null}
 
                 <ExternalSourceAutomationActions
