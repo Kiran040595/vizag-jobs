@@ -1,36 +1,12 @@
-import { normalizeJobCategory } from './jobCategoryTaxonomy.js';
 import { normalizeSkillValue } from './studentProfileOptions.js';
-import { parsePreferredLocations, parseTargetJobCategories } from './studentCareerPreferences.js';
+import {
+  parsePreferredLocations,
+  parseTargetJobCategories,
+  slugifyRoleText,
+} from './studentCareerPreferences.js';
 
 /** Max jobs returned by personalized ranking. */
 export const JOBS_FOR_YOU_LIMIT = 8;
-
-/**
- * Student career category → canonical job.category value(s).
- * Keep student enums stable; bridge here instead of changing Postgres checks.
- */
-export const STUDENT_CATEGORY_TO_JOB_CATEGORIES = {
-  software_frontend: ['IT & Software'],
-  software_backend: ['IT & Software'],
-  software_full_stack: ['IT & Software'],
-  data_analytics: ['IT & Software'],
-  testing_qa: ['IT & Software'],
-  telecaller_bpo: ['BPO / Customer Support'],
-  customer_support: ['BPO / Customer Support'],
-  sales_marketing: ['Sales & Marketing'],
-  digital_marketing: ['Sales & Marketing'],
-  accounting_finance: ['Banking & Finance'],
-  mechanical_production: ['Mechanical Engineering'],
-  electrical_electronics: ['Electrical / EEE', 'ECE / Electronics'],
-  civil_construction: ['Civil Engineering'],
-  medical_healthcare: ['Healthcare'],
-  pharma_lab: ['Healthcare'],
-  delivery_logistics: ['Logistics & Supply Chain'],
-  operations_admin: ['HR & Admin'],
-  teaching_training: ['Education'],
-  retail_hospitality: ['Hospitality & Retail'],
-  other: ['General'],
-};
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
@@ -86,11 +62,6 @@ const toJobSkillTokens = (job) => {
   return tokens;
 };
 
-const jobCategoryValues = (job) => {
-  const normalized = normalizeJobCategory(job?.category);
-  return normalized ? [normalized] : [];
-};
-
 const isJobFresherFriendly = (job) => {
   const value = job?.isFresher;
   if (typeof value === 'boolean') return value;
@@ -98,6 +69,22 @@ const isJobFresherFriendly = (job) => {
   if (text === 'yes' || text === 'true') return true;
   if (text === 'no' || text === 'false') return false;
   return null;
+};
+
+const jobRoleSlug = (job) =>
+  slugifyRoleText(job?.role || job?.Role || '') || slugifyRoleText(job?.title || '');
+
+const countTokenOverlap = (needle, haystack) => {
+  const role = normalizeText(needle);
+  if (!role || role.length < 3) {
+    return 0;
+  }
+  const title = normalizeText(haystack);
+  if (!title) {
+    return 0;
+  }
+  const roleTokens = role.split(/\s+/).filter((token) => token.length >= 3);
+  return roleTokens.filter((token) => title.includes(token)).length;
 };
 
 /**
@@ -140,18 +127,9 @@ export const normalizeStudentMatchProfile = (profile) => {
   };
 };
 
-/** Job category values implied by a student's target categories. */
-export const mapStudentCategoriesToJobCategories = (studentCategories = []) => {
-  const values = new Set();
-  for (const category of parseTargetJobCategories(studentCategories)) {
-    const mapped = STUDENT_CATEGORY_TO_JOB_CATEGORIES[category] || [];
-    mapped.forEach((value) => values.add(value));
-  }
-  return [...values];
-};
-
 /**
  * Score how well a published job fits a student profile.
+ * Role matching uses jobs.role (slug) with title-token fallback for legacy data.
  * @returns {{ score: number, reasons: string[] }}
  */
 export const scoreJobForStudent = (job, profileInput) => {
@@ -163,22 +141,56 @@ export const scoreJobForStudent = (job, profileInput) => {
   let score = 0;
   const reasons = [];
 
-  const wantedCategories = new Set(
-    mapStudentCategoriesToJobCategories(profile.targetJobCategories).map(normalizeText),
-  );
-  const jobCategories = jobCategoryValues(job).map(normalizeText);
-  const categoryHit = jobCategories.some((category) => wantedCategories.has(category));
-  if (categoryHit) {
-    score += 8;
-    reasons.push('Category match');
+  const roleSlug = jobRoleSlug(job);
+  const titleHaystack = [job.title, job.company, job.shortDescription].filter(Boolean).join(' ');
+
+  const primaryRole = profile.primaryTargetRole;
+  const primarySlug = slugifyRoleText(primaryRole);
+  if (primarySlug && roleSlug && primarySlug === roleSlug) {
+    score += 10;
+    reasons.push('Primary role match');
+  } else if (primaryRole) {
+    const roleHits = countTokenOverlap(primaryRole, titleHaystack || job.title);
+    if (roleHits > 0) {
+      score += Math.min(roleHits, 3);
+      reasons.push('Role match');
+    }
+  }
+
+  let targetExactPoints = 0;
+  let targetRelatedPoints = 0;
+  for (const target of profile.targetJobCategories) {
+    const targetSlug = slugifyRoleText(target);
+    if (!targetSlug) continue;
+
+    if (roleSlug && targetSlug === roleSlug) {
+      targetExactPoints += 6;
+      continue;
+    }
+
+    const label = target.replace(/[_-]+/g, ' ');
+    const relatedHits = countTokenOverlap(label, titleHaystack || job.title);
+    if (relatedHits > 0) {
+      targetRelatedPoints += Math.min(relatedHits, 2);
+    }
+  }
+
+  if (targetExactPoints > 0) {
+    const applied = Math.min(targetExactPoints, 12);
+    score += applied;
+    reasons.push('Target role match');
+  } else if (targetRelatedPoints > 0) {
+    const applied = Math.min(targetRelatedPoints, 4);
+    score += applied;
+    reasons.push('Related role match');
   }
 
   const studentSkills = new Set(profile.skills);
   const jobSkills = toJobSkillTokens(job);
-  const titleHaystack = normalizeText([job.title, job.company, job.shortDescription].join(' '));
+  const skillHaystack = normalizeText(titleHaystack);
   let skillHits = 0;
   for (const skill of studentSkills) {
-    if (jobSkills.has(skill) || titleHaystack.includes(skill)) {
+    if (jobSkills.has(skill) || skillHaystack.includes(skill)) {
       skillHits += 1;
     }
   }
@@ -206,17 +218,6 @@ export const scoreJobForStudent = (job, profileInput) => {
     if (locationHit) {
       score += 2;
       reasons.push('Location match');
-    }
-  }
-
-  const role = normalizeText(profile.primaryTargetRole);
-  if (role && role.length >= 3) {
-    const roleTokens = role.split(/\s+/).filter((token) => token.length >= 3);
-    const title = normalizeText(job.title);
-    const roleHits = roleTokens.filter((token) => title.includes(token)).length;
-    if (roleHits > 0) {
-      score += Math.min(roleHits, 3);
-      reasons.push('Role match');
     }
   }
 

@@ -8,8 +8,8 @@ Lean student accounts for job seekers in Vizag. Designed to stay within Supabase
   - Full name, college, degree, branch, graduation year
   - Email, mobile, password
   - Fresher yes/no
-  - **Target job categories** (multi-select chips: frontend, BPO, mechanical, etc.)
-  - **Primary target role**, **role experience level**, **availability**
+  - **Target roles** (multi-select chips live from currently published `jobs.role` values via `distinct_job_roles()`; students can still type a custom role)
+  - **Primary target role** (autocomplete from the same live role list), **role experience level**, **availability**
   - **Preferred work locations** (Vizag-first chips: Visakhapatnam, Gajuwaka, Remote, …)
   - Skills (multi-select, stored lowercase for matching)
   - Certifications / courses completed
@@ -21,7 +21,11 @@ Lean student accounts for job seekers in Vizag. Designed to stay within Supabase
 - Resume / CV upload on apply (new uploads → Cloudflare R2 with `r2:` path prefix; older files stay in Supabase Storage `student-resumes`; path stored on `student_profiles.resume_path`)
 - On-platform applications with status tracking (`job_applications`)
 - Admin list at `/admin/students` (complete vs incomplete, search by skills/categories/roles)
-- Signed-in students with a complete profile see **Jobs matching your profile** on the home page (ranked by category, skills, fresher fit, location, and target role)
+- Signed-in students with a complete profile see **Jobs matching your profile** on the home page (ranked by target roles, skills, fresher fit, and preferred locations)
+
+### Live role targeting
+
+When admins/employers post a job they set a **Role** field (`jobs.role`). Published roles are exposed by the SQL function `distinct_job_roles()` and shown as chips on student registration/profile. Newly posted roles become selectable immediately — no admin approval queue. Matching in `src/lib/studentJobMatch.js` scores exact role-slug matches first, then falls back to title-token overlap for older data.
 
 ### Mobile sign-in (no SMS)
 
@@ -50,8 +54,7 @@ Email confirmation is **not** required. Students are signed in immediately after
 
 Matching data is collected at registration (and editable on the profile). Ranking lives in `src/lib/studentJobMatch.js`:
 
-- Bridges student categories (`software_frontend`, `telecaller_bpo`, …) to job categories (`IT & Software`, `BPO / Customer Support`, …)
-- Scores published jobs on category overlap, skill tokens, fresher-friendly flag, preferred locations, and primary role text in the job title
+- Scores published jobs on target-role slug match against `jobs.role` (with title-token fallback), skill tokens, fresher-friendly flag, preferred locations, and primary role text
 - Home page surfaces the top ranked jobs for complete student profiles only; guests keep public filters unchanged
 
 Admin student search remains the ops path for finding candidates by skill/category text.

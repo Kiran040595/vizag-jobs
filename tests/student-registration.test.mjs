@@ -5,6 +5,10 @@ import {
 } from '../src/lib/jobRetention.js';
 import { mapStudentProfileRow, studentSearchBlob } from '../src/lib/adminStudentProfile.js';
 import { validateStudentProfilePayload } from '../src/lib/studentProfileValidation.js';
+import {
+  buildLiveRoleOptions,
+  resolveTargetJobCategoryToken,
+} from '../src/lib/studentCareerPreferences.js';
 
 assert.equal(JOB_ARCHIVE_AFTER_DAYS, 90);
 assert.equal(JOB_PURGE_ARCHIVED_AFTER_DAYS, 180);
@@ -115,6 +119,10 @@ const withCustom = validateStudentProfilePayload({
 });
 assert.ok(withCustom.skills.includes('power bi'));
 assert.ok(withCustom.target_job_categories.includes('hotel_management'));
+
+const liveOptions = buildLiveRoleOptions([{ role: 'Site Engineer', usageCount: 4 }], 10);
+assert.equal(resolveTargetJobCategoryToken('Site Engineer', liveOptions), 'site_engineer');
+assert.equal(resolveTargetJobCategoryToken('Custom Warehouse Role', liveOptions), 'custom_warehouse_role');
 
 assert.throws(
   () =>

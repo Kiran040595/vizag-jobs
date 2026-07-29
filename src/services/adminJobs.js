@@ -42,6 +42,7 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'company',
   'location',
   'category',
+  'role',
   'job_type',
   'work_mode',
   'experience',
@@ -402,6 +403,7 @@ export const sanitizeExternalJobForInsert = (values) => {
     ...sanitized,
     company: classified.company,
     category: classified.category,
+    role: normalizeText(sanitized.role) || normalizeText(sanitized.title),
     is_fresher: classified.is_fresher,
     experience: classified.experience,
   });
@@ -432,6 +434,7 @@ export const getEmptyJobForm = () => {
     company: '',
     location: REQUIRED_DEFAULTS.location,
     category: '',
+    role: '',
     job_type: '',
     work_mode: '',
     experience: REQUIRED_DEFAULTS.experience,
@@ -464,6 +467,7 @@ export const serializeJobForm = (values, statusOverride) => {
     company: normalizeText(values.company),
     location: normalizeText(values.location) || REQUIRED_DEFAULTS.location,
     category: normalizeText(values.category),
+    role: normalizeText(values.role) || normalizeText(values.title),
     job_type: normalizeText(values.job_type),
     work_mode: normalizeOptionalText(values.work_mode),
     experience: normalizeText(values.experience) || REQUIRED_DEFAULTS.experience,
@@ -771,6 +775,9 @@ export const createAdminJob = async (values, statusOverride) => {
   }
   if (!payload.category || !payload.job_type) {
     throw new Error('Missing category or job type. Edit the job before publishing.');
+  }
+  if (!payload.role) {
+    throw new Error('Missing role. Edit the job before publishing.');
   }
 
   const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();

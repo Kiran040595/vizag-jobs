@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  buildLiveRoleOptions,
   formatJobCategoryLabel,
   resolveTargetJobCategoryToken,
   STUDENT_AVAILABILITY_OPTIONS,
@@ -16,6 +17,7 @@ import {
   STUDENT_GRADUATION_YEAR_OPTIONS,
   STUDENT_SKILL_OPTIONS,
 } from '../../lib/studentProfileOptions';
+import { fetchLiveJobRoles } from '../../services/jobRoles';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -60,6 +62,18 @@ export default function StudentProfileFields({
   const skillGroups = useMemo(() => groupSkillOptions(), []);
   const [customCategoryDraft, setCustomCategoryDraft] = useState('');
   const [customSkillDraft, setCustomSkillDraft] = useState('');
+  const [liveRoleOptions, setLiveRoleOptions] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLiveJobRoles(60).then((roles) => {
+      if (cancelled) return;
+      setLiveRoleOptions(buildLiveRoleOptions(roles, 40));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const locationOptions = [
     ...STUDENT_PREFERRED_LOCATION_OPTIONS,
@@ -68,13 +82,15 @@ export default function StudentProfileFields({
     ),
   ];
 
+  const baseRoleOptions = liveRoleOptions.length > 0 ? liveRoleOptions : STUDENT_JOB_CATEGORY_OPTIONS;
+
   const categoryOptions = useMemo(() => {
-    const presetValues = new Set(STUDENT_JOB_CATEGORY_OPTIONS.map((option) => option.value));
+    const presetValues = new Set(baseRoleOptions.map((option) => option.value));
     const custom = form.target_job_categories
       .filter((value) => !presetValues.has(value))
       .map((value) => ({ value, label: formatJobCategoryLabel(value) }));
-    return [...STUDENT_JOB_CATEGORY_OPTIONS, ...custom];
-  }, [form.target_job_categories]);
+    return [...baseRoleOptions, ...custom];
+  }, [baseRoleOptions, form.target_job_categories]);
 
   const customSkills = useMemo(() => {
     const presetValues = new Set(STUDENT_SKILL_OPTIONS.map((option) => option.value));
@@ -84,7 +100,7 @@ export default function StudentProfileFields({
   }, [form.skills]);
 
   const addCustomCategory = () => {
-    const token = resolveTargetJobCategoryToken(customCategoryDraft);
+    const token = resolveTargetJobCategoryToken(customCategoryDraft, baseRoleOptions);
     if (!token) {
       return;
     }
@@ -253,10 +269,11 @@ export default function StudentProfileFields({
 
       <fieldset className="block sm:col-span-2">
         <legend className="text-sm font-semibold text-slate-700">
-          What type of jobs are you trying for? *
+          Which roles are you targeting? *
         </legend>
         <p className="mt-1 text-xs text-slate-500">
-          Pick from the list or type another job type — it is added as a selected chip.
+          Roles come from jobs currently posted on Vizag Jobs. Pick from the list or type another
+          role — it is added as a selected chip.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {categoryOptions.map((option) => {
@@ -290,15 +307,21 @@ export default function StudentProfileFields({
               }
             }}
             className={CHIP_INPUT_CLASS}
-            placeholder="Type another job type, e.g. Hotel Management"
+            placeholder="Type another role, e.g. Hotel Management"
             maxLength={64}
+            list={`${idPrefix}-live-role-suggestions`}
           />
+          <datalist id={`${idPrefix}-live-role-suggestions`}>
+            {baseRoleOptions.map((option) => (
+              <option key={option.value} value={option.label} />
+            ))}
+          </datalist>
           <button
             type="button"
             onClick={addCustomCategory}
             className="h-10 shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100"
           >
-            Add job type
+            Add role
           </button>
         </div>
       </fieldset>
@@ -312,8 +335,14 @@ export default function StudentProfileFields({
           onChange={onChange}
           required
           className={INPUT_CLASS}
+          list={`${idPrefix}-primary-role-suggestions`}
           placeholder="Backend Developer, Telecaller, Mechanical Technician, Nurse, Accountant..."
         />
+        <datalist id={`${idPrefix}-primary-role-suggestions`}>
+          {baseRoleOptions.map((option) => (
+            <option key={option.value} value={option.label} />
+          ))}
+        </datalist>
       </label>
 
       <label className="block">

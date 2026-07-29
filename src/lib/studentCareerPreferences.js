@@ -59,7 +59,8 @@ const AVAILABILITY_LABEL_BY_VALUE = new Map(
   STUDENT_AVAILABILITY_OPTIONS.map((option) => [option.value, option.label]),
 );
 
-const normalizeToken = (value) =>
+/** Normalize free text into a stable snake_case role/category token. */
+export const slugifyRoleText = (value) =>
   String(value || '')
     .trim()
     .toLowerCase()
@@ -79,15 +80,23 @@ const humanizeToken = (value) =>
     .replace(/\s+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-/** Resolve preset or custom job-category token from chip value or typed text. */
-export const resolveTargetJobCategoryToken = (raw) => {
+/**
+ * Resolve preset or custom job-category/role token from chip value or typed text.
+ * @param {string} raw
+ * @param {{ value: string, label: string }[]} [knownOptions]
+ */
+export const resolveTargetJobCategoryToken = (
+  raw,
+  knownOptions = STUDENT_JOB_CATEGORY_OPTIONS,
+) => {
   const text = String(raw || '').trim();
   if (!text) {
     return '';
   }
 
-  const token = normalizeToken(text);
-  const known = STUDENT_JOB_CATEGORY_OPTIONS.find(
+  const token = slugifyRoleText(text);
+  const options = Array.isArray(knownOptions) ? knownOptions : STUDENT_JOB_CATEGORY_OPTIONS;
+  const known = options.find(
     (option) =>
       option.value === token || option.label.toLowerCase() === text.toLowerCase(),
   );
@@ -101,10 +110,12 @@ export const resolveTargetJobCategoryToken = (raw) => {
   return token;
 };
 
-export const parseTargetJobCategories = (values) => {
+export const parseTargetJobCategories = (values, knownOptions = STUDENT_JOB_CATEGORY_OPTIONS) => {
   const list = Array.isArray(values) ? values : [];
   return [
-    ...new Set(list.map(resolveTargetJobCategoryToken).filter(Boolean)),
+    ...new Set(
+      list.map((value) => resolveTargetJobCategoryToken(value, knownOptions)).filter(Boolean),
+    ),
   ].slice(0, 8);
 };
 
@@ -145,3 +156,21 @@ export const formatRoleExperienceLabel = (value) =>
 
 export const formatAvailabilityLabel = (value) =>
   AVAILABILITY_LABEL_BY_VALUE.get(String(value || '').trim()) || String(value || '').trim();
+
+/** Build chip options from live job roles (popularity already sorted). */
+export const buildLiveRoleOptions = (liveRoles = [], limit = 40) => {
+  const seen = new Set();
+  const options = [];
+
+  for (const item of liveRoles) {
+    const label = normalizeCareerText(item?.role || item?.label || '', 80);
+    if (!label) continue;
+    const value = slugifyRoleText(label);
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    options.push({ value, label });
+    if (options.length >= limit) break;
+  }
+
+  return options;
+};
