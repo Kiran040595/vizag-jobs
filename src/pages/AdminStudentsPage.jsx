@@ -4,8 +4,9 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
 import ShareStudentDialog from '../components/admin/ShareStudentDialog';
+import StudentExportDialog from '../components/admin/StudentExportDialog';
 import { useAdminAuth } from '../hooks/useAdminAuth';
-import { STUDENT_JOB_CATEGORY_OPTIONS, formatJobCategoryLabel } from '../lib/studentCareerPreferences';
+import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
 import {
   fetchAdminStudentProfiles,
   formatStudentRegisteredAt,
@@ -49,6 +50,16 @@ const formatSalaryRange = (student) => {
   return 'Not provided';
 };
 
+const studentsForCategory = (students, categoryValue) =>
+  students.filter((student) => student.targetJobCategories?.includes(categoryValue));
+
+const studentsForRole = (students, roleValue) =>
+  students.filter(
+    (student) =>
+      String(student.primaryTargetRole || '').trim().toLowerCase() ===
+      String(roleValue || '').trim().toLowerCase(),
+  );
+
 export default function AdminStudentsPage() {
   useAdminAuth();
   const [students, setStudents] = useState([]);
@@ -58,7 +69,11 @@ export default function AdminStudentsPage() {
   const [busyUserId, setBusyUserId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [shareStudent, setShareStudent] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportStudents, setExportStudents] = useState([]);
+  const [exportLabel, setExportLabel] = useState('All students');
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
   const loadStudents = useCallback(async () => {
@@ -83,9 +98,13 @@ export default function AdminStudentsPage() {
       const matchesSearch = !deferredSearch || studentSearchBlob(student).includes(deferredSearch);
       const matchesCategory =
         !categoryFilter || student.targetJobCategories?.includes(categoryFilter);
-      return matchesSearch && matchesCategory;
+      const matchesRole =
+        !roleFilter ||
+        String(student.primaryTargetRole || '').trim().toLowerCase() ===
+          String(roleFilter).trim().toLowerCase();
+      return matchesSearch && matchesCategory && matchesRole;
     });
-  }, [students, deferredSearch, categoryFilter]);
+  }, [students, deferredSearch, categoryFilter, roleFilter]);
 
   const summary = useMemo(() => {
     const total = students.length;
@@ -105,6 +124,12 @@ export default function AdminStudentsPage() {
       roles: countByValue(activeStudents, (student) => [student.primaryTargetRole].filter(Boolean)),
     };
   }, [students]);
+
+  const openExport = (rows, label) => {
+    setExportStudents(rows);
+    setExportLabel(label);
+    setExportOpen(true);
+  };
 
   const handleToggleActive = async (student) => {
     setNotice('');
@@ -126,6 +151,19 @@ export default function AdminStudentsPage() {
       setBusyUserId('');
     }
   };
+
+  const downloadScopeLabel = useMemo(() => {
+    if (categoryFilter) {
+      return formatJobCategoryLabel(categoryFilter);
+    }
+    if (roleFilter) {
+      return roleFilter;
+    }
+    if (deferredSearch) {
+      return 'Filtered students';
+    }
+    return 'All students';
+  }, [categoryFilter, roleFilter, deferredSearch]);
 
   return (
     <>
@@ -156,22 +194,49 @@ export default function AdminStudentsPage() {
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-bold text-slate-950">Available by job category</h2>
-                <p className="mt-1 text-xs text-slate-500">Active student counts by selected target categories.</p>
+                <h2 className="text-sm font-bold text-slate-950">Available by job category / role</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Click a chip to filter the list, or use Download to export that group to Excel.
+                </p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {availabilityBreakdown.categories.length > 0 ? (
-                availabilityBreakdown.categories.slice(0, 12).map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setCategoryFilter((current) => (current === item.value ? '' : item.value))}
-                    className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-100"
-                  >
-                    {formatJobCategoryLabel(item.value)}: {item.count}
-                  </button>
-                ))
+                availabilityBreakdown.categories.slice(0, 12).map((item) => {
+                  const selected = categoryFilter === item.value;
+                  const label = formatJobCategoryLabel(item.value);
+                  return (
+                    <div key={item.value} className="inline-flex overflow-hidden rounded-full border border-cyan-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRoleFilter('');
+                          setCategoryFilter((current) => (current === item.value ? '' : item.value));
+                        }}
+                        className={`px-3 py-1.5 text-xs font-semibold transition ${
+                          selected
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-cyan-50 text-cyan-900 hover:bg-cyan-100'
+                        }`}
+                      >
+                        {label}: {item.count}
+                      </button>
+                      <button
+                        type="button"
+                        title={`Download Excel for ${label}`}
+                        onClick={() =>
+                          openExport(
+                            studentsForCategory(students.filter((row) => row.isActive), item.value),
+                            label,
+                          )
+                        }
+                        className="border-l border-cyan-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-50"
+                      >
+                        Excel
+                      </button>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-sm text-slate-500">No career preferences yet.</p>
               )}
@@ -180,17 +245,55 @@ export default function AdminStudentsPage() {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-bold text-slate-950">Top target roles</h2>
-            <p className="mt-1 text-xs text-slate-500">Free-text roles students say they are trying for.</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Primary roles students entered. Click to filter, or Excel to download that role.
+            </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {availabilityBreakdown.roles.length > 0 ? (
-                availabilityBreakdown.roles.slice(0, 12).map((item) => (
-                  <span
-                    key={item.value}
-                    className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-900"
-                  >
-                    {item.value}: {item.count}
-                  </span>
-                ))
+                availabilityBreakdown.roles.slice(0, 12).map((item) => {
+                  const selected =
+                    String(roleFilter || '').trim().toLowerCase() ===
+                    String(item.value || '').trim().toLowerCase();
+                  return (
+                    <div
+                      key={item.value}
+                      className="inline-flex overflow-hidden rounded-full border border-indigo-200"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCategoryFilter('');
+                          setRoleFilter((current) =>
+                            String(current || '').trim().toLowerCase() ===
+                            String(item.value || '').trim().toLowerCase()
+                              ? ''
+                              : item.value,
+                          );
+                        }}
+                        className={`px-3 py-1.5 text-xs font-semibold transition ${
+                          selected
+                            ? 'bg-indigo-500 text-white'
+                            : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100'
+                        }`}
+                      >
+                        {item.value}: {item.count}
+                      </button>
+                      <button
+                        type="button"
+                        title={`Download Excel for ${item.value}`}
+                        onClick={() =>
+                          openExport(
+                            studentsForRole(students.filter((row) => row.isActive), item.value),
+                            item.value,
+                          )
+                        }
+                        className="border-l border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-indigo-800 transition hover:bg-indigo-50"
+                      >
+                        Excel
+                      </button>
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-sm text-slate-500">No target roles yet.</p>
               )}
@@ -206,16 +309,19 @@ export default function AdminStudentsPage() {
             placeholder="Search name, college, role, category, skills…"
             className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <select
               value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
+              onChange={(event) => {
+                setRoleFilter('');
+                setCategoryFilter(event.target.value);
+              }}
               className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
             >
-              <option value="">All job categories</option>
-              {STUDENT_JOB_CATEGORY_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              <option value="">All job categories / roles</option>
+              {availabilityBreakdown.categories.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {formatJobCategoryLabel(item.value)} ({item.count})
                 </option>
               ))}
             </select>
@@ -226,8 +332,40 @@ export default function AdminStudentsPage() {
             >
               Refresh
             </button>
+            {!isLoading && students.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => openExport(filteredStudents, downloadScopeLabel)}
+                className="rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              >
+                Download Excel
+                {filteredStudents.length !== students.length
+                  ? ` (${filteredStudents.length})`
+                  : ` (all ${students.length})`}
+              </button>
+            ) : null}
           </div>
         </div>
+
+        {(categoryFilter || roleFilter) && (
+          <p className="mb-4 text-sm text-slate-600">
+            Showing{' '}
+            <span className="font-semibold text-slate-900">
+              {categoryFilter ? formatJobCategoryLabel(categoryFilter) : roleFilter}
+            </span>{' '}
+            · {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setCategoryFilter('');
+                setRoleFilter('');
+              }}
+              className="font-semibold text-cyan-700 hover:underline"
+            >
+              Clear filter
+            </button>
+          </p>
+        )}
 
         {notice ? (
           <p className="mb-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
@@ -246,8 +384,8 @@ export default function AdminStudentsPage() {
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
             <p className="text-lg font-semibold text-slate-900">No student registrations found</p>
             <p className="mt-2 text-sm text-slate-600">
-              {searchTerm
-                ? 'Try another search term.'
+              {searchTerm || categoryFilter || roleFilter
+                ? 'Try another search or clear the category/role filter.'
                 : 'Student sign-ups at /student/register will appear here.'}
             </p>
           </div>
@@ -407,6 +545,13 @@ export default function AdminStudentsPage() {
             onClose={() => setShareStudent(null)}
           />
         ) : null}
+
+        <StudentExportDialog
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          students={exportStudents}
+          scopeLabel={exportLabel}
+        />
       </AdminShell>
     </>
   );
