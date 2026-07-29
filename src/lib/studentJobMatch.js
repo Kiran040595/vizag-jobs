@@ -4,6 +4,7 @@ import {
   parseTargetJobCategories,
   slugifyRoleText,
 } from './studentCareerPreferences.js';
+import { cleanJobRoleLabel } from './jobRoleLabel.js';
 
 /** Max jobs returned by personalized ranking. */
 export const JOBS_FOR_YOU_LIMIT = 8;
@@ -71,8 +72,13 @@ const isJobFresherFriendly = (job) => {
   return null;
 };
 
-const jobRoleSlug = (job) =>
-  slugifyRoleText(job?.role || job?.Role || '') || slugifyRoleText(job?.title || '');
+const jobRoleSlug = (job) => {
+  const cleaned =
+    cleanJobRoleLabel(job?.role || job?.Role || '', 56) ||
+    cleanJobRoleLabel(job?.title || '', 56) ||
+    String(job?.role || job?.title || '').trim();
+  return slugifyRoleText(cleaned);
+};
 
 const countTokenOverlap = (needle, haystack) => {
   const role = normalizeText(needle);
@@ -145,7 +151,7 @@ export const scoreJobForStudent = (job, profileInput) => {
   const titleHaystack = [job.title, job.company, job.shortDescription].filter(Boolean).join(' ');
 
   const primaryRole = profile.primaryTargetRole;
-  const primarySlug = slugifyRoleText(primaryRole);
+  const primarySlug = slugifyRoleText(cleanJobRoleLabel(primaryRole, 56) || primaryRole);
   if (primarySlug && roleSlug && primarySlug === roleSlug) {
     score += 10;
     reasons.push('Primary role match');

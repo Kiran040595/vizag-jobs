@@ -6,6 +6,7 @@ import {
   updateAdminJob,
 } from '../../services/adminJobs';
 import { fetchLiveJobRoles } from '../../services/jobRoles';
+import { cleanJobRoleLabel } from '../../lib/jobRoleLabel';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
@@ -148,7 +149,7 @@ export default function AdminJobForm({
       };
 
       if (name === 'title' && !String(currentValues.role || '').trim()) {
-        nextValues.role = value;
+        nextValues.role = cleanJobRoleLabel(value, 56) || value;
       }
 
       if (!isSlugManual && ['title', 'company', 'posted_at'].includes(name)) {

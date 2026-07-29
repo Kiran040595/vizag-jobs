@@ -2,6 +2,7 @@ import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseC
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
+import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
 import { writeCachedInstagramJobs } from '../lib/publicJobsSessionCache';
 
 export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache';
@@ -129,7 +130,11 @@ const processJobData = (job, index) => {
     company: normalizeText(job.company),
     location: normalizeText(job.location, 'Visakhapatnam'),
     category,
-    role: normalizeText(job.role) || normalizeText(job.title),
+    role:
+      cleanJobRoleLabel(job.role, 56) ||
+      cleanJobRoleLabel(job.title, 56) ||
+      normalizeText(job.role) ||
+      normalizeText(job.title),
     jobType,
     workMode: normalizeText(job.work_mode),
     experience: normalizeText(job.experience),

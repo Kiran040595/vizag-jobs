@@ -18,13 +18,22 @@ stable
 security definer
 set search_path = public
 as $$
-  select j.role, count(*)::bigint as usage_count
-  from public.jobs j
-  where j.status = 'published'
-    and j.role is not null
-    and trim(j.role) <> ''
-  group by j.role
-  order by usage_count desc, j.role asc
+  select cleaned.role, count(*)::bigint as usage_count
+  from (
+    select coalesce(
+      public.clean_job_role_label(j.role),
+      public.clean_job_role_label(j.title),
+      nullif(trim(j.role), ''),
+      nullif(trim(j.title), '')
+    ) as role
+    from public.jobs j
+    where j.status = 'published'
+  ) cleaned
+  where cleaned.role is not null
+    and trim(cleaned.role) <> ''
+    and char_length(cleaned.role) <= 56
+  group by cleaned.role
+  order by usage_count desc, cleaned.role asc
   limit greatest(1, least(coalesce(limit_count, 60), 200));
 $$;
 

@@ -6,6 +6,7 @@ import {
   updateEmployerJob,
 } from '../../services/employerJobs';
 import { fetchLiveJobRoles } from '../../services/jobRoles';
+import { cleanJobRoleLabel } from '../../lib/jobRoleLabel';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 
 const INPUT_CLASS =
@@ -78,7 +79,7 @@ export default function EmployerJobForm({
       const nextValues = { ...currentValues, [name]: nextValue };
 
       if (name === 'title' && !String(currentValues.role || '').trim()) {
-        nextValues.role = value;
+        nextValues.role = cleanJobRoleLabel(value, 56) || value;
       }
 
       if (!isSlugManual && ['title', 'company', 'posted_at'].includes(name)) {

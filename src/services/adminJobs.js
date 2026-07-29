@@ -1,6 +1,7 @@
 import { clearJobsCache } from './jobs';
 import { supabase } from '../lib/supabaseClient';
 import { classifyJobRecord } from '../lib/jobCategoryTaxonomy.js';
+import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
 import {
   PUBLIC_JOB_DISPLAY,
   companyNameForSlug,
@@ -403,7 +404,10 @@ export const sanitizeExternalJobForInsert = (values) => {
     ...sanitized,
     company: classified.company,
     category: classified.category,
-    role: normalizeText(sanitized.role) || normalizeText(sanitized.title),
+    role:
+      cleanJobRoleLabel(sanitized.role, 56) ||
+      cleanJobRoleLabel(sanitized.title, 56) ||
+      normalizeText(sanitized.title),
     is_fresher: classified.is_fresher,
     experience: classified.experience,
   });
@@ -467,7 +471,10 @@ export const serializeJobForm = (values, statusOverride) => {
     company: normalizeText(values.company),
     location: normalizeText(values.location) || REQUIRED_DEFAULTS.location,
     category: normalizeText(values.category),
-    role: normalizeText(values.role) || normalizeText(values.title),
+    role:
+      cleanJobRoleLabel(values.role, 56) ||
+      cleanJobRoleLabel(values.title, 56) ||
+      normalizeText(values.title),
     job_type: normalizeText(values.job_type),
     work_mode: normalizeOptionalText(values.work_mode),
     experience: normalizeText(values.experience) || REQUIRED_DEFAULTS.experience,

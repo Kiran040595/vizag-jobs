@@ -1,3 +1,5 @@
+import { cleanJobRoleLabel } from './jobRoleLabel.js';
+
 export const STUDENT_JOB_CATEGORY_OPTIONS = [
   { value: 'software_frontend', label: 'Software Frontend' },
   { value: 'software_backend', label: 'Software Backend' },
@@ -159,18 +161,29 @@ export const formatAvailabilityLabel = (value) =>
 
 /** Build chip options from live job roles (popularity already sorted). */
 export const buildLiveRoleOptions = (liveRoles = [], limit = 40) => {
-  const seen = new Set();
-  const options = [];
+  const byValue = new Map();
 
   for (const item of liveRoles) {
-    const label = normalizeCareerText(item?.role || item?.label || '', 80);
+    const cleaned = cleanJobRoleLabel(item?.role || item?.label || '', 56);
+    const label = normalizeCareerText(cleaned, 56);
     if (!label) continue;
     const value = slugifyRoleText(label);
-    if (!value || seen.has(value)) continue;
-    seen.add(value);
-    options.push({ value, label });
-    if (options.length >= limit) break;
+    if (!value || value.length < 2) continue;
+
+    const usageCount = Number(item?.usageCount) || 0;
+    const existing = byValue.get(value);
+    if (existing) {
+      existing.usageCount += usageCount;
+      continue;
+    }
+    byValue.set(value, { value, label, usageCount });
   }
 
-  return options;
+  return [...byValue.values()]
+    .sort(
+      (a, b) =>
+        b.usageCount - a.usageCount || a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
+    )
+    .slice(0, Math.max(1, limit))
+    .map(({ value, label }) => ({ value, label }));
 };
