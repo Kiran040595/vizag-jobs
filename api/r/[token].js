@@ -1,5 +1,31 @@
+import { downloadR2Object, getR2Config } from '../_lib/r2.js';
+import { isR2ResumePath, toR2ObjectKey } from '../_lib/resumeStoragePath.js';
+import { createServiceClient } from '../_lib/supabaseAuth.js';
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const CONTENT_TYPES = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+const fileNameFromPath = (resumePath) => {
+  const key = toR2ObjectKey(resumePath);
+  const base = key.split('/').pop() || 'resume';
+  return base.replace(/[^\w.\-]+/g, '_') || 'resume';
+};
+
+const contentTypeForFileName = (fileName) => {
+  const extension = fileName.includes('.') ? fileName.split('.').pop().toLowerCase() : '';
+  return CONTENT_TYPES[extension] || 'application/octet-stream';
+};
+
+const contentDisposition = (fileName) => {
+  const safe = String(fileName || 'resume').replace(/"/g, '');
+  return `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
+};
 
 const escapeHtml = (value) =>
   String(value ?? '')
@@ -113,7 +139,54 @@ function downloadPageHtml(token) {
 </html>`;
 }
 
+async function serveR2Resume(req, res, resumePath) {
+  if (!getR2Config()) {
+    return false;
+  }
+
+  const fileName = fileNameFromPath(resumePath);
+  const downloaded = await downloadR2Object(toR2ObjectKey(resumePath));
+
+  res.statusCode = 200;
+  res.setHeader('Content-Type', downloaded.contentType || contentTypeForFileName(fileName));
+  res.setHeader('Content-Disposition', contentDisposition(fileName));
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Length', String(downloaded.contentLength));
+
+  if (req.method === 'HEAD') {
+    res.end();
+    return true;
+  }
+
+  res.end(downloaded.body);
+  return true;
+}
+
 async function proxyResumeFile(req, res, token) {
+  // Prefer serving R2 resumes from Vercel when credentials are present.
+  const serviceClient = createServiceClient();
+  if (serviceClient && getR2Config()) {
+    try {
+      const { data: application, error } = await serviceClient
+        .from('job_applications')
+        .select('resume_path')
+        .eq('resume_share_token', token)
+        .maybeSingle();
+
+      if (!error) {
+        const resumePath = String(application?.resume_path || '').trim();
+        if (resumePath && isR2ResumePath(resumePath)) {
+          await serveR2Resume(req, res, resumePath);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('local R2 resume serve failed:', error?.message || error);
+      // Fall through to the edge function proxy.
+    }
+  }
+
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '')
     .trim()
     .replace(/\/+$/, '');
@@ -144,12 +217,12 @@ async function proxyResumeFile(req, res, token) {
   }
 
   const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
-  const contentDisposition =
+  const disposition =
     upstream.headers.get('content-disposition') || 'attachment; filename="resume.pdf"';
 
   res.statusCode = 200;
   res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Disposition', contentDisposition);
+  res.setHeader('Content-Disposition', disposition);
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 

@@ -37,3 +37,4 @@ jobs:
           supabase functions deploy send-automation-summary --project-ref "$PROJECT_REF" --no-verify-jwt
           supabase functions deploy generate-daily-blog --project-ref "$PROJECT_REF" --no-verify-jwt
           supabase functions deploy trigger-youtube-short --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy resume-share --project-ref "$PROJECT_REF" --no-verify-jwt

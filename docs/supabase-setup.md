@@ -226,6 +226,7 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | Secret | Purpose |
 |--------|---------|
 | `SUPABASE_SERVICE_ROLE_KEY` | Usually injected automatically on hosted Supabase; required for `auth.getUser` + `admin_users` checks if missing locally. |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET_NAME` | Required for **`resume-share`** to serve new Cloudflare R2 resumes (see [`docs/resume-storage-r2.md`](./resume-storage-r2.md)). |
 | `APIFY_API_TOKEN` | **LinkedIn fetch (recommended).** Apify API token from [Apify Console → Integrations](https://console.apify.com/account/integrations). |
 | `APIFY_API_TOKEN_LINKEDIN_JOBS` | Optional. Apify token used only for **LinkedIn Jobs** channel (`fetch_channel=linkedin_jobs`). |
 | `APIFY_API_TOKEN_LINKEDIN_POSTS` | Optional. Apify token used only for **LinkedIn Posts** channel. |

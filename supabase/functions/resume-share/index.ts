@@ -1,6 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 
 const RESUME_BUCKET = 'student-resumes';
+const R2_RESUME_PREFIX = 'r2:';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -24,8 +26,17 @@ function textResponse(message: string, status = 400) {
   });
 }
 
+function isR2ResumePath(path: string) {
+  return path.startsWith(R2_RESUME_PREFIX);
+}
+
+function toR2ObjectKey(path: string) {
+  return isR2ResumePath(path) ? path.slice(R2_RESUME_PREFIX.length) : path;
+}
+
 function fileNameFromPath(path: string) {
-  const base = path.split('/').pop() || 'resume';
+  const key = toR2ObjectKey(path);
+  const base = key.split('/').pop() || 'resume';
   return base.replace(/[^\w.\-]+/g, '_') || 'resume';
 }
 
@@ -37,6 +48,52 @@ function contentTypeForFileName(fileName: string) {
 function contentDisposition(fileName: string) {
   const safe = fileName.replace(/"/g, '');
   return `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
+}
+
+function getR2Config() {
+  const accountId = Deno.env.get('R2_ACCOUNT_ID')?.trim() || '';
+  const accessKeyId = Deno.env.get('R2_ACCESS_KEY_ID')?.trim() || '';
+  const secretAccessKey = Deno.env.get('R2_SECRET_ACCESS_KEY')?.trim() || '';
+  const bucket = Deno.env.get('R2_BUCKET_NAME')?.trim() || '';
+  const endpoint =
+    Deno.env.get('R2_ENDPOINT')?.trim() ||
+    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucket || !endpoint) {
+    return null;
+  }
+
+  return { accountId, accessKeyId, secretAccessKey, bucket, endpoint };
+}
+
+async function downloadFromR2(objectKey: string) {
+  const config = getR2Config();
+  if (!config) {
+    throw new Error('Cloudflare R2 is not configured.');
+  }
+
+  const client = new AwsClient({
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    service: 's3',
+    region: 'auto',
+  });
+
+  const url = `${config.endpoint.replace(/\/+$/, '')}/${config.bucket}/${objectKey
+    .split('/')
+    .map(encodeURIComponent)
+    .join('/')}`;
+
+  const response = await client.fetch(url, { method: 'GET' });
+  if (!response.ok) {
+    throw new Error(`R2 download failed (${response.status}).`);
+  }
+
+  const fileBlob = await response.blob();
+  return {
+    fileBlob,
+    contentType: response.headers.get('content-type') || '',
+  };
 }
 
 Deno.serve(async (req) => {
@@ -81,21 +138,34 @@ Deno.serve(async (req) => {
   }
 
   const fileName = fileNameFromPath(resumePath);
+  let fileBlob: Blob;
+  let detectedType = '';
 
-  // Always stream the file. The site proxies this through /api/r/:token so Excel
-  // and browsers stay on jobsinvizag.in instead of following off-site redirects.
-  const { data: fileBlob, error: downloadError } = await supabaseAdmin.storage
-    .from(RESUME_BUCKET)
-    .download(resumePath);
+  try {
+    if (isR2ResumePath(resumePath)) {
+      const downloaded = await downloadFromR2(toR2ObjectKey(resumePath));
+      fileBlob = downloaded.fileBlob;
+      detectedType = downloaded.contentType;
+    } else {
+      const { data, error: downloadError } = await supabaseAdmin.storage
+        .from(RESUME_BUCKET)
+        .download(resumePath);
 
-  if (downloadError || !fileBlob) {
-    console.error('resume-share download failed:', downloadError?.message);
+      if (downloadError || !data) {
+        console.error('resume-share download failed:', downloadError?.message);
+        return textResponse('Could not open resume file.', 500);
+      }
+
+      fileBlob = data;
+    }
+  } catch (downloadError) {
+    console.error('resume-share download failed:', (downloadError as Error)?.message);
     return textResponse('Could not open resume file.', 500);
   }
 
   const headers = {
     ...corsHeaders,
-    'Content-Type': contentTypeForFileName(fileName),
+    'Content-Type': detectedType || contentTypeForFileName(fileName),
     'Content-Disposition': contentDisposition(fileName),
     'Cache-Control': 'no-store',
     'Content-Length': String(fileBlob.size),
