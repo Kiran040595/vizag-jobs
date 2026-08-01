@@ -39,19 +39,6 @@ export const BILL_SERVICE_CATALOG = [
   },
 ];
 
-export const BILL_STATUS_OPTIONS = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'issued', label: 'Issued' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
-
-export const BILL_PAYMENT_STATUS_OPTIONS = [
-  { value: 'unpaid', label: 'Unpaid' },
-  { value: 'partial', label: 'Partial' },
-  { value: 'paid', label: 'Paid' },
-];
-
 export const getServiceCatalogItem = (key) =>
   BILL_SERVICE_CATALOG.find((item) => item.key === key) || BILL_SERVICE_CATALOG[BILL_SERVICE_CATALOG.length - 1];
 

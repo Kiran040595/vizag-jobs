@@ -40,8 +40,6 @@ import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
 import AdminBillsPage from './pages/AdminBillsPage';
-import AdminNewBillPage from './pages/AdminNewBillPage';
-import AdminBillPrintPage from './pages/AdminBillPrintPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
@@ -182,22 +180,6 @@ function App() {
         element={(
           <AdminRoute>
             <AdminBillsPage />
-          </AdminRoute>
-        )}
-      />
-      <Route
-        path="/admin/bills/new"
-        element={(
-          <AdminRoute>
-            <AdminNewBillPage />
-          </AdminRoute>
-        )}
-      />
-      <Route
-        path="/admin/bills/:billId/print"
-        element={(
-          <AdminRoute>
-            <AdminBillPrintPage />
           </AdminRoute>
         )}
       />

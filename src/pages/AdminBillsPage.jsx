@@ -1,306 +1,471 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import SEO from '../components/SEO';
-import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
+import AdminBillDocument from '../components/admin/AdminBillDocument';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
-  BILL_PAYMENT_STATUS_OPTIONS,
-  BILL_STATUS_OPTIONS,
-  formatBillDate,
+  BILL_SERVICE_CATALOG,
+  computeBillTotals,
+  computeLineAmount,
+  createEmptyLineItem,
   formatBillMoney,
+  getServiceCatalogItem,
+  todayIsoDate,
 } from '../lib/adminBillCatalog';
-import {
-  deleteAdminBill,
-  fetchAdminBills,
-  updateAdminBillPayment,
-} from '../services/adminBills';
 
-const statusBadgeClass = (status) => {
-  if (status === 'paid') return 'bg-emerald-100 text-emerald-800';
-  if (status === 'cancelled') return 'bg-rose-100 text-rose-800';
-  if (status === 'draft') return 'bg-slate-100 text-slate-700';
-  return 'bg-cyan-100 text-cyan-900';
+const buildBillNumber = () => {
+  const now = new Date();
+  const datePart = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('');
+  const timePart = [
+    String(now.getHours()).padStart(2, '0'),
+    String(now.getMinutes()).padStart(2, '0'),
+  ].join('');
+  return `VJ-${datePart}-${timePart}`;
 };
 
-const paymentBadgeClass = (status) => {
-  if (status === 'paid') return 'bg-emerald-50 text-emerald-800 ring-emerald-200';
-  if (status === 'partial') return 'bg-amber-50 text-amber-800 ring-amber-200';
-  return 'bg-slate-50 text-slate-700 ring-slate-200';
-};
+const emptyForm = () => ({
+  billNumber: buildBillNumber(),
+  companyName: '',
+  contactName: '',
+  contactEmail: '',
+  contactPhone: '',
+  companyAddress: '',
+  companyGstin: '',
+  billDate: todayIsoDate(),
+  dueDate: '',
+  status: 'issued',
+  paymentStatus: 'unpaid',
+  taxPercent: '0',
+  notes: '',
+  paymentNotes: '',
+  lineItems: [createEmptyLineItem('website_job_post'), createEmptyLineItem('instagram_reel')],
+});
 
 export default function AdminBillsPage() {
   useAdminAuth();
-  const [bills, setBills] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [busyId, setBusyId] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
+  const [form, setForm] = useState(emptyForm);
+  const [formError, setFormError] = useState('');
 
-  const loadBills = useCallback(async () => {
-    setLoadError('');
-    setIsLoading(true);
-    try {
-      const rows = await fetchAdminBills();
-      setBills(rows);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Could not load bills.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const totals = useMemo(
+    () => computeBillTotals(form.lineItems, form.taxPercent),
+    [form.lineItems, form.taxPercent],
+  );
 
-  useEffect(() => {
-    loadBills();
-  }, [loadBills]);
-
-  const filteredBills = useMemo(() => {
-    return bills.filter((bill) => {
-      if (statusFilter !== 'all' && bill.status !== statusFilter) return false;
-      if (!deferredSearch) return true;
-      const blob = [
-        bill.billNumber,
-        bill.companyName,
-        bill.contactName,
-        bill.contactEmail,
-        bill.contactPhone,
-        bill.paymentStatus,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return blob.includes(deferredSearch);
+  const billPreview = useMemo(() => {
+    const taxPercent = Number(form.taxPercent) || 0;
+    const lineItems = form.lineItems.map((item, index) => {
+      const catalog = getServiceCatalogItem(item.serviceKey);
+      return {
+        id: item.id,
+        serviceKey: item.serviceKey,
+        description: String(item.description || catalog.description || catalog.label || '').trim(),
+        quantity: Number(item.quantity) || 0,
+        unitPrice: Number(item.unitPrice) || 0,
+        amount: computeLineAmount(item.quantity, item.unitPrice),
+        sortOrder: index,
+      };
     });
-  }, [bills, deferredSearch, statusFilter]);
 
-  const summary = useMemo(() => {
-    const total = bills.length;
-    const unpaid = bills.filter((b) => b.paymentStatus === 'unpaid').length;
-    const paid = bills.filter((b) => b.paymentStatus === 'paid').length;
-    const revenue = bills
-      .filter((b) => b.status !== 'cancelled')
-      .reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0);
-    return { total, unpaid, paid, revenue };
-  }, [bills]);
+    return {
+      billNumber: String(form.billNumber || '').trim() || buildBillNumber(),
+      companyName: String(form.companyName || '').trim() || 'Company name',
+      contactName: String(form.contactName || '').trim(),
+      contactEmail: String(form.contactEmail || '').trim(),
+      contactPhone: String(form.contactPhone || '').trim(),
+      companyAddress: String(form.companyAddress || '').trim(),
+      companyGstin: String(form.companyGstin || '').trim(),
+      billDate: form.billDate,
+      dueDate: form.dueDate || null,
+      status: form.status || 'issued',
+      paymentStatus: form.paymentStatus || 'unpaid',
+      notes: String(form.notes || '').trim(),
+      paymentNotes: String(form.paymentNotes || '').trim(),
+      taxPercent,
+      subtotal: totals.subtotal,
+      taxAmount: totals.taxAmount,
+      totalAmount: totals.totalAmount,
+      lineItems,
+    };
+  }, [form, totals]);
 
-  const handleMarkPaid = async (bill) => {
-    setNotice('');
-    setBusyId(bill.id);
-    try {
-      const updated = await updateAdminBillPayment({
-        billId: bill.id,
-        paymentStatus: 'paid',
-        paymentNotes: bill.paymentNotes,
-        status: 'paid',
-      });
-      setBills((current) =>
-        current.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)),
-      );
-      setNotice(`${updated.billNumber} marked as paid.`);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not update bill.');
-    } finally {
-      setBusyId('');
-    }
+  const updateField = (key, value) => {
+    setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const handleDelete = async (bill) => {
-    if (!window.confirm(`Delete bill ${bill.billNumber}? This cannot be undone.`)) {
+  const updateLineItem = (itemId, patch) => {
+    setForm((current) => ({
+      ...current,
+      lineItems: current.lineItems.map((item) =>
+        item.id === itemId ? { ...item, ...patch } : item,
+      ),
+    }));
+  };
+
+  const handleServiceChange = (itemId, serviceKey) => {
+    const catalog = getServiceCatalogItem(serviceKey);
+    updateLineItem(itemId, {
+      serviceKey: catalog.key,
+      description: catalog.description || catalog.label,
+      unitPrice: catalog.defaultUnitPrice,
+    });
+  };
+
+  const addLineItem = (serviceKey = 'custom') => {
+    setForm((current) => ({
+      ...current,
+      lineItems: [...current.lineItems, createEmptyLineItem(serviceKey)],
+    }));
+  };
+
+  const removeLineItem = (itemId) => {
+    setForm((current) => ({
+      ...current,
+      lineItems:
+        current.lineItems.length <= 1
+          ? current.lineItems
+          : current.lineItems.filter((item) => item.id !== itemId),
+    }));
+  };
+
+  const handlePrint = () => {
+    setFormError('');
+    const companyName = String(form.companyName || '').trim();
+    if (companyName.length < 2) {
+      setFormError('Enter the company name before printing.');
       return;
     }
-    setNotice('');
-    setBusyId(bill.id);
-    try {
-      await deleteAdminBill(bill.id);
-      setBills((current) => current.filter((row) => row.id !== bill.id));
-      setNotice(`${bill.billNumber} deleted.`);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not delete bill.');
-    } finally {
-      setBusyId('');
+    if (!form.lineItems.some((item) => String(item.description || '').trim().length >= 2)) {
+      setFormError('Add at least one service with a description.');
+      return;
     }
+    window.print();
+  };
+
+  const handleReset = () => {
+    setFormError('');
+    setForm(emptyForm());
   };
 
   return (
     <>
-      <SEO title="Bills" noindex />
-      <AdminShell
-        title="Bills"
-        description="Create and print bills for companies that book website job posts, Instagram reels, and related promotions."
-      >
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-3 text-sm">
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
-              <span className="text-slate-500">Total</span>{' '}
-              <span className="font-bold text-slate-900">{summary.total}</span>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
-              <span className="text-slate-500">Unpaid</span>{' '}
-              <span className="font-bold text-amber-700">{summary.unpaid}</span>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
-              <span className="text-slate-500">Paid</span>{' '}
-              <span className="font-bold text-emerald-700">{summary.paid}</span>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2">
-              <span className="text-slate-500">Billed</span>{' '}
-              <span className="font-bold text-slate-900">{formatBillMoney(summary.revenue)}</span>
-            </div>
-          </div>
-          <Link
-            to="/admin/bills/new"
-            className="rounded-2xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
-          >
-            Create bill
-          </Link>
-        </div>
-
-        <div className="mb-5 flex flex-wrap gap-3">
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search company, bill no, phone…"
-            className="min-w-[16rem] flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-          />
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400"
-          >
-            <option value="all">All statuses</option>
-            {BILL_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {notice ? (
-          <p className="mb-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
-            {notice}
-          </p>
-        ) : null}
-
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <LoadingSpinner message="Loading bills…" />
-          </div>
-        ) : loadError ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-800">
-            <p>{loadError}</p>
-            <p className="mt-2 text-rose-700">
-              If this is the first time using bills, apply the{' '}
-              <code className="rounded bg-rose-100 px-1">create_bills</code> Supabase migration, then
-              retry.
-            </p>
+      <SEO title="Print bill" noindex />
+      <div className="print:hidden">
+        <AdminShell
+          title="Print bill"
+          description="Type the company and service details, then print or save as PDF. Nothing is saved to the database."
+        >
+          <div className="mb-5 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={loadBills}
-              className="mt-3 rounded-xl border border-rose-300 bg-white px-3 py-1.5 text-sm font-semibold text-rose-800"
+              onClick={handlePrint}
+              className="rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
             >
-              Retry
+              Print / Save PDF
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Clear form
             </button>
           </div>
-        ) : filteredBills.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-            <p className="text-lg font-bold text-slate-900">No bills yet</p>
-            <p className="mt-2 text-sm text-slate-600">
-              Create a bill when a company books a website job post, Instagram reel, or other service.
+
+          {formError ? (
+            <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              {formError}
             </p>
-            <Link
-              to="/admin/bills/new"
-              className="mt-5 inline-flex rounded-2xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-slate-950"
-            >
-              Create first bill
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Bill</th>
-                    <th className="px-4 py-3 font-semibold">Company</th>
-                    <th className="px-4 py-3 font-semibold">Date</th>
-                    <th className="px-4 py-3 font-semibold">Amount</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Payment</th>
-                    <th className="px-4 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredBills.map((bill) => (
-                    <tr key={bill.id} className="border-t border-slate-100">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-900">
-                        {bill.billNumber}
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900">{bill.companyName}</p>
-                        {bill.contactName ? (
-                          <p className="text-xs text-slate-500">{bill.contactName}</p>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">{formatBillDate(bill.billDate)}</td>
-                      <td className="px-4 py-3 font-semibold tabular-nums text-slate-900">
-                        {formatBillMoney(bill.totalAmount)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusBadgeClass(bill.status)}`}
+          ) : null}
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handlePrint();
+            }}
+            className="space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+          >
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Bill number</span>
+                <input
+                  value={form.billNumber}
+                  onChange={(event) => updateField('billNumber', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Bill date</span>
+                <input
+                  type="date"
+                  value={form.billDate}
+                  onChange={(event) => updateField('billDate', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Due date</span>
+                <input
+                  type="date"
+                  value={form.dueDate}
+                  onChange={(event) => updateField('dueDate', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+            </section>
+
+            <section className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm sm:col-span-2">
+                <span className="font-medium text-slate-700">Company name *</span>
+                <input
+                  required
+                  value={form.companyName}
+                  onChange={(event) => updateField('companyName', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  placeholder="Acme Pvt Ltd"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Contact name</span>
+                <input
+                  value={form.contactName}
+                  onChange={(event) => updateField('contactName', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Phone</span>
+                <input
+                  value={form.contactPhone}
+                  onChange={(event) => updateField('contactPhone', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Email</span>
+                <input
+                  type="email"
+                  value={form.contactEmail}
+                  onChange={(event) => updateField('contactEmail', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Company GSTIN</span>
+                <input
+                  value={form.companyGstin}
+                  onChange={(event) => updateField('companyGstin', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="font-medium text-slate-700">Company address</span>
+                <textarea
+                  rows={2}
+                  value={form.companyAddress}
+                  onChange={(event) => updateField('companyAddress', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+            </section>
+
+            <section>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-base font-bold text-slate-900">Services</h2>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addLineItem('website_job_post')}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    + Job post
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addLineItem('instagram_reel')}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    + Instagram reel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addLineItem('custom')}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    + Custom
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {form.lineItems.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Line {index + 1}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => removeLineItem(item.id)}
+                        disabled={form.lineItems.length <= 1}
+                        className="text-xs font-semibold text-rose-700 disabled:opacity-40"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <label className="block text-sm sm:col-span-2">
+                        <span className="font-medium text-slate-700">Service</span>
+                        <select
+                          value={item.serviceKey}
+                          onChange={(event) => handleServiceChange(item.id, event.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
                         >
-                          {bill.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize ring-1 ${paymentBadgeClass(bill.paymentStatus)}`}
-                        >
-                          {BILL_PAYMENT_STATUS_OPTIONS.find((o) => o.value === bill.paymentStatus)
-                            ?.label || bill.paymentStatus}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <Link
-                            to={`/admin/bills/${bill.id}/print`}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Print
-                          </Link>
-                          {bill.paymentStatus !== 'paid' ? (
-                            <button
-                              type="button"
-                              disabled={busyId === bill.id}
-                              onClick={() => handleMarkPaid(bill)}
-                              className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
-                            >
-                              Mark paid
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            disabled={busyId === bill.id}
-                            onClick={() => handleDelete(bill)}
-                            className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:opacity-60"
-                          >
-                            Delete
-                          </button>
+                          {BILL_SERVICE_CATALOG.map((service) => (
+                            <option key={service.key} value={service.key}>
+                              {service.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-sm">
+                        <span className="font-medium text-slate-700">Qty</span>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={item.quantity}
+                          onChange={(event) =>
+                            updateLineItem(item.id, { quantity: event.target.value })
+                          }
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                      <label className="block text-sm">
+                        <span className="font-medium text-slate-700">Rate (₹)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(event) =>
+                            updateLineItem(item.id, { unitPrice: event.target.value })
+                          }
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                        />
+                      </label>
+                      <label className="block text-sm sm:col-span-2 lg:col-span-3">
+                        <span className="font-medium text-slate-700">Description</span>
+                        <input
+                          value={item.description}
+                          onChange={(event) =>
+                            updateLineItem(item.id, { description: event.target.value })
+                          }
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                          placeholder="What was delivered for this company"
+                        />
+                      </label>
+                      <div className="flex items-end text-sm">
+                        <div className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                          <span className="text-slate-500">Amount </span>
+                          <span className="font-bold tabular-nums text-slate-900">
+                            {formatBillMoney(computeLineAmount(item.quantity, item.unitPrice))}
+                          </span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="font-medium text-slate-700">Tax / GST %</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={form.taxPercent}
+                  onChange={(event) => updateField('taxPercent', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-600">Subtotal</span>
+                  <span className="font-semibold tabular-nums">{formatBillMoney(totals.subtotal)}</span>
+                </div>
+                <div className="mt-1 flex justify-between gap-4">
+                  <span className="text-slate-600">Tax</span>
+                  <span className="font-semibold tabular-nums">{formatBillMoney(totals.taxAmount)}</span>
+                </div>
+                <div className="mt-2 flex justify-between gap-4 border-t border-slate-200 pt-2 text-base">
+                  <span className="font-bold text-slate-900">Total</span>
+                  <span className="font-black tabular-nums text-slate-950">
+                    {formatBillMoney(totals.totalAmount)}
+                  </span>
+                </div>
+              </div>
+              <label className="block text-sm sm:col-span-2">
+                <span className="font-medium text-slate-700">Notes (shown on bill)</span>
+                <textarea
+                  rows={2}
+                  value={form.notes}
+                  onChange={(event) => updateField('notes', event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  placeholder="Payment terms, job title, reel delivery date…"
+                />
+              </label>
+            </section>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                className="rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+              >
+                Print / Save PDF
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Clear form
+              </button>
             </div>
-          </div>
-        )}
-      </AdminShell>
+          </form>
+
+          <section className="mt-8">
+            <h2 className="mb-4 text-lg font-bold text-slate-900">Bill preview</h2>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <AdminBillDocument bill={billPreview} />
+            </div>
+          </section>
+        </AdminShell>
+      </div>
+
+      <div className="hidden print:block">
+        <AdminBillDocument bill={billPreview} />
+      </div>
+
+      <style>{`
+        @media print {
+          body {
+            background: white !important;
+          }
+          @page {
+            margin: 12mm;
+          }
+        }
+      `}</style>
     </>
   );
 }
