@@ -6,6 +6,7 @@ const navItems = [
   { label: 'Admin Jobs', to: '/admin/admin-jobs' },
   { label: 'Employer submissions', to: '/admin/jobs' },
   { label: 'Employer registrations', to: '/admin/employers' },
+  { label: 'Bills', to: '/admin/bills' },
   { label: 'Student registrations', to: '/admin/students' },
   { label: 'Fetch external jobs', to: '/admin/fetch' },
   { label: 'Blog posts', to: '/admin/blog' },

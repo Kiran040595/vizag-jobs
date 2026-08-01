@@ -406,6 +406,12 @@ export default function AdminEmployersPage() {
                     )}
 
                     <div className="flex flex-wrap gap-2">
+                      <Link
+                        to={`/admin/bills/new?employer=${encodeURIComponent(employer.userId)}&company=${encodeURIComponent(employer.companyName || '')}&email=${encodeURIComponent(employer.contactEmail || '')}&phone=${encodeURIComponent(employer.phone || '')}&contact=${encodeURIComponent(employer.contactName || '')}`}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-900"
+                      >
+                        Create bill
+                      </Link>
                       {employer.jobStats.total > 0 ? (
                         <Link
                           to={`/admin/jobs?employerId=${encodeURIComponent(employer.userId)}`}
