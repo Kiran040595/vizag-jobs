@@ -39,6 +39,7 @@ import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
+import AdminBillsPage from './pages/AdminBillsPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
@@ -171,6 +172,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminEmployersPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/bills"
+        element={(
+          <AdminRoute>
+            <AdminBillsPage />
           </AdminRoute>
         )}
       />
