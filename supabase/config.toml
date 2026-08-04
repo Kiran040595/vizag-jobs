@@ -36,6 +36,10 @@ verify_jwt = false
 [functions.generate-daily-blog]
 verify_jwt = false
 
+[functions.site-chat]
+# Public FAQ chatbot; uses GEMINI_API_KEY from Edge Function secrets.
+verify_jwt = false
+
 [functions.admin-create-employer]
 # Auth is enforced inside the function (admin JWT in Authorization header).
 verify_jwt = false

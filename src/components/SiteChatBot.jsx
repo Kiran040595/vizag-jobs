@@ -1,15 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOptionalCookieConsent } from '../context/CookieConsentContext.jsx';
+import {
+  DEFAULT_CHAT_SUGGESTIONS,
+  fetchSiteChatMeta,
+  sendSiteChatMessage,
+} from '../services/siteChat.js';
 
 const HIDDEN_PREFIXES = ['/admin', '/oauth'];
-
-const DEFAULT_SUGGESTIONS = [
-  'How do I apply for a job?',
-  'How do employers post a job?',
-  'Where can I find fresher jobs in Vizag?',
-  'How do I contact support?',
-];
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
@@ -75,7 +73,7 @@ export default function SiteChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
-  const [suggestions, setSuggestions] = useState(DEFAULT_SUGGESTIONS);
+  const [suggestions, setSuggestions] = useState(DEFAULT_CHAT_SUGGESTIONS);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
 
@@ -120,8 +118,7 @@ export default function SiteChatBot() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/chat')
-      .then((res) => (res.ok ? res.json() : null))
+    fetchSiteChatMeta()
       .then((data) => {
         if (cancelled || !Array.isArray(data?.suggestions) || data.suggestions.length === 0) return;
         setSuggestions(data.suggestions);
@@ -151,23 +148,8 @@ export default function SiteChatBot() {
         .filter((message) => message !== WELCOME_MESSAGE)
         .map(({ role, content }) => ({ role, content }));
 
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || 'Could not get a reply. Please try again.');
-      }
-
-      const reply = String(data?.reply || '').trim();
-      if (!reply) {
-        throw new Error('Empty reply from the assistant.');
-      }
-
-      setMessages((current) => [...current, { role: 'assistant', content: reply }]);
+      const data = await sendSiteChatMessage(history);
+      setMessages((current) => [...current, { role: 'assistant', content: data.reply }]);
       if (Array.isArray(data?.suggestions) && data.suggestions.length > 0) {
         setSuggestions(data.suggestions);
       }
