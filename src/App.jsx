@@ -51,6 +51,7 @@ import StudentApplicationsPage from './pages/StudentApplicationsPage';
 import InstagramJobsPage from './pages/InstagramJobsPage';
 import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
+import SiteChatBot from './components/SiteChatBot';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
 function App() {
@@ -242,6 +243,7 @@ function App() {
     </Routes>
     <CookieConsentBanner />
     <FeedbackFloatingButton />
+    <SiteChatBot />
     </>
   );
 }

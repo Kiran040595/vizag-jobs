@@ -52,7 +52,7 @@ export default function FeedbackFloatingButton() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`fixed z-40 rounded-full bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 right-[max(1rem,env(safe-area-inset-right))] ${
+        className={`fixed z-40 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-900/10 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 right-[calc(4.75rem+max(1rem,env(safe-area-inset-right)))] ${
           cookieBannerOpen
             ? 'bottom-[calc(11rem+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(8rem+env(safe-area-inset-bottom,0px))]'
             : hasStickyApplyChrome
