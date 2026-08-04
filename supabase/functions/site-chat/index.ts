@@ -325,5 +325,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-# Deploy trigger: ensure site-chat is live with GEMINI_API_KEY from Supabase secrets.
