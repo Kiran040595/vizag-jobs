@@ -32,7 +32,8 @@ const env = {
   ...process.env,
 };
 
-const clientId = String(env.VITE_ADSENSE_CLIENT_ID || '').trim();
+const DEFAULT_CLIENT_ID = 'ca-pub-5930737756240618';
+const clientId = String(env.VITE_ADSENSE_CLIENT_ID || DEFAULT_CLIENT_ID).trim();
 
 if (!/^ca-pub-\d+$/i.test(clientId)) {
   // Keep a discoverable file so /ads.txt is not a soft-404 while waiting for setup.

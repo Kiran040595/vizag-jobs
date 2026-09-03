@@ -3,7 +3,10 @@
  * (and Vercel) after you create / are approved for AdSense.
  */
 
-const rawClientId = String(import.meta.env.VITE_ADSENSE_CLIENT_ID || '').trim();
+const DEFAULT_ADSENSE_CLIENT_ID = 'ca-pub-5930737756240618';
+const rawClientId = String(
+  import.meta.env.VITE_ADSENSE_CLIENT_ID || DEFAULT_ADSENSE_CLIENT_ID,
+).trim();
 
 /** @returns {string} e.g. ca-pub-123… or '' when unset */
 export const getAdSenseClientId = () => {
