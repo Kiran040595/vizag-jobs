@@ -1,12 +1,31 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+function adsenseHeadPlugin(clientId) {
+  return {
+    name: 'adsense-head-injection',
+    transformIndexHtml(html) {
+      const id = String(clientId || '').trim();
+      if (!/^ca-pub-\d+$/i.test(id) || html.includes('adsbygoogle.js')) {
+        return html;
+      }
+      const tag = `    <!-- Google AdSense -->\n    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${id}" crossorigin="anonymous"></script>`;
+      return html.replace('</head>', `${tag}\n  </head>`);
+    },
+  };
+}
+
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const adsenseClientId = env.VITE_ADSENSE_CLIENT_ID || process.env.VITE_ADSENSE_CLIENT_ID || '';
+
+  return {
+    plugins: [
+      adsenseHeadPlugin(adsenseClientId),
+      react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -134,4 +153,5 @@ export default defineConfig({
       }
     })
   ],
-})
+  };
+});
