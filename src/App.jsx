@@ -13,6 +13,7 @@ import AdminNewJobPage from './pages/AdminNewJobPage';
 import AdminJobsPage from './pages/AdminJobsPage';
 import AdminExternalFetchPage from './pages/AdminExternalFetchPage';
 import AdminEditJobPage from './pages/AdminEditJobPage';
+import AdminJobApplicationsPage from './pages/AdminJobApplicationsPage';
 import AdminBlogListPage from './pages/AdminBlogListPage';
 import AdminNewBlogPage from './pages/AdminNewBlogPage';
 import AdminEditBlogPage from './pages/AdminEditBlogPage';
@@ -26,15 +27,31 @@ import DisclaimerPage from './pages/DisclaimerPage';
 import AdminRoute from './components/admin/AdminRoute';
 import EmployerLoginPage from './pages/EmployerLoginPage';
 import EmployerRegisterPage from './pages/EmployerRegisterPage';
+import EmployerForgotPasswordPage from './pages/EmployerForgotPasswordPage';
+import EmployerResetPasswordPage from './pages/EmployerResetPasswordPage';
 import EmployerProfilePage from './pages/EmployerProfilePage';
 import EmployerJobsListPage from './pages/EmployerJobsListPage';
 import EmployerNewJobPage from './pages/EmployerNewJobPage';
 import EmployerEditJobPage from './pages/EmployerEditJobPage';
+import EmployerJobApplicationsPage from './pages/EmployerJobApplicationsPage';
 import OAuthConsentPage from './pages/OAuthConsentPage';
 import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import AdminEmployersPage from './pages/AdminEmployersPage';
+import AdminBillsPage from './pages/AdminBillsPage';
+import AdminStudentsPage from './pages/AdminStudentsPage';
+import StudentLoginPage from './pages/StudentLoginPage';
+import StudentRegisterPage from './pages/StudentRegisterPage';
+import StudentForgotPasswordPage from './pages/StudentForgotPasswordPage';
+import StudentResetPasswordPage from './pages/StudentResetPasswordPage';
+import StudentProfilePage from './pages/StudentProfilePage';
+import StudentApplyPage from './pages/StudentApplyPage';
+import StudentApplicationsPage from './pages/StudentApplicationsPage';
+import InstagramJobsPage from './pages/InstagramJobsPage';
+import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
+import SiteChatBot from './components/SiteChatBot';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
 function App() {
@@ -46,11 +63,23 @@ function App() {
       <Route path="/oauth/consent" element={<OAuthConsentPage />} />
       <Route path="/employer/login" element={<EmployerLoginPage />} />
       <Route path="/employer/register" element={<EmployerRegisterPage />} />
+      <Route path="/employer/forgot-password" element={<EmployerForgotPasswordPage />} />
+      <Route path="/employer/reset-password" element={<EmployerResetPasswordPage />} />
       <Route path="/employer" element={<Navigate to="/employer/jobs" replace />} />
       <Route path="/employer/profile" element={<EmployerProfilePage />} />
       <Route path="/employer/jobs" element={<EmployerJobsListPage />} />
       <Route path="/employer/jobs/new" element={<EmployerNewJobPage />} />
       <Route path="/employer/jobs/:jobId/edit" element={<EmployerEditJobPage />} />
+      <Route path="/employer/jobs/:jobId/applications" element={<EmployerJobApplicationsPage />} />
+      <Route path="/student/login" element={<StudentLoginPage />} />
+      <Route path="/student/register" element={<StudentRegisterPage />} />
+      <Route path="/student/forgot-password" element={<StudentForgotPasswordPage />} />
+      <Route path="/student/reset-password" element={<StudentResetPasswordPage />} />
+      <Route path="/student" element={<Navigate to="/student/profile" replace />} />
+      <Route path="/student/profile" element={<StudentProfilePage />} />
+      <Route path="/student/applied-jobs" element={<StudentApplicationsPage />} />
+      <Route path="/student/applications" element={<Navigate to="/student/applied-jobs" replace />} />
+      <Route path="/student/apply/:jobId" element={<StudentApplyPage />} />
       <Route
         path="/admin"
         element={(
@@ -71,7 +100,15 @@ function App() {
         path="/admin/jobs"
         element={(
           <AdminRoute>
-            <AdminJobsPage />
+            <AdminJobsPage scope="employer" />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/admin-jobs"
+        element={(
+          <AdminRoute>
+            <AdminJobsPage scope="admin" />
           </AdminRoute>
         )}
       />
@@ -88,6 +125,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminEditJobPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/jobs/:jobId/applications"
+        element={(
+          <AdminRoute>
+            <AdminJobApplicationsPage />
           </AdminRoute>
         )}
       />
@@ -123,6 +168,30 @@ function App() {
           </AdminRoute>
         )}
       />
+      <Route
+        path="/admin/employers"
+        element={(
+          <AdminRoute>
+            <AdminEmployersPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/bills"
+        element={(
+          <AdminRoute>
+            <AdminBillsPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/students"
+        element={(
+          <AdminRoute>
+            <AdminStudentsPage />
+          </AdminRoute>
+        )}
+      />
       <Route path="/blog" element={<BlogListPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -131,10 +200,8 @@ function App() {
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
-      <Route path="/jobs/:jobSegment/:jobSlug" element={<JobDetailsPage />} />
-      <Route path="/job/:jobSlug" element={<JobDetailsPage />} />
-      <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
+      <Route path="/jobs/latest" element={<InstagramJobsPage />} />
       <Route path="/saved-jobs" element={<SavedJobsPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
       <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
@@ -146,12 +213,37 @@ function App() {
           element={<BranchJobsInVizagPage categoryId={page.id} />}
         />
       ))}
+      <Route
+        path="/jobs/:jobSegment/:jobSlug"
+        element={(
+          <JobDetailsAuthGate>
+            <JobDetailsPage />
+          </JobDetailsAuthGate>
+        )}
+      />
+      <Route
+        path="/job/:jobSlug"
+        element={(
+          <JobDetailsAuthGate>
+            <JobDetailsPage />
+          </JobDetailsAuthGate>
+        )}
+      />
+      <Route
+        path="/jobs/:jobId"
+        element={(
+          <JobDetailsAuthGate>
+            <JobDetailsPage />
+          </JobDetailsAuthGate>
+        )}
+      />
       {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([from, to]) => (
         <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}
     </Routes>
     <CookieConsentBanner />
     <FeedbackFloatingButton />
+    <SiteChatBot />
     </>
   );
 }

@@ -1,10 +1,12 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { notifyReplyByEmailSafe } from '../lib/replyNotification';
 
 const FEEDBACK_COLUMNS = `
   id,
   feedback_type,
   author_name,
   author_email,
+  author_user_id,
   body,
   page_url,
   wants_public,
@@ -26,6 +28,7 @@ const mapFeedback = (row) => {
     feedbackType: row.feedback_type,
     authorName: row.author_name || '',
     authorEmail: row.author_email || '',
+    authorUserId: row.author_user_id || null,
     body: row.body,
     pageUrl: row.page_url || '',
     wantsPublic: Boolean(row.wants_public),
@@ -90,6 +93,7 @@ export const submitSiteFeedback = async ({
   body,
   pageUrl,
   honeypot = '',
+  authorUserId = null,
 }) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured.');
@@ -106,10 +110,17 @@ export const submitSiteFeedback = async ({
     throw new Error(validationError);
   }
 
+  let resolvedUserId = authorUserId || null;
+  if (!resolvedUserId) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    resolvedUserId = sessionData?.session?.user?.id || null;
+  }
+
   const { error } = await supabase.from('site_feedback').insert({
     feedback_type: feedbackType,
     author_name: (authorName || '').trim() || null,
     author_email: (authorEmail || '').trim() || null,
+    author_user_id: resolvedUserId,
     body: body.trim(),
     page_url: (pageUrl || '').trim() || null,
     wants_public: false,
@@ -172,6 +183,17 @@ export const publishSiteFeedback = async ({ feedbackId, userId, adminReply }) =>
     throw new Error('Supabase is not configured.');
   }
 
+  const { data: existing, error: existingError } = await supabase
+    .from('site_feedback')
+    .select('admin_reply, author_email')
+    .eq('id', feedbackId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  const previousReply = (existing?.admin_reply || '').trim();
   const patch = {
     status: 'published',
     published_at: new Date().toISOString(),
@@ -194,7 +216,19 @@ export const publishSiteFeedback = async ({ feedbackId, userId, adminReply }) =>
     throw new Error(error.message);
   }
 
-  return mapFeedback(data);
+  const mapped = mapFeedback(data);
+  const shouldNotify =
+    Boolean(mapped.authorEmail) &&
+    Boolean(mapped.adminReply) &&
+    mapped.adminReply !== previousReply;
+
+  if (shouldNotify) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    await notifyReplyByEmailSafe(accessToken, { kind: 'feedback', id: feedbackId });
+  }
+
+  return mapped;
 };
 
 export const ignoreSiteFeedback = async ({ feedbackId, userId }) => {

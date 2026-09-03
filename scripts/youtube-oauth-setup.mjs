@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 /**
- * One-time helper to obtain a YouTube refresh token for daily Short uploads.
+ * One-time helper to obtain a YouTube refresh token for Short uploads.
  *
- * Usage:
- *   1. Create OAuth credentials in Google Cloud Console (Web application).
- *   2. Add redirect URI: http://localhost:8765/oauth2callback
- *   3. Enable YouTube Data API v3.
- *   4. Set YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET in .env.local
- *   5. Run: npm run youtube:oauth-setup
+ * For Brand Account channels (e.g. Student Needs), sign in with the manager
+ * Gmail and choose the Brand Account when Google asks which channel to use.
+ *
+ * Drive uses a separate token: npm run drive:oauth-setup
  */
 
 import http from 'node:http';
@@ -30,9 +28,11 @@ if (!clientId || !clientSecret) {
 const authUrl = buildYouTubeOAuthUrl({ clientId, redirectUri });
 
 console.log('\nYouTube OAuth setup\n');
-console.log('1. Open this URL in your browser and sign in with the channel owner account:\n');
+console.log('1. Open this URL and sign in with the account that manages your channel:\n');
 console.log(authUrl);
-console.log('\n2. Approve access. You will be redirected to localhost.\n');
+console.log('\n2. If asked, choose the Brand Account / channel (e.g. Student Needs).');
+console.log('3. Approve YouTube access. You will be redirected to localhost.\n');
+console.log('Note: Drive needs a separate login: npm run drive:oauth-setup\n');
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -80,7 +80,8 @@ const server = http.createServer(async (req, res) => {
     }
     console.log('\nThen test with:');
     console.log('  AUTO_YOUTUBE_SHORT_DRY_RUN=true npm run auto:youtube-short');
-    console.log('  npm run auto:youtube-short\n');
+    console.log('  npm run auto:youtube-short');
+    console.log('\nFor Drive → Shorts, also run: npm run drive:oauth-setup\n');
 
     server.close();
     process.exit(0);

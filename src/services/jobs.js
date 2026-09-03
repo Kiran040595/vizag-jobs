@@ -1,9 +1,17 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseClient';
 import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
+import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
+import { writeCachedInstagramJobs } from '../lib/publicJobsSessionCache';
+
+export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache';
+
+/** Prefer the anon client so public lists never block on auth session refresh. */
+const getPublicClient = () => supabasePublic || supabase;
 
 const CACHE_DURATION = 60_000;
+const instagramJobsCache = { jobs: null, timestamp: 0 };
 const DEFAULT_TABLE_NAME = 'jobs';
 const jobsTable = import.meta.env.VITE_SUPABASE_JOBS_TABLE || DEFAULT_TABLE_NAME;
 
@@ -16,14 +24,6 @@ export const DEFAULT_LIST_LIMIT = null;
 
 /** Supabase/PostgREST page size for paginated job list fetches. */
 const JOB_LIST_PAGE_SIZE = 1000;
-
-/**
- * Shared session-storage TTL for the public listing pages. Bumped from 5 min
- * to 20 min to reduce repeat fetches per session — the public site doesn't
- * need fresher-than-this data, and the in-memory cache (60s) still keeps
- * navigation snappy.
- */
-export const JOB_LIST_SESSION_CACHE_TTL_MS = 20 * 60 * 1000;
 
 /**
  * Slim column allow-list for listing queries. Anything the home-page card,
@@ -42,11 +42,14 @@ const LIST_COLUMNS = [
   'company',
   'location',
   'category',
+  'role',
   'job_type',
   'work_mode',
   'experience',
   'is_fresher',
   'is_featured',
+  'is_instagram',
+  'group_link',
   'salary',
   'short_description',
   'skills',
@@ -127,13 +130,21 @@ const processJobData = (job, index) => {
     company: normalizeText(job.company),
     location: normalizeText(job.location, 'Visakhapatnam'),
     category,
+    role:
+      cleanJobRoleLabel(job.role, 56) ||
+      cleanJobRoleLabel(job.title, 56) ||
+      normalizeText(job.role) ||
+      normalizeText(job.title),
     jobType,
     workMode: normalizeText(job.work_mode),
     experience: normalizeText(job.experience),
     isFresher,
     isFeatured: Boolean(job.is_featured),
+    isInstagram: Boolean(job.is_instagram),
+    groupLink: normalizeText(job.group_link),
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
+    applyMode: job.apply_mode === 'internal' ? 'internal' : 'external',
     description: normalizeText(job.description),
     shortDescription: normalizeText(job.short_description),
     responsibilities: joinList(job.responsibilities),
@@ -166,8 +177,9 @@ const escapeIlike = (value) => value.replaceAll('%', '\\%').replaceAll(',', '\\,
 const buildSupabaseQuery = (filters = {}, options = {}) => {
   const { applyLimit = true } = options;
   const limit = filters.limit ?? DEFAULT_LIST_LIMIT;
+  const client = getPublicClient();
 
-  let query = supabase
+  let query = client
     .from(jobsTable)
     .select(LIST_COLUMNS)
     .eq('status', 'published')
@@ -241,7 +253,7 @@ const fetchJobsPaginated = async (filters = {}) => {
 };
 
 export const fetchJobs = async (filters = {}, forceRefresh = false) => {
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isSupabaseConfigured || !getPublicClient()) {
     throw new Error(
       'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
@@ -297,14 +309,18 @@ const jobByIdCache = new Map();
 export const fetchJobById = async (idOrSlug, options = {}) => {
   const { forceRefresh = false } = options;
   if (!idOrSlug) return null;
-  if (!isSupabaseConfigured || !supabase) {
+
+  const key = String(idOrSlug);
+  const includeAllStatuses = Boolean(options.includeAllStatuses);
+  // Admin/draft lookups need the authenticated client (RLS); public reads use
+  // the anon client so they never wait on session refresh.
+  const client = includeAllStatuses ? supabase : getPublicClient();
+  if (!isSupabaseConfigured || !client) {
     throw new Error(
       'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
     );
   }
 
-  const key = String(idOrSlug);
-  const includeAllStatuses = Boolean(options.includeAllStatuses);
   // Cache buckets are per-scope so a public miss followed by an admin hit
   // (or vice-versa) doesn't return stale data from the wrong bucket.
   const cacheKey = includeAllStatuses ? `admin:${key}` : `public:${key}`;
@@ -316,7 +332,7 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   const lookupColumn = UUID_RE.test(key) ? 'id' : 'slug';
 
   const data = await retryWithBackoff(async () => {
-    let query = supabase.from(jobsTable).select('*').eq(lookupColumn, key).limit(1);
+    let query = client.from(jobsTable).select('*').eq(lookupColumn, key).limit(1);
 
     // Admin viewers can read drafts/archived rows (RLS still gates this);
     // public viewers only see published jobs within the display window.
@@ -341,6 +357,46 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   return job;
 };
 
+/** Published jobs marked for the Instagram bio page (/jobs/latest), newest first. */
+export const fetchInstagramJobs = async (options = {}) => {
+  const { forceRefresh = false } = options;
+  const client = getPublicClient();
+  if (!isSupabaseConfigured || !client) {
+    throw new Error(
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
+    );
+  }
+
+  if (
+    !forceRefresh &&
+    Array.isArray(instagramJobsCache.jobs) &&
+    Date.now() - instagramJobsCache.timestamp < CACHE_DURATION
+  ) {
+    return instagramJobsCache.jobs;
+  }
+
+  const data = await retryWithBackoff(async () => {
+    const { data: rows, error } = await client
+      .from(jobsTable)
+      .select(LIST_COLUMNS)
+      .eq('status', 'published')
+      .eq('is_instagram', true)
+      .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+      .order('posted_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Supabase Instagram jobs fetch failed: ${error.message}`);
+    }
+    return rows || [];
+  });
+
+  const processed = data.map((row, index) => processJobData(row, index));
+  instagramJobsCache.jobs = processed;
+  instagramJobsCache.timestamp = Date.now();
+  writeCachedInstagramJobs(processed);
+  return processed;
+};
+
 export const getAllJobs = async (limit, forceRefresh = false) =>
   fetchJobs(limit ? { limit } : {}, forceRefresh);
 
@@ -359,4 +415,6 @@ export const searchJobs = async (searchTerm, limit, forceRefresh = false) =>
 export const clearJobsCache = () => {
   jobsCache.clear();
   jobByIdCache.clear();
+  instagramJobsCache.jobs = null;
+  instagramJobsCache.timestamp = 0;
 };

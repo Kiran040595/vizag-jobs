@@ -7,13 +7,13 @@ export default function DisclaimerPage() {
     <LegalPageLayout
       title="Disclaimer"
       seoTitle="Disclaimer | Jobs in Vizag"
-      description="Important disclaimer for JobsInVizag.in — we are not the employer; how job listings are sourced and your responsibilities as a job seeker."
+      description="Disclaimer for JobsInVizag.in — platform role for employer-posted and featured jobs, and your responsibilities when applying."
       canonical="/disclaimer"
     >
       <section className="space-y-3">
         <h2 className="text-xl font-bold text-slate-900">We Are Not the Hiring Employer</h2>
         <p>
-          {SITE_LEGAL_NAME} is a job listing and aggregation platform.{' '}
+          {SITE_LEGAL_NAME} is a job portal where employers post openings and candidates can apply on-site.{' '}
           <strong>
             We are not the employer, recruiter, or hiring authority for the listings shown on this site
           </strong>
@@ -23,38 +23,43 @@ export default function DisclaimerPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-bold text-slate-900">How Job Listings Are Sourced</h2>
+        <h2 className="text-xl font-bold text-slate-900">How Job Listings Appear</h2>
         <p>Listings on {SITE_LEGAL_NAME} come from a combination of:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Automated aggregation</strong> — using tools such as Apify and Firecrawl to gather
-            publicly available job postings from across the web
+            <strong>Employer posts on our portal</strong> — companies create accounts and publish openings
+            based on their hiring requirements
           </li>
           <li>
-            <strong>Manual research and curation</strong> — our team reviews and organizes listings for
-            relevance to the Vizag job market
+            <strong>Featured local jobs</strong> — roles we feature on the site so job seekers can discover
+            more Visakhapatnam opportunities
           </li>
           <li>
-            <strong>Direct submissions</strong> — in some cases, employers may submit openings directly to us
+            <strong>Manual review</strong> — our team may review listings for relevance and remove suspicious
+            or outdated posts when reported
           </li>
         </ul>
+        <p>
+          Students and job seekers may apply directly on {SITE_LEGAL_NAME} for supported listings and view
+          application status in their account. Final hiring decisions remain with the employer.
+        </p>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-bold text-slate-900">No Guarantee of Accuracy</h2>
         <p>
           We make reasonable efforts to keep listings current and accurate, but job postings can change or
-          expire without notice on the original source. We do not guarantee that any listing is:
+          close without notice. We do not guarantee that any listing is:
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Currently open</li>
-          <li>Accurately described</li>
-          <li>Free of errors introduced during aggregation</li>
+          <li>Accurately described by the posting employer</li>
+          <li>Free of errors</li>
           <li>Legitimate (see below)</li>
         </ul>
         <p>
           <strong>
-            Always verify a listing directly with the employer before applying, sharing personal details, or
+            Always verify a listing directly with the employer before sharing sensitive personal details or
             attending an interview.
           </strong>
         </p>
@@ -63,8 +68,8 @@ export default function DisclaimerPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-bold text-slate-900">Protecting Yourself from Job Scams</h2>
         <p>
-          Unfortunately, fraudulent job postings exist across the internet, and aggregated listings can
-          occasionally include them despite our review process. As a general rule:
+          Fraudulent job postings exist across the internet. Despite review, suspicious listings can
+          occasionally appear. As a general rule:
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>

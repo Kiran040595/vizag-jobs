@@ -8,6 +8,7 @@ import {
   sanitizeJobSeoRecord,
 } from '../../src/lib/jobDisplayLabels.js';
 import { pipelineConfig } from './pipeline-env.mjs';
+import { getJobPublishBlockReason } from '../../src/lib/jobPublishQuality.js';
 
 const REQUIRED_DEFAULTS = { location: 'Visakhapatnam', experience: '' };
 const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;
@@ -110,6 +111,7 @@ export const sanitizeExternalJobForInsert = (values) => {
     company,
     slug,
     apply_link: applyLink || null,
+    apply_mode: 'external',
     location: normalizeText(values?.location) || REQUIRED_DEFAULTS.location,
     category: normalizeText(values?.category) || 'General',
     job_type: normalizeText(values?.job_type) || 'Full-time',
@@ -239,6 +241,11 @@ export function shouldSkipJob(job, existing) {
     return { skip: true, reason: 'missing title or company' };
   }
 
+  const qualityReason = getJobPublishBlockReason(job);
+  if (qualityReason) {
+    return { skip: true, reason: qualityReason };
+  }
+
   return { skip: false, reason: '' };
 }
 
@@ -258,6 +265,11 @@ export async function publishJob(job, status = 'published') {
   }
   if (!payload.apply_link) {
     throw new Error('Missing apply link — will not publish.');
+  }
+
+  const blockReason = getJobPublishBlockReason(job);
+  if (blockReason) {
+    throw new Error(`Cannot publish: ${blockReason}`);
   }
 
   if (pipelineConfig.dryRun) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminAuthContext } from './adminAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { deferAuthWork } from '../lib/deferAuthWork';
 
 const ADMIN_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const ADMIN_ACCESS_CACHE_KEY = 'vizagjobs:admin-access-cache';
@@ -76,6 +77,13 @@ export function AdminAuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase));
   const [authError, setAuthError] = useState('');
 
+  const refreshAdminAccess = async (userId) => {
+    const adminAccess = await getAdminMembership(userId);
+    setIsAdmin(adminAccess);
+    writeAdminAccessCache(userId, adminAccess);
+    return adminAccess;
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       return undefined;
@@ -100,7 +108,7 @@ export function AdminAuthProvider({ children }) {
       if (!nextSession?.user) {
         setIsAdmin(false);
         clearAdminAccessCache();
-        if (showLoader) {
+        if (isMounted) {
           setIsLoading(false);
         }
         return;
@@ -127,36 +135,43 @@ export function AdminAuthProvider({ children }) {
         setIsAdmin(false);
         setAuthError(error instanceof Error ? error.message : 'Could not verify admin access.');
       } finally {
-        if (isMounted && showLoader) {
+        if (isMounted) {
           setIsLoading(false);
         }
       }
     };
 
     supabase.auth.getSession().then(({ data, error }) => {
-      if (!isMounted) {
-        return;
-      }
+      deferAuthWork(() => {
+        if (!isMounted) {
+          return;
+        }
 
-      if (error) {
-        setAuthError(error.message);
-        setIsLoading(false);
-        return;
-      }
+        if (error) {
+          setAuthError(error.message);
+          setIsLoading(false);
+          return;
+        }
 
-      syncSession(data.session, { showLoader: true });
+        void syncSession(data.session, { showLoader: true });
+      });
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      const shouldShowLoader =
-        event === 'SIGNED_IN' ||
-        event === 'SIGNED_OUT' ||
-        event === 'USER_UPDATED' ||
-        event === 'PASSWORD_RECOVERY';
+      deferAuthWork(() => {
+        if (!isMounted) {
+          return;
+        }
 
-      syncSession(nextSession, { showLoader: shouldShowLoader });
+        const shouldShowLoader =
+          event === 'SIGNED_OUT' ||
+          event === 'USER_UPDATED' ||
+          event === 'PASSWORD_RECOVERY';
+
+        void syncSession(nextSession, { showLoader: shouldShowLoader });
+      });
     });
 
     return () => {
@@ -170,10 +185,18 @@ export function AdminAuthProvider({ children }) {
       throw new Error('Supabase is not configured.');
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       throw error;
     }
+
+    if (data.session?.user) {
+      setSession(data.session);
+      await refreshAdminAccess(data.session.user.id);
+      setIsLoading(false);
+    }
+
+    return data;
   };
 
   const signOut = async () => {

@@ -184,13 +184,13 @@ export default function AdminNewJobPage() {
           </p>
         </section>
         <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
-          Need to review or update older posts? Open the existing jobs page.
+          Need to review or update older posts? Open the admin jobs page.
           <button
             type="button"
-            onClick={() => navigate('/admin/jobs')}
+            onClick={() => navigate('/admin/admin-jobs')}
             className="ml-2 font-semibold text-cyan-700 transition hover:text-cyan-600"
           >
-            Go to existing jobs
+            Go to admin jobs
           </button>
         </div>
       </div>

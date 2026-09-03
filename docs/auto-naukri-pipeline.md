@@ -43,6 +43,9 @@ A job is published only when **all** of these are true:
 - **Slug** and **apply link** are not already in `public.jobs`
 - SEO step succeeded
 - Title, company, category, and job type are present after SEO
+- **Real employer name** — not `Employer name shared during interview` or other placeholders
+- **Specific role title** — not aggregate SEO titles like `… Jobs in Vizag, Visakhapatnam` or keyword-stuffed listings
+- **Real location** — not comma-separated hashtag blobs (e.g. `ArtificialIntelligence, DataCenters, …`)
 
 Jobs **without** an apply link are skipped (logged, not inserted).
 
@@ -133,15 +136,16 @@ The report persists in browser storage until **Clear report**.
 
 Writes `naukri-automation-report-YYYY-MM-DD-HH-mm-ss.json` in the working directory.
 
-### Why 23 fetched but only 5 published?
+### Why ~70 Apify items but only ~5 published?
 
-This is normal on a site that already has jobs:
+Common and usually expected — check the automation report / GitHub Actions log for exact reasons:
 
-- **Fetched (23)** = everything Apify returned today
-- **Skipped before SEO (~18)** = already in your database or no apply link
-- **Queued (~5)** = truly new jobs → SEO → publish
+1. **Apify raw scrape pool is larger than mapped jobs** — experience-sort asks Apify for ~3× candidates (e.g. ~75) then keeps ~12–25 Vizag-filtered fresher-first results.
+2. **Skipped before SEO** — apply link / slug already in `jobs`, missing apply link, or quality gate (placeholder company / keyword title).
+3. **Skipped after SEO** — Make SEO rewrote title/company into keyword-hub phrasing; quality gates then block publish (pipeline now restores the scraped title/company when the rewrite is bad).
+4. **SEO / publish failures** — Gemini timeouts, 429s, or DB insert errors.
 
-Check the report table for the exact reason on each row.
+There is **no hard daily publish cap of 5**. Low publish counts mean filters + dedupe, not a quota.
 
 ## Email summary
 

@@ -15,12 +15,24 @@ import {
   looksLikeStructuredJobDescription,
   stripMarkdownForPlainText,
 } from '../lib/jobDescriptionDisplay';
-import { buildJobPostingSchema } from '../lib/jobPostingSchema';
+import { buildJobPostingSchema, isJobExpired } from '../lib/jobPostingSchema';
 import { buildBreadcrumbSchema } from '../lib/breadcrumbSchema';
 import { SITE_URL } from '../lib/site';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 import AdminJobActionsBar from '../components/admin/AdminJobActionsBar';
+import StudentApplyButton from '../components/student/StudentApplyButton';
+import {
+  buildInternalApplyPath,
+  consumePendingApplyJobId,
+  consumePendingApplyUrl,
+  openExternalApplyLink,
+  shouldAutoApplyAfterAuth,
+} from '../lib/studentApplyRedirect';
+import { consumeStudentAuthSuccess } from '../lib/studentAuthSuccess';
+import { isInternalApplyJob } from '../lib/jobApplyMode';
+import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
@@ -35,6 +47,7 @@ import {
   displaySalary,
   displayWorkMode,
 } from '../lib/jobDisplayLabels';
+import { jobSupportsApply } from '../lib/jobApplyMode';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 
 const splitCommaValues = (value) =>
@@ -49,13 +62,20 @@ export default function JobDetailsPage() {
   const [searchParams] = useSearchParams();
   const { isAdmin, user: adminUser } = useAdminAuth();
   const { isEmployer, user: employerUser } = useEmployerAuth();
+  const { isStudent, session: studentSession, profileComplete } = useStudentAuth();
   const user = adminUser || employerUser;
   const [job, setJob] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [existingApplication, setExistingApplication] = useState(null);
+  const [authWelcome] = useState(() => consumeStudentAuthSuccess());
 
   const routeJobIdentifier = jobSlug || jobId || '';
   const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
+  const jobDetailPath = useMemo(
+    () => (job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`),
+    [currentPath, job, routeJobIdentifier],
+  );
 
   /**
    * Fetch only the single row we're rendering. Bandwidth per detail-page
@@ -131,6 +151,54 @@ export default function JobDetailsPage() {
     navigate(canonicalPath, { replace: true });
   }, [currentPath, job, navigate]);
 
+  useEffect(() => {
+    if (!job?.id || !isInternalApplyJob(job) || !studentSession || !isStudent) {
+      setExistingApplication(null);
+      return;
+    }
+
+    let ignore = false;
+
+    fetchMyApplicationForJob(job.id)
+      .then((application) => {
+        if (!ignore) {
+          setExistingApplication(application);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setExistingApplication(null);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isStudent, job, studentSession]);
+
+  useEffect(() => {
+    if (!job || !studentSession || !isStudent || !profileComplete) {
+      return;
+    }
+
+    if (!shouldAutoApplyAfterAuth(searchParams)) {
+      return;
+    }
+
+    if (isInternalApplyJob(job)) {
+      const pendingJobId = consumePendingApplyJobId();
+      navigate(buildInternalApplyPath(pendingJobId || job.id, jobDetailPath), { replace: true });
+      return;
+    }
+
+    if (!job.applyLink) {
+      return;
+    }
+
+    const pendingApply = consumePendingApplyUrl();
+    openExternalApplyLink(pendingApply || job.applyLink, { jobTitle: job.title });
+  }, [isStudent, job, jobDetailPath, navigate, profileComplete, searchParams, studentSession]);
+
   const skills = splitCommaValues(job?.skills);
   const responsibilities = splitCommaValues(job?.responsibilities);
   const eligibility = splitCommaValues(job?.eligibility);
@@ -163,12 +231,15 @@ export default function JobDetailsPage() {
     [job],
   );
 
+  const jobExpired = Boolean(job && isJobExpired(job));
+
   const structuredData = useMemo(() => {
     if (!job) {
       return undefined;
     }
 
-    const jobPosting = buildJobPostingSchema(job, { siteUrl: SITE_URL });
+    // Match edge middleware: omit JobPosting when expired; keep breadcrumb.
+    const jobPosting = jobExpired ? null : buildJobPostingSchema(job, { siteUrl: SITE_URL });
     const breadcrumb = buildBreadcrumbSchema(job, { siteUrl: SITE_URL });
     const graph = [jobPosting, breadcrumb].filter(Boolean);
 
@@ -184,7 +255,7 @@ export default function JobDetailsPage() {
       '@context': 'https://schema.org',
       '@graph': graph,
     };
-  }, [job]);
+  }, [job, jobExpired]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/20 to-white">
@@ -193,12 +264,20 @@ export default function JobDetailsPage() {
         description={jobDescription}
         canonical={job ? getJobDetailPath(job) : currentPath || `/job/${routeJobIdentifier}`}
         structuredData={structuredData}
+        noindex={!job || jobExpired}
       />
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+      <main className="mx-auto w-full max-w-5xl px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">
+        <Link to="/" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-600 hover:text-blue-700">
           ← Back to jobs
         </Link>
+
+        {authWelcome ? (
+          <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {authWelcome.type === 'register' ? 'Welcome! Your account is ready.' : "You're signed in."}{' '}
+            {authWelcome.apply ? 'Tap Apply to continue with this job.' : 'You can now view full job details and apply.'}
+          </p>
+        ) : null}
 
         {isAdmin && job ? (
           <AdminJobActionsBar
@@ -234,30 +313,35 @@ export default function JobDetailsPage() {
         ) : null}
 
         {job ? (
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:mt-6 sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">{job.title}</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl font-extrabold leading-snug text-slate-900 sm:text-3xl">{job.title}</h1>
                 <p className="mt-1 text-sm text-slate-600 sm:text-base">
                   {displayCompanyName(job.company)} · {displayLocation(job.location)}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {job.applyLink ? (
-                  <a
-                    href={job.applyLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    Apply Now
-                  </a>
+              <div className="hidden flex-wrap items-center gap-2 sm:flex">
+                {jobSupportsApply(job) ? (
+                  <StudentApplyButton
+                    applyLink={job.applyLink}
+                    applyMode={job.applyMode}
+                    jobId={job.id}
+                    jobPath={jobDetailPath}
+                    jobTitle={job.title}
+                    jobCompany={displayCompanyName(job.company)}
+                    alreadyApplied={Boolean(existingApplication)}
+                  />
                 ) : null}
                 <JobShareButtons job={job} />
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 sm:grid-cols-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2 sm:hidden">
+              <JobShareButtons job={job} />
+            </div>
+
+            <div className="mt-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm text-slate-700 sm:grid-cols-2 sm:p-4">
               <p><span className="font-semibold text-slate-900">Category:</span> {displayJobCategory(job.category)}</p>
               <p><span className="font-semibold text-slate-900">Job Type:</span> {displayJobType(job.jobType)}</p>
               {workModeLabel ? (
@@ -358,6 +442,22 @@ export default function JobDetailsPage() {
 
         {job ? <SimilarJobs job={job} /> : null}
       </main>
+
+      {job && jobSupportsApply(job) ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-8px_30px_rgba(15,23,42,0.12)] backdrop-blur sm:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <StudentApplyButton
+            applyLink={job.applyLink}
+            applyMode={job.applyMode}
+            jobId={job.id}
+            jobPath={jobDetailPath}
+            jobTitle={job.title}
+            jobCompany={displayCompanyName(job.company)}
+            alreadyApplied={Boolean(existingApplication)}
+            className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-blue-700"
+          />
+        </div>
+      ) : null}
+
       <Footer />
     </div>
   );

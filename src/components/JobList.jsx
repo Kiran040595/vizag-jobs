@@ -13,9 +13,24 @@ import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
  * across all pages — used for the "showing N of M" hint and for deciding
  * whether to render the "Reset filters" CTA in the empty state.
  */
-const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
+const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) => {
   const jobsToShow = Array.isArray(jobs) ? jobs : [];
   const totalCount = typeof total === 'number' ? total : jobsToShow.length;
+
+  if (jobsToShow.length === 0 && isLoading) {
+    return (
+      <section
+        ref={headerRef}
+        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+        aria-busy="true"
+      >
+        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Loading recent jobs…</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Fetching the latest openings in Visakhapatnam.
+        </p>
+      </section>
+    );
+  }
 
   if (jobsToShow.length === 0) {
     return (
@@ -45,10 +60,10 @@ const JobList = ({ jobs, total, onResetFilters, headerRef }) => {
       ref={headerRef}
       className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
     >
-      <div className="mb-4 flex items-center justify-between gap-4 sm:mb-5">
-        <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Recent Job Openings</h2>
-        <p className="hidden text-xs font-semibold text-slate-500 sm:block">
-          Showing {jobsToShow.length} of {totalCount}
+      <div className="mb-3 flex items-end justify-between gap-3 sm:mb-5">
+        <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Recent Job Openings</h2>
+        <p className="shrink-0 text-xs font-semibold text-slate-500">
+          {jobsToShow.length} of {totalCount}
         </p>
       </div>
 

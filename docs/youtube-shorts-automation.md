@@ -148,3 +148,4 @@ Manual run: **Actions → Auto daily job pipelines → Run workflow**.
 - Refresh tokens can expire if revoked or if Google security policies change — re-run `npm run youtube:oauth-setup` if uploads fail with auth errors.
 - Shorts work best under **60 seconds**; default settings keep videos around **28 seconds**.
 - This posts to **your YouTube channel**, not Instagram. Instagram automation would be a separate pipeline.
+- To auto-upload videos you drop into Google Drive (with Gemini SEO titles/tags), see [drive-youtube-shorts.md](./drive-youtube-shorts.md).

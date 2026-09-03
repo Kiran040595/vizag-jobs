@@ -12,16 +12,13 @@ const emailSubscribeHref = `mailto:${SITE_CONTACT_EMAIL}?subject=${encodeURIComp
 export default function CTASection() {
   const { isEmployer, session } = useEmployerAuth();
 
-  const employerHref = !session
+  const postJobHref = !session
     ? '/employer/register'
     : isEmployer
       ? '/employer/jobs/new'
       : '/employer/login';
-  const employerLabel = !session
-    ? 'Post a Job'
-    : isEmployer
-      ? 'Post a Job'
-      : 'Employer sign in';
+  const employerLoginHref = session && isEmployer ? '/employer/jobs' : '/employer/login';
+  const employerLoginLabel = session && isEmployer ? 'Employer dashboard' : 'Sign in';
 
   return (
     <section>
@@ -29,14 +26,23 @@ export default function CTASection() {
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Are you an Employer?</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Post your job and reach skilled candidates in Visakhapatnam.
+            Post your job and reach skilled candidates in Visakhapatnam. Already registered? Sign in to
+            manage your listings and applications.
           </p>
-          <Link
-            to={employerHref}
-            className="mt-5 inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-          >
-            {employerLabel}
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            <Link
+              to={employerLoginHref}
+              className="inline-flex rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+            >
+              {employerLoginLabel}
+            </Link>
+            <Link
+              to={postJobHref}
+              className="inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+            >
+              Post a Job
+            </Link>
+          </div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -44,16 +50,16 @@ export default function CTASection() {
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Get the latest job updates by email or browse new openings anytime.
           </p>
-          <div className="mt-5 flex flex-nowrap items-center gap-3 overflow-x-auto">
+          <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <a
               href={emailSubscribeHref}
-              className="inline-flex whitespace-nowrap rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:w-auto sm:py-2.5"
             >
               Subscribe by Email
             </a>
             <Link
               to="/jobs"
-              className="inline-flex whitespace-nowrap rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 sm:w-auto sm:py-2.5"
             >
               Browse Latest Jobs
             </Link>
@@ -61,7 +67,7 @@ export default function CTASection() {
               href="https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 sm:w-auto sm:py-2.5"
             >
               <svg
                 aria-hidden="true"

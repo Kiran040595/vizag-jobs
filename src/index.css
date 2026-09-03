@@ -6,12 +6,76 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #0f172a;
+  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* iOS Safari zooms focused inputs under 16px — keep form controls readable. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='search'],
+  input[type='tel'],
+  input[type='url'],
+  input[type='number'],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Horizontally scrollable chip / pill rows (filters, categories). */
+.mobile-chip-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.15rem;
+  margin-inline: -0.15rem;
+  padding-inline: 0.15rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mobile-chip-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-chip-scroll > * {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+/* Reserve space for fixed bottom UI (feedback + cookie + safe area). */
+.pb-mobile-chrome {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 640px) {
+  .pb-mobile-chrome {
+    padding-bottom: 0;
+  }
 }

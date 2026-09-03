@@ -7,7 +7,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 import ExternalSourceAutomationActions from '../components/admin/ExternalSourceAutomationActions';
 import NaukriAutomationReportPanel from '../components/admin/NaukriAutomationReportPanel';
 import ExternalJobReviewPanel, { getExternalJobKey } from '../components/admin/ExternalJobReviewPanel';
-import { createAdminJob, deserializeJobForForm, fetchAdminJobs } from '../services/adminJobs';
+import { createAdminJob, deserializeJobForForm, fetchAdminPlatformJobs } from '../services/adminJobs';
 import {
   collectNaukriApifyFetch,
   fetchExternalJobsBySource,
@@ -127,6 +127,8 @@ export default function AdminExternalFetchPage() {
     if (Date.now() > pending.readyAt + 30 * 60_000) return null;
     return pending;
   });
+  /** Comma-separated Apify run IDs — collect without starting a new paid scrape. */
+  const [naukriExistingRunIds, setNaukriExistingRunIds] = useState('');
   const [naukriCountdownSec, setNaukriCountdownSec] = useState(() => {
     const readyAt = initialSnapshot?.naukriPending?.readyAt;
     if (!readyAt) return 0;
@@ -144,7 +146,7 @@ export default function AdminExternalFetchPage() {
     let ignore = false;
     (async () => {
       try {
-        const data = await fetchAdminJobs();
+        const data = await fetchAdminPlatformJobs();
         if (!ignore) {
           setExistingJobs(data);
         }
@@ -266,7 +268,7 @@ export default function AdminExternalFetchPage() {
     setBatchFetchedAt(Date.now());
   };
 
-  const collectNaukriResults = async (runId) => {
+  const collectNaukriResults = async (runId, options = {}) => {
     if (!runId || !session?.access_token) return;
     setNaukriCollecting(true);
     setFetchError('');
@@ -279,15 +281,65 @@ export default function AdminExternalFetchPage() {
           await sleepMs(waitMs);
           continue;
         }
-        applyFetchPayload(data);
+
+        const remaining = Array.isArray(options.remainingBatches)
+          ? options.remainingBatches
+          : [];
+        const batchLabel = options.batchLabel || 'batch';
+        const priorJobs = Array.isArray(options.accumulatedJobs) ? options.accumulatedJobs : [];
+        const runIds = Array.isArray(options.runIds) ? options.runIds : [runId];
+        const newJobs = Array.isArray(data.jobs) ? data.jobs : [];
+        const mergedJobs = [...priorJobs, ...newJobs];
+
+        if (remaining.length > 0) {
+          const nextBatch = remaining[0];
+          setNotice(
+            `${batchLabel} finished (${newJobs.length} jobs). Starting next scrape: ${nextBatch}…`,
+          );
+          const started = await startNaukriApifyFetch(session.access_token, { batch: nextBatch });
+          if (!started.apify_naukri_run_id) {
+            throw new Error(`Failed to start next Naukri batch (${nextBatch}).`);
+          }
+          const waitMs = Number(started.collect_after_ms) || NAUKRI_ASYNC_COLLECT_WAIT_MS;
+          naukriAutoCollectStarted.current = false;
+          setNaukriPending({
+            runId: started.apify_naukri_run_id,
+            readyAt: Date.now() + waitMs,
+            startedAt: Date.now(),
+            batchLabel: nextBatch,
+            remainingBatches: remaining.slice(1),
+            accumulatedJobs: mergedJobs,
+            runIds: [...runIds, started.apify_naukri_run_id],
+          });
+          setNaukriCountdownSec(Math.ceil(waitMs / 1000));
+          setNotice(
+            `Started ${nextBatch} scrape after ${batchLabel} completed. Waiting ~${Math.round(waitMs / 60_000)} min…`,
+          );
+          return;
+        }
+
+        const seen = new Set();
+        const jobs = [];
+        for (const job of mergedJobs) {
+          const key = String(job?.apply_link || job?.source_url || job?.slug || '')
+            .trim()
+            .toLowerCase();
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          jobs.push(job);
+        }
+
+        applyFetchPayload({
+          ...data,
+          jobs,
+          apify_naukri_run_id: runIds.join(','),
+          apify_naukri_run_ids: runIds,
+          message: `Loaded ${jobs.length} Vizag Naukri job(s) from ${runIds.length} sequential scrape(s).`,
+        });
         setNaukriPending(null);
         setNaukriCountdownSec(0);
         setActiveSource('naukri');
-        setNotice(
-          typeof data.message === 'string'
-            ? data.message
-            : `Loaded ${data.jobs?.length ?? 0} Naukri job(s).`,
-        );
+        setNotice(`Loaded ${jobs.length} Naukri job(s) from ${runIds.length} sequential scrape(s).`);
         return;
       }
       setFetchError('Apify run did not finish in time. Check the Apify console and try Load results again.');
@@ -314,7 +366,12 @@ export default function AdminExternalFetchPage() {
     if (naukriCountdownSec > 0) return;
     if (naukriCollecting || naukriAutoCollectStarted.current) return;
     naukriAutoCollectStarted.current = true;
-    collectNaukriResults(naukriPending.runId);
+    collectNaukriResults(naukriPending.runId, {
+      batchLabel: naukriPending.batchLabel,
+      remainingBatches: naukriPending.remainingBatches,
+      accumulatedJobs: naukriPending.accumulatedJobs,
+      runIds: naukriPending.runIds,
+    });
   }, [naukriPending, naukriCountdownSec, naukriCollecting]);
 
   const handleCancelAutomation = () => {
@@ -475,17 +532,27 @@ export default function AdminExternalFetchPage() {
       const data = await startNaukriApifyFetch(session?.access_token);
       const waitMs = Number(data.collect_after_ms) || NAUKRI_ASYNC_COLLECT_WAIT_MS;
       const readyAt = Date.now() + waitMs;
+      const batchLabel = data.naukri_batch || 'fresher';
+      const remaining = Array.isArray(data.naukri_remaining_batches)
+        ? data.naukri_remaining_batches
+        : [];
       setNaukriPending({
         runId: data.apify_naukri_run_id,
         readyAt,
         startedAt: Date.now(),
+        batchLabel,
+        remainingBatches: remaining,
+        accumulatedJobs: [],
+        runIds: data.apify_naukri_run_id ? [data.apify_naukri_run_id] : [],
       });
       setNaukriCountdownSec(Math.ceil(waitMs / 1000));
       setFetchPayload(null);
       setReviewJobs([]);
       setNotice(
-        data.message ||
-          `Apify scrape started. Results in about ${Math.round(waitMs / 60_000)} minutes.`,
+        remaining.length > 0
+          ? `Started ${batchLabel} scrape. Next (${remaining.join(', ')}) starts only after this finishes.`
+          : data.message ||
+              `Apify scrape started. Results in about ${Math.round(waitMs / 60_000)} minutes.`,
       );
     } catch (error) {
       setNaukriPending(null);
@@ -857,7 +924,14 @@ export default function AdminExternalFetchPage() {
             <button
               type="button"
               disabled={naukriCollecting || !session?.access_token}
-              onClick={() => collectNaukriResults(naukriPending.runId)}
+              onClick={() =>
+                collectNaukriResults(naukriPending.runId, {
+                  batchLabel: naukriPending.batchLabel,
+                  remainingBatches: naukriPending.remainingBatches,
+                  accumulatedJobs: naukriPending.accumulatedJobs,
+                  runIds: naukriPending.runIds,
+                })
+              }
               className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 disabled:opacity-50"
             >
               {naukriCollecting ? 'Loading…' : 'Load results now'}
@@ -963,6 +1037,50 @@ export default function AdminExternalFetchPage() {
                       </>
                     ) : null}
                   </>
+                ) : null}
+
+                {isNaukri ? (
+                  <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/70 p-3">
+                    <label
+                      className="block text-xs font-semibold text-slate-700"
+                      htmlFor="naukri-existing-run-ids"
+                    >
+                      Or reuse existing Apify run IDs (no new scrape / no extra cost)
+                    </label>
+                    <input
+                      id="naukri-existing-run-ids"
+                      type="text"
+                      value={naukriExistingRunIds}
+                      disabled={fetchDisabled}
+                      onChange={(e) => setNaukriExistingRunIds(e.target.value)}
+                      placeholder="e.g. IgDek8vwz4ODma0Ll,PFM5VhEQvS5SXn9Ch"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Paste one or more run IDs from Apify Console (comma-separated). Loads dataset only.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={
+                        fetchDisabled ||
+                        !naukriExistingRunIds.trim() ||
+                        naukriCollecting
+                      }
+                      onClick={() => {
+                        const ids = naukriExistingRunIds
+                          .split(/[,|\s]+/)
+                          .map((id) => id.trim())
+                          .filter(Boolean)
+                          .join(',');
+                        if (!ids) return;
+                        setNotice('Loading jobs from existing Apify run(s) — no new scrape.');
+                        collectNaukriResults(ids);
+                      }}
+                      className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {naukriCollecting ? 'Loading…' : 'Load from existing runs (free) →'}
+                    </button>
+                  </div>
                 ) : null}
 
                 <ExternalSourceAutomationActions

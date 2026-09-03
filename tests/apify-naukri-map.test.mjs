@@ -66,21 +66,33 @@ function naukriJobRecordFromFlat(flat, scrapedAt, fallbackSearchUrl) {
   const title = firstString(flat, ['title', 'jobTitle']) ?? null;
   if (!isUsableNaukriTitle(title)) return null;
   const company = firstString(flat, ['companyName', 'company']) ?? 'Unknown';
-  const applyUrl = normalizeNaukriJobUrl(firstString(flat, ['jdURL', 'jobUrl']));
+  const location =
+    firstString(flat, ['location', 'searchLocation']) ?? undefined;
+  let applyUrl = normalizeNaukriJobUrl(firstString(flat, ['link', 'jdURL', 'jobUrl']));
+  const jobId =
+    typeof flat.jobId === 'string' && /^\d{6,}$/.test(flat.jobId.trim())
+      ? flat.jobId.trim()
+      : null;
+  if ((!applyUrl || /jobs-careers/i.test(applyUrl)) && jobId) {
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+    applyUrl = `https://www.naukri.com/job-listings-${slug}-visakhapatnam-${jobId}`;
+  }
   const description = firstString(flat, ['jobDescription', 'description']) ?? '';
-  const posted_at = parseApifyDate(flat.createdDate ?? flat.postedDate, scrapedAt);
+  const posted_at = parseApifyDate(flat.createdDate ?? flat.postedDate ?? flat.postedAt, scrapedAt);
   const sourceUrl = applyUrl ?? fallbackSearchUrl;
   return {
     title,
     company,
-    location: firstString(flat, ['location']) ?? undefined,
+    location,
     apply_url: applyUrl ?? sourceUrl,
     source_url: sourceUrl,
     source_name: 'naukri.com',
     posted_at,
     description_markdown: description,
     source_kind: 'naukri',
-    skills: parseSkillsBlob(firstString(flat, ['tagsAndSkills'])),
+    skills: Array.isArray(flat.skills)
+      ? flat.skills
+      : parseSkillsBlob(firstString(flat, ['tagsAndSkills'])),
     salary: firstString(flat, ['salary']),
   };
 }
@@ -96,11 +108,18 @@ function apifyItemsToNaukriJobs(items, scrapedAt, fallbackSearchUrl) {
 }
 
 const sourceText = fs.readFileSync(SRC, 'utf8');
-assert.match(sourceText, /api-empire~naukri-job-scraper/);
+assert.match(sourceText, /dineshwadhwani~naukri-job-scrapper/);
 assert.match(sourceText, /APIFY_API_TOKEN_NAUKRI/);
-assert.match(sourceText, /keyword:\s*'vizag'/);
-assert.match(sourceText, /postedBy:\s*\[\s*'1'\s*\]/);
+assert.match(sourceText, /DEFAULT_NAUKRI_FRESHER_INPUT/);
+assert.match(sourceText, /DEFAULT_NAUKRI_ROLES_INPUT/);
+assert.match(sourceText, /Fresher/);
+assert.match(sourceText, /Trainee/);
+assert.match(sourceText, /Intern/);
+assert.match(sourceText, /listNaukriActorInputs/);
+assert.match(sourceText, /locations:\s*\[\s*'Visakhapatnam'\s*\]/);
 assert.match(sourceText, /isNaukriVizagJob/);
+assert.match(sourceText, /prioritizeNaukriJobsByExperience/);
+assert.match(sourceText, /naukriApifyScrapePoolSize/);
 
 const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
 const scrapedAt = '2026-06-17T12:00:00.000Z';
@@ -115,6 +134,40 @@ assert.equal(jobs[0].source_kind, 'naukri');
 assert.equal(jobs[0].posted_at, '2026-06-17T08:14:11.000Z');
 assert.ok(jobs[0].apply_url.includes('job-listings-software-engineer'));
 assert.deepEqual(jobs[0].skills, ['Java', 'Spring Boot', 'Microservices']);
+
+const dineshItem = {
+  jobId: '4426507200',
+  title: 'Account Executive',
+  company: 'Acme Corp',
+  location: 'Visakhapatnam',
+  experience: '0-2 Yrs',
+  salary: '3-5 Lakhs',
+  skills: ['Sales', 'Communication'],
+  postedAt: '2026-07-28',
+  link: 'https://www.naukri.com/job-listings-account-executive-acme-visakhapatnam-4426507200',
+};
+const dineshJobs = apifyItemsToNaukriJobs([dineshItem], scrapedAt, hub);
+assert.equal(dineshJobs.length, 1);
+assert.ok(dineshJobs[0].apply_url.includes('job-listings-account-executive'));
+assert.deepEqual(dineshJobs[0].skills, ['Sales', 'Communication']);
+
+const dineshEmptyLocation = {
+  jobId: '280726017956',
+  title: 'Walk-in || Java Full Stack Developer',
+  company: 'Tata Consultancy Services',
+  location: '',
+  experience: '6-11 Yrs',
+  skills: ['Java', 'Spring Boot'],
+  postedAt: 1785228916473,
+  link: 'https://www.naukri.com/tata-consultancy-services-jobs-careers-13542',
+  searchLocation: 'Visakhapatnam',
+};
+const dineshEmptyJobs = apifyItemsToNaukriJobs([dineshEmptyLocation], scrapedAt, hub);
+assert.equal(dineshEmptyJobs.length, 1, 'empty location + searchLocation should map');
+assert.equal(dineshEmptyJobs[0].location, 'Visakhapatnam');
+assert.ok(dineshEmptyJobs[0].apply_url.includes('job-listings-'));
+assert.ok(dineshEmptyJobs[0].apply_url.includes('280726017956'));
+assert.ok(!dineshEmptyJobs[0].apply_url.includes('jobs-careers'));
 
 assert.equal(isNaukriVizagJob(jobs[0]), true);
 assert.equal(

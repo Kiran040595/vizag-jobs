@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CATEGORY_OPTIONS } from '../lib/jobFilters';
-import vsp2Image from '../assets/VSP2.jpg';import vsp1Image from '../assets/VSP1.jpg';
+import vsp2Image from '../assets/VSP2.jpg';
+import vsp1Image from '../assets/VSP1.jpg';
 
 export default function HeroSection({
   searchTerm,
@@ -76,25 +77,27 @@ export default function HeroSection({
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/75 via-blue-950/65 to-blue-900/60" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.35),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.3),_transparent_35%)]" />
-      <div className="relative mx-auto flex min-h-[22rem] w-full max-w-6xl flex-col items-center justify-center px-4 py-12 text-center sm:min-h-[26rem] sm:px-6 sm:py-16 lg:px-8">
-        <h1 className="max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
+      <div className="relative mx-auto flex min-h-[18rem] w-full max-w-6xl flex-col items-center justify-center px-3 py-8 text-center sm:min-h-[26rem] sm:px-6 sm:py-16 lg:px-8">
+        <h1 className="max-w-3xl text-[1.65rem] font-extrabold leading-tight sm:text-4xl lg:text-5xl">
           Find the Right Job in Visakhapatnam
         </h1>
-        <p className="mt-3 max-w-2xl text-sm text-blue-100 sm:mt-4 sm:text-base">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-blue-100 sm:mt-4 sm:text-base">
           Your one-stop platform for IT, engineering, fresher and experienced jobs in Vizag
         </p>
         <form
           onSubmit={handleSubmit}
-          className="mt-7 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/90 p-3 shadow-2xl backdrop-blur md:mt-8 md:p-4"
+          className="mt-5 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/95 p-2.5 shadow-2xl backdrop-blur sm:mt-8 sm:p-4"
         >
-          <div className="grid gap-2.5 md:grid-cols-[1.7fr_1.2fr_1.2fr_auto] md:gap-3">
+          <div className="grid gap-2 md:grid-cols-[1.7fr_1.2fr_1.2fr_auto] md:gap-3">
             <input
               id="job-title"
-              type="text"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
               value={searchTerm}
               onChange={(event) => onSearch(event.target.value)}
               placeholder="Job title, keywords, or company"
-              className="h-11 rounded-xl border border-slate-200 px-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4"
+              className="h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4 md:text-sm"
             />
 
             <select
@@ -104,7 +107,7 @@ export default function HeroSection({
                 if (onCategoryChange) onCategoryChange(next);
                 else setLocalCategory(next);
               }}
-              className="h-11 rounded-xl border border-slate-200 px-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4"
+              className="h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4 md:text-sm"
               aria-label="Select category"
             >
               {CATEGORY_OPTIONS.map((opt) => (
@@ -118,16 +121,20 @@ export default function HeroSection({
               type="text"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              className="h-11 rounded-xl border border-slate-200 px-3.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4"
+              className="hidden h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:block md:h-12 md:px-4 md:text-sm"
+              aria-label="Location"
             />
 
             <button
               type="submit"
-              className="h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 md:h-12 md:px-6"
+              className="h-12 w-full rounded-xl bg-blue-600 px-5 text-base font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 md:h-12 md:w-auto md:px-6 md:text-sm"
             >
               Search Jobs
             </button>
           </div>
+          <p className="mt-2 text-left text-xs font-medium text-slate-500 md:hidden">
+            Searching jobs in Visakhapatnam
+          </p>
         </form>
       </div>
     </section>

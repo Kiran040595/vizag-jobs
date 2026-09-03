@@ -12,6 +12,7 @@ import {
   parseGeminiKeyIndexFromError,
   parseSeoRetryWaitMs,
 } from '../lib/seoRetry';
+import { SEO_PUBLISH_SAFE_INSTRUCTIONS } from '../lib/seoPublishSafeInstructions';
 
 export function getFetchExternalJobsUrl() {
   const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
@@ -259,14 +260,19 @@ export const NAUKRI_ASYNC_COLLECT_WAIT_MS = 3 * 60 * 1000;
 /**
  * Start Naukri Apify scrape without waiting for completion.
  * @param {string} accessToken
+ * @param {{ batch?: string }} [options] — dual mode: 'fresher' | 'roles'
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function startNaukriApifyFetch(accessToken) {
-  return callFetchExternalJobsEdge(accessToken, {
+export async function startNaukriApifyFetch(accessToken, options = {}) {
+  const body = {
     mode: 'fetch',
     fetch_channel: 'naukri',
     naukri_action: 'start',
-  });
+  };
+  if (options.batch) {
+    body.naukri_batch = options.batch;
+  }
+  return callFetchExternalJobsEdge(accessToken, body);
 }
 
 /**
@@ -330,7 +336,8 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
       ? resolveSeoSourceContext({ ...job, seo_source_context: seoSourceContext })
       : resolveSeoSourceContext(job);
   const customInstructions =
-    typeof job.seo_custom_instructions === 'string' ? job.seo_custom_instructions.trim().slice(0, 1200) : '';
+    (typeof job.seo_custom_instructions === 'string' && job.seo_custom_instructions.trim()) ||
+    SEO_PUBLISH_SAFE_INSTRUCTIONS;
   const timeoutMs = isLinkedInPost ? 120_000 : 130_000;
 
   let keyPool = options.geminiKeyPool;
@@ -359,7 +366,7 @@ export async function seoOptimizeExternalJob(accessToken, job, seoSourceContext 
       mode: 'seo',
       job: buildSeoJobPayload(job),
       seo_source_context: context,
-      seo_custom_instructions: customInstructions || undefined,
+      seo_custom_instructions: customInstructions.slice(0, 1200) || undefined,
       ...(geminiKeyIndex ? { gemini_key_index: geminiKeyIndex } : {}),
     };
 

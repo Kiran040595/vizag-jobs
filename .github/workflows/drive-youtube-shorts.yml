@@ -1,0 +1,57 @@
+name: Drive → YouTube Shorts
+
+on:
+  schedule:
+    # Every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      privacy:
+        description: YouTube visibility
+        type: choice
+        options:
+          - public
+          - unlisted
+          - private
+        default: public
+      max_files:
+        description: Max videos to upload this run
+        type: string
+        default: '3'
+      dry_run:
+        description: Download + SEO only (no upload / move)
+        type: boolean
+        default: false
+
+concurrency:
+  group: drive-youtube-shorts
+  cancel-in-progress: false
+
+jobs:
+  drive-youtube-shorts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Upload Drive videos as YouTube Shorts
+        run: npm run auto:drive-youtube-short
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_REFRESH_TOKEN: ${{ secrets.GOOGLE_DRIVE_REFRESH_TOKEN }}
+          GOOGLE_DRIVE_WATCH_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_WATCH_FOLDER_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          AUTO_DRIVE_YT_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == true && 'true' || 'false' }}
+          AUTO_DRIVE_YT_MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.max_files || '3' }}
+          AUTO_DRIVE_YT_PRIVACY: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.privacy || 'public' }}
+          SITE_URL: https://jobsinvizag.in

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
   deleteJobQuestion,
   fetchModeratorJobQuestions,
@@ -13,12 +15,23 @@ import {
 } from '../services/jobQuestions';
 
 function QuestionAskForm({ jobId, onSubmitted }) {
+  const { isStudent, session, profile } = useStudentAuth();
   const [askerName, setAskerName] = useState('');
   const [askerEmail, setAskerEmail] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!session || !isStudent) return;
+    if (!askerName && (profile?.full_name || profile?.fullName)) {
+      setAskerName(profile.full_name || profile.fullName || '');
+    }
+    if (!askerEmail && (session.user?.email || profile?.contact_email || profile?.contactEmail)) {
+      setAskerEmail(session.user?.email || profile?.contact_email || profile?.contactEmail || '');
+    }
+  }, [askerEmail, askerName, isStudent, profile, session]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -33,11 +46,21 @@ function QuestionAskForm({ jobId, onSubmitted }) {
 
     setIsSubmitting(true);
     try {
-      await submitJobQuestion({ jobId, askerName, askerEmail, body });
+      await submitJobQuestion({
+        jobId,
+        askerName,
+        askerEmail,
+        body,
+        askerUserId: session?.user?.id || null,
+      });
       setAskerName('');
       setAskerEmail('');
       setBody('');
-      setSuccess('Thanks! Your question was sent. It will appear here after review.');
+      setSuccess(
+        session && isStudent
+          ? 'Thanks! Your question was sent. When we reply, you will see it in the notification bell.'
+          : 'Thanks! Your question was sent. Sign in next time to get replies in your notification bell.',
+      );
       onSubmitted?.();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not submit your question.');
@@ -50,7 +73,17 @@ function QuestionAskForm({ jobId, onSubmitted }) {
     <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
       <h3 className="text-base font-bold text-slate-900">Have a doubt about this job?</h3>
       <p className="mt-1 text-sm text-slate-600">
-        Ask your question below. No login needed — enter your name or email so we can follow up if needed.
+        {session && isStudent
+          ? 'Ask below. When we reply, a notification will appear on the bell icon in the navbar.'
+          : (
+            <>
+              Ask below. For reply notifications on the bell icon,{' '}
+              <Link to="/student/login" className="font-semibold text-cyan-700 hover:text-cyan-800">
+                sign in
+              </Link>{' '}
+              first.
+            </>
+          )}
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -71,7 +104,7 @@ function QuestionAskForm({ jobId, onSubmitted }) {
             type="email"
             value={askerEmail}
             onChange={(event) => setAskerEmail(event.target.value)}
-            placeholder="Optional if name is provided"
+            placeholder="For reply notification (recommended)"
             className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>
@@ -102,9 +135,16 @@ function QuestionAskForm({ jobId, onSubmitted }) {
   );
 }
 
-function PublishedQuestionItem({ question }) {
+function PublishedQuestionItem({ question, highlighted = false }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4">
+    <article
+      id={`job-question-${question.id}`}
+      className={`rounded-2xl border p-4 ${
+        highlighted
+          ? 'border-cyan-300 bg-cyan-50/60 ring-2 ring-cyan-200'
+          : 'border-slate-200 bg-white'
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-slate-900">{formatQuestionAsker(question)}</p>
         <p className="text-xs text-slate-500">{formatQuestionTime(question.publishedAt || question.createdAt)}</p>
@@ -274,7 +314,7 @@ export default function JobQuestionsSection({
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [highlightQuestionId, moderatorQuestions.length]);
+  }, [highlightQuestionId, moderatorQuestions.length, publishedQuestions.length]);
 
   const pendingQuestions = useMemo(
     () => moderatorQuestions.filter((item) => item.status === 'pending'),
@@ -316,7 +356,11 @@ export default function JobQuestionsSection({
       {!isLoading && publishedQuestions.length > 0 ? (
         <div className="space-y-3">
           {publishedQuestions.map((question) => (
-            <PublishedQuestionItem key={question.id} question={question} />
+            <PublishedQuestionItem
+              key={question.id}
+              question={question}
+              highlighted={highlightQuestionId === question.id}
+            />
           ))}
         </div>
       ) : null}

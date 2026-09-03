@@ -1,15 +1,36 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+function adsenseHeadPlugin(clientId) {
+  return {
+    name: 'adsense-head-injection',
+    transformIndexHtml(html) {
+      const id = String(clientId || '').trim();
+      if (!/^ca-pub-\d+$/i.test(id) || html.includes('adsbygoogle.js')) {
+        return html;
+      }
+      const tag = `    <!-- Google AdSense -->\n    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${id}" crossorigin="anonymous"></script>`;
+      return html.replace('</head>', `${tag}\n  </head>`);
+    },
+  };
+}
+
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const adsenseClientId = env.VITE_ADSENSE_CLIENT_ID || process.env.VITE_ADSENSE_CLIENT_ID || '';
+
+  return {
+    plugins: [
+      adsenseHeadPlugin(adsenseClientId),
+      react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Register from app code so we can check for updates when the PWA is reopened.
+      injectRegister: false,
       includeAssets: [
         'favicon-16x16.png',
         'favicon-32x32.png',
@@ -18,6 +39,7 @@ export default defineConfig({
         'logo.png',
         'robots.txt',
         'sitemap.xml',
+        'ads.txt',
       ],
       manifest: {
         name: 'Jobs in Vizag',
@@ -73,19 +95,48 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}'],
         globIgnores: ['**/assets/**/*.{jpg,jpeg}'],
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallback: '/index.html',
+        // Resume share + API routes must hit the network, not the SPA shell.
+        navigateFallbackDenylist: [/^\/r\//, /^\/api\//],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.supabase\.co\/.*/i,
+            // Resume downloads: never cache; never fall back to the app shell.
+            urlPattern: ({ url }) => url.pathname.startsWith('/r/') || url.pathname.startsWith('/api/r/'),
+            handler: 'NetworkOnly',
+            method: 'GET',
+          },
+          {
+            // Prefer fresh HTML shell after deploys; fall back to cache offline.
+            urlPattern: ({ request, url }) =>
+              request.mode === 'navigate' &&
+              !url.pathname.startsWith('/r/') &&
+              !url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api-cache',
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 3,
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 3600
-              }
-            }
+                maxEntries: 32,
+                maxAgeSeconds: 24 * 60 * 60,
+              },
+            },
+          },
+          {
+            // Public job/API traffic must not go through Workbox. NetworkFirst
+            // without a timeout can hang after the SW installs (incognito/first
+            // visit has no SW and loads fine; later visits show the spinner longer).
+            // The app already caches lists in memory + sessionStorage.
+            urlPattern: /^https:\/\/(?:[a-z0-9-]+\.)?supabase\.co\/.*/i,
+            handler: 'NetworkOnly',
+            method: 'GET',
+          },
+          {
+            urlPattern: /^https:\/\/(?:[a-z0-9-]+\.)?supabase\.co\/.*/i,
+            handler: 'NetworkOnly',
+            method: 'POST',
           },
           {
             urlPattern: /.*\.(?:jpg|jpeg|png|gif)$/,
@@ -102,4 +153,5 @@ export default defineConfig({
       }
     })
   ],
-})
+  };
+});

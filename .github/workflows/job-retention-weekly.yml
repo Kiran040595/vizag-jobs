@@ -1,0 +1,31 @@
+name: Weekly job retention (archive and purge)
+
+on:
+  schedule:
+    # Sundays 2:30 AM IST = Saturday 21:00 UTC
+    - cron: '0 21 * * 0'
+  workflow_dispatch:
+
+jobs:
+  prune-stale-jobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Archive and purge stale jobs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/prune-stale-jobs.mjs

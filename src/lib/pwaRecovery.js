@@ -1,3 +1,20 @@
+import { registerSW } from 'virtual:pwa-register';
+
+const LEGACY_RUNTIME_CACHES = ['supabase-api-cache'];
+
+/** Drop obsolete Workbox runtime caches that used to intercept Supabase. */
+export const clearLegacyRuntimeCaches = async () => {
+  if (!('caches' in window)) {
+    return;
+  }
+
+  try {
+    await Promise.all(LEGACY_RUNTIME_CACHES.map((name) => caches.delete(name)));
+  } catch (error) {
+    console.warn('[PWA] Could not clear legacy runtime caches:', error);
+  }
+};
+
 /** Clear legacy service workers that can serve stale index.html after deploys. */
 export const unregisterLegacyServiceWorkers = async () => {
   if (!('serviceWorker' in navigator)) {
@@ -16,6 +33,45 @@ export const unregisterLegacyServiceWorkers = async () => {
     );
   } catch (error) {
     console.warn('[PWA] Could not unregister legacy service worker:', error);
+  }
+};
+
+/**
+ * Register the Vite PWA service worker and check for updates often.
+ * Mobile installed PWAs otherwise keep the old shell until a browser SW refresh
+ * window (can be many hours) because they rarely hard-reload.
+ */
+export const registerPwaAutoUpdate = () => {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  try {
+    void clearLegacyRuntimeCaches();
+
+    registerSW({
+      immediate: true,
+      onRegisteredSW(_swUrl, registration) {
+        if (!registration) return;
+
+        const checkForUpdate = () => {
+          registration.update().catch(() => {});
+        };
+
+        // Installed PWAs often resume from background without a full reload.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            checkForUpdate();
+          }
+        });
+        window.addEventListener('focus', checkForUpdate);
+
+        // Poll while the app stays open.
+        window.setInterval(checkForUpdate, 15 * 60 * 1000);
+      },
+    });
+  } catch (error) {
+    console.warn('[PWA] Could not register service worker updates:', error);
   }
 };
 

@@ -3,6 +3,24 @@ import { buildBreadcrumbSchema } from './src/lib/breadcrumbSchema.js';
 import { getJobDetailPath } from './src/lib/jobRoutes.js';
 import { buildBlogPostingSchema } from './src/lib/blogPostingSchema.js';
 import { buildListingHeadInjection, getListingMeta } from './src/lib/collectionPageSchema.js';
+import { buildLegalPageHeadInjection, getLegalPageMeta } from './src/lib/legalPageMeta.js';
+import {
+  buildHomePageSsrPayload,
+  fetchHomeBootstrapJobRows,
+} from './src/lib/homePageBootstrap.js';
+import { isPostedAtWithinPublicDisplayWindow } from './src/lib/jobDisplayWindow.js';
+import {
+  JOB_CATEGORY_LANDING_IDS,
+  JOB_CATEGORY_PAGES,
+} from './src/lib/jobCategoryPages.js';
+
+/** Single-segment `/jobs/:slug` routes that are category hubs, not job details. */
+const RESERVED_JOBS_LISTING_SLUGS = new Set([
+  'it',
+  'fresher',
+  'part-time',
+  ...JOB_CATEGORY_PAGES.map((page) => page.id),
+]);
 
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
 const SITE_NAME = 'Jobs in Vizag';
@@ -12,12 +30,18 @@ const UUID_PATTERN =
 
 export const config = {
   matcher: [
+    '/',
     '/jobs/:segment/:slug',
     '/jobs/:slug',
     '/job/:id',
     '/blog',
     '/blog/:slug',
     '/jobs',
+    '/about',
+    '/contact',
+    '/privacy-policy',
+    '/terms-of-service',
+    '/disclaimer',
   ],
 };
 
@@ -92,6 +116,9 @@ const fetchPublishedJobByIdentifier = async (identifier, env) => {
   }
 
   if (!job || job.status !== 'published') return null;
+  // Match public list/detail API: hide jobs outside the display window (avoids
+  // middleware SEO + client "Job not found" soft-404 mismatch).
+  if (!isPostedAtWithinPublicDisplayWindow(job.posted_at)) return null;
   return job;
 };
 
@@ -210,6 +237,7 @@ const stripExistingHead = (html) =>
     .replace(/<meta\s[^>]*name=["']description["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*name=["']keywords["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*name=["']application-name["'][^>]*>/gi, '')
+    .replace(/<meta\s[^>]*name=["']robots["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*name=["']twitter:[^"']+["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*property=["']og:site_name["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*property=["']og:title["'][^>]*>/gi, '')
@@ -217,43 +245,83 @@ const stripExistingHead = (html) =>
     .replace(/<meta\s[^>]*property=["']og:url["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*property=["']og:type["'][^>]*>/gi, '')
     .replace(/<meta\s[^>]*property=["']og:image[^"']*["'][^>]*>/gi, '')
-    .replace(/<link\s[^>]*rel=["']canonical["'][^>]*>/gi, '');
+    .replace(/<link\s[^>]*rel=["']canonical["'][^>]*>/gi, '')
+    .replace(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi, '');
 
-const injectIntoHtml = (html, injection) => {
-  const stripped = stripExistingHead(html);
-  if (stripped.includes('</head>')) {
-    return stripped.replace('</head>', `    ${injection}\n  </head>`);
+const injectIntoHtml = (html, injection, { bodyHtml = '', preRootHtml = '' } = {}) => {
+  let next = stripExistingHead(html);
+  if (next.includes('</head>')) {
+    next = next.replace('</head>', `    ${injection}\n  </head>`);
+  } else {
+    next = `${injection}\n${next}`;
   }
-  return `${injection}\n${stripped}`;
+  if (preRootHtml) {
+    next = next.replace('<div id="root"', `${preRootHtml}\n    <div id="root"`);
+  }
+  if (bodyHtml && next.includes('<div id="root"></div>')) {
+    next = next.replace('<div id="root"></div>', `<div id="root">${bodyHtml}</div>`);
+  }
+  return next;
 };
 
 const fetchIndexShell = (request) => fetch(new URL('/index.html', request.url));
 
-const serveWithInjection = async (request, injection) => {
+const serveWithInjection = async (
+  request,
+  injection,
+  { status = 200, cacheControl, bodyHtml = '', preRootHtml = '' } = {},
+) => {
   const shell = await fetchIndexShell(request);
   if (!shell.ok) return fetch(request);
   const html = await shell.text();
-  return new Response(injectIntoHtml(html, injection), {
-    status: 200,
+  return new Response(injectIntoHtml(html, injection, { bodyHtml, preRootHtml }), {
+    status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=86400',
+      'Cache-Control':
+        cacheControl ||
+        (status === 404
+          ? 'public, s-maxage=60, stale-while-revalidate=300'
+          : 'public, s-maxage=300, stale-while-revalidate=86400'),
     },
   });
 };
 
-const handleLegacyJobUrl = async (id, env, request) => {
+/** Hard 404 for missing jobs/posts — stops Google soft-404 (HTTP 200 + thin page). */
+const serveNotFound = async (request, env, { title, description, path }) => {
+  const canonicalUrl = `${env.siteUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  const injection = renderHead({
+    title,
+    description,
+    canonicalUrl,
+    noindex: true,
+    siteUrl: env.siteUrl,
+  });
+  return serveWithInjection(request, injection, { status: 404 });
+};
+
+const handleLegacyJobUrl = async (id, env, request, url) => {
   const job = await fetchPublishedJobByIdentifier(id, env);
   if (job) {
     const canonicalPath = getJobDetailPath(job);
     return Response.redirect(`${env.siteUrl}${canonicalPath}`, 301);
   }
-  return fetch(request);
+  return serveNotFound(request, env, {
+    title: 'Job not found | Vizag Jobs',
+    description: 'This job listing is unavailable or no longer active on Vizag Jobs.',
+    path: url.pathname,
+  });
 };
 
 const handleJobDetail = async (segment, slug, env, url, request) => {
   const job = await fetchPublishedJobByIdentifier(slug, env);
-  if (!job) return fetch(request);
+  if (!job) {
+    return serveNotFound(request, env, {
+      title: 'Job not found | Vizag Jobs',
+      description: 'This job listing is unavailable or no longer active on Vizag Jobs.',
+      path: url.pathname,
+    });
+  }
 
   const canonicalPath = getJobDetailPath(job);
   if (url.pathname !== canonicalPath && url.pathname !== `${canonicalPath}/`) {
@@ -268,9 +336,15 @@ const handleJobDetail = async (segment, slug, env, url, request) => {
   return serveWithInjection(request, injection);
 };
 
-const handleBlogPost = async (slug, env, request) => {
+const handleBlogPost = async (slug, env, request, url) => {
   const post = await fetchPublishedBlogPostBySlug(slug, env);
-  if (!post) return fetch(request);
+  if (!post) {
+    return serveNotFound(request, env, {
+      title: 'Post not found | Vizag Jobs Blog',
+      description: 'This blog post is unavailable or no longer published on Vizag Jobs.',
+      path: url.pathname,
+    });
+  }
 
   const injection = buildBlogPostHeadInjection(post, { siteUrl: env.siteUrl });
   return serveWithInjection(request, injection);
@@ -285,10 +359,82 @@ const handleListing = async (path, env, request) => {
   return serveWithInjection(request, injection);
 };
 
+const buildLegalPageHeadTags = (path, { siteUrl }) => {
+  const payload = buildLegalPageHeadInjection(path, { siteUrl });
+  if (!payload) return null;
+
+  const scripts = [];
+  if (payload.schema) scripts.push(jsonLdScript(payload.schema));
+
+  return {
+    head: renderHead({
+      title: payload.title,
+      description: payload.description,
+      canonicalUrl: payload.canonicalUrl,
+      keywords: payload.keywords,
+      scripts,
+      siteUrl,
+    }),
+    bodyHtml: payload.bodyHtml || '',
+  };
+};
+
+const handleLegalPage = async (path, env, request) => {
+  if (!getLegalPageMeta(path)) return fetch(request);
+
+  const built = buildLegalPageHeadTags(path, { siteUrl: env.siteUrl });
+  if (!built) return fetch(request);
+
+  return serveWithInjection(request, built.head, { bodyHtml: built.bodyHtml });
+};
+
+const handleHomePage = async (env, request) => {
+  const rows = await fetchHomeBootstrapJobRows({
+    supabaseUrl: env.supabaseUrl,
+    supabaseAnonKey: env.supabaseAnonKey,
+    jobsTable: env.jobsTable,
+  });
+  const payload = buildHomePageSsrPayload({ siteUrl: env.siteUrl, jobs: rows });
+  const scripts = [];
+  if (payload.schema) scripts.push(jsonLdScript(payload.schema));
+
+  const head = renderHead({
+    title: payload.title,
+    description: payload.description,
+    canonicalUrl: payload.canonicalUrl,
+    keywords: payload.keywords,
+    scripts,
+    siteUrl: env.siteUrl,
+  });
+
+  return serveWithInjection(request, head, {
+    bodyHtml: payload.bodyHtml,
+    preRootHtml: payload.preRootHtml,
+    // Short CDN cache so the job snapshot stays reasonably fresh.
+    cacheControl: 'public, s-maxage=120, stale-while-revalidate=600',
+  });
+};
+
 export default async function middleware(request) {
   const url = new URL(request.url);
   const env = getEnvConfig();
   const path = url.pathname.replace(/\/+$/, '') || '/';
+
+  if (path === '/') {
+    const category = (url.searchParams.get('category') || '').toLowerCase().trim();
+    // Send old filter URLs to dedicated category landing pages (fixes GSC alternates).
+    if (category && JOB_CATEGORY_LANDING_IDS.has(category)) {
+      const next = new URL(`${env.siteUrl}/jobs/${category}`);
+      return Response.redirect(next.toString(), 301);
+    }
+    if (!url.search) {
+      return handleHomePage(env, request);
+    }
+  }
+
+  if (getLegalPageMeta(path)) {
+    return handleLegalPage(path, env, request);
+  }
 
   if (getListingMeta(path)) {
     return handleListing(path, env, request);
@@ -296,12 +442,12 @@ export default async function middleware(request) {
 
   const blogPostMatch = url.pathname.match(/^\/blog\/([^/]+)\/?$/);
   if (blogPostMatch) {
-    return handleBlogPost(decodeURIComponent(blogPostMatch[1]), env, request);
+    return handleBlogPost(decodeURIComponent(blogPostMatch[1]), env, request, url);
   }
 
   const legacyMatch = url.pathname.match(/^\/job\/([^/]+)\/?$/);
   if (legacyMatch) {
-    return handleLegacyJobUrl(decodeURIComponent(legacyMatch[1]), env, request);
+    return handleLegacyJobUrl(decodeURIComponent(legacyMatch[1]), env, request, url);
   }
 
   const jobMatch = url.pathname.match(/^\/jobs\/([^/]+)\/([^/]+)\/?$/);
@@ -318,6 +464,10 @@ export default async function middleware(request) {
   const legacyJobsSlugMatch = url.pathname.match(/^\/jobs\/([^/]+)\/?$/);
   if (legacyJobsSlugMatch) {
     const slug = decodeURIComponent(legacyJobsSlugMatch[1]);
+    // Category hubs (/jobs/civil, /jobs/it, …) must keep passing through to the SPA.
+    if (RESERVED_JOBS_LISTING_SLUGS.has(slug)) {
+      return fetch(request);
+    }
     const job = await fetchPublishedJobByIdentifier(slug, env);
     if (job) {
       const canonicalPath = getJobDetailPath(job);
@@ -331,7 +481,11 @@ export default async function middleware(request) {
       });
       return serveWithInjection(request, injection);
     }
-    return fetch(request);
+    return serveNotFound(request, env, {
+      title: 'Job not found | Vizag Jobs',
+      description: 'This job listing is unavailable or no longer active on Vizag Jobs.',
+      path: url.pathname,
+    });
   }
 
   return fetch(request);

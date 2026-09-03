@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FEEDBACK_TYPE_OPTIONS,
   submitSiteFeedback,
   validateSiteFeedbackInput,
 } from '../services/siteFeedback';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 
 const MESSAGE_PROMPTS = {
   feature_request: 'What feature would help you find jobs faster?',
@@ -16,6 +18,8 @@ export default function SiteFeedbackForm({
   onSubmitted,
   capturePageUrl = true,
 }) {
+  const { isStudent, session, profile } = useStudentAuth();
+  const didPrefill = useRef(false);
   const [feedbackType, setFeedbackType] = useState('feature_request');
   const [authorName, setAuthorName] = useState('');
   const [authorEmail, setAuthorEmail] = useState('');
@@ -24,6 +28,19 @@ export default function SiteFeedbackForm({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isSignedInStudent = Boolean(session && isStudent);
+
+  useEffect(() => {
+    if (!isSignedInStudent || didPrefill.current) return;
+
+    const nextName = profile?.full_name || profile?.fullName || '';
+    const nextEmail = session.user?.email || profile?.contact_email || profile?.contactEmail || '';
+
+    if (nextName) setAuthorName(nextName);
+    if (nextEmail) setAuthorEmail(nextEmail);
+    didPrefill.current = true;
+  }, [isSignedInStudent, profile, session]);
 
   const messagePlaceholder = useMemo(
     () => MESSAGE_PROMPTS[feedbackType] || MESSAGE_PROMPTS.general,
@@ -56,12 +73,18 @@ export default function SiteFeedbackForm({
         body,
         pageUrl: capturePageUrl && typeof window !== 'undefined' ? window.location.pathname : '',
         honeypot,
+        authorUserId: isSignedInStudent ? session.user.id : null,
       });
       setAuthorName('');
       setAuthorEmail('');
       setBody('');
       setHoneypot('');
-      setSuccess('Thanks — we received your feedback.');
+      setSuccess(
+        isSignedInStudent
+          ? 'Thanks — we received your feedback. When we reply, you will see it on the notification bell.'
+          : 'Thanks — we received your feedback.',
+      );
+      didPrefill.current = false;
       onSubmitted?.();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not submit your feedback.');
@@ -79,7 +102,17 @@ export default function SiteFeedbackForm({
         <>
           <h2 className="text-lg font-bold text-slate-900">Send feedback</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Tell us what you need or what is not working. No login required.
+            {isSignedInStudent ? (
+              'Tell us what you need or what is not working. Replies appear on the notification bell.'
+            ) : (
+              <>
+                Tell us what you need or what is not working.{' '}
+                <Link to="/student/login" className="font-semibold text-cyan-700 hover:text-cyan-800">
+                  Sign in
+                </Link>{' '}
+                to get replies on the notification bell.
+              </>
+            )}
           </p>
         </>
       ) : (
@@ -132,7 +165,7 @@ export default function SiteFeedbackForm({
             type="email"
             value={authorEmail}
             onChange={(event) => setAuthorEmail(event.target.value)}
-            placeholder="Optional if name is provided"
+            placeholder="Optional"
             className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>

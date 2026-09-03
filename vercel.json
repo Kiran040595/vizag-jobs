@@ -1,11 +1,80 @@
 {
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
+    {
+      "source": "/workbox-:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/registerSW.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|favicon\\.|robots\\.txt|sitemap\\.xml|manifest\\.|sw\\.js|workbox-|registerSW\\.|.*\\.(?:js|css|map|png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf|eot|json|xml|txt|webmanifest|html)).*)",
+      "source": "/r/:token",
+      "destination": "/api/r/:token"
+    },
+    {
+      "source": "/((?!api/|r/|assets/|favicon\\.|robots\\.txt|sitemap\\.xml|manifest\\.|sw\\.js|workbox-|registerSW\\.|.*\\.(?:js|css|map|png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf|eot|json|xml|txt|webmanifest|html)).*)",
       "destination": "/index.html"
     }
   ],
   "redirects": [
+    {
+      "source": "/ig",
+      "destination": "/jobs/latest",
+      "permanent": true
+    },
     {
       "source": "/jobs-in-vizag",
       "destination": "/jobs",
