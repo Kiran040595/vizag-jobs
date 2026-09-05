@@ -125,7 +125,7 @@ function getJobCategorySegment(job: {
   if (/\bcivil\b/.test(blob)) return 'civil';
   if (/\bmechanical\b/.test(blob)) return 'mechanical';
   if (/\belectrical|eee\b/.test(blob)) return 'electrical';
-  if (/\bece|electronics\b/.test(blob)) return 'ece';
+  if (/\b(?:ece|electronics)\b/.test(blob)) return 'ece';
   if (/\bbpo|customer support|call center\b/.test(blob)) return 'bpo';
   if (/\bsales|marketing\b/.test(blob)) return 'sales';
   if (/\bhr|human resource|admin\b/.test(blob)) return 'hr';

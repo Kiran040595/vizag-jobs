@@ -37,7 +37,19 @@ export const JOB_CATEGORIES = [
     id: 'ece',
     value: 'ECE / Electronics',
     label: 'ECE / Electronics',
-    aliases: ['ece', 'electronics', 'embedded', 'communication', 'vlsi', 'telecom'],
+    // Keep aliases specific — bare "communication" matches soft-skills text;
+    // bare "ece" must be matched as a whole word (see containsToken).
+    aliases: [
+      'ece',
+      'electronics',
+      'electronics and communication',
+      'electronics & communication',
+      'embedded systems',
+      'embedded engineer',
+      'vlsi',
+      'telecom',
+      'telecommunications',
+    ],
   },
   {
     id: 'banking',
@@ -111,6 +123,34 @@ const normalize = (value) =>
 const joinList = (value) =>
   Array.isArray(value) ? value.filter(Boolean).join(' ') : String(value || '');
 
+const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Phrase / token match that avoids substring false positives.
+ * Short tokens (≤3 chars) and pure acronyms use word boundaries so
+ * "ece" does not match "recently" / "necessary" / "reception".
+ * @param {string} hay lowercase haystack
+ * @param {string} token lowercase needle
+ */
+export const containsToken = (hay, token) => {
+  const needle = String(token ?? '')
+    .trim()
+    .toLowerCase();
+  if (!hay || !needle) return false;
+  if (hay === needle) return true;
+
+  const isShortOrAcronym = needle.length <= 3 || /^[a-z0-9]{2,6}$/.test(needle);
+  if (isShortOrAcronym && !needle.includes(' ')) {
+    return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(needle)}(?:[^a-z0-9]|$)`).test(hay);
+  }
+
+  if (needle.includes(' ')) {
+    return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(needle)}(?:[^a-z0-9]|$)`).test(hay);
+  }
+
+  return hay.includes(needle);
+};
+
 export const jobToTextBlob = (job = {}) =>
   [
     job.title,
@@ -141,19 +181,19 @@ export const normalizeJobCategory = (raw) => {
 
   for (const cat of JOB_CATEGORIES) {
     if (cat.value.toLowerCase() === text) return cat.value;
-    if (cat.aliases.some((alias) => text === alias || text.includes(alias))) {
+    if (cat.aliases.some((alias) => text === alias || containsToken(text, alias))) {
       return cat.value;
     }
   }
 
   for (const cat of JOB_CATEGORIES) {
-    if (text.includes(cat.value.toLowerCase())) return cat.value;
+    if (containsToken(text, cat.value.toLowerCase())) return cat.value;
   }
 
   return null;
 };
 
-const matchesAny = (hay, keywords) => keywords.some((kw) => hay.includes(kw));
+const matchesAny = (hay, keywords) => keywords.some((kw) => containsToken(hay, kw));
 
 const SENIOR_EXPERIENCE = /\b(?:[3-9]|[1-9]\d+)\s*\+?\s*(?:yr|yrs|year|years)\b/i;
 
@@ -266,10 +306,15 @@ const CATEGORY_SIGNALS = [
     keywords: [
       'ece',
       'electronics engineer',
-      'embedded',
+      'electronics and communication',
+      'electronics & communication',
+      'embedded engineer',
+      'embedded systems',
       'vlsi',
       'fpga',
       'telecom engineer',
+      'communication engineer',
+      'pcb design',
       'pcb',
     ],
   },
@@ -333,6 +378,55 @@ export const inferJobCategoryFromSignals = (job = {}) => {
   return fromField || 'General';
 };
 
+const ECE_CATEGORY = 'ECE / Electronics';
+
+const ECE_EVIDENCE_KEYWORDS = [
+  'ece',
+  'electronics engineer',
+  'electronics and communication',
+  'electronics & communication',
+  'embedded engineer',
+  'embedded systems',
+  'vlsi',
+  'fpga',
+  'telecom engineer',
+  'communication engineer',
+  'pcb design',
+  'pcb',
+];
+
+/** Evidence of a real ECE role (ignores the category field to avoid circular trust). */
+export const hasEceRoleEvidence = (job = {}) => {
+  const hay = [
+    job.title,
+    job.jobType ?? job.job_type,
+    job.skills,
+    job.shortDescription ?? job.short_description,
+    job.description,
+    joinList(job.eligibility),
+    joinList(job.responsibilities),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return matchesAny(hay, ECE_EVIDENCE_KEYWORDS);
+};
+
+/**
+ * Drop spurious ECE labels (e.g. from "communication skills" / "recently") when
+ * another category fits better and there is no real ECE evidence.
+ * @param {object} job
+ * @param {string} category
+ */
+const refineMislabelledEceCategory = (job, category) => {
+  if (category !== ECE_CATEGORY) return category;
+  if (hasEceRoleEvidence(job)) return category;
+
+  const alt = inferJobCategoryFromSignals({ ...job, category: 'General' });
+  if (alt && alt !== 'General' && alt !== ECE_CATEGORY) return alt;
+  return 'General';
+};
+
 /**
  * @param {object} record
  * @returns {{ category: string, company: string, is_fresher: boolean, experience: string }}
@@ -340,9 +434,10 @@ export const inferJobCategoryFromSignals = (job = {}) => {
 export const classifyJobRecord = (record = {}) => {
   const geminiCategory =
     typeof record.category === 'string' ? normalizeJobCategory(record.category) : null;
-  const category =
+  let category =
     (geminiCategory && geminiCategory !== 'General' ? geminiCategory : null) ||
     inferJobCategoryFromSignals(record);
+  category = refineMislabelledEceCategory(record, category);
 
   const geminiCompany =
     typeof record.company === 'string' && isUsableCompanyName(record.company)
@@ -372,18 +467,23 @@ export const jobMatchesCategoryFilter = (job, filterId) => {
   if (filterId === 'all') return true;
 
   const catDef = CATEGORY_BY_ID.get(filterId);
-  if (catDef) {
-    const normalized = normalizeJobCategory(job.category);
-    if (normalized === catDef.value) return true;
-    const hay = jobToTextBlob(job);
-    if (catDef.aliases.some((alias) => hay.includes(alias))) return true;
-    if (matchesAny(hay, CATEGORY_SIGNALS.find((s) => s.value === catDef.value)?.keywords ?? [])) {
-      return true;
+  if (!catDef) return false;
+
+  const normalized = normalizeJobCategory(job.category);
+  if (normalized === catDef.value) {
+    if (catDef.value === ECE_CATEGORY) {
+      // Historical false positives stamped ECE on unrelated jobs; require
+      // real role evidence before treating the stored label as ECE.
+      return hasEceRoleEvidence(job);
     }
-    return false;
+    return true;
   }
 
-  return false;
+  // Aliases are for normalizing the category field only — never scan them
+  // against the full job blob (e.g. "communication skills" ≠ ECE).
+  const hay = jobToTextBlob(job);
+  const signals = CATEGORY_SIGNALS.find((s) => s.value === catDef.value)?.keywords ?? [];
+  return matchesAny(hay, signals);
 };
 
 export const FILTER_CATEGORY_OPTIONS = [
