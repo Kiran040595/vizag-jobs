@@ -148,6 +148,15 @@ export async function findRecentShortByDriveFileId(accessToken, uploadsPlaylistI
   );
 }
 
+function contentTypeForVideoPath(videoPath = '') {
+  const lower = String(videoPath).toLowerCase();
+  if (lower.endsWith('.mov')) return 'video/quicktime';
+  if (lower.endsWith('.webm')) return 'video/webm';
+  if (lower.endsWith('.mkv')) return 'video/x-matroska';
+  if (lower.endsWith('.mpeg') || lower.endsWith('.mpg')) return 'video/mpeg';
+  return 'video/mp4';
+}
+
 export async function uploadYouTubeShort({
   accessToken,
   videoPath,
@@ -156,6 +165,7 @@ export async function uploadYouTubeShort({
   tags = [],
   privacyStatus = 'public',
 }) {
+  const contentType = contentTypeForVideoPath(videoPath);
   const metadata = {
     snippet: {
       title,
@@ -177,7 +187,7 @@ export async function uploadYouTubeShort({
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json; charset=UTF-8',
-        'X-Upload-Content-Type': 'video/mp4',
+        'X-Upload-Content-Type': contentType,
       },
       body: JSON.stringify(metadata),
     },
@@ -197,7 +207,7 @@ export async function uploadYouTubeShort({
   const uploadRes = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
-      'Content-Type': 'video/mp4',
+      'Content-Type': contentType,
       'Content-Length': String(videoBytes.byteLength),
     },
     body: videoBytes,
