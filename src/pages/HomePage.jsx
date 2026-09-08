@@ -13,6 +13,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobsForYou from '../components/JobsForYou';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
 import {
@@ -59,7 +60,14 @@ const initialJobsState = (() => {
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const filters = useMemo(() => readFiltersFromSearchParams(searchParams), [searchParams]);
+  const { isAdmin } = useAdminAuth();
+  const filters = useMemo(() => {
+    const parsed = readFiltersFromSearchParams(searchParams);
+    if (!isAdmin && parsed.source !== 'all') {
+      return { ...parsed, source: 'all' };
+    }
+    return parsed;
+  }, [searchParams, isAdmin]);
 
   const [allJobs, setAllJobs] = useState(() => initialJobsState.jobs);
   const [isLoading, setIsLoading] = useState(() => initialJobsState.jobs.length === 0);
@@ -93,6 +101,17 @@ export default function HomePage() {
     return () => window.clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      return;
+    }
+    const parsed = readFiltersFromSearchParams(searchParams);
+    if (parsed.source === 'all') {
+      return;
+    }
+    setSearchParams(writeFiltersToSearchParams({ ...parsed, source: 'all' }), { replace: true });
+  }, [isAdmin, searchParams, setSearchParams]);
 
   const refreshJobsInBackground = useCallback(async () => {
     setIsBackgroundRefreshing(true);
@@ -302,6 +321,7 @@ export default function HomePage() {
               onClearAll={clearAllFilters}
               resultCount={filteredJobs.length}
               isRefreshing={isBackgroundRefreshing}
+              isAdmin={isAdmin}
             />
           </>
         ) : null}

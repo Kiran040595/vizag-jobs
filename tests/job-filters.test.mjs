@@ -9,6 +9,7 @@ import {
   DEFAULT_FILTERS,
   FRESHNESS_OPTIONS,
   JOB_TYPE_OPTIONS,
+  SOURCE_OPTIONS,
   PAGE_SIZE,
   applyJobFilters,
   buildPaginationItems,
@@ -57,6 +58,7 @@ for (const [name, opts] of [
   ['CATEGORY_OPTIONS', CATEGORY_OPTIONS],
   ['JOB_TYPE_OPTIONS', JOB_TYPE_OPTIONS],
   ['FRESHNESS_OPTIONS', FRESHNESS_OPTIONS],
+  ['SOURCE_OPTIONS', SOURCE_OPTIONS],
 ]) {
   ok(Array.isArray(opts) && opts.length > 0, `${name} is a non-empty array`);
   ok(opts.some((o) => o.id === 'all'), `${name} contains 'all'`);
@@ -71,9 +73,13 @@ section('readFiltersFromSearchParams — defaults & invalid values');
 }
 {
   const r = readFiltersFromSearchParams(
-    new URLSearchParams('q=react&category=it&jobType=full-time&freshness=24h&page=3'),
+    new URLSearchParams('q=react&category=it&jobType=full-time&freshness=24h&source=naukri&page=3'),
   );
-  eq(r, { q: 'react', category: 'it', jobType: 'full-time', freshness: '24h', page: 3 }, 'all params parsed');
+  eq(
+    r,
+    { q: 'react', category: 'it', jobType: 'full-time', freshness: '24h', source: 'naukri', page: 3 },
+    'all params parsed',
+  );
 }
 {
   const r = readFiltersFromSearchParams(
@@ -81,7 +87,7 @@ section('readFiltersFromSearchParams — defaults & invalid values');
   );
   eq(
     r,
-    { q: '', category: 'all', jobType: 'all', freshness: 'all', page: 1 },
+    { q: '', category: 'all', jobType: 'all', freshness: 'all', source: 'all', page: 1 },
     'invalid values fall back to defaults',
   );
 }
@@ -107,6 +113,13 @@ section('writeFiltersToSearchParams — defaults are NEVER serialized');
   ok(out.includes('page=2'), 'page=2 is serialized');
 }
 {
+  const out = writeFiltersToSearchParams({
+    ...DEFAULT_FILTERS,
+    source: 'linkedin_jobs',
+  }).toString();
+  ok(out.includes('source=linkedin_jobs'), 'admin source filter is serialized');
+}
+{
   const out = writeFiltersToSearchParams({ ...DEFAULT_FILTERS, page: 1 }).toString();
   eq(out, '', 'page=1 is omitted (canonical URL has no page param)');
 }
@@ -116,7 +129,42 @@ section('isAnyFilterActive');
 ok(!isAnyFilterActive(DEFAULT_FILTERS), 'defaults -> not active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, q: 'foo' }), 'q -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, category: 'it' }), 'category -> active');
+ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: 'naukri' }), 'source -> active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, page: 5 }), 'page change alone -> not active');
+
+// ------------------------------------------------------------
+section('applyJobFilters — admin source filter');
+{
+  const jobs = [
+    fakeJob({ id: 'n', source: 'naukri.com', sourceUrl: 'https://www.naukri.com/x' }),
+    fakeJob({
+      id: 'lj',
+      source: 'linkedin.com',
+      sourceUrl: 'https://www.linkedin.com/jobs/view/1',
+    }),
+    fakeJob({
+      id: 'lp',
+      source: 'linkedin.com',
+      sourceUrl: 'https://www.linkedin.com/posts/x',
+    }),
+    fakeJob({ id: 'a', source: 'Admin Post' }),
+  ];
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'naukri' }).map((j) => j.id),
+    ['n'],
+    'source=naukri',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'linkedin_jobs' }).map((j) => j.id),
+    ['lj'],
+    'source=linkedin_jobs',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'linkedin' }).map((j) => j.id).sort(),
+    ['lj', 'lp'].sort(),
+    'source=linkedin matches jobs and posts',
+  );
+}
 
 // ------------------------------------------------------------
 section('applyJobFilters — search text matches title/company/skills/location');

@@ -55,6 +55,8 @@ const LIST_COLUMNS = [
   'skills',
   'company_logo_url',
   'source_name',
+  'source_url',
+  'created_by',
   'posted_at',
   'expires_at',
   'status',

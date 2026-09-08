@@ -4,7 +4,8 @@
  *
  * Conventions:
  * - The URL is the source of truth for filters and page number; `q`,
- *   `category`, `jobType`, `freshness`, `page` are the only recognized params.
+ *   `category`, `jobType`, `freshness`, `source`, `page` are recognized params.
+ *   The `source` param is admin-only in the UI but parsed here for shared helpers.
  * - "All" / default values are NEVER serialized to the URL — a clean URL
  *   means a clean filter state, and back/forward navigation stays predictable.
  * - All filtering is client-side over the in-memory cache so refresh,
@@ -20,6 +21,7 @@ import {
   jobMatchesCategoryFilter,
   normalizeJobCategory,
 } from './jobCategoryTaxonomy.js';
+import { ADMIN_SOURCE_OPTIONS, matchesAdminSourceFilter } from './jobSourceFilter.js';
 
 export const PAGE_SIZE = 12;
 
@@ -40,11 +42,14 @@ export const FRESHNESS_OPTIONS = [
   { id: '30d', label: 'Last 30 days', hours: 24 * 30 },
 ];
 
+export const SOURCE_OPTIONS = ADMIN_SOURCE_OPTIONS;
+
 export const DEFAULT_FILTERS = Object.freeze({
   q: '',
   category: 'all',
   jobType: 'all',
   freshness: 'all',
+  source: 'all',
   page: 1,
 });
 
@@ -54,6 +59,7 @@ export const readFiltersFromSearchParams = (searchParams) => {
   const rawCategory = (searchParams.get('category') ?? 'all').toLowerCase();
   const rawJobType = (searchParams.get('jobType') ?? 'all').toLowerCase();
   const rawFreshness = (searchParams.get('freshness') ?? 'all').toLowerCase();
+  const rawSource = (searchParams.get('source') ?? 'all').toLowerCase();
   const pageNum = Number(searchParams.get('page'));
 
   return {
@@ -61,6 +67,7 @@ export const readFiltersFromSearchParams = (searchParams) => {
     category: isOptionId(rawCategory, CATEGORY_OPTIONS) ? rawCategory : 'all',
     jobType: isOptionId(rawJobType, JOB_TYPE_OPTIONS) ? rawJobType : 'all',
     freshness: isOptionId(rawFreshness, FRESHNESS_OPTIONS) ? rawFreshness : 'all',
+    source: isOptionId(rawSource, SOURCE_OPTIONS) ? rawSource : 'all',
     page: Number.isFinite(pageNum) && pageNum > 0 ? Math.floor(pageNum) : 1,
   };
 };
@@ -73,6 +80,7 @@ export const writeFiltersToSearchParams = (filters) => {
   if (filters.category && filters.category !== 'all') out.set('category', filters.category);
   if (filters.jobType && filters.jobType !== 'all') out.set('jobType', filters.jobType);
   if (filters.freshness && filters.freshness !== 'all') out.set('freshness', filters.freshness);
+  if (filters.source && filters.source !== 'all') out.set('source', filters.source);
   if (filters.page && filters.page > 1) out.set('page', String(filters.page));
   return out;
 };
@@ -81,7 +89,8 @@ export const isAnyFilterActive = (filters) =>
   Boolean((filters.q ?? '').trim()) ||
   filters.category !== 'all' ||
   filters.jobType !== 'all' ||
-  filters.freshness !== 'all';
+  filters.freshness !== 'all' ||
+  filters.source !== 'all';
 
 const matchesSearchText = (job, q) => {
   if (!q) return true;
@@ -172,6 +181,7 @@ export const applyJobFilters = (jobs, filters) => {
       matchesCategory(job, filters.category) &&
       matchesJobType(job, filters.jobType) &&
       matchesFreshness(job, filters.freshness) &&
+      matchesAdminSourceFilter(job, filters.source) &&
       matchesSearchText(job, q),
   );
   return sortJobsForListing(filtered);

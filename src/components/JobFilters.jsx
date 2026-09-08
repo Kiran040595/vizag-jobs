@@ -3,6 +3,7 @@ import {
   CATEGORY_OPTIONS,
   FRESHNESS_OPTIONS,
   JOB_TYPE_OPTIONS,
+  SOURCE_OPTIONS,
   isAnyFilterActive,
 } from '../lib/jobFilters';
 
@@ -84,6 +85,7 @@ export default function JobFilters({
   onClearAll,
   resultCount,
   isRefreshing = false,
+  isAdmin = false,
 }) {
   const active = isAnyFilterActive(filters);
   // Start collapsed on mobile so jobs stay above the fold; user can expand.
@@ -114,6 +116,12 @@ export default function JobFilters({
         <ActiveFilterChip
           label={labelFor(filters.freshness, FRESHNESS_OPTIONS)}
           onRemove={() => onUpdate({ freshness: 'all' })}
+        />
+      ) : null}
+      {isAdmin && filters.source !== 'all' ? (
+        <ActiveFilterChip
+          label={labelFor(filters.source, SOURCE_OPTIONS)}
+          onRemove={() => onUpdate({ source: 'all' })}
         />
       ) : null}
     </>
@@ -157,6 +165,21 @@ export default function JobFilters({
           />
         ))}
       </PillRow>
+
+      {isAdmin ? (
+        <PillRow label="Source (admin)">
+          {SOURCE_OPTIONS.map((opt) => (
+            <FilterPill
+              key={opt.id}
+              id={opt.id}
+              label={opt.label}
+              current={filters.source}
+              onSelect={(next) => onUpdate({ source: next })}
+              color="emerald"
+            />
+          ))}
+        </PillRow>
+      ) : null}
     </div>
   );
 
