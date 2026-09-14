@@ -273,6 +273,50 @@ section('applyJobFilters — fresher / walk-in categories');
 }
 
 // ------------------------------------------------------------
+section('applyJobFilters — IT category does not match hospitality / digital marketing');
+{
+  const jobs = [
+    fakeJob({
+      id: 'hotel',
+      title: 'Hotel Front Office Executive',
+      category: 'Hospitality & Retail',
+      skills: '',
+      shortDescription: 'Join our team in Vizag',
+    }),
+    fakeJob({
+      id: 'digital',
+      title: 'Digital Marketing Executive',
+      category: 'Sales & Marketing',
+      skills: 'seo, ads',
+    }),
+    fakeJob({
+      id: 'nurse',
+      title: 'Staff Nurse',
+      category: 'Healthcare',
+      skills: '',
+      shortDescription: 'Hospital duty',
+    }),
+    fakeJob({ id: 'hr', title: 'HR Executive', category: 'HR & Admin', skills: '', shortDescription: 'Recruitment' }),
+    fakeJob({ id: 'java', title: 'Java Developer', category: 'IT & Software', skills: 'java, spring' }),
+    fakeJob({ id: 'react', title: 'React Developer', category: 'IT', skills: 'react' }),
+  ];
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'it' }).map((j) => j.id).sort(),
+    ['java', 'react'].sort(),
+    'IT filter keeps software roles only',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'hospitality' }).map((j) => j.id),
+    ['hotel'],
+    'hospitality filter',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'non-it' }).map((j) => j.id).sort(),
+    ['digital', 'hotel', 'hr', 'nurse'].sort(),
+    'non-IT excludes software roles',
+  );
+}
+
 section('applyJobFilters — engineering branch categories');
 {
   const jobs = [
