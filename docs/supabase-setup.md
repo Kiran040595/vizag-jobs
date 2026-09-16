@@ -332,9 +332,9 @@ curl -sS -X POST "$SUPABASE_URL/functions/v1/fetch-external-jobs" \
 
 Persisting snapshots (e.g. private Storage or email) is not implemented in-repo; pipe or store the JSON in your scheduler.
 
-### Automated job pipelines (Naukri 4 PM, LinkedIn Posts 6 PM, LinkedIn Jobs 9 PM IST)
+### Automated job pipelines (Naukri 4:30 PM, LinkedIn Posts 6 PM, LinkedIn Jobs 9 PM IST)
 
-For hands-off Naukri fetch → Make SEO (3 min between jobs) → publish, see **`docs/auto-naukri-pipeline.md`**. It uses the same `FETCH_JOBS_CRON_SECRET` plus `SUPABASE_SERVICE_ROLE_KEY` in GitHub Actions (`.github/workflows/auto-naukri-fetch.yml` for Naukri; `.github/workflows/auto-naukri-daily.yml` for LinkedIn / blog / Shorts).
+For hands-off Naukri fetch → Make SEO (3 min between jobs) → publish, see **`docs/auto-naukri-pipeline.md`**. Naukri is started at 4:30 PM IST by Vercel Cron / optional Supabase `pg_cron` via GitHub `workflow_dispatch` (not GitHub `schedule`). LinkedIn / blog / Shorts still use `.github/workflows/auto-naukri-daily.yml`.
 
 Email summaries use Edge Function `send-automation-summary` with **Resend** (`RESEND_API_KEY`, default recipient `kkumardadi@gmail.com`).
 

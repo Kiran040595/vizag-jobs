@@ -8,18 +8,20 @@
 | **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | **6:00 PM** (general preset) |
 | **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | **9:00 PM** |
 
-Naukri runs in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. Naukri is a separate workflow because GitHub was delaying the previous 4:00 PM IST cron by 3–6 hours when five schedules lived in one file. All channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
+Naukri runs in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. GitHub’s own `schedule` event was starting Naukri 4+ hours late, so Naukri is now kicked off at **4:30 PM IST** by **Vercel Cron** (and optionally Supabase `pg_cron`) using `workflow_dispatch`. All channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
 
 ## Flow
 
 ```mermaid
 sequenceDiagram
-  participant GH as GitHub Actions (4:30/6/9 PM IST)
+  participant Cron as Vercel Cron (4:30 PM IST)
+  participant GH as GitHub Actions
   participant Edge as fetch-external-jobs
   participant Apify as Apify Naukri actor
   participant Gemini as Gemini Make SEO
   participant DB as Supabase jobs
 
+  Cron->>GH: workflow_dispatch Auto daily Naukri fetch
   GH->>Edge: start Naukri fetch (cron secret)
   Edge->>Apify: start scrape
   GH->>GH: wait ~3 min
@@ -58,6 +60,7 @@ Already required for manual fetch — see `docs/supabase-setup.md`:
 - `APIFY_API_TOKEN_NAUKRI` (or `APIFY_API_TOKEN`)
 - `GEMINI_API_KEY` or `GEMINI_API_KEY_SEO`
 - `FETCH_JOBS_CRON_SECRET` — long random string for headless auth
+- `GITHUB_DISPATCH_TOKEN` — fine-grained PAT with **Actions: Read and write** (same secret used by `trigger-youtube-short`)
 
 ### 2. GitHub repository secrets
 
@@ -70,13 +73,44 @@ Add these under **Settings → Secrets and variables → Actions**:
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only; never in frontend) |
 | `FETCH_JOBS_CRON_SECRET` | Same value as in Supabase Edge Function secrets |
 
-### 3. Enable the workflow
+### 3. Enable the 4:30 PM IST Naukri trigger
 
-- **Naukri** (`.github/workflows/auto-naukri-fetch.yml`): `0 11 * * *` UTC = **4:30 PM IST**
-- **LinkedIn / blog / Shorts** (`.github/workflows/auto-naukri-daily.yml`):
+GitHub `schedule` is **not** used for Naukri. An external ping starts the workflow near 4:30 PM IST (`11:00` UTC).
+
+**A. Vercel Cron (automatic after deploy)** — `vercel.json` calls `GET /api/cron/dispatch-naukri` daily at `0 11 * * *`.
+
+Add these **Vercel** environment variables (Production):
+
+| Variable | Value |
+|----------|--------|
+| `CRON_SECRET` | Long random string. Vercel sends `Authorization: Bearer <CRON_SECRET>` on cron GETs. |
+| `FETCH_JOBS_CRON_SECRET` | Same value as GitHub Actions / Supabase (used to call the Edge Function if `GITHUB_DISPATCH_TOKEN` is not on Vercel). |
+| `GITHUB_DISPATCH_TOKEN` | Optional on Vercel. Fine-grained PAT with **Actions: Read and write**. If set, the API talks to GitHub directly. |
+| `SUPABASE_URL` or `VITE_SUPABASE_URL` | Needed when `GITHUB_DISPATCH_TOKEN` is not on Vercel. |
+
+Also add **`GITHUB_DISPATCH_TOKEN`** to **Supabase Edge Function secrets** if it is not already there for YouTube Short dispatch.
+
+The dispatcher skips a new run if one is already queued/in progress, was triggered in the last 20 minutes, or succeeded in the last 12 hours.
+
+**B. Supabase `pg_cron` (optional, very punctual)** — after deploying `dispatch-naukri-workflow`, run [`supabase/cron/schedule-naukri-dispatch.sql`](../supabase/cron/schedule-naukri-dispatch.sql) in the SQL editor. Create vault secrets `project_url` and `fetch_jobs_cron_secret` first. Skip this if Vercel Cron is enough.
+
+**C. cron-job.org / EasyCron backup**
+
+```bash
+curl -sS -X POST "$SUPABASE_URL/functions/v1/dispatch-naukri-workflow" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $FETCH_JOBS_CRON_SECRET" \
+  -H "x-fetch-jobs-cron-secret: $FETCH_JOBS_CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"source":"cron-job.org"}'
+```
+
+Schedule: every day at **11:00 UTC**.
+
+- **LinkedIn / blog / Shorts** (`.github/workflows/auto-naukri-daily.yml`) still use GitHub `schedule`:
   - LinkedIn Posts: `30 12 * * *` UTC = **6:00 PM IST**
   - LinkedIn Jobs: `30 15 * * *` UTC = **9:00 PM IST**
-- **Manual run:** Actions → *Auto daily Naukri fetch* → *Run workflow* for Naukri; *Auto daily LinkedIn, blog, and Shorts* for the other channels
+- **Manual run:** Actions → *Auto daily Naukri fetch* → *Run workflow*
 
 ## Local test
 

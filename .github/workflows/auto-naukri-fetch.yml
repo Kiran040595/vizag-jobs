@@ -1,12 +1,9 @@
 name: Auto daily Naukri fetch
 
-# Own workflow file so GitHub does not delay this cron behind LinkedIn / blog / Shorts
-# in auto-naukri-daily.yml (those shared schedules were starting Naukri 3–6 hours late).
+# Started at 4:30 PM IST by Vercel Cron / Supabase pg_cron via workflow_dispatch.
+# GitHub `schedule` is not used: it was starting this job 4+ hours late.
 
 on:
-  schedule:
-    # 4:30 PM IST = 11:00 UTC
-    - cron: '0 11 * * *'
   workflow_dispatch:
 
 concurrency:
