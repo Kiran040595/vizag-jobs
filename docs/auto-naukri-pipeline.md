@@ -79,16 +79,14 @@ GitHub `schedule` is **not** used for Naukri. An external ping starts the workfl
 
 **A. Vercel Cron (automatic after deploy)** — `vercel.json` calls `GET /api/cron/dispatch-naukri` daily at `0 11 * * *`.
 
-Add these **Vercel** environment variables (Production):
+Vercel Cron requests include `User-Agent: vercel-cron/1.0` and `x-vercel-cron-schedule`, so **no new `CRON_SECRET` is required**. The route then calls `dispatch-naukri-workflow` using env vars already on Vercel for resume APIs:
 
-| Variable | Value |
-|----------|--------|
-| `CRON_SECRET` | Long random string. Vercel sends `Authorization: Bearer <CRON_SECRET>` on cron GETs. |
-| `FETCH_JOBS_CRON_SECRET` | Same value as GitHub Actions / Supabase (used to call the Edge Function if `GITHUB_DISPATCH_TOKEN` is not on Vercel). |
-| `GITHUB_DISPATCH_TOKEN` | Optional on Vercel. Fine-grained PAT with **Actions: Read and write**. If set, the API talks to GitHub directly. |
-| `SUPABASE_URL` or `VITE_SUPABASE_URL` | Needed when `GITHUB_DISPATCH_TOKEN` is not on Vercel. |
+- `VITE_SUPABASE_URL` or `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-Also add **`GITHUB_DISPATCH_TOKEN`** to **Supabase Edge Function secrets** if it is not already there for YouTube Short dispatch.
+The Edge Function starts GitHub Actions with **`GITHUB_DISPATCH_TOKEN`** from **Supabase Edge Function secrets** (same PAT as YouTube Short dispatch).
+
+Optional hardening: set `CRON_SECRET` on Vercel (Vercel will send it as `Authorization: Bearer …`). Not required for the 4:30 PM run.
 
 The dispatcher skips a new run if one is already queued/in progress, was triggered in the last 20 minutes, or succeeded in the last 12 hours.
 

@@ -56,6 +56,20 @@ test('cron auth accepts Vercel CRON_SECRET bearer', () => {
   );
 });
 
+test('cron auth accepts Vercel platform cron headers without CRON_SECRET', () => {
+  const req = {
+    headers: {
+      'user-agent': 'vercel-cron/1.0',
+      'x-vercel-cron-schedule': '0 11 * * *',
+    },
+  };
+  assert.equal(isAuthorizedCronRequest(req, { CRON_SECRET: '' }), true);
+  assert.equal(
+    isAuthorizedCronRequest({ headers: { 'user-agent': 'vercel-cron/1.0' } }, { CRON_SECRET: '' }),
+    false,
+  );
+});
+
 test('cron auth rejects empty or missing secrets', () => {
   assert.equal(
     isAuthorizedCronRequest({ headers: { authorization: 'Bearer x' } }, { CRON_SECRET: '' }),

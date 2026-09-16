@@ -7,11 +7,12 @@ import {
 } from '../../scripts/lib/github-naukri-dispatch.mjs';
 
 const dispatchViaEdgeFunction = async () => {
-  const { url, anonKey } = getSupabaseEnv();
+  const { url, anonKey, serviceRole } = getSupabaseEnv();
   const cronSecret = String(process.env.FETCH_JOBS_CRON_SECRET || '').trim();
-  if (!url || !cronSecret) {
+  const bearer = cronSecret || serviceRole;
+  if (!url || !bearer) {
     throw new Error(
-      'Set GITHUB_DISPATCH_TOKEN on Vercel, or set SUPABASE_URL / VITE_SUPABASE_URL and FETCH_JOBS_CRON_SECRET to call dispatch-naukri-workflow.',
+      'Missing Vercel server env: need SUPABASE_URL / VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (already used by resume APIs), or GITHUB_DISPATCH_TOKEN.',
     );
   }
 
@@ -19,9 +20,9 @@ const dispatchViaEdgeFunction = async () => {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${cronSecret}`,
-      'x-fetch-jobs-cron-secret': cronSecret,
-      apikey: anonKey || cronSecret,
+      Authorization: `Bearer ${bearer}`,
+      ...(cronSecret ? { 'x-fetch-jobs-cron-secret': cronSecret } : {}),
+      apikey: anonKey || bearer,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ source: 'vercel-cron' }),

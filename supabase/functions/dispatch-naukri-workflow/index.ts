@@ -44,6 +44,11 @@ async function assertAuthorized(
     return { ok: true };
   }
 
+  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim();
+  if (serviceRole && bearer === serviceRole) {
+    return { ok: true };
+  }
+
   const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(bearer);
   if (userError || !userData?.user?.id) {
     return { ok: false, status: 401, message: 'Invalid or expired session.' };
