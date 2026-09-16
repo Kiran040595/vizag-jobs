@@ -5,8 +5,8 @@ name: Auto daily Naukri fetch
 
 on:
   schedule:
-    # 4:00 PM IST = 10:30 UTC
-    - cron: '30 10 * * *'
+    # 4:30 PM IST = 11:00 UTC
+    - cron: '0 11 * * *'
   workflow_dispatch:
 
 concurrency:
