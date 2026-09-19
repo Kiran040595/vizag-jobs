@@ -34,6 +34,7 @@ import { consumeStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
+import SaveJobButton from '../components/SaveJobButton';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
 import SimilarJobs from '../components/SimilarJobs';
@@ -49,6 +50,7 @@ import {
 } from '../lib/jobDisplayLabels';
 import { jobSupportsApply } from '../lib/jobApplyMode';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
+import { buildJobSaveSnapshot } from '../lib/jobCardDisplay';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -333,11 +335,23 @@ export default function JobDetailsPage() {
                     alreadyApplied={Boolean(existingApplication)}
                   />
                 ) : null}
+                <SaveJobButton
+                  jobId={job.id}
+                  jobSnapshot={buildJobSaveSnapshot(job)}
+                  jobTitle={job.title}
+                  variant="detail"
+                />
                 <JobShareButtons job={job} />
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 sm:hidden">
+              <SaveJobButton
+                jobId={job.id}
+                jobSnapshot={buildJobSaveSnapshot(job)}
+                jobTitle={job.title}
+                variant="detail"
+              />
               <JobShareButtons job={job} />
             </div>
 
