@@ -3,8 +3,8 @@ import JoinChannelBeforeApplyModal from './JoinChannelBeforeApplyModal';
 import {
   consumeExternalApplyPrompt,
   subscribeExternalApplyPrompt,
-} from '../lib/jobGroupLink';
-import { recordAndOpenExternalApply } from '../services/jobApplyClicks';
+} from '../lib/jobGroupLink.js';
+import { recordAndOpenExternalApply } from '../services/jobApplyClicks.js';
 
 /**
  * Global listener for external-apply prompts (login redirect, apply button, etc.).

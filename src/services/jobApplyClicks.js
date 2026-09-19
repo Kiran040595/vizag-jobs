@@ -1,5 +1,5 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
-import { buildApplyClickVisitorKey } from '../lib/applyVisitorKey';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+import { buildApplyClickVisitorKey } from '../lib/applyVisitorKey.js';
 
 export const recordExternalApplyClick = async (jobId) => {
   if (!isSupabaseConfigured || !supabase || !jobId) {

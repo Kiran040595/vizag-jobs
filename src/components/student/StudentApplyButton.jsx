@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
-import { applyButtonLabel, isInternalApplyJob } from '../../lib/jobApplyMode';
-import { isStaffApplicantSession } from '../../lib/staffApplyAccess';
+import { applyButtonLabel, isInternalApplyJob } from '../../lib/jobApplyMode.js';
+import { isStaffApplicantSession } from '../../lib/staffApplyAccess.js';
 import {
   buildInternalApplyPath,
   buildStudentAuthPath,
@@ -12,8 +12,8 @@ import {
   stashPendingApplyJobId,
   stashPendingApplyJobMeta,
   stashPendingApplyUrl,
-} from '../../lib/studentApplyRedirect';
-import StudentAuthRequiredAlert from './StudentAuthRequiredAlert';
+} from '../../lib/studentApplyRedirect.js';
+import StudentAuthRequiredAlert from './StudentAuthRequiredAlert.jsx';
 
 export default function StudentApplyButton({
   applyLink,
