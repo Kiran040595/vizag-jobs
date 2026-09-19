@@ -7,8 +7,10 @@ import { buildLegalPageHeadInjection, getLegalPageMeta } from './src/lib/legalPa
 import {
   buildHomePageSsrPayload,
   fetchHomeBootstrapJobRows,
-} from './src/lib/homePageBootstrap.js';
-import { isPostedAtWithinPublicDisplayWindow } from './src/lib/jobDisplayWindow.js';
+import {
+  isJobWithinPublicDisplayWindow,
+  isPostedAtWithinPublicDisplayWindow,
+} from './src/lib/jobDisplayWindow.js';
 import {
   JOB_CATEGORY_LANDING_IDS,
   JOB_CATEGORY_PAGES,
@@ -116,9 +118,7 @@ const fetchPublishedJobByIdentifier = async (identifier, env) => {
   }
 
   if (!job || job.status !== 'published') return null;
-  // Match public list/detail API: hide jobs outside the display window (avoids
-  // middleware SEO + client "Job not found" soft-404 mismatch).
-  if (!isPostedAtWithinPublicDisplayWindow(job.posted_at)) return null;
+  if (!isJobWithinPublicDisplayWindow(job)) return null;
   return job;
 };
 

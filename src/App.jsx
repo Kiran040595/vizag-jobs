@@ -5,6 +5,7 @@ import JobsInVizagPage from './pages/JobsInVizagPage';
 import ItJobsInVizagPage from './pages/ItJobsInVizagPage';
 import FresherJobsInVizagPage from './pages/FresherJobsInVizagPage';
 import PartTimeJobsVizagPage from './pages/PartTimeJobsVizagPage';
+import DirectJobsInVizagPage from './pages/DirectJobsInVizagPage';
 import BranchJobsInVizagPage from './pages/BranchJobsInVizagPage';
 import { JOB_CATEGORY_PAGES } from './lib/jobCategoryPages';
 import { LEGACY_ROUTE_REDIRECTS } from './lib/legacyRedirects';
@@ -206,6 +207,7 @@ function App() {
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
       <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
       <Route path="/jobs/part-time" element={<PartTimeJobsVizagPage />} />
+      <Route path="/jobs/vizagjobs" element={<DirectJobsInVizagPage />} />
       {JOB_CATEGORY_PAGES.map((page) => (
         <Route
           key={page.id}

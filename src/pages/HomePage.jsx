@@ -13,6 +13,7 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobsForYou from '../components/JobsForYou';
+import JobSourceTabs from '../components/JobSourceTabs';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
@@ -21,6 +22,7 @@ import {
   writeCachedPublicJobs,
 } from '../lib/publicJobsSessionCache';
 import { computeSiteStats } from '../lib/siteStats';
+import { countDirectJobs } from '../lib/jobDirectPosting';
 import {
   CATEGORY_OPTIONS,
   DEFAULT_FILTERS,
@@ -197,6 +199,7 @@ export default function HomePage() {
 
   // ---------- Filter / pagination derivations ----------
   const filteredJobs = useMemo(() => applyJobFilters(allJobs, filters), [allJobs, filters]);
+  const directJobsCount = useMemo(() => countDirectJobs(allJobs), [allJobs]);
   const siteStats = useMemo(() => computeSiteStats(allJobs), [allJobs]);
   const pagination = useMemo(
     () => paginate(filteredJobs, filters.page, PAGE_SIZE),
@@ -315,6 +318,12 @@ export default function HomePage() {
             <JobsForYou jobs={allJobs} />
             <JobCategoryBrowse />
             <BlogTeaserSection />
+            <JobSourceTabs
+              activeTab={filters.tab}
+              onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
+              totalCount={allJobs.length}
+              directCount={directJobsCount}
+            />
             <JobFilters
               filters={filters}
               onUpdate={updateFilters}

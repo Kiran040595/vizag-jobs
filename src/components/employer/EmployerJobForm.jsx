@@ -68,6 +68,15 @@ export default function EmployerJobForm({
     if (!String(formValues.slug || '').trim()) {
       return 'Please provide a slug for this job.';
     }
+    if (formValues.apply_mode === 'external') {
+      const link = String(formValues.apply_link || '').trim();
+      if (!link) {
+        return 'Please provide an external application URL.';
+      }
+      if (!/^https?:\/\/.+/i.test(link)) {
+        return 'External application link must be a valid URL starting with http:// or https://';
+      }
+    }
     return '';
   };
 

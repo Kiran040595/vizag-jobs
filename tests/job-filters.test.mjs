@@ -10,6 +10,7 @@ import {
   FRESHNESS_OPTIONS,
   JOB_TYPE_OPTIONS,
   SOURCE_OPTIONS,
+  TAB_OPTIONS,
   PAGE_SIZE,
   applyJobFilters,
   buildPaginationItems,
@@ -59,6 +60,7 @@ for (const [name, opts] of [
   ['JOB_TYPE_OPTIONS', JOB_TYPE_OPTIONS],
   ['FRESHNESS_OPTIONS', FRESHNESS_OPTIONS],
   ['SOURCE_OPTIONS', SOURCE_OPTIONS],
+  ['TAB_OPTIONS', TAB_OPTIONS],
 ]) {
   ok(Array.isArray(opts) && opts.length > 0, `${name} is a non-empty array`);
   ok(opts.some((o) => o.id === 'all'), `${name} contains 'all'`);
@@ -73,21 +75,21 @@ section('readFiltersFromSearchParams — defaults & invalid values');
 }
 {
   const r = readFiltersFromSearchParams(
-    new URLSearchParams('q=react&category=it&jobType=full-time&freshness=24h&source=naukri&page=3'),
+    new URLSearchParams('tab=direct&q=react&category=it&jobType=full-time&freshness=24h&source=naukri&page=3'),
   );
   eq(
     r,
-    { q: 'react', category: 'it', jobType: 'full-time', freshness: '24h', source: 'naukri', page: 3 },
+    { tab: 'direct', q: 'react', category: 'it', jobType: 'full-time', freshness: '24h', source: 'naukri', page: 3 },
     'all params parsed',
   );
 }
 {
   const r = readFiltersFromSearchParams(
-    new URLSearchParams('category=bogus&jobType=bogus&freshness=bogus&page=-2'),
+    new URLSearchParams('tab=bogus&category=bogus&jobType=bogus&freshness=bogus&page=-2'),
   );
   eq(
     r,
-    { q: '', category: 'all', jobType: 'all', freshness: 'all', source: 'all', page: 1 },
+    { tab: 'all', q: '', category: 'all', jobType: 'all', freshness: 'all', source: 'all', page: 1 },
     'invalid values fall back to defaults',
   );
 }
@@ -100,12 +102,14 @@ section('writeFiltersToSearchParams — defaults are NEVER serialized');
 }
 {
   const out = writeFiltersToSearchParams({
+    tab: 'direct',
     q: '  hello  ',
     category: 'it',
     jobType: 'all',
     freshness: '24h',
     page: 2,
   }).toString();
+  ok(out.includes('tab=direct'), 'tab=direct is serialized');
   ok(out.includes('q=hello'), 'q is trimmed before serializing');
   ok(out.includes('category=it'), 'non-default category is serialized');
   ok(!out.includes('jobType'), 'default jobType is omitted');
@@ -130,7 +134,33 @@ ok(!isAnyFilterActive(DEFAULT_FILTERS), 'defaults -> not active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, q: 'foo' }), 'q -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, category: 'it' }), 'category -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: 'naukri' }), 'source -> active');
+ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'direct' }), 'tab=direct -> active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, page: 5 }), 'page change alone -> not active');
+
+// ------------------------------------------------------------
+section('applyJobFilters — tab filter (direct company jobs)');
+{
+  const jobs = [
+    fakeJob({ id: 'd1', createdBy: 'employer-1', title: 'Direct Employer Job' }),
+    fakeJob({ id: 'd2', source: 'Admin Post', title: 'Admin Job' }),
+    fakeJob({
+      id: 'agg',
+      source: 'naukri.com',
+      sourceUrl: 'https://www.naukri.com/job-1',
+      title: 'Scraped Naukri Job',
+    }),
+  ];
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'all' }).map((j) => j.id).sort(),
+    ['agg', 'd1', 'd2'].sort(),
+    'tab=all shows all jobs',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'direct' }).map((j) => j.id).sort(),
+    ['d1', 'd2'].sort(),
+    'tab=direct shows only direct employer & admin jobs',
+  );
+}
 
 // ------------------------------------------------------------
 section('applyJobFilters — admin source filter');

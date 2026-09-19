@@ -14,6 +14,7 @@ const primaryLinks = [
 
 const jobCategoryLinks = [
   { label: 'All Jobs', to: '/jobs' },
+  { label: 'Direct Company Jobs', to: '/jobs/vizagjobs' },
   { label: 'IT Jobs', to: '/jobs/it' },
   { label: 'Civil Jobs', to: '/jobs/civil' },
   { label: 'Mechanical Jobs', to: '/jobs/mechanical' },

@@ -361,12 +361,15 @@ export default function AdminExternalFetchPage() {
     return () => window.clearInterval(id);
   }, [naukriPending]);
 
+  const collectNaukriResultsRef = useRef(collectNaukriResults);
+  collectNaukriResultsRef.current = collectNaukriResults;
+
   useEffect(() => {
     if (!naukriPending?.runId) return;
     if (naukriCountdownSec > 0) return;
     if (naukriCollecting || naukriAutoCollectStarted.current) return;
     naukriAutoCollectStarted.current = true;
-    collectNaukriResults(naukriPending.runId, {
+    collectNaukriResultsRef.current(naukriPending.runId, {
       batchLabel: naukriPending.batchLabel,
       remainingBatches: naukriPending.remainingBatches,
       accumulatedJobs: naukriPending.accumulatedJobs,

@@ -5,6 +5,7 @@ import { getJobCategorySegment, getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
+import { getDirectPostingBadge } from '../lib/jobDirectPosting';
 
 const MAX_SIMILAR_JOBS = 6;
 
@@ -126,6 +127,7 @@ export default function SimilarJobs({ job }) {
               }
               postedAt={similar.postedAt}
               isFeatured={Boolean(similar.isFeatured)}
+              directBadge={getDirectPostingBadge(similar)}
             />
           );
         })}

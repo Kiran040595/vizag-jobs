@@ -1,4 +1,4 @@
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import StudentShell from '../components/student/StudentShell';
 import StudentProfileForm from '../components/student/StudentProfileForm';
@@ -46,13 +46,13 @@ function StudentProfileContent() {
       <StudentProfileForm onSaved={handleSaved} />
       {profileComplete ? (
         <p className="mt-6 text-sm text-slate-600">
-          <a href="/jobs/fresher" className="font-semibold text-indigo-600 hover:text-indigo-700">
+          <Link to="/jobs/fresher" className="font-semibold text-indigo-600 hover:text-indigo-700">
             Browse fresher jobs in Vizag
-          </a>{' '}
+          </Link>{' '}
           or{' '}
-          <a href="/saved-jobs" className="font-semibold text-indigo-600 hover:text-indigo-700">
+          <Link to="/saved-jobs" className="font-semibold text-indigo-600 hover:text-indigo-700">
             view saved jobs
-          </a>
+          </Link>
           .
         </p>
       ) : null}

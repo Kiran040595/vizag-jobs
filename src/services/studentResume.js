@@ -45,7 +45,7 @@ const postResumeApi = async (path, body) => {
   try {
     payload = await response.json();
   } catch {
-    payload = null;
+    // Non-JSON response, ignore
   }
 
   if (!response.ok) {
@@ -78,31 +78,53 @@ export const uploadStudentResume = async (file, userId) => {
   }
 
   const contentType = resolveResumeContentType(file.name, file.type);
-  const payload = await postResumeApi('/api/resume/upload-url', {
-    fileName: file.name,
-    fileSize: file.size,
-    contentType,
-  });
 
-  const uploadUrl = payload.uploadUrl;
-  const resumePath = payload.resumePath;
-  if (!uploadUrl || !resumePath) {
-    throw new Error('Could not prepare resume upload.');
+  // 1. Attempt Cloudflare R2 upload via API worker if available
+  try {
+    const payload = await postResumeApi('/api/resume/upload-url', {
+      fileName: file.name,
+      fileSize: file.size,
+      contentType,
+    });
+
+    const uploadUrl = payload?.uploadUrl;
+    const resumePath = payload?.resumePath;
+    if (uploadUrl && resumePath) {
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': payload.contentType || contentType || 'application/octet-stream',
+        },
+        body: file,
+      });
+
+      if (uploadResponse.ok) {
+        return resumePath;
+      }
+    }
+  } catch (r2Error) {
+    console.warn(
+      'Cloudflare R2 resume upload unavailable, falling back to Supabase storage:',
+      r2Error instanceof Error ? r2Error.message : r2Error,
+    );
   }
 
-  const uploadResponse = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': payload.contentType || contentType || 'application/octet-stream',
-    },
-    body: file,
-  });
+  // 2. Fallback to Supabase Storage bucket 'student-resumes'
+  const fileExt = file.name.split('.').pop() || 'pdf';
+  const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
-  if (!uploadResponse.ok) {
-    throw new Error(`Resume upload failed (${uploadResponse.status}).`);
+  const { data, error: uploadError } = await supabase.storage
+    .from(RESUME_BUCKET)
+    .upload(filePath, file, {
+      upsert: true,
+      contentType,
+    });
+
+  if (uploadError) {
+    throw new Error(`Resume upload failed: ${uploadError.message}`);
   }
 
-  return resumePath;
+  return data?.path || filePath;
 };
 
 export const createResumeSignedUrl = async (resumePath, expiresIn = 3600) => {

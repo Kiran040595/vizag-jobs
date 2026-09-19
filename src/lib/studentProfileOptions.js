@@ -2,6 +2,7 @@
 export const STUDENT_DEGREE_OPTIONS = [
   '10th Pass',
   '12th Pass',
+  'ITI',
   'Diploma',
   'B.Tech',
   'B.E',
@@ -25,6 +26,7 @@ export const STUDENT_BRANCH_OPTIONS = [
   'Civil Engineering',
   'Chemical Engineering',
   'Automobile Engineering',
+  'ITI Trade / Technical',
   'Commerce',
   'Accounting & Finance',
   'Business Administration',
@@ -33,11 +35,10 @@ export const STUDENT_BRANCH_OPTIONS = [
   'Not Applicable',
 ];
 
-/** Graduation years for dropdown (recent past + near future). */
+/** Graduation years for dropdown (expanded 2010 to 2030). */
 export const buildGraduationYearOptions = () => {
-  const currentYear = new Date().getFullYear();
   const years = [];
-  for (let year = currentYear + 3; year >= currentYear - 8; year -= 1) {
+  for (let year = 2030; year >= 2010; year -= 1) {
     years.push(String(year));
   }
   return years;

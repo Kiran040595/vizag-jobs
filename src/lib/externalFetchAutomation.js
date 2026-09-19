@@ -104,7 +104,6 @@ function mergeSeoJob(job, data) {
 async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, signal, report }) {
   const allJobs = [];
   const runIds = [];
-  let lastPayload = null;
 
   const waitAndCollectOne = async (runId, batchLabel) => {
     const waitMs = NAUKRI_ASYNC_COLLECT_WAIT_MS;
@@ -174,6 +173,7 @@ async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, 
     throw new Error('Naukri Apify run id missing from start response.');
   }
 
+  let lastPayload;
   let batchLabel = first.naukri_batch || 'fresher';
   let remaining = Array.isArray(first.naukri_remaining_batches) ? first.naukri_remaining_batches : [];
   report.apifyRunId = first.apify_naukri_run_id;

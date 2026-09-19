@@ -31,6 +31,7 @@ const JobCard = ({
   description,
   postedAt,
   isFeatured = false,
+  directBadge = null,
 }) => {
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
@@ -50,7 +51,9 @@ const JobCard = ({
       className={`group relative flex h-full flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-4 ${
         isFeatured
           ? 'border-cyan-300 hover:border-cyan-400'
-          : 'border-slate-200 hover:border-slate-300'
+          : directBadge
+            ? 'border-emerald-200 hover:border-emerald-300 ring-1 ring-emerald-100/50'
+            : 'border-slate-200 hover:border-slate-300'
       }`}
     >
       <button
@@ -69,11 +72,27 @@ const JobCard = ({
       </button>
 
       <div className="mb-3 min-w-0 pr-11 sm:pr-12">
-        {isFeatured ? (
-          <span className="mb-1.5 inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
-            Featured
-          </span>
-        ) : null}
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+          {directBadge ? (
+            <span
+              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                directBadge.tone === 'emerald'
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : directBadge.tone === 'cyan'
+                    ? 'border border-cyan-200 bg-cyan-50 text-cyan-800'
+                    : 'border border-indigo-200 bg-indigo-50 text-indigo-800'
+              }`}
+            >
+              <span>{directBadge.icon}</span>
+              <span>{directBadge.label}</span>
+            </span>
+          ) : null}
+          {isFeatured ? (
+            <span className="inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
+              Featured
+            </span>
+          ) : null}
+        </div>
         <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
           {jobTitle}
         </h3>

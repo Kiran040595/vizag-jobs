@@ -118,6 +118,12 @@ export default function JobFilters({
           onRemove={() => onUpdate({ freshness: 'all' })}
         />
       ) : null}
+      {filters.tab === 'direct' ? (
+        <ActiveFilterChip
+          label="Direct Company Jobs"
+          onRemove={() => onUpdate({ tab: 'all' })}
+        />
+      ) : null}
       {isAdmin && filters.source !== 'all' ? (
         <ActiveFilterChip
           label={labelFor(filters.source, SOURCE_OPTIONS)}

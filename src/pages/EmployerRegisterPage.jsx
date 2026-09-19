@@ -41,12 +41,16 @@ export default function EmployerRegisterPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!companyName.trim()) {
+      setSubmitError('Please enter your company name.');
+      return;
+    }
     setSubmitError('');
     setNotice('');
     setIsSubmitting(true);
 
     try {
-      const result = await signUp({ email, password, companyName });
+      const result = await signUp({ email, password, companyName: companyName.trim() });
       if (result?.session) {
         return;
       }
@@ -69,7 +73,7 @@ export default function EmployerRegisterPage() {
         <h1 className="text-3xl font-black text-slate-950">Create employer account</h1>
         <p className="mt-2 text-sm text-slate-600">Post jobs for your company after admin approval.</p>
 
-        <div className="mt-8 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Company name</span>
             <input
@@ -98,53 +102,51 @@ export default function EmployerRegisterPage() {
             </>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-              />
-            </label>
-            {notice ? (
-              <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                {notice}
-                {!REQUIRE_EMAIL_CONFIRMATION ? (
-                  <>
-                    {' '}
-                    <Link to="/employer/login" className="font-semibold underline">
-                      Sign in
-                    </Link>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            {submitError ? (
-              <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
-            ) : null}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
-            >
-              {isSubmitting ? 'Creating account...' : 'Create account'}
-            </button>
-          </form>
-        </div>
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            />
+          </label>
+          {notice ? (
+            <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {notice}
+              {!REQUIRE_EMAIL_CONFIRMATION ? (
+                <>
+                  {' '}
+                  <Link to="/employer/login" className="font-semibold underline">
+                    Sign in
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          {submitError ? (
+            <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
+          >
+            {isSubmitting ? 'Creating account...' : 'Create account'}
+          </button>
+        </form>
         <p className="mt-6 text-sm text-slate-600">
           Already have an account?{' '}
           <Link to="/employer/login" className="font-semibold text-cyan-600">

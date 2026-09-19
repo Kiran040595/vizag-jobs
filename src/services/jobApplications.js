@@ -2,7 +2,6 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import {
   APPLICATION_STATUSES,
-  formatApplicationStatus,
   normalizeApplicationStatus,
 } from '../lib/applicationStatus';
 import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';

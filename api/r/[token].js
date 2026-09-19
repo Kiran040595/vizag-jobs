@@ -14,7 +14,7 @@ const CONTENT_TYPES = {
 const fileNameFromPath = (resumePath) => {
   const key = toR2ObjectKey(resumePath);
   const base = key.split('/').pop() || 'resume';
-  return base.replace(/[^\w.\-]+/g, '_') || 'resume';
+  return base.replace(/[^\w.-]+/g, '_') || 'resume';
 };
 
 const contentTypeForFileName = (fileName) => {
@@ -95,7 +95,7 @@ function downloadPageHtml(token) {
         if (utf && utf[1]) {
           try { return decodeURIComponent(utf[1].trim()); } catch (e) {}
         }
-        var plain = /filename=\"?([^\";]+)\"?/i.exec(value);
+        var plain = /filename="?([^";]+)"?/i.exec(value);
         return (plain && plain[1]) ? plain[1].trim() : 'resume.pdf';
       }
 

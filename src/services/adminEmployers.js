@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import {
   buildJobStatsMap,
-  formatEmployerRegisteredAt,
   mapEmployerProfileRow,
 } from '../lib/adminEmployerProfile.js';
 

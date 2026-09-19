@@ -99,7 +99,7 @@ export function consumeAdminJobPrefill(id) {
   if (!ls || !id) return null;
 
   const key = `${PREFIX}${id}`;
-  let raw = null;
+  let raw;
   try {
     raw = ls.getItem(key);
     ls.removeItem(key);

@@ -22,10 +22,16 @@ import {
   normalizeJobCategory,
 } from './jobCategoryTaxonomy.js';
 import { ADMIN_SOURCE_OPTIONS, matchesAdminSourceFilter } from './jobSourceFilter.js';
+import { isDirectPosting } from './jobDirectPosting.js';
 
 export const PAGE_SIZE = 12;
 
 export const CATEGORY_OPTIONS = FILTER_CATEGORY_OPTIONS;
+
+export const TAB_OPTIONS = [
+  { id: 'all', label: 'All Jobs' },
+  { id: 'direct', label: 'Direct Company Jobs' },
+];
 
 export const JOB_TYPE_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -45,6 +51,7 @@ export const FRESHNESS_OPTIONS = [
 export const SOURCE_OPTIONS = ADMIN_SOURCE_OPTIONS;
 
 export const DEFAULT_FILTERS = Object.freeze({
+  tab: 'all',
   q: '',
   category: 'all',
   jobType: 'all',
@@ -56,6 +63,7 @@ export const DEFAULT_FILTERS = Object.freeze({
 const isOptionId = (id, options) => options.some((opt) => opt.id === id);
 
 export const readFiltersFromSearchParams = (searchParams) => {
+  const rawTab = (searchParams.get('tab') ?? 'all').toLowerCase();
   const rawCategory = (searchParams.get('category') ?? 'all').toLowerCase();
   const rawJobType = (searchParams.get('jobType') ?? 'all').toLowerCase();
   const rawFreshness = (searchParams.get('freshness') ?? 'all').toLowerCase();
@@ -63,6 +71,7 @@ export const readFiltersFromSearchParams = (searchParams) => {
   const pageNum = Number(searchParams.get('page'));
 
   return {
+    tab: rawTab === 'direct' ? 'direct' : 'all',
     q: searchParams.get('q') ?? '',
     category: isOptionId(rawCategory, CATEGORY_OPTIONS) ? rawCategory : 'all',
     jobType: isOptionId(rawJobType, JOB_TYPE_OPTIONS) ? rawJobType : 'all',
@@ -76,6 +85,7 @@ export const readFiltersFromSearchParams = (searchParams) => {
 export const writeFiltersToSearchParams = (filters) => {
   const out = new URLSearchParams();
   const trimmed = (filters.q ?? '').trim();
+  if (filters.tab && filters.tab !== 'all') out.set('tab', filters.tab);
   if (trimmed) out.set('q', trimmed);
   if (filters.category && filters.category !== 'all') out.set('category', filters.category);
   if (filters.jobType && filters.jobType !== 'all') out.set('jobType', filters.jobType);
@@ -90,7 +100,8 @@ export const isAnyFilterActive = (filters) =>
   filters.category !== 'all' ||
   filters.jobType !== 'all' ||
   filters.freshness !== 'all' ||
-  filters.source !== 'all';
+  filters.source !== 'all' ||
+  (filters.tab && filters.tab !== 'all');
 
 const matchesSearchText = (job, q) => {
   if (!q) return true;
@@ -176,8 +187,10 @@ export const sortJobsForListing = (jobs) =>
 export const applyJobFilters = (jobs, filters) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return [];
   const q = (filters.q ?? '').trim().toLowerCase();
+  const isDirectTab = filters.tab === 'direct';
   const filtered = jobs.filter(
     (job) =>
+      (!isDirectTab || isDirectPosting(job)) &&
       matchesCategory(job, filters.category) &&
       matchesJobType(job, filters.jobType) &&
       matchesFreshness(job, filters.freshness) &&
