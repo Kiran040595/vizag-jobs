@@ -4,6 +4,7 @@ import {
   consumeExternalApplyPrompt,
   subscribeExternalApplyPrompt,
 } from '../lib/jobGroupLink';
+import { recordAndOpenExternalApply } from '../services/jobApplyClicks';
 
 /**
  * Global listener for external-apply prompts (login redirect, apply button, etc.).
@@ -29,10 +30,9 @@ export default function ExternalApplyPromptHost() {
 
   const continueApply = () => {
     const url = prompt.applyUrl;
+    const jobId = prompt.jobId;
     setPrompt(null);
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    recordAndOpenExternalApply(url, jobId);
   };
 
   return (

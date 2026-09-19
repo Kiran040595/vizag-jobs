@@ -58,7 +58,7 @@ export default function StudentApplyButton({
         return;
       }
 
-      openExternalApplyLink(applyLink, { jobTitle });
+      openExternalApplyLink(applyLink, { jobTitle, jobId });
       return;
     }
 
@@ -69,7 +69,7 @@ export default function StudentApplyButton({
         return;
       }
 
-      openExternalApplyLink(applyLink, { jobTitle });
+      openExternalApplyLink(applyLink, { jobTitle, jobId });
       return;
     }
 

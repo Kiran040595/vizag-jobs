@@ -63,6 +63,10 @@ export const mapHomeBootstrapJob = (job, index = 0) => {
       Number(job.application_count ?? job.applicationCount) > 0
         ? Math.floor(Number(job.application_count ?? job.applicationCount))
         : 0,
+    applyClickCount:
+      Number(job.apply_click_count ?? job.applyClickCount) > 0
+        ? Math.floor(Number(job.apply_click_count ?? job.applyClickCount))
+        : 0,
     postedAt: normalizeText(job.posted_at ?? job.postedAt),
     expiresAt: normalizeText(job.expires_at ?? job.expiresAt),
     status: normalizeText(job.status, 'published'),
@@ -217,6 +221,7 @@ export const fetchHomeBootstrapJobRows = async ({
     'created_by',
     'apply_mode',
     'application_count',
+    'apply_click_count',
     'posted_at',
     'expires_at',
     'status',

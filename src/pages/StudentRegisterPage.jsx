@@ -75,7 +75,10 @@ export default function StudentRegisterPage() {
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply && profileComplete) {
       const meta = readPendingApplyJobMeta();
-      openExternalApplyLink(pendingApply, { jobTitle: meta?.title || '' });
+      openExternalApplyLink(pendingApply, {
+        jobTitle: meta?.title || '',
+        jobId: meta?.jobId || '',
+      });
     }
     navigate(destination, { replace: true });
   }, [navigate, profileComplete, searchParams]);

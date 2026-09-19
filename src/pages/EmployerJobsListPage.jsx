@@ -13,7 +13,9 @@ import { fetchMyJobs } from '../services/employerJobs';
 import { fetchJobApplicationStats } from '../services/jobApplications';
 import {
   formatApplicationCountNoun,
-  resolveJobApplicationCount,
+  formatUniqueApplyClickNoun,
+  jobApplyClickCount,
+  resolveOnPlatformApplicationCount,
 } from '../lib/jobApplicationCount';
 
 const STATUS_STYLES = {
@@ -167,20 +169,24 @@ function EmployerJobsListContent() {
                     <p className="mt-2 text-sm text-rose-700">Reason: {job.rejection_reason}</p>
                   ) : null}
                   {job.apply_mode === 'internal' ||
-                  resolveJobApplicationCount(job, applicationCounts) > 0 ? (
+                  resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
                     <p className="mt-2 text-sm text-slate-600">
-                      {formatApplicationCountNoun(resolveJobApplicationCount(job, applicationCounts))}
+                      {formatApplicationCountNoun(resolveOnPlatformApplicationCount(job, applicationCounts))}
+                    </p>
+                  ) : null}
+                  {jobApplyClickCount(job) > 0 ? (
+                    <p className="mt-1 text-sm text-slate-600">
+                      {formatUniqueApplyClickNoun(jobApplyClickCount(job))}
                     </p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {job.apply_mode === 'internal' ||
-                  resolveJobApplicationCount(job, applicationCounts) > 0 ? (
+                  {job.apply_mode === 'internal' ? (
                     <Link
                       to={`/employer/jobs/${job.id}/applications`}
                       className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
                     >
-                      View applications ({resolveJobApplicationCount(job, applicationCounts)})
+                      View applications ({resolveOnPlatformApplicationCount(job, applicationCounts)})
                     </Link>
                   ) : null}
                   {['pending', 'draft'].includes(job.status) ? (

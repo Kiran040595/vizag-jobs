@@ -201,7 +201,10 @@ export default function JobDetailsPage() {
     }
 
     const pendingApply = consumePendingApplyUrl();
-    openExternalApplyLink(pendingApply || job.applyLink, { jobTitle: job.title });
+    openExternalApplyLink(pendingApply || job.applyLink, {
+      jobTitle: job.title,
+      jobId: job.id,
+    });
   }, [isStudent, job, jobDetailPath, navigate, profileComplete, searchParams, studentSession]);
 
   const skills = splitCommaValues(job?.skills);

@@ -6,21 +6,45 @@ export const normalizeApplicationCount = (value) => {
   return Math.floor(n);
 };
 
-export const jobApplicationCount = (job) =>
+export const jobOnPlatformApplicationCount = (job) =>
   normalizeApplicationCount(job?.applicationCount ?? job?.application_count);
 
-export const resolveJobApplicationCount = (job, countsById = {}) => {
+export const jobApplyClickCount = (job) =>
+  normalizeApplicationCount(job?.applyClickCount ?? job?.apply_click_count);
+
+/** On-platform applications + unique external apply redirects. */
+export const jobApplicationCount = (job) =>
+  jobOnPlatformApplicationCount(job) + jobApplyClickCount(job);
+
+export const resolveOnPlatformApplicationCount = (job, countsById = {}) => {
   if (job?.id != null && countsById[job.id] != null) {
     return normalizeApplicationCount(countsById[job.id]);
   }
-  return jobApplicationCount(job);
+  return jobOnPlatformApplicationCount(job);
 };
 
-/** Show on public cards/details for on-platform jobs, or any job that already has applicants. */
+export const resolveJobApplicationCount = (job, countsById = {}) =>
+  resolveOnPlatformApplicationCount(job, countsById) + jobApplyClickCount(job);
+
+/** Public cards: on-platform jobs always, others once anyone has applied or clicked. */
 export const shouldShowPublicApplicantCount = (job) =>
-  jobApplicationCount(job) > 0 ||
-  isInternalApplyJob(job) ||
-  job?.apply_mode === 'internal';
+  jobApplicationCount(job) > 0 || isInternalApplyJob(job) || job?.apply_mode === 'internal';
+
+export const summarizeApplyClickCounts = (jobs = []) => {
+  let uniqueClicks = 0;
+  let jobsWithClicks = 0;
+  const list = Array.isArray(jobs) ? jobs : [];
+  for (const job of list) {
+    const n = jobApplyClickCount(job);
+    uniqueClicks += n;
+    if (n > 0) jobsWithClicks += 1;
+  }
+  return {
+    jobCount: list.length,
+    uniqueClicks,
+    jobsWithClicks,
+  };
+};
 
 export const formatApplicantCountLabel = (count) => {
   const n = normalizeApplicationCount(count);
@@ -31,4 +55,9 @@ export const formatApplicantCountLabel = (count) => {
 export const formatApplicationCountNoun = (count) => {
   const n = normalizeApplicationCount(count);
   return n === 1 ? '1 application' : `${n} applications`;
+};
+
+export const formatUniqueApplyClickNoun = (count) => {
+  const n = normalizeApplicationCount(count);
+  return n === 1 ? '1 unique apply click' : `${n} unique apply clicks`;
 };

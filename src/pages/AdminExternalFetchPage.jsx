@@ -37,6 +37,7 @@ import {
   loadAdminFetchSnapshot,
   saveAdminFetchSnapshot,
 } from '../lib/adminExternalFetchPersistence';
+import { summarizeApplyClickCounts } from '../lib/jobApplicationCount';
 
 const BULK_IMPORT_CONCURRENCY = 3;
 /** Debounce auto-save so rapid state changes (typing, bulk SEO) don't thrash localStorage. */
@@ -806,6 +807,7 @@ export default function AdminExternalFetchPage() {
   };
 
   const activeMeta = EXTERNAL_FETCH_SOURCES.find((s) => s.id === activeSource);
+  const applyClickSummary = useMemo(() => summarizeApplyClickCounts(existingJobs), [existingJobs]);
   const hasBatch = reviewJobs.length > 0 || Boolean(fetchPayload);
   const showRestoredBanner =
     hasBatch &&
@@ -827,6 +829,20 @@ export default function AdminExternalFetchPage() {
         <p className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Sign in as admin to fetch listings.
         </p>
+      ) : null}
+
+      {!jobsLoading && existingJobs.length > 0 ? (
+        <div className="mb-6 flex flex-wrap gap-3 text-xs font-semibold text-slate-600">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+            Live imported jobs: {applyClickSummary.jobCount}
+          </span>
+          <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-indigo-900">
+            Unique apply clicks: {applyClickSummary.uniqueClicks}
+          </span>
+          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-cyan-900">
+            Jobs with clicks: {applyClickSummary.jobsWithClicks}
+          </span>
+        </div>
       ) : null}
 
       {showRestoredBanner ? (

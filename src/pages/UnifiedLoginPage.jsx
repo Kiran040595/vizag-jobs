@@ -120,7 +120,10 @@ function StudentLoginPanel({ searchParams }) {
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply && profileComplete) {
       const meta = readPendingApplyJobMeta();
-      openExternalApplyLink(pendingApply, { jobTitle: meta?.title || '' });
+      openExternalApplyLink(pendingApply, {
+        jobTitle: meta?.title || '',
+        jobId: meta?.jobId || '',
+      });
     }
 
     navigate(returnPath, { replace: true });
