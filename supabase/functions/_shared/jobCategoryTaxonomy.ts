@@ -17,7 +17,24 @@ export const JOB_CATEGORIES: JobCategoryDef[] = [
   { id: 'civil', value: 'Civil Engineering', label: 'Civil Engineering', aliases: ['civil', 'construction', 'structural', 'site engineer'] },
   { id: 'mechanical', value: 'Mechanical Engineering', label: 'Mechanical Engineering', aliases: ['mechanical', 'production', 'manufacturing', 'plant', 'hvac'] },
   { id: 'electrical', value: 'Electrical / EEE', label: 'Electrical / EEE', aliases: ['electrical', 'eee', 'power', 'substation'] },
-  { id: 'ece', value: 'ECE / Electronics', label: 'ECE / Electronics', aliases: ['ece', 'electronics', 'embedded', 'communication', 'vlsi', 'telecom'] },
+  {
+    id: 'ece',
+    value: 'ECE / Electronics',
+    label: 'ECE / Electronics',
+    // Keep aliases specific — bare "communication" matches soft-skills text;
+    // bare "ece" must be matched as a whole word (see containsToken).
+    aliases: [
+      'ece',
+      'electronics',
+      'electronics and communication',
+      'electronics & communication',
+      'embedded systems',
+      'embedded engineer',
+      'vlsi',
+      'telecom',
+      'telecommunications',
+    ],
+  },
   { id: 'banking', value: 'Banking & Finance', label: 'Banking & Finance', aliases: ['banking', 'finance', 'accountant', 'accounts', 'nbfc', 'insurance'] },
   { id: 'bpo', value: 'BPO / Customer Support', label: 'BPO / Customer Support', aliases: ['bpo', 'customer support', 'call center', 'voice process', 'telecaller'] },
   { id: 'sales', value: 'Sales & Marketing', label: 'Sales & Marketing', aliases: ['sales', 'marketing', 'business development', 'bde', 'digital marketing'] },
@@ -58,6 +75,30 @@ const normalize = (value: unknown): string =>
 
 const joinList = (value: unknown): string =>
   Array.isArray(value) ? value.filter(Boolean).join(' ') : String(value || '');
+
+/**
+ * Phrase / token match that avoids substring false positives.
+ * Short tokens (≤3 chars) and pure acronyms use word boundaries so
+ * "ece" does not match "recently" / "necessary" / "reception".
+ */
+export function containsToken(hay: string, token: string): boolean {
+  const needle = String(token ?? '')
+    .trim()
+    .toLowerCase();
+  if (!hay || !needle) return false;
+  if (hay === needle) return true;
+
+  const isShortOrAcronym = needle.length <= 3 || /^[a-z0-9]{2,6}$/.test(needle);
+  if (isShortOrAcronym && !needle.includes(' ')) {
+    return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(needle)}(?:[^a-z0-9]|$)`).test(hay);
+  }
+
+  if (needle.includes(' ')) {
+    return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(needle)}(?:[^a-z0-9]|$)`).test(hay);
+  }
+
+  return hay.includes(needle);
+}
 
 type ClassifyInput = {
   title?: string;
@@ -103,6 +144,7 @@ export function normalizeJobCategory(raw: unknown): string | null {
   if (byId) return byId.value;
 
   for (const cat of JOB_CATEGORIES) {
+    if (cat.value.toLowerCase() === text) return cat.value;
     if (cat.aliases.some((alias) => text === alias || textHasKeyword(text, alias))) {
       return cat.value;
     }
@@ -124,11 +166,44 @@ const IT_KEYWORDS = [
   'full stack', 'devops', 'data engineer', 'data scientist', 'it support', 'system admin',
 ];
 
+const ECE_CATEGORY = 'ECE / Electronics';
+
+const ECE_EVIDENCE_KEYWORDS = [
+  'ece',
+  'electronics engineer',
+  'electronics and communication',
+  'electronics & communication',
+  'embedded engineer',
+  'embedded systems',
+  'vlsi',
+  'fpga',
+  'telecom engineer',
+  'communication engineer',
+  'pcb design',
+  'pcb',
+];
+
 const CATEGORY_SIGNALS: { value: string; keywords: string[] }[] = [
   { value: 'Civil Engineering', keywords: ['civil engineer', 'civil engineering', 'structural engineer', 'construction engineer', 'site engineer'] },
   { value: 'Mechanical Engineering', keywords: ['mechanical engineer', 'mechanical engineering', 'hvac', 'piping engineer', 'production engineer', 'plant engineer'] },
   { value: 'Electrical / EEE', keywords: ['electrical engineer', 'eee', 'power plant', 'substation', 'switchgear', 'plc', 'scada'] },
-  { value: 'ECE / Electronics', keywords: ['ece', 'electronics engineer', 'embedded', 'vlsi', 'fpga', 'telecom engineer', 'pcb'] },
+  {
+    value: ECE_CATEGORY,
+    keywords: [
+      'ece',
+      'electronics engineer',
+      'electronics and communication',
+      'electronics & communication',
+      'embedded engineer',
+      'embedded systems',
+      'vlsi',
+      'fpga',
+      'telecom engineer',
+      'communication engineer',
+      'pcb design',
+      'pcb',
+    ],
+  },
   { value: 'IT & Software', keywords: IT_KEYWORDS },
   { value: 'Banking & Finance', keywords: ['bank', 'nbfc', 'accountant', 'finance executive', 'insurance', 'tally'] },
   { value: 'BPO / Customer Support', keywords: ['bpo', 'customer support', 'call center', 'voice process', 'telecaller'] },
@@ -139,6 +214,23 @@ const CATEGORY_SIGNALS: { value: string; keywords: string[] }[] = [
   { value: 'Hospitality & Retail', keywords: ['hotel', 'front office', 'retail', 'store manager', 'cashier', 'hospitality'] },
   { value: 'Logistics & Supply Chain', keywords: ['logistics', 'warehouse', 'supply chain', 'delivery executive', 'driver', 'fleet'] },
 ];
+
+/** Evidence of a real ECE role (ignores the category field to avoid circular trust). */
+export function hasEceRoleEvidence(job: ClassifyInput = {}): boolean {
+  const hay = [
+    job.title,
+    job.jobType ?? job.job_type,
+    job.skills,
+    job.shortDescription ?? job.short_description,
+    job.description,
+    joinList(job.eligibility),
+    joinList(job.responsibilities),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return matchesAny(hay, ECE_EVIDENCE_KEYWORDS);
+}
 
 export function inferIsFresherFromJob(job: ClassifyInput = {}): boolean {
   const experience = String(job.experience ?? '').trim();
@@ -194,6 +286,15 @@ export function inferJobCategoryFromSignals(job: ClassifyInput = {}): string {
   return fromField || 'General';
 }
 
+const refineMislabelledEceCategory = (job: ClassifyInput, category: string): string => {
+  if (category !== ECE_CATEGORY) return category;
+  if (hasEceRoleEvidence(job)) return category;
+
+  const alt = inferJobCategoryFromSignals({ ...job, category: 'General' });
+  if (alt && alt !== 'General' && alt !== ECE_CATEGORY) return alt;
+  return 'General';
+};
+
 export function classifyJobRecord(record: ClassifyInput = {}): {
   category: string;
   company: string;
@@ -201,9 +302,10 @@ export function classifyJobRecord(record: ClassifyInput = {}): {
   experience: string;
 } {
   const geminiCategory = typeof record.category === 'string' ? normalizeJobCategory(record.category) : null;
-  const category =
+  let category =
     (geminiCategory && geminiCategory !== 'General' ? geminiCategory : null) ||
     inferJobCategoryFromSignals(record);
+  category = refineMislabelledEceCategory(record, category);
 
   const geminiCompany =
     typeof record.company === 'string' && isUsableCompanyName(record.company)

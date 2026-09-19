@@ -3,17 +3,19 @@
  * Used by homepage filters and engineering landing pages.
  */
 
+import { containsToken, hasEceRoleEvidence } from './jobCategoryTaxonomy.js';
+
 const jobTextBlob = (job) =>
   [job.title, job.category, job.jobType, job.skills, job.shortDescription, job.description]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
 
-const matchesAny = (hay, keywords) => keywords.some((kw) => hay.includes(kw));
+const matchesAny = (hay, keywords) => keywords.some((kw) => containsToken(hay, kw));
 
 const categoryIncludes = (job, fragments) => {
   const cat = (job.category || '').toLowerCase();
-  return fragments.some((f) => cat.includes(f));
+  return fragments.some((f) => containsToken(cat, f));
 };
 
 export const isCivilRelatedJob = (job) => {
@@ -49,7 +51,7 @@ export const isMechanicalRelatedJob = (job) => {
 };
 
 export const isElectricalRelatedJob = (job) => {
-  if (categoryIncludes(job, ['electrical', 'eee', 'power'])) return true;
+  if (categoryIncludes(job, ['electrical', 'eee'])) return true;
   const hay = jobTextBlob(job);
   return matchesAny(hay, [
     'electrical engineer',
@@ -64,18 +66,10 @@ export const isElectricalRelatedJob = (job) => {
 };
 
 export const isEceRelatedJob = (job) => {
-  if (categoryIncludes(job, ['ece', 'electronics', 'communication', 'embedded'])) return true;
-  const hay = jobTextBlob(job);
-  if (/\bece\b/.test(hay)) return true;
-  return matchesAny(hay, [
-    'electronics engineer',
-    'electronics and communication',
-    'embedded engineer',
-    'vlsi',
-    'fpga',
-    'pcb design',
-    'telecom engineer',
-  ]);
+  // Soft-skill "communication" and substring "ece" (recently/necessary) must not qualify.
+  // A stored "ECE / Electronics" label alone is not enough — historical false
+  // positives left that label on unrelated jobs.
+  return hasEceRoleEvidence(job);
 };
 
 export const isEngineeringRelatedJob = (job) =>

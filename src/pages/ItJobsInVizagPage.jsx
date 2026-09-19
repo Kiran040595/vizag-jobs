@@ -22,7 +22,7 @@ export default function ItJobsInVizagPage() {
             isItRelatedJob(job) && jobMatchesSearchText(job, searchTerm)
         ),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {

@@ -1,12 +1,12 @@
 name: Auto daily Naukri fetch
 
 # Own workflow file so GitHub does not delay this cron behind LinkedIn / blog / Shorts
-# in auto-naukri-daily.yml (those shared schedules were starting Naukri 3–6 hours late).
+# in auto-naukri-daily.yml.
 
 on:
   schedule:
-    # 4:00 PM IST = 10:30 UTC
-    - cron: '30 10 * * *'
+    # 3:00 PM IST = 09:30 UTC
+    - cron: '30 9 * * *'
   workflow_dispatch:
 
 concurrency:

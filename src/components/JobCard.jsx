@@ -2,24 +2,9 @@ import {
   formatRelativePostedAt,
   shouldHighlightPostedTime,
 } from '../lib/jobFreshness';
-import { useSavedJob } from '../lib/useSavedJob';
-import { pushToast } from '../lib/toast';
 import FullJobDetailsLink from './FullJobDetailsLink';
-
-const BookmarkIcon = ({ filled = false }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-5 w-5"
-    fill={filled ? 'currentColor' : 'none'}
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z" />
-  </svg>
-);
+import FeaturedBadge from './FeaturedBadge';
+import SaveJobButton from './SaveJobButton';
 
 const JobCard = ({
   jobId,
@@ -35,16 +20,6 @@ const JobCard = ({
 }) => {
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
-  const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
-
-  const handleToggleSaved = (event) => {
-    const wasSaved = saved;
-    toggle(event);
-    pushToast({
-      message: wasSaved ? 'Job removed from saved jobs.' : 'Job saved.',
-      type: 'success',
-    });
-  };
 
   return (
     <article
@@ -56,20 +31,7 @@ const JobCard = ({
             : 'border-slate-200 hover:border-slate-300'
       }`}
     >
-      <button
-        type="button"
-        onClick={handleToggleSaved}
-        className={`absolute right-2.5 top-2.5 z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:right-4 sm:top-4 sm:h-9 sm:w-9 ${
-          saved
-            ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100'
-            : 'border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600'
-        }`}
-        aria-label={saved ? `Remove ${jobTitle} from saved jobs` : `Save ${jobTitle}`}
-        aria-pressed={saved}
-        title={saved ? 'Saved — click to remove' : 'Save job'}
-      >
-        <BookmarkIcon filled={saved} />
-      </button>
+      <SaveJobButton jobId={jobId} jobSnapshot={jobSnapshot} jobTitle={jobTitle} variant="card" />
 
       <div className="mb-3 min-w-0 pr-11 sm:pr-12">
         <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
@@ -87,11 +49,7 @@ const JobCard = ({
               <span>{directBadge.label}</span>
             </span>
           ) : null}
-          {isFeatured ? (
-            <span className="inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
-              Featured
-            </span>
-          ) : null}
+          {isFeatured ? <FeaturedBadge /> : null}
         </div>
         <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
           {jobTitle}

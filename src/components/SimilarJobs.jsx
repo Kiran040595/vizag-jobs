@@ -3,7 +3,7 @@ import JobCard from './JobCard';
 import { useCachedPublicJobs } from '../lib/useCachedPublicJobs';
 import { getJobCategorySegment, getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
-import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay';
+import { buildCardHighlightItems, buildJobSaveSnapshot, cardCompanyName } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
 
@@ -109,14 +109,7 @@ export default function SimilarJobs({ job }) {
             <JobCard
               key={similar.id}
               jobId={similar.id}
-              jobSnapshot={{
-                id: similar.id,
-                slug: similar.slug,
-                title: similar.title,
-                company: company || '',
-                location: '',
-                jobPath: getJobDetailPath(similar),
-              }}
+              jobSnapshot={buildJobSaveSnapshot(similar)}
               jobPath={getJobDetailPath(similar)}
               jobTitle={similar.title}
               companyName={company}

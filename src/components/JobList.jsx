@@ -3,6 +3,7 @@ import { getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import {
   buildCardHighlightItems,
+  buildJobSaveSnapshot,
   cardCompanyName,
 } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
@@ -59,16 +60,16 @@ const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) 
   return (
     <section
       ref={headerRef}
-      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"
+      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:p-7"
     >
       <div className="mb-3 flex items-end justify-between gap-3 sm:mb-5">
         <h2 className="text-lg font-bold text-slate-900 sm:text-2xl">Recent Job Openings</h2>
-        <p className="shrink-0 text-xs font-semibold text-slate-500">
+        <p className="shrink-0 text-xs font-semibold text-slate-500 sm:text-sm">
           {jobsToShow.length} of {totalCount}
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-4">
         {jobsToShow.map((job) => {
           const company = cardCompanyName(job.company);
           const highlightItems = buildCardHighlightItems({
@@ -84,14 +85,7 @@ const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) 
           <JobCard
             key={job.id}
             jobId={job.id}
-            jobSnapshot={{
-              id: job.id,
-              slug: job.slug,
-              title: job.title,
-              company: company || '',
-              location: '',
-              jobPath: getJobDetailPath(job),
-            }}
+            jobSnapshot={buildJobSaveSnapshot(job)}
             jobPath={getJobDetailPath(job)}
             jobTitle={job.title}
             companyName={company}

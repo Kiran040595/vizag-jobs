@@ -34,6 +34,7 @@ import { consumeStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
+import SaveJobButton from '../components/SaveJobButton';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
 import SimilarJobs from '../components/SimilarJobs';
@@ -49,6 +50,7 @@ import {
 } from '../lib/jobDisplayLabels';
 import { jobSupportsApply } from '../lib/jobApplyMode';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
+import { buildJobSaveSnapshot } from '../lib/jobCardDisplay';
 
 const splitCommaValues = (value) =>
   (value || '')
@@ -267,7 +269,7 @@ export default function JobDetailsPage() {
         noindex={!job || jobExpired}
       />
       <Navbar />
-      <main className="mx-auto w-full max-w-5xl px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-5xl px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <Link to="/" className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-600 hover:text-blue-700">
           ← Back to jobs
         </Link>
@@ -313,15 +315,17 @@ export default function JobDetailsPage() {
         ) : null}
 
         {job ? (
-          <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:mt-6 sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h1 className="text-xl font-extrabold leading-snug text-slate-900 sm:text-3xl">{job.title}</h1>
+          <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:mt-6 sm:p-7 lg:p-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 lg:max-w-3xl">
+                <h1 className="text-xl font-extrabold leading-snug text-slate-900 sm:text-3xl lg:text-[2rem]">
+                  {job.title}
+                </h1>
                 <p className="mt-1 text-sm text-slate-600 sm:text-base">
                   {displayCompanyName(job.company)} · {displayLocation(job.location)}
                 </p>
               </div>
-              <div className="hidden flex-wrap items-center gap-2 sm:flex">
+              <div className="hidden shrink-0 flex-wrap items-center gap-2 sm:flex lg:justify-end">
                 {jobSupportsApply(job) ? (
                   <StudentApplyButton
                     applyLink={job.applyLink}
@@ -331,13 +335,26 @@ export default function JobDetailsPage() {
                     jobTitle={job.title}
                     jobCompany={displayCompanyName(job.company)}
                     alreadyApplied={Boolean(existingApplication)}
+                    className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
                   />
                 ) : null}
+                <SaveJobButton
+                  jobId={job.id}
+                  jobSnapshot={buildJobSaveSnapshot(job)}
+                  jobTitle={job.title}
+                  variant="detail"
+                />
                 <JobShareButtons job={job} />
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 sm:hidden">
+              <SaveJobButton
+                jobId={job.id}
+                jobSnapshot={buildJobSaveSnapshot(job)}
+                jobTitle={job.title}
+                variant="detail"
+              />
               <JobShareButtons job={job} />
             </div>
 
