@@ -7,7 +7,8 @@ import {
 } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
-import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobApplicationCount';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { jobApplicationCount, shouldShowAdminApplicantCount } from '../lib/jobApplicationCount';
 
 /**
  * Pure presentational list. The parent owns filtering/pagination and passes
@@ -16,6 +17,7 @@ import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobA
  * whether to render the "Reset filters" CTA in the empty state.
  */
 const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) => {
+  const { isAdmin } = useAdminAuth();
   const jobsToShow = Array.isArray(jobs) ? jobs : [];
   const totalCount = typeof total === 'number' ? total : jobsToShow.length;
 
@@ -104,7 +106,7 @@ const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) 
             isFeatured={Boolean(job.isFeatured)}
             directBadge={getDirectPostingBadge(job)}
             applicationCount={jobApplicationCount(job)}
-            showApplicantCount={shouldShowPublicApplicantCount(job)}
+            showApplicantCount={shouldShowAdminApplicantCount(job, isAdmin)}
           />
           );
         })}

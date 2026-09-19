@@ -6,7 +6,8 @@ import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
-import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobApplicationCount';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { jobApplicationCount, shouldShowAdminApplicantCount } from '../lib/jobApplicationCount';
 
 const MAX_SIMILAR_JOBS = 6;
 
@@ -65,6 +66,7 @@ const scoreSimilarity = (job, candidate, baseSegment, baseSkills) => {
  */
 export default function SimilarJobs({ job }) {
   const { allJobs } = useCachedPublicJobs();
+  const { isAdmin } = useAdminAuth();
 
   const similarJobs = useMemo(() => {
     if (!job || !Array.isArray(allJobs) || allJobs.length === 0) return [];
@@ -130,7 +132,7 @@ export default function SimilarJobs({ job }) {
               isFeatured={Boolean(similar.isFeatured)}
               directBadge={getDirectPostingBadge(similar)}
               applicationCount={jobApplicationCount(similar)}
-              showApplicantCount={shouldShowPublicApplicantCount(similar)}
+              showApplicantCount={shouldShowAdminApplicantCount(similar, isAdmin)}
             />
           );
         })}

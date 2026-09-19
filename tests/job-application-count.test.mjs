@@ -12,7 +12,7 @@ import {
   normalizeApplicationCount,
   resolveJobApplicationCount,
   resolveOnPlatformApplicationCount,
-  shouldShowPublicApplicantCount,
+  shouldShowAdminApplicantCount,
   summarizeApplyClickCounts,
 } from '../src/lib/jobApplicationCount.js';
 import {
@@ -64,12 +64,14 @@ ok(resolveOnPlatformApplicationCount({ id: 'a', applicationCount: 1 }, { a: 5 })
 ok(resolveJobApplicationCount({ id: 'a', applicationCount: 1, applyClickCount: 2 }, { a: 5 }) === 7, 'lookup plus clicks');
 ok(resolveJobApplicationCount({ id: 'b', application_count: 3 }, {}) === 3, 'falls back to job');
 
-console.log('\nshouldShowPublicApplicantCount');
-ok(shouldShowPublicApplicantCount({ applyMode: 'internal', applicationCount: 0 }), 'internal with 0');
-ok(shouldShowPublicApplicantCount({ apply_mode: 'internal', applicationCount: 0 }), 'snake_case internal');
-ok(shouldShowPublicApplicantCount({ applyMode: 'external', applicationCount: 2 }), 'external with applicants');
-ok(shouldShowPublicApplicantCount({ applyMode: 'external', applyClickCount: 1 }), 'external with unique clicks');
-ok(!shouldShowPublicApplicantCount({ applyMode: 'external', applicationCount: 0 }), 'hide empty external');
+console.log('\nshouldShowAdminApplicantCount');
+ok(!shouldShowAdminApplicantCount({ applyMode: 'internal', applicationCount: 4 }, false), 'hidden without admin');
+ok(!shouldShowAdminApplicantCount({ applyMode: 'external', applyClickCount: 3 }, false), 'clicks hidden from public');
+ok(shouldShowAdminApplicantCount({ applyMode: 'internal', applicationCount: 0 }, true), 'admin sees internal with 0');
+ok(shouldShowAdminApplicantCount({ apply_mode: 'internal', applicationCount: 0 }, true), 'admin sees snake_case internal');
+ok(shouldShowAdminApplicantCount({ applyMode: 'external', applicationCount: 2 }, true), 'admin sees external applicants');
+ok(shouldShowAdminApplicantCount({ applyMode: 'external', applyClickCount: 1 }, true), 'admin sees unique clicks');
+ok(!shouldShowAdminApplicantCount({ applyMode: 'external', applicationCount: 0 }, true), 'admin hides empty external');
 
 console.log('\nsummarizeApplyClickCounts');
 ok(

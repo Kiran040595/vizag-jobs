@@ -35,7 +35,7 @@ import { isInternalApplyJob } from '../lib/jobApplyMode';
 import {
   formatApplicantCountLabel,
   jobApplicationCount,
-  shouldShowPublicApplicantCount,
+  shouldShowAdminApplicantCount,
 } from '../lib/jobApplicationCount';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
@@ -375,7 +375,7 @@ export default function JobDetailsPage() {
                   )}
                 </span>
               </p>
-              {shouldShowPublicApplicantCount(job) ? (
+              {shouldShowAdminApplicantCount(job, isAdmin) ? (
                 <p>
                   <span className="font-semibold text-slate-900">Applications:</span>{' '}
                   {formatApplicantCountLabel(jobApplicationCount(job))}

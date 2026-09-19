@@ -8,7 +8,8 @@ import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay'
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { JOBS_FOR_YOU_LIMIT, rankJobsForStudent } from '../lib/studentJobMatch';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
-import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobApplicationCount';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { jobApplicationCount, shouldShowAdminApplicantCount } from '../lib/jobApplicationCount';
 
 /**
  * Personalized job suggestions for signed-in students with a complete profile.
@@ -16,6 +17,7 @@ import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobA
  */
 export default function JobsForYou({ jobs = [] }) {
   const { isStudent, profile, profileComplete, session } = useStudentAuth();
+  const { isAdmin } = useAdminAuth();
 
   const ranked = useMemo(() => {
     if (!session || !isStudent || !profileComplete || !profile) {
@@ -93,7 +95,7 @@ export default function JobsForYou({ jobs = [] }) {
                 isFeatured={Boolean(job.isFeatured)}
                 directBadge={getDirectPostingBadge(job)}
                 applicationCount={jobApplicationCount(job)}
-                showApplicantCount={shouldShowPublicApplicantCount(job)}
+                showApplicantCount={shouldShowAdminApplicantCount(job, isAdmin)}
               />
             </div>
           );

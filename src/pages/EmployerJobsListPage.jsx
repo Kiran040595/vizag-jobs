@@ -13,8 +13,6 @@ import { fetchMyJobs } from '../services/employerJobs';
 import { fetchJobApplicationStats } from '../services/jobApplications';
 import {
   formatApplicationCountNoun,
-  formatUniqueApplyClickNoun,
-  jobApplyClickCount,
   resolveOnPlatformApplicationCount,
 } from '../lib/jobApplicationCount';
 
@@ -172,11 +170,6 @@ function EmployerJobsListContent() {
                   resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
                     <p className="mt-2 text-sm text-slate-600">
                       {formatApplicationCountNoun(resolveOnPlatformApplicationCount(job, applicationCounts))}
-                    </p>
-                  ) : null}
-                  {jobApplyClickCount(job) > 0 ? (
-                    <p className="mt-1 text-sm text-slate-600">
-                      {formatUniqueApplyClickNoun(jobApplyClickCount(job))}
                     </p>
                   ) : null}
                 </div>

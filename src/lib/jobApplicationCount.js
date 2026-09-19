@@ -26,9 +26,15 @@ export const resolveOnPlatformApplicationCount = (job, countsById = {}) => {
 export const resolveJobApplicationCount = (job, countsById = {}) =>
   resolveOnPlatformApplicationCount(job, countsById) + jobApplyClickCount(job);
 
-/** Public cards: on-platform jobs always, others once anyone has applied or clicked. */
-export const shouldShowPublicApplicantCount = (job) =>
-  jobApplicationCount(job) > 0 || isInternalApplyJob(job) || job?.apply_mode === 'internal';
+/** Applicant and unique-click totals are admin-only. */
+export const shouldShowAdminApplicantCount = (job, isAdmin = false) => {
+  if (!isAdmin) {
+    return false;
+  }
+  return (
+    jobApplicationCount(job) > 0 || isInternalApplyJob(job) || job?.apply_mode === 'internal'
+  );
+};
 
 export const summarizeApplyClickCounts = (jobs = []) => {
   let uniqueClicks = 0;
