@@ -37,6 +37,7 @@ import {
   jobApplicationCount,
   shouldShowAdminApplicantCount,
 } from '../lib/jobApplicationCount';
+import JobApplicantsModal from '../components/admin/JobApplicantsModal';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
@@ -73,6 +74,7 @@ export default function JobDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [existingApplication, setExistingApplication] = useState(null);
+  const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const [authWelcome] = useState(() => consumeStudentAuthSuccess());
 
   const routeJobIdentifier = jobSlug || jobId || '';
@@ -378,7 +380,15 @@ export default function JobDetailsPage() {
               {shouldShowAdminApplicantCount(job, isAdmin) ? (
                 <p>
                   <span className="font-semibold text-slate-900">Applications:</span>{' '}
-                  {formatApplicantCountLabel(jobApplicationCount(job))}
+                  <button
+                    type="button"
+                    onClick={() => setIsApplicantsModalOpen(true)}
+                    className="inline-flex cursor-pointer items-center gap-1 font-bold text-indigo-700 underline decoration-indigo-300 underline-offset-2 transition hover:text-indigo-900 hover:decoration-indigo-500"
+                    title="View applicant details (Admin)"
+                  >
+                    <span>👥</span>
+                    <span>{formatApplicantCountLabel(jobApplicationCount(job))}</span>
+                  </button>
                 </p>
               ) : null}
             </div>
@@ -455,6 +465,16 @@ export default function JobDetailsPage() {
         ) : null}
 
         {job ? <SimilarJobs job={job} /> : null}
+
+        {job && isApplicantsModalOpen ? (
+          <JobApplicantsModal
+            jobId={job.id}
+            jobTitle={job.title}
+            companyName={displayCompanyName(job.company)}
+            isOpen={isApplicantsModalOpen}
+            onClose={() => setIsApplicantsModalOpen(false)}
+          />
+        ) : null}
       </main>
 
       {job && jobSupportsApply(job) ? (

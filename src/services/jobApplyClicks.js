@@ -37,3 +37,28 @@ export const recordAndOpenExternalApply = (url, jobId) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 };
+
+export const fetchJobApplyClicks = async (jobId) => {
+  if (!isSupabaseConfigured || !supabase || !jobId) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('job_apply_clicks')
+      .select('id, job_id, visitor_key, user_id, created_at')
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Could not fetch job apply clicks:', error.message);
+      return [];
+    }
+
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn('Could not fetch job apply clicks:', error);
+    return [];
+  }
+};
+

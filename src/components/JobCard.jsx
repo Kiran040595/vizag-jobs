@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   formatRelativePostedAt,
   shouldHighlightPostedTime,
@@ -9,6 +10,7 @@ import {
   formatApplicantCountLabel,
   normalizeApplicationCount,
 } from '../lib/jobApplicationCount';
+import JobApplicantsModal from './admin/JobApplicantsModal';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -43,6 +45,7 @@ const JobCard = ({
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
   const applicants = normalizeApplicationCount(applicationCount);
+  const [isApplicantsOpen, setIsApplicantsOpen] = useState(false);
 
   const handleToggleSaved = (event) => {
     const wasSaved = saved;
@@ -129,9 +132,21 @@ const JobCard = ({
       ) : null}
 
       {showApplicantCount ? (
-        <p className="mb-2 text-xs font-semibold text-indigo-700 sm:text-sm">
-          {formatApplicantCountLabel(applicants)}
-        </p>
+        <div className="mb-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsApplicantsOpen(true);
+            }}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
+            title="View applicants (Admin)"
+          >
+            <span aria-hidden="true">👥</span>
+            <span>{formatApplicantCountLabel(applicants)}</span>
+          </button>
+        </div>
       ) : null}
 
       {description ? (
@@ -141,6 +156,16 @@ const JobCard = ({
       <div className="mt-auto">
         <FullJobDetailsLink jobPath={jobPath} />
       </div>
+
+      {isApplicantsOpen ? (
+        <JobApplicantsModal
+          jobId={jobId}
+          jobTitle={jobTitle}
+          companyName={companyName}
+          isOpen={isApplicantsOpen}
+          onClose={() => setIsApplicantsOpen(false)}
+        />
+      ) : null}
     </article>
   );
 };

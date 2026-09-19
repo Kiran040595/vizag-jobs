@@ -27,6 +27,7 @@ import {
 } from '../lib/jobApplicationCount';
 import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
+import JobApplicantsModal from '../components/admin/JobApplicantsModal';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -106,6 +107,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [employerLabelById, setEmployerLabelById] = useState(() => new Map());
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [modalJob, setModalJob] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -667,10 +669,17 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         ) : null}
                         {job.apply_mode === 'internal' ||
                         resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
-                          <p className="mt-2 text-sm font-semibold text-indigo-700">
-                            {formatApplicationCountNoun(
-                              resolveOnPlatformApplicationCount(job, applicationCounts),
-                            )}
+                          <p className="mt-2">
+                            <button
+                              type="button"
+                              onClick={() => setModalJob(job)}
+                              className="cursor-pointer text-sm font-semibold text-indigo-700 underline hover:text-indigo-900"
+                              title="Click to preview applicant details"
+                            >
+                              {formatApplicationCountNoun(
+                                resolveOnPlatformApplicationCount(job, applicationCounts),
+                              )}
+                            </button>
                           </p>
                         ) : null}
                         {jobApplyClickCount(job) > 0 ? (
@@ -831,6 +840,16 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {modalJob ? (
+        <JobApplicantsModal
+          jobId={modalJob.id}
+          jobTitle={modalJob.title}
+          companyName={modalJob.company}
+          isOpen={Boolean(modalJob)}
+          onClose={() => setModalJob(null)}
+        />
       ) : null}
     </AdminShell>
   );
