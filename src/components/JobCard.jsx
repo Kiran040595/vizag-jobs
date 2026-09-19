@@ -5,6 +5,7 @@ import {
 import { useSavedJob } from '../lib/useSavedJob';
 import { pushToast } from '../lib/toast';
 import FullJobDetailsLink from './FullJobDetailsLink';
+import FeaturedBadge from './FeaturedBadge';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -87,11 +88,7 @@ const JobCard = ({
               <span>{directBadge.label}</span>
             </span>
           ) : null}
-          {isFeatured ? (
-            <span className="inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
-              Featured
-            </span>
-          ) : null}
+          {isFeatured ? <FeaturedBadge /> : null}
         </div>
         <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
           {jobTitle}

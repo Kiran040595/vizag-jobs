@@ -52,6 +52,7 @@ export const mapHomeBootstrapJob = (job, index = 0) => {
     experience: normalizeText(job.experience),
     isFresher,
     isFeatured: Boolean(job.is_featured ?? job.isFeatured),
+    featuredAt: normalizeText(job.featured_at ?? job.featuredAt),
     salary: normalizeText(job.salary),
     shortDescription: normalizeText(job.short_description ?? job.shortDescription),
     skills: joinList(job.skills),
@@ -205,6 +206,7 @@ export const fetchHomeBootstrapJobRows = async ({
     'experience',
     'is_fresher',
     'is_featured',
+    'featured_at',
     'salary',
     'short_description',
     'skills',
@@ -221,7 +223,7 @@ export const fetchHomeBootstrapJobRows = async ({
     select,
     status: 'eq.published',
     or: `(posted_at.gte.${minPosted},created_by.not.is.null,apply_mode.eq.internal,source_name.not.in.("naukri.com","linkedin.com","indeed.com"))`,
-    order: 'is_featured.desc,posted_at.desc',
+    order: 'is_featured.desc,featured_at.desc.nullslast,posted_at.desc',
     limit: String(limit),
   });
 

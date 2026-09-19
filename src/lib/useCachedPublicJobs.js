@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchJobs } from '../services/jobs';
 import { filterProcessedJobsForPublicDisplay } from './jobDisplayWindow';
+import { sortJobsForPublicDisplay } from './jobListSort';
 import { readCachedPublicJobs, writeCachedPublicJobs } from './publicJobsSessionCache';
 
 export { PUBLIC_JOBS_CACHE_KEY, readCachedPublicJobs, writeCachedPublicJobs } from './publicJobsSessionCache';
@@ -23,7 +24,7 @@ export function useCachedPublicJobs() {
       const cached = readCachedPublicJobs();
       if (cached?.jobs?.length) {
         if (isMounted) {
-          setAllJobs(cached.jobs);
+          setAllJobs(sortJobsForPublicDisplay(cached.jobs));
           setIsLoading(false);
         }
         return;
@@ -34,7 +35,7 @@ export function useCachedPublicJobs() {
         if (!isMounted) return;
 
         if (jobs.length > 0) {
-          const visibleJobs = filterProcessedJobsForPublicDisplay(jobs);
+          const visibleJobs = sortJobsForPublicDisplay(filterProcessedJobsForPublicDisplay(jobs));
           setAllJobs(visibleJobs);
           writeCachedPublicJobs(jobs);
           setLoadError('');

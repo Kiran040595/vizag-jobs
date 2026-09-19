@@ -21,7 +21,7 @@ export default function PartTimeJobsVizagPage() {
             job.tags.includes('Part-time') && jobMatchesSearchText(job, searchTerm)
         ),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {

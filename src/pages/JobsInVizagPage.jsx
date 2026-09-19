@@ -18,7 +18,7 @@ export default function JobsInVizagPage() {
       sortJobsForListing(
         allJobs.filter((job) => jobMatchesSearchText(job, searchTerm)),
       ),
-    [allJobs, searchTerm]
+    [allJobs, searchTerm],
   );
 
   const structuredData = {

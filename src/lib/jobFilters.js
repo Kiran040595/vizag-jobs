@@ -15,6 +15,7 @@
 import { BRANCH_CATEGORY_MATCHERS, isEngineeringRelatedJob } from './jobBranchMatch.js';
 import { isItRelatedJob } from './jobItMatch.js';
 import { isPublicFresherListingJob } from './fresherMatch.js';
+import { sortJobsForPublicDisplay } from './jobListSort.js';
 import {
   FILTER_CATEGORY_OPTIONS,
   inferIsFresherFromJob,
@@ -171,18 +172,8 @@ const matchesFreshness = (job, freshnessId) => {
   return Date.now() - ts <= opt.hours * 3_600_000;
 };
 
-const postedAtMs = (job) => {
-  const ts = Date.parse(job?.postedAt);
-  return Number.isFinite(ts) ? ts : 0;
-};
-
-/** Featured jobs first, then newest by posted_at. */
-export const sortJobsForListing = (jobs) =>
-  [...jobs].sort((left, right) => {
-    const featuredDelta = Number(Boolean(right.isFeatured)) - Number(Boolean(left.isFeatured));
-    if (featuredDelta !== 0) return featuredDelta;
-    return postedAtMs(right) - postedAtMs(left);
-  });
+/** Featured jobs first (recently featured first), then newest by posted_at. */
+export const sortJobsForListing = (jobs) => sortJobsForPublicDisplay(jobs);
 
 export const applyJobFilters = (jobs, filters) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return [];
