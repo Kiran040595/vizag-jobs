@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { upsertEmployerProfile } from '../../services/employerJobs';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
+import {
+  EMPLOYER_INDUSTRY_OPTIONS,
+  EMPLOYER_LOCATION_OPTIONS,
+} from '../../lib/employerProfileOptions';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
@@ -12,6 +16,8 @@ export default function EmployerProfileForm({ onSaved }) {
     contact_name: '',
     contact_email: '',
     phone: '',
+    industry: '',
+    location: '',
     website: '',
     company_logo_url: '',
   });
@@ -26,6 +32,8 @@ export default function EmployerProfileForm({ onSaved }) {
         contact_name: profile.contact_name || '',
         contact_email: profile.contact_email || user?.email || '',
         phone: profile.phone || '',
+        industry: profile.industry || '',
+        location: profile.location || '',
         website: profile.website || '',
         company_logo_url: profile.company_logo_url || '',
       });
@@ -89,6 +97,38 @@ export default function EmployerProfileForm({ onSaved }) {
             className={INPUT_CLASS}
             placeholder="Your company Pvt Ltd"
           />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Industry / Sector</span>
+          <select
+            name="industry"
+            value={form.industry}
+            onChange={handleChange}
+            className={INPUT_CLASS}
+          >
+            <option value="">Select industry…</option>
+            {EMPLOYER_INDUSTRY_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Office Location in Vizag</span>
+          <select
+            name="location"
+            value={form.location}
+            onChange={handleChange}
+            className={INPUT_CLASS}
+          >
+            <option value="">Select office area…</option>
+            {EMPLOYER_LOCATION_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Contact name</span>

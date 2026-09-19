@@ -101,12 +101,24 @@ export const createAdminEmployerAccount = async (payload) => {
       password: payload.password,
       phone: payload.phone,
       contactName: payload.contactName || '',
+      industry: payload.industry || '',
+      location: payload.location || '',
     }),
   });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.ok === false) {
     throw new Error(data?.error || `Could not create employer (HTTP ${response.status}).`);
+  }
+
+  if (data.employer?.userId && (payload.industry || payload.location)) {
+    await supabase
+      .from('employer_profiles')
+      .update({
+        industry: payload.industry || null,
+        location: payload.location || null,
+      })
+      .eq('user_id', data.employer.userId);
   }
 
   const employer = data.employer
@@ -117,6 +129,8 @@ export const createAdminEmployerAccount = async (payload) => {
           contact_name: data.employer.contactName,
           contact_email: data.employer.contactEmail,
           phone: data.employer.phone,
+          industry: payload.industry || data.employer.industry,
+          location: payload.location || data.employer.location,
           website: data.employer.website,
           company_logo_url: data.employer.companyLogoUrl,
           is_active: data.employer.isActive,

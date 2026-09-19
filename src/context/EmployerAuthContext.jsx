@@ -239,10 +239,24 @@ export function EmployerAuthProvider({ children }) {
     return data;
   };
 
-  const signUp = async ({ email, password, companyName }) => {
+  const signUp = async ({
+    email,
+    password,
+    companyName,
+    contactName,
+    phone,
+    industry,
+    location,
+  }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
+
+    const trimmedCompany = String(companyName || '').trim();
+    const trimmedContact = String(contactName || '').trim();
+    const trimmedPhone = String(phone || '').trim();
+    const trimmedIndustry = String(industry || '').trim();
+    const trimmedLocation = String(location || '').trim();
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -250,7 +264,11 @@ export function EmployerAuthProvider({ children }) {
       options: {
         data: {
           user_type: 'employer',
-          company_name: companyName,
+          company_name: trimmedCompany,
+          contact_name: trimmedContact,
+          phone: trimmedPhone,
+          industry: trimmedIndustry,
+          location: trimmedLocation,
         },
         emailRedirectTo: getAuthRedirectUrl('/employer/login'),
       },
@@ -261,6 +279,18 @@ export function EmployerAuthProvider({ children }) {
     }
 
     if (data.user) {
+      try {
+        await upsertEmployerProfile({
+          company_name: trimmedCompany,
+          contact_name: trimmedContact,
+          contact_email: email,
+          phone: trimmedPhone,
+          industry: trimmedIndustry,
+          location: trimmedLocation,
+        });
+      } catch (upsertError) {
+        console.warn('Could not immediately upsert employer profile after signup:', upsertError);
+      }
       await refreshEmployerAccess(data.user.id);
     }
 

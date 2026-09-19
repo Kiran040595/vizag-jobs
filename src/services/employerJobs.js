@@ -88,6 +88,8 @@ export const upsertEmployerProfile = async (profile) => {
     contact_name: profile.contact_name?.trim() || null,
     contact_email: profile.contact_email?.trim() || user.email,
     phone: profile.phone?.trim() || null,
+    industry: profile.industry?.trim() || null,
+    location: profile.location?.trim() || null,
     website: profile.website?.trim() || null,
     company_logo_url: profile.company_logo_url?.trim() || null,
     is_active: true,
