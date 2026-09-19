@@ -72,6 +72,13 @@ function EmployerJobApplicationsContent() {
     );
   };
 
+  const handleApplicationUpdate = (updated) => {
+    if (!updated) return;
+    setApplications((current) =>
+      current.map((row) => (row.id === updated.id ? updated : row)),
+    );
+  };
+
   return (
     <EmployerShell
       title="Job applications"
@@ -159,6 +166,7 @@ function EmployerJobApplicationsContent() {
               key={application.id}
               application={application}
               onStatusChange={handleStatusChange}
+              onApplicationUpdate={handleApplicationUpdate}
             />
           ))}
         </div>

@@ -6,7 +6,11 @@ import {
   getApplicationResumeUrl,
 } from '../../services/jobApplications';
 import { fetchJobApplyClicks } from '../../services/jobApplyClicks';
-import { formatApplicationStatus } from '../../lib/applicationStatus';
+import {
+  formatApplicationStatus,
+  getApplicationStatusStyle,
+} from '../../lib/applicationStatus';
+import { buildInterviewWhatsAppPassUrl } from '../../lib/whatsappContact';
 import PhoneDialLink from '../PhoneDialLink';
 import WhatsAppContactLink from '../WhatsAppContactLink';
 import LoadingSpinner from '../LoadingSpinner';
@@ -93,14 +97,41 @@ const DocumentIcon = () => (
   </svg>
 );
 
-const STATUS_BADGE_CLASSES = {
-  submitted: 'border-blue-200 bg-blue-50 text-blue-700',
-  viewed: 'border-amber-200 bg-amber-50 text-amber-700',
-  shortlisted: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  rejected: 'border-rose-200 bg-rose-50 text-rose-700',
-  withdrawn: 'border-slate-200 bg-slate-100 text-slate-600',
-  external_click: 'border-cyan-200 bg-cyan-50 text-cyan-800',
-};
+const CalendarIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="h-3.5 w-3.5"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="h-3.5 w-3.5 text-purple-700 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+
 
 export default function JobApplicantsModal({
   jobId,
@@ -193,6 +224,11 @@ export default function JobApplicantsModal({
             resumePath: app.resumePath,
             submittedAt: app.submittedAt,
             coverNote: app.coverNote || '',
+            recruiterNotes: app.recruiterNotes || '',
+            interviewScheduledAt: app.interviewScheduledAt || null,
+            interviewMode: app.interviewMode || 'in-person',
+            interviewLocation: app.interviewLocation || '',
+            interviewInstructions: app.interviewInstructions || '',
             rawApplication: app,
           };
         });
@@ -220,6 +256,11 @@ export default function JobApplicantsModal({
               coverNote: isRegistered
                 ? 'Clicked Apply (Redirected to official/company application link)'
                 : 'Anonymous visitor clicked Apply (Redirected to official application link)',
+              recruiterNotes: '',
+              interviewScheduledAt: null,
+              interviewMode: 'in-person',
+              interviewLocation: '',
+              interviewInstructions: '',
               rawApplication: null,
             };
           });
@@ -356,8 +397,9 @@ export default function JobApplicantsModal({
               <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
                 {applicants.map((item) => {
                   const statusClass =
-                    STATUS_BADGE_CLASSES[item.status] ||
-                    'border-slate-200 bg-slate-50 text-slate-700';
+                    item.status === 'external_click'
+                      ? 'border-cyan-200 bg-cyan-50 text-cyan-800'
+                      : getApplicationStatusStyle(item.status);
 
                   const statusLabel =
                     item.status === 'external_click'
@@ -468,6 +510,72 @@ export default function JobApplicantsModal({
                         <div className="mt-2.5 rounded-lg border border-slate-100 bg-white p-2.5 text-xs text-slate-600">
                           <span className="font-semibold text-slate-700">Note: </span>
                           <span className="whitespace-pre-wrap">{item.coverNote}</span>
+                        </div>
+                      ) : null}
+
+                      {/* Interview Details & WhatsApp Pass (if scheduled) */}
+                      {item.interviewScheduledAt ? (
+                        <div className="mt-2.5 rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 text-xs text-indigo-950">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                                <CalendarIcon />
+                              </span>
+                              <div>
+                                <span className="font-bold text-indigo-950">
+                                  Interview: {new Date(item.interviewScheduledAt).toLocaleString(undefined, {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                  })}
+                                </span>
+                                <span className="ml-2 inline-flex items-center rounded-md bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800">
+                                  {item.interviewMode === 'online' ? 'Online / Remote' : 'In-Person'}
+                                </span>
+                              </div>
+                            </div>
+                            {item.phone ? (
+                              <a
+                                href={buildInterviewWhatsAppPassUrl({
+                                  phone: item.phone,
+                                  candidateName: item.fullName,
+                                  jobTitle,
+                                  companyName,
+                                  interviewScheduledAt: item.interviewScheduledAt,
+                                  interviewMode: item.interviewMode,
+                                  interviewLocation: item.interviewLocation,
+                                  interviewInstructions: item.interviewInstructions,
+                                })}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-emerald-700"
+                              >
+                                <span>Send WhatsApp Pass</span>
+                              </a>
+                            ) : null}
+                          </div>
+                          {item.interviewLocation ? (
+                            <p className="mt-1.5 text-slate-700">
+                              <span className="font-semibold text-slate-900">Venue / Link: </span>
+                              {item.interviewLocation}
+                            </p>
+                          ) : null}
+                          {item.interviewInstructions ? (
+                            <p className="mt-1 text-slate-600">
+                              <span className="font-semibold text-slate-800">Instructions: </span>
+                              {item.interviewInstructions}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {/* Recruiter Private Notes */}
+                      {item.recruiterNotes ? (
+                        <div className="mt-2.5 rounded-lg border border-purple-200 bg-purple-50/60 p-2.5 text-xs text-purple-950">
+                          <div className="flex items-center gap-1.5 font-semibold text-purple-900">
+                            <LockIcon />
+                            <span>Private Recruiter Note</span>
+                          </div>
+                          <p className="mt-1 whitespace-pre-wrap text-slate-700">{item.recruiterNotes}</p>
                         </div>
                       ) : null}
                     </article>

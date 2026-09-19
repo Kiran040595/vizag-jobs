@@ -73,6 +73,13 @@ export default function AdminJobApplicationsPage() {
     );
   };
 
+  const handleApplicationUpdate = (updated) => {
+    if (!updated) return;
+    setApplications((current) =>
+      current.map((row) => (row.id === updated.id ? updated : row)),
+    );
+  };
+
   return (
     <AdminShell
       title="Job applications"
@@ -170,6 +177,7 @@ export default function AdminJobApplicationsPage() {
               key={application.id}
               application={application}
               onStatusChange={handleStatusChange}
+              onApplicationUpdate={handleApplicationUpdate}
             />
           ))}
         </div>

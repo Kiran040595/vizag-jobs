@@ -16,6 +16,11 @@ const APPLICATION_COLUMNS = `
   resume_path,
   resume_share_token,
   profile_snapshot,
+  recruiter_notes,
+  interview_scheduled_at,
+  interview_mode,
+  interview_location,
+  interview_instructions,
   submitted_at,
   updated_at
 `;
@@ -46,6 +51,11 @@ const mapApplication = (row) => {
     resumePath: row.resume_path || '',
     resumeShareToken: row.resume_share_token || '',
     profileSnapshot: row.profile_snapshot || {},
+    recruiterNotes: row.recruiter_notes || '',
+    interviewScheduledAt: row.interview_scheduled_at || null,
+    interviewMode: row.interview_mode || 'in_person',
+    interviewLocation: row.interview_location || '',
+    interviewInstructions: row.interview_instructions || '',
     submittedAt: row.submitted_at,
     updatedAt: row.updated_at,
     job,
@@ -256,6 +266,90 @@ export const updateApplicationStatus = async ({ applicationId, status }) => {
   const { data, error } = await supabase
     .from('job_applications')
     .update({ status: normalizedStatus })
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const updateApplicationRecruiterNotes = async ({ applicationId, recruiterNotes }) => {
+  if (!isSupabaseConfigured || !supabase || !applicationId) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const trimmed = typeof recruiterNotes === 'string' ? recruiterNotes.trim() : '';
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update({ recruiter_notes: trimmed || null })
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const scheduleApplicationInterview = async ({
+  applicationId,
+  interviewScheduledAt,
+  interviewMode = 'in_person',
+  interviewLocation = '',
+  interviewInstructions = '',
+  status = 'interview_scheduled',
+}) => {
+  if (!isSupabaseConfigured || !supabase || !applicationId) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const updates = {
+    interview_scheduled_at: interviewScheduledAt ? new Date(interviewScheduledAt).toISOString() : null,
+    interview_mode: interviewMode || 'in_person',
+    interview_location: interviewLocation ? interviewLocation.trim() : null,
+    interview_instructions: interviewInstructions ? interviewInstructions.trim() : null,
+  };
+
+  if (status) {
+    const normalizedStatus = normalizeApplicationStatus(status);
+    if (APPLICATION_STATUSES_SET.has(normalizedStatus)) {
+      updates.status = normalizedStatus;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update(updates)
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const cancelApplicationInterview = async ({ applicationId }) => {
+  if (!isSupabaseConfigured || !supabase || !applicationId) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update({
+      interview_scheduled_at: null,
+      interview_location: null,
+      interview_instructions: null,
+    })
     .eq('id', applicationId)
     .select(APPLICATION_COLUMNS)
     .single();

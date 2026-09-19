@@ -214,6 +214,48 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     defaultSelected: true,
     getValue: (app) => formatAppliedAt(app.submittedAt),
   },
+  {
+    id: 'recruiterNotes',
+    label: 'Recruiter notes',
+    group: 'Consultancy',
+    defaultSelected: true,
+    getValue: (app) => app.recruiterNotes || '',
+  },
+  {
+    id: 'interviewScheduledAt',
+    label: 'Interview scheduled at',
+    group: 'Interview',
+    defaultSelected: true,
+    getValue: (app) => formatAppliedAt(app.interviewScheduledAt),
+  },
+  {
+    id: 'interviewMode',
+    label: 'Interview mode',
+    group: 'Interview',
+    defaultSelected: true,
+    getValue: (app) =>
+      app.interviewMode === 'virtual' || app.interviewMode === 'online'
+        ? 'Virtual'
+        : app.interviewMode === 'telephonic' || app.interviewMode === 'phone'
+          ? 'Telephonic'
+          : app.interviewScheduledAt
+            ? 'In-Person'
+            : '',
+  },
+  {
+    id: 'interviewLocation',
+    label: 'Interview venue / link',
+    group: 'Interview',
+    defaultSelected: true,
+    getValue: (app) => app.interviewLocation || '',
+  },
+  {
+    id: 'interviewInstructions',
+    label: 'Interview instructions',
+    group: 'Interview',
+    defaultSelected: false,
+    getValue: (app) => app.interviewInstructions || '',
+  },
 ]);
 
 export const getDefaultExportColumnIds = () =>
