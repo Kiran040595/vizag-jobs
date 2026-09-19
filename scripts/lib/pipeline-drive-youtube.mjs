@@ -139,18 +139,34 @@ export async function uploadDriveVideosAsYouTubeShorts({
 
   const processed = [];
   for (const file of queue) {
-    const result = await processOneDriveVideo({
-      youtubeAccessToken,
-      driveAccessToken,
-      channel,
-      file,
-      watchFolderId,
-      uploadedFolderId,
-      dryRun,
-      privacyStatus,
-      siteUrl,
-    });
-    processed.push(result);
+    try {
+      const result = await processOneDriveVideo({
+        youtubeAccessToken,
+        driveAccessToken,
+        channel,
+        file,
+        watchFolderId,
+        uploadedFolderId,
+        dryRun,
+        privacyStatus,
+        siteUrl,
+      });
+      processed.push(result);
+    } catch (error) {
+      processed.push({
+        fileId: file.id,
+        fileName: file.name,
+        failed: true,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  const failedCount = processed.filter((item) => item.failed).length;
+  if (failedCount > 0 && failedCount === processed.length) {
+    throw new Error(
+      `All ${failedCount} Drive video(s) failed. Last error: ${processed[processed.length - 1]?.error}`,
+    );
   }
 
   return {
@@ -159,5 +175,6 @@ export async function uploadDriveVideosAsYouTubeShorts({
     found: videos.length,
     queued: queue.length,
     processed,
+    failedCount,
   };
 }
