@@ -27,6 +27,6 @@ export const sortJobsForPublicDisplay = (jobs) => {
     const postedDiff = toTimestamp(right.postedAt) - toTimestamp(left.postedAt);
     if (postedDiff !== 0) return postedDiff;
 
-    return String(right.id || '').localeCompare(String(left.id || ''));
+    return 0;
   });
 };
