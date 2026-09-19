@@ -304,7 +304,7 @@ export default function HomePage() {
         onCategoryChange={handleCategoryChange}
       />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-5 pb-mobile-chrome sm:gap-6 sm:px-6 sm:py-10 lg:px-8">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-5 pb-mobile-chrome sm:gap-6 sm:px-6 sm:py-10 lg:gap-8 lg:px-8 lg:py-12">
         {isLoading && allJobs.length === 0 ? <LoadingSpinner /> : null}
 
         {loadError ? (
@@ -316,8 +316,6 @@ export default function HomePage() {
         {!isLoading || allJobs.length > 0 ? (
           <>
             <JobsForYou jobs={allJobs} />
-            <JobCategoryBrowse />
-            <BlogTeaserSection />
             <JobSourceTabs
               activeTab={filters.tab}
               onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
@@ -351,8 +349,10 @@ export default function HomePage() {
           />
         ) : null}
 
+        {!isLoading || allJobs.length > 0 ? <JobCategoryBrowse /> : null}
         <StatsSection stats={siteStats} isLoading={isLoading && allJobs.length === 0} />
         <CTASection />
+        {!isLoading || allJobs.length > 0 ? <BlogTeaserSection /> : null}
       </main>
 
       <Footer />
