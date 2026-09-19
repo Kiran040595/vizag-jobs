@@ -19,6 +19,10 @@ import {
 } from '../services/adminJobs';
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
+import {
+  formatApplicationCountNoun,
+  resolveJobApplicationCount,
+} from '../lib/jobApplicationCount';
 import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
 
@@ -115,15 +119,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
         setLoadError('');
         setIsLoading(false);
 
-        const internalPublishedIds = data
-          .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
-          .map((job) => job.id);
+        const jobIds = data.map((job) => job.id);
 
         Promise.all([
           fetchAdminEmployerProfiles(),
-          internalPublishedIds.length > 0
-            ? fetchJobApplicationCounts(internalPublishedIds)
-            : Promise.resolve({}),
+          jobIds.length > 0 ? fetchJobApplicationCounts(jobIds) : Promise.resolve({}),
         ])
           .then(([employerRows, counts]) => {
             if (ignore) {
@@ -663,10 +663,10 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         {job.rejection_reason ? (
                           <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                         ) : null}
-                        {job.status === 'published' && job.apply_mode === 'internal' ? (
+                        {job.apply_mode === 'internal' ||
+                        resolveJobApplicationCount(job, applicationCounts) > 0 ? (
                           <p className="mt-2 text-sm font-semibold text-indigo-700">
-                            {applicationCounts[job.id] || 0} application
-                            {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
+                            {formatApplicationCountNoun(resolveJobApplicationCount(job, applicationCounts))}
                           </p>
                         ) : null}
                       </div>
@@ -684,13 +684,14 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                           }}
                         />
                       ) : null}
-                      {job.status === 'published' && job.apply_mode === 'internal' ? (
+                      {job.apply_mode === 'internal' ||
+                      resolveJobApplicationCount(job, applicationCounts) > 0 ? (
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/jobs/${job.id}/applications`)}
                           className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
                         >
-                          Applications ({applicationCounts[job.id] || 0})
+                          Applications ({resolveJobApplicationCount(job, applicationCounts)})
                         </button>
                       ) : null}
                       <button

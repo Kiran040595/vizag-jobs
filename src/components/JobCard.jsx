@@ -5,6 +5,10 @@ import {
 import { useSavedJob } from '../lib/useSavedJob';
 import { pushToast } from '../lib/toast';
 import FullJobDetailsLink from './FullJobDetailsLink';
+import {
+  formatApplicantCountLabel,
+  normalizeApplicationCount,
+} from '../lib/jobApplicationCount';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -32,10 +36,13 @@ const JobCard = ({
   postedAt,
   isFeatured = false,
   directBadge = null,
+  applicationCount = 0,
+  showApplicantCount = false,
 }) => {
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
+  const applicants = normalizeApplicationCount(applicationCount);
 
   const handleToggleSaved = (event) => {
     const wasSaved = saved;
@@ -118,6 +125,12 @@ const JobCard = ({
           }`}
         >
           Posted {relativePostedAt}
+        </p>
+      ) : null}
+
+      {showApplicantCount ? (
+        <p className="mb-2 text-xs font-semibold text-indigo-700 sm:text-sm">
+          {formatApplicantCountLabel(applicants)}
         </p>
       ) : null}
 

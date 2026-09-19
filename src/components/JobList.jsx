@@ -7,6 +7,7 @@ import {
 } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
+import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobApplicationCount';
 
 /**
  * Pure presentational list. The parent owns filtering/pagination and passes
@@ -102,6 +103,8 @@ const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) 
             postedAt={job.postedAt}
             isFeatured={Boolean(job.isFeatured)}
             directBadge={getDirectPostingBadge(job)}
+            applicationCount={jobApplicationCount(job)}
+            showApplicantCount={shouldShowPublicApplicantCount(job)}
           />
           );
         })}

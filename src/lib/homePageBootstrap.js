@@ -59,6 +59,10 @@ export const mapHomeBootstrapJob = (job, index = 0) => {
     sourceUrl: normalizeText(job.source_url ?? job.sourceUrl),
     createdBy: job.created_by ?? job.createdBy ?? null,
     applyMode: (job.apply_mode ?? job.applyMode) === 'internal' ? 'internal' : 'external',
+    applicationCount:
+      Number(job.application_count ?? job.applicationCount) > 0
+        ? Math.floor(Number(job.application_count ?? job.applicationCount))
+        : 0,
     postedAt: normalizeText(job.posted_at ?? job.postedAt),
     expiresAt: normalizeText(job.expires_at ?? job.expiresAt),
     status: normalizeText(job.status, 'published'),
@@ -212,6 +216,7 @@ export const fetchHomeBootstrapJobRows = async ({
     'source_url',
     'created_by',
     'apply_mode',
+    'application_count',
     'posted_at',
     'expires_at',
     'status',

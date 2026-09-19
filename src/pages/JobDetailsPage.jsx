@@ -32,6 +32,11 @@ import {
 } from '../lib/studentApplyRedirect';
 import { consumeStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
+import {
+  formatApplicantCountLabel,
+  jobApplicationCount,
+  shouldShowPublicApplicantCount,
+} from '../lib/jobApplicationCount';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
@@ -367,6 +372,12 @@ export default function JobDetailsPage() {
                   )}
                 </span>
               </p>
+              {shouldShowPublicApplicantCount(job) ? (
+                <p>
+                  <span className="font-semibold text-slate-900">Applications:</span>{' '}
+                  {formatApplicantCountLabel(jobApplicationCount(job))}
+                </p>
+              ) : null}
             </div>
 
             <JobSourceAttribution job={job} />

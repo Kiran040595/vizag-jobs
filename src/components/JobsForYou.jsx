@@ -8,6 +8,7 @@ import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay'
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { JOBS_FOR_YOU_LIMIT, rankJobsForStudent } from '../lib/studentJobMatch';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
+import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobApplicationCount';
 
 /**
  * Personalized job suggestions for signed-in students with a complete profile.
@@ -91,6 +92,8 @@ export default function JobsForYou({ jobs = [] }) {
                 postedAt={job.postedAt}
                 isFeatured={Boolean(job.isFeatured)}
                 directBadge={getDirectPostingBadge(job)}
+                applicationCount={jobApplicationCount(job)}
+                showApplicantCount={shouldShowPublicApplicantCount(job)}
               />
             </div>
           );

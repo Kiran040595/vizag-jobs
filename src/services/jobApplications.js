@@ -173,7 +173,8 @@ export const fetchJobApplicationStats = async (jobIds = []) => {
   const { data, error } = await supabase
     .from('job_applications')
     .select('job_id, status')
-    .in('job_id', jobIds);
+    .in('job_id', jobIds)
+    .neq('status', 'withdrawn');
 
   if (error) {
     throw new Error(error.message);

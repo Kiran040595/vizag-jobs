@@ -6,6 +6,7 @@ import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference';
 import { getDirectPostingBadge } from '../lib/jobDirectPosting';
+import { jobApplicationCount, shouldShowPublicApplicantCount } from '../lib/jobApplicationCount';
 
 const MAX_SIMILAR_JOBS = 6;
 
@@ -128,6 +129,8 @@ export default function SimilarJobs({ job }) {
               postedAt={similar.postedAt}
               isFeatured={Boolean(similar.isFeatured)}
               directBadge={getDirectPostingBadge(similar)}
+              applicationCount={jobApplicationCount(similar)}
+              showApplicantCount={shouldShowPublicApplicantCount(similar)}
             />
           );
         })}
