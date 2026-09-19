@@ -7,10 +7,8 @@ import { buildLegalPageHeadInjection, getLegalPageMeta } from './src/lib/legalPa
 import {
   buildHomePageSsrPayload,
   fetchHomeBootstrapJobRows,
-import {
-  isJobWithinPublicDisplayWindow,
-  isPostedAtWithinPublicDisplayWindow,
-} from './src/lib/jobDisplayWindow.js';
+} from './src/lib/homePageBootstrap.js';
+import { isJobWithinPublicDisplayWindow } from './src/lib/jobDisplayWindow.js';
 import {
   JOB_CATEGORY_LANDING_IDS,
   JOB_CATEGORY_PAGES,
@@ -155,7 +153,7 @@ const buildJobMetaDescription = (job) => {
     : `Apply for ${title} at ${company} in ${location}. Find more jobs in Vizag and Visakhapatnam.`.slice(0, 160);
 };
 
-const renderHead = ({ title, description, canonicalUrl, keywords, scripts = [], noindex = false, ogType = 'website', siteUrl, ogImagePath = DEFAULT_OG_IMAGE_PATH }) => {
+const renderHead = ({ title, description, canonicalUrl, keywords = '', scripts = [], noindex = false, ogType = 'website', siteUrl, ogImagePath = DEFAULT_OG_IMAGE_PATH }) => {
   const ogImageUrl = `${String(siteUrl || '').replace(/\/+$/, '')}${ogImagePath.startsWith('/') ? ogImagePath : `/${ogImagePath}`}`;
   return [
     `<title>${escapeHtml(title)}</title>`,

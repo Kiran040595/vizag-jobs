@@ -1,3 +1,5 @@
+import { recordAndOpenExternalApply } from '../services/jobApplyClicks.js';
+
 /** Default Instagram channel for daily Vizag job updates (Link in bio / external apply). */
 export const DEFAULT_INSTAGRAM_CHANNEL_URL =
   'https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/';
@@ -38,13 +40,7 @@ export const stashExternalApplyPrompt = ({ applyUrl, channelUrl, jobTitle, jobId
     );
     window.dispatchEvent(new Event('vizagjobs:external-apply-prompt'));
   } catch {
-    import('../services/jobApplyClicks.js')
-      .then(({ recordAndOpenExternalApply }) => {
-        recordAndOpenExternalApply(applyUrl, jobId);
-      })
-      .catch(() => {
-        window.open(applyUrl, '_blank', 'noopener,noreferrer');
-      });
+    recordAndOpenExternalApply(applyUrl, jobId);
   }
 };
 
