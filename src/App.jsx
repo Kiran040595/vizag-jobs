@@ -199,7 +199,9 @@ function App() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+      <Route path="/terms" element={<Navigate to="/terms-of-service" replace />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
       <Route path="/jobs/latest" element={<InstagramJobsPage />} />

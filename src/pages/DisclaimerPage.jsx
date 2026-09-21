@@ -7,7 +7,7 @@ export default function DisclaimerPage() {
     <LegalPageLayout
       title="Disclaimer"
       seoTitle="Disclaimer | Jobs in Vizag"
-      description="Disclaimer for JobsInVizag.in — platform role for employer-posted and featured jobs, and your responsibilities when applying."
+      description="Disclaimer for JobsInVizag.in — we are not the employer; listings may include employer posts and summaries of public job ads."
       canonical="/disclaimer"
     >
       <section className="space-y-3">
@@ -31,17 +31,20 @@ export default function DisclaimerPage() {
             based on their hiring requirements
           </li>
           <li>
-            <strong>Featured local jobs</strong> — roles we feature on the site so job seekers can discover
-            more Visakhapatnam opportunities
+            <strong>Featured local jobs</strong> — we may also show summaries of publicly advertised
+            Visakhapatnam openings (for example from third-party job boards or employer sites) so candidates
+            can discover more roles. Where we know the original listing, we show a source link. We are not
+            affiliated with those third-party sites.
           </li>
           <li>
-            <strong>Manual review</strong> — our team may review listings for relevance and remove suspicious
-            or outdated posts when reported
+            <strong>Review and reports</strong> — our team may review listings for relevance and remove
+            suspicious or outdated posts when reported
           </li>
         </ul>
         <p>
           Students and job seekers may apply directly on {SITE_LEGAL_NAME} for supported listings and view
-          application status in their account. Final hiring decisions remain with the employer.
+          application status in their account. For some featured listings, Apply may open the original posting.
+          Final hiring decisions remain with the employer.
         </p>
       </section>
 
@@ -53,7 +56,7 @@ export default function DisclaimerPage() {
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Currently open</li>
-          <li>Accurately described by the posting employer</li>
+          <li>Accurately described by the posting employer or original publisher</li>
           <li>Free of errors</li>
           <li>Legitimate (see below)</li>
         </ul>
@@ -78,14 +81,14 @@ export default function DisclaimerPage() {
           </li>
           <li>
             Be cautious of postings with vague company details, unusually high pay for minimal qualifications,
-            or requests for sensitive financial information upfront
+            or requests for sensitive financial information or OTPs upfront
           </li>
           <li>If something feels off, trust your judgment</li>
         </ul>
         <p>
-          If you encounter a listing on {SITE_LEGAL_NAME} that you believe is fraudulent or misleading,
-          please report it via our{' '}
-          <Link to="/contact" className="font-semibold text-cyan-700 hover:text-cyan-800">
+          If you encounter a listing on {SITE_LEGAL_NAME} that you believe is fraudulent, misleading, outdated,
+          or infringing, use <strong>Report this listing</strong> on the job page or our{' '}
+          <Link to="/contact?topic=listing-report" className="font-semibold text-cyan-700 hover:text-cyan-800">
             Contact
           </Link>{' '}
           page so we can review and remove it.

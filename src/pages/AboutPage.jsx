@@ -52,8 +52,9 @@ export default function AboutPage() {
             {SITE_LEGAL_NAME}, and view the status of applied jobs in their account.
           </li>
           <li>
-            <strong>Featured local jobs</strong> — We feature employer-posted roles (and other relevant local
-            openings) so candidates can discover opportunities across IT, engineering, fresher, and more.
+            <strong>Featured local jobs</strong> — We feature employer-posted roles and may also show summaries
+            of publicly advertised Visakhapatnam openings so candidates can discover more opportunities. We are
+            not affiliated with third-party job boards.
           </li>
           <li>
             <strong>Original local guides</strong> — We publish category pages and blog articles about the
@@ -66,8 +67,8 @@ export default function AboutPage() {
         <h2 className="text-xl font-bold text-slate-900">How Listings Appear on the Site</h2>
         <p>
           Most active hiring on {SITE_LEGAL_NAME} is driven by employers who post jobs on our portal. We also
-          feature selected local openings to help job seekers browse more opportunities. We are not the
-          hiring employer for those roles — see our{' '}
+          feature selected local openings, including summaries of publicly advertised roles, to help job
+          seekers browse more opportunities. We are not the hiring employer for those roles — see our{' '}
           <Link to="/disclaimer" className="font-semibold text-cyan-700 hover:text-cyan-800">
             Disclaimer
           </Link>{' '}

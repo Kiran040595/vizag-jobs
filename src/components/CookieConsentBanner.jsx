@@ -51,9 +51,9 @@ export default function CookieConsentBanner() {
               Cookie preferences
             </h2>
             <p id="cookie-consent-description" className="mt-1.5 text-sm leading-6 text-slate-600 sm:mt-2">
-              We use essential cookies to run the site (for example, saved jobs in your browser). With your
-              permission, we also use analytics cookies and advertising cookies for services such as Vercel
-              Analytics and Google AdSense. Read our{' '}
+              We use essential storage to run the site (for example, saved jobs in your browser). Analytics
+              and advertising stay off until you choose them. Google AdSense loads only if you accept
+              advertising. Read our{' '}
               <Link to="/privacy-policy" className="font-semibold text-cyan-700 hover:text-cyan-800">
                 Privacy Policy
               </Link>{' '}
