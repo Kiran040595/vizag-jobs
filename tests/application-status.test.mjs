@@ -46,6 +46,7 @@ assert.equal(formatApplicationStatus('interview_scheduled'), 'Interview Schedule
 assert.equal(formatApplicationStatus('processing'), 'Processing');
 assert.equal(formatApplicationStatus('hired'), 'Hired');
 assert.equal(formatApplicationStatus('joined'), 'Joined');
+assert.equal(formatApplicationStatus('external_click'), 'External Apply Click');
 
 assert.match(getApplicationStatusDescription('hired'), /selected/i);
 assert.match(getApplicationStatusDescription('joined'), /joined/i);

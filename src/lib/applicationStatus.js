@@ -57,6 +57,8 @@ export const formatApplicationStatus = (status) => {
       return 'Rejected';
     case 'withdrawn':
       return 'Withdrawn';
+    case 'external_click':
+      return 'External Apply Click';
     default:
       return status;
   }
@@ -97,6 +99,7 @@ export const APPLICATION_STATUS_STYLES = {
   joined: 'border-emerald-300 bg-emerald-100 text-emerald-900',
   rejected: 'border-rose-200 bg-rose-50 text-rose-700',
   withdrawn: 'border-slate-200 bg-slate-50 text-slate-600',
+  external_click: 'border-cyan-200 bg-cyan-50 text-cyan-800',
 };
 
 export const getApplicationStatusStyle = (status) =>
