@@ -187,40 +187,6 @@ export default function JobsInVizagPage() {
           <JobList jobs={filteredJobs} />
         )}
 
-        <div className="prose prose-slate mx-auto max-w-4xl">
-          <h2>Job Opportunities in Visakhapatnam</h2>
-          <p>Visakhapatnam, commonly known as Vizag, is a rapidly growing city in Andhra Pradesh, India, offering numerous job opportunities across various sectors. From IT and technology to manufacturing and services, Vizag has become a hub for employment in recent years.</p>
-
-          <p>The city's strategic location, excellent infrastructure, and presence of major industries make it an attractive destination for job seekers. Whether you're a fresh graduate looking for your first job or an experienced professional seeking career advancement, Vizag offers diverse opportunities to build your career.</p>
-
-          <h3>Why Choose Jobs in Vizag?</h3>
-          <ul>
-            <li><strong>Growing Economy:</strong> Vizag's economy is expanding rapidly with investments in sectors like IT, pharmaceuticals, and manufacturing.</li>
-            <li><strong>Quality of Life:</strong> The city offers a good work-life balance with beautiful beaches, parks, and a pleasant climate.</li>
-            <li><strong>Cost of Living:</strong> Compared to metros like Hyderabad or Bangalore, Vizag offers a more affordable cost of living.</li>
-            <li><strong>Educational Institutions:</strong> Presence of reputed universities and technical institutes ensures a steady supply of skilled workforce.</li>
-          </ul>
-
-          <h3>Popular Job Sectors in Vizag</h3>
-          <p>Vizag's job market spans across multiple industries:</p>
-          <ul>
-            <li><strong>Information Technology:</strong> Software development, data analysis, cybersecurity, and IT support roles.</li>
-            <li><strong>Manufacturing:</strong> Engineering, quality control, and production management positions.</li>
-            <li><strong>Healthcare:</strong> Medical professionals, nursing, and healthcare administration roles.</li>
-            <li><strong>Education:</strong> Teaching positions in schools, colleges, and training institutes.</li>
-            <li><strong>Banking and Finance:</strong> Banking operations, financial analysis, and insurance roles.</li>
-          </ul>
-
-          <h3>Career Growth Opportunities</h3>
-          <p>Many companies in Vizag offer excellent career progression opportunities. With the city's growing reputation as an industrial hub, professionals can expect competitive salaries, skill development programs, and advancement prospects.</p>
-
-          <p>Whether you're looking for entry-level positions or senior roles, Vizag's job market has something for everyone. The city's welcoming environment and supportive community make it an ideal place to start or advance your career.</p>
-
-          <h3>Finding Your Dream Job in Vizag</h3>
-          <p>Our platform connects job seekers with employers across Visakhapatnam. We regularly update our listings to ensure you have access to the latest job opportunities. Use our search functionality to find jobs that match your skills and experience level.</p>
-
-          <p>Start your job search today and discover the exciting career opportunities waiting for you in Vizag!</p>
-        </div>
       </main>
 
       <Footer />
