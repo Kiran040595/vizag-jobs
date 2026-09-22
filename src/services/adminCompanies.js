@@ -1,13 +1,14 @@
-import { supabase } from '../lib/supabaseClient';
-import { fetchJobs } from './jobs';
-import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { supabase } from '../lib/supabaseClient.js';
+import { fetchJobs } from './jobs.js';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow.js';
 import {
   readCachedPublicJobs,
   readCachedPublicCompanies,
   writeCachedPublicCompanies,
   clearCachedPublicCompanies,
   COMPANY_DIRECTORY_CACHE_TTL_MS,
-} from '../lib/publicJobsSessionCache';
+} from '../lib/publicJobsSessionCache.js';
+
 
 const KNOWN_COMPANY_DEFAULTS = {
   'Miracle Software Systems': {
@@ -47,7 +48,7 @@ const KNOWN_COMPANY_DEFAULTS = {
   },
   'Eisai Pharmaceuticals India': {
     website: 'https://www.eisai.co.in',
-    careers_url: 'https://www.eisai.co.in/careers/',
+    careers_url: 'https://www.eisai.co.in/contactus.html',
     category: 'Pharma',
   },
   'Patra India': {
@@ -59,6 +60,66 @@ const KNOWN_COMPANY_DEFAULTS = {
     website: 'https://granulesindia.com',
     careers_url: 'https://granulesindia.com/careers/',
     category: 'Pharma',
+  },
+  'PBL Transport Corporation': {
+    website: 'https://www.pbltransport.co.in/',
+    careers_url: 'https://www.pbltransport.co.in/',
+    category: 'Manufacturing',
+  },
+  'Karur Vysya Bank': {
+    website: 'https://www.kvb.co.in',
+    careers_url: 'https://careers.karurvysya.bank.in',
+    category: 'Banking & Finance',
+  },
+  'Hetero': {
+    website: 'https://www.hetero.com',
+    careers_url: 'https://www.heterohealthcare.com/careers',
+    category: 'Healthcare',
+  },
+  'Foxconn': {
+    website: 'https://www.foxconn.com',
+    careers_url: 'https://recruit.foxconn.com',
+    category: 'Manufacturing',
+  },
+  'JLL': {
+    website: 'https://www.jll.co.in',
+    careers_url: 'https://www.jll.co.in/en/careers',
+    category: 'Manufacturing',
+  },
+  'JSE Engineering': {
+    website: 'https://www.jseengineering.com',
+    careers_url: 'https://jseacademy.com/contact-us/',
+    category: 'Manufacturing',
+  },
+  'Transasia Bio-Medicals Ltd.': {
+    website: 'https://transasia.co.in',
+    careers_url: 'https://erbamannheim.com/careers',
+    category: 'Healthcare',
+  },
+  'Decorpot': {
+    website: 'https://www.decorpot.com',
+    careers_url: 'https://www.decorpot.com/contact-us',
+    category: 'Hospitality & Retail',
+  },
+  'Benovymed Healthcare': {
+    website: 'https://benovymed.com',
+    careers_url: 'https://benovymed.com/contact-us',
+    category: 'Healthcare',
+  },
+  'Teks Academy': {
+    website: 'https://teksacademy.com',
+    careers_url: 'https://teksacademy.com/contact-us/',
+    category: 'Education',
+  },
+  'Kiya World School': {
+    website: 'https://kiyaworldschool.com',
+    careers_url: 'https://kiyaworldschool.com',
+    category: 'Education',
+  },
+  'Edify Education': {
+    website: 'https://edifyschools.com',
+    careers_url: 'https://edifyschools.com/careers/',
+    category: 'Education',
   },
 };
 
@@ -402,13 +463,31 @@ export const DIRECTORY_SECTORS = [
 ];
 
 export function mapCategoryToSector(category = '') {
-  const norm = String(category).toLowerCase();
+  const text = String(category || '').trim();
+  if (!text) return DIRECTORY_SECTORS[1];
+
+  // Explicit guard: hospitality must always map to hospitality sector, never pharma
+  if (/hospitality/i.test(text)) {
+    return DIRECTORY_SECTORS.find((s) => s.id === 'hospitality') || DIRECTORY_SECTORS[6];
+  }
+
   for (const s of DIRECTORY_SECTORS) {
     if (s.id === 'all') continue;
-    if (s.match.some((m) => norm.includes(m.toLowerCase()))) {
+    for (const m of s.match) {
+      const regex = new RegExp(`\\b${m}\\b`, 'i');
+      if (regex.test(text)) return s;
+    }
+  }
+
+  // Fallback to substring match for compound terms
+  const lower = text.toLowerCase();
+  for (const s of DIRECTORY_SECTORS) {
+    if (s.id === 'all') continue;
+    if (s.match.some((m) => lower.includes(m.toLowerCase()))) {
       return s;
     }
   }
+
   return DIRECTORY_SECTORS[1]; // default to IT & Software
 }
 
@@ -482,24 +561,58 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
     }
   }
 
+  const EXCLUDED_DIRECTORY_COMPANIES = new Set([
+    'bairesdev',
+    'turing',
+    'google',
+    'uber',
+    'armani exchange',
+    'escape academy',
+    'with ease education india',
+    'da vinci international school',
+    'tablets india',
+    'fresenius medical care',
+    'planetspark',
+    'patra corporation',
+  ]);
+
   const rawList = companiesRes.data || [];
+  const localOverrides = getLocalCompanyOverrides();
+
   const result = rawList
-    .map((c) => {
-      const sector = mapCategoryToSector(c.category);
+    .filter((c) => {
       const key = normalizeCompName(c.name);
+      const local = localOverrides[c.name];
+      if (local && local.is_directory_approved !== undefined) {
+        return Boolean(local.is_directory_approved);
+      }
+      if (EXCLUDED_DIRECTORY_COMPANIES.has(key)) {
+        return false;
+      }
+      return Boolean(c.is_directory_approved);
+    })
+    .map((c) => {
+      const key = normalizeCompName(c.name);
+      const local = localOverrides[c.name] || {};
+      const known = KNOWN_COMPANY_DEFAULTS[c.name] || {};
+      const sector = mapCategoryToSector(local.category || c.category || known.category);
       const activeJobsCount = exactJobCounts.get(key) || 0;
+      const website = local.website || known.website || c.website || '';
+      const careersUrl = local.careers_url || known.careers_url || c.careers_url || '';
+
       return {
         id: c.id,
         name: c.name,
-        website: c.website || '',
-        careersUrl: c.careers_url || '',
-        category: c.category || sector.label,
+        website,
+        careersUrl,
+        category: local.category || c.category || known.category || sector.label,
         sectorId: sector.id,
         sectorLabel: sector.label,
         sectorIcon: sector.icon,
-        location: c.location || 'Visakhapatnam',
+        location: local.location || c.location || 'Visakhapatnam',
         activeJobsCount,
-        notes: c.notes || '',
+        isDirectoryApproved: local.is_directory_approved !== undefined ? Boolean(local.is_directory_approved) : true,
+        notes: local.notes || c.notes || '',
       };
     })
     .sort((a, b) => {
@@ -509,6 +622,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       }
       return a.name.localeCompare(b.name);
     });
+
 
   // Write to browser storage and memory cache for 10+ minutes
   if (result.length > 0) {

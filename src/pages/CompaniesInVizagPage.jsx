@@ -327,6 +327,16 @@ export default function CompaniesInVizagPage() {
                 ) : null}
               </div>
             </div>
+
+            {isAdmin ? (
+              <div className="mx-auto mt-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-950/60 px-4 py-2 text-xs font-semibold text-cyan-200 backdrop-blur-sm">
+                <span>🛡️ Admin Mode Active: Publish & unpublish toggles enabled on cards below.</span>
+                <Link to="/admin/companies" className="inline-flex items-center gap-1 font-bold text-white underline hover:text-cyan-300">
+                  <span>Manage in Admin Panel</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            ) : null}
           </div>
         </section>
 

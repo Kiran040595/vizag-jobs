@@ -53,6 +53,7 @@ export const SOURCE_OPTIONS = ADMIN_SOURCE_OPTIONS;
 export const DEFAULT_FILTERS = Object.freeze({
   tab: 'all',
   q: '',
+  company: '',
   category: 'all',
   jobType: 'all',
   freshness: 'all',
