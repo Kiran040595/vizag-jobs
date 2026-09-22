@@ -72,7 +72,12 @@
   "redirects": [
     {
       "source": "/ig",
-      "destination": "/jobs/latest",
+      "destination": "/apply",
+      "permanent": true
+    },
+    {
+      "source": "/jobs/latest",
+      "destination": "/apply",
       "permanent": true
     },
     {

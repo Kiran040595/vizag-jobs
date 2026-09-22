@@ -372,9 +372,9 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   return job;
 };
 
-/** Published jobs marked for the Instagram bio page (/jobs/latest), newest first. */
+/** Published jobs marked for the Instagram bio page (/apply), newest first (default top 5). */
 export const fetchInstagramJobs = async (options = {}) => {
-  const { forceRefresh = false } = options;
+  const { forceRefresh = false, limit = 5 } = options;
   const client = getPublicClient();
   if (!isSupabaseConfigured || !client) {
     throw new Error(
@@ -387,18 +387,24 @@ export const fetchInstagramJobs = async (options = {}) => {
     Array.isArray(instagramJobsCache.jobs) &&
     Date.now() - instagramJobsCache.timestamp < CACHE_DURATION
   ) {
-    return instagramJobsCache.jobs;
+    return instagramJobsCache.jobs.slice(0, limit);
   }
 
   const data = await retryWithBackoff(async () => {
     const minPostedAt = getMinPostedAtIsoForPublicDisplay();
-    const { data: rows, error } = await client
+    let query = client
       .from(jobsTable)
       .select(LIST_COLUMNS)
       .eq('status', 'published')
       .eq('is_instagram', true)
       .or(`posted_at.gte.${minPostedAt},created_by.not.is.null,apply_mode.eq.internal,source_name.not.in.("naukri.com","linkedin.com","indeed.com")`)
       .order('posted_at', { ascending: false });
+
+    if (typeof limit === 'number' && limit > 0) {
+      query = query.limit(limit);
+    }
+
+    const { data: rows, error } = await query;
 
     if (error) {
       throw new Error(`Supabase Instagram jobs fetch failed: ${error.message}`);
@@ -408,7 +414,8 @@ export const fetchInstagramJobs = async (options = {}) => {
 
   const processed = data
     .map((row, index) => processJobData(row, index))
-    .filter(isJobWithinPublicDisplayWindow);
+    .filter(isJobWithinPublicDisplayWindow)
+    .slice(0, typeof limit === 'number' && limit > 0 ? limit : undefined);
   instagramJobsCache.jobs = processed;
   instagramJobsCache.timestamp = Date.now();
   writeCachedInstagramJobs(processed);

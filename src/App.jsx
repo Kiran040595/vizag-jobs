@@ -202,7 +202,8 @@ function App() {
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
-      <Route path="/jobs/latest" element={<InstagramJobsPage />} />
+      <Route path="/apply" element={<InstagramJobsPage />} />
+      <Route path="/jobs/latest" element={<Navigate to="/apply" replace />} />
       <Route path="/saved-jobs" element={<SavedJobsPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
       <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
