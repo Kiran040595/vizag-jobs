@@ -19,8 +19,15 @@ import {
 } from '../services/adminJobs';
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
+import {
+  formatApplicationCountNoun,
+  formatUniqueApplyClickNoun,
+  jobApplyClickCount,
+  resolveOnPlatformApplicationCount,
+} from '../lib/jobApplicationCount';
 import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
+import JobApplicantsModal from '../components/admin/JobApplicantsModal';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -100,6 +107,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [employerLabelById, setEmployerLabelById] = useState(() => new Map());
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [modalJob, setModalJob] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -115,15 +123,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
         setLoadError('');
         setIsLoading(false);
 
-        const internalPublishedIds = data
-          .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
-          .map((job) => job.id);
+        const jobIds = data.map((job) => job.id);
 
         Promise.all([
           fetchAdminEmployerProfiles(),
-          internalPublishedIds.length > 0
-            ? fetchJobApplicationCounts(internalPublishedIds)
-            : Promise.resolve({}),
+          jobIds.length > 0 ? fetchJobApplicationCounts(jobIds) : Promise.resolve({}),
         ])
           .then(([employerRows, counts]) => {
             if (ignore) {
@@ -663,10 +667,24 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         {job.rejection_reason ? (
                           <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                         ) : null}
-                        {job.status === 'published' && job.apply_mode === 'internal' ? (
-                          <p className="mt-2 text-sm font-semibold text-indigo-700">
-                            {applicationCounts[job.id] || 0} application
-                            {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
+                        {job.apply_mode === 'internal' ||
+                        resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
+                          <p className="mt-2">
+                            <button
+                              type="button"
+                              onClick={() => setModalJob(job)}
+                              className="cursor-pointer text-sm font-semibold text-indigo-700 underline hover:text-indigo-900"
+                              title="Click to preview applicant details"
+                            >
+                              {formatApplicationCountNoun(
+                                resolveOnPlatformApplicationCount(job, applicationCounts),
+                              )}
+                            </button>
+                          </p>
+                        ) : null}
+                        {jobApplyClickCount(job) > 0 ? (
+                          <p className="mt-1 text-sm font-semibold text-cyan-800">
+                            {formatUniqueApplyClickNoun(jobApplyClickCount(job))}
                           </p>
                         ) : null}
                       </div>
@@ -684,13 +702,13 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                           }}
                         />
                       ) : null}
-                      {job.status === 'published' && job.apply_mode === 'internal' ? (
+                      {job.apply_mode === 'internal' ? (
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/jobs/${job.id}/applications`)}
                           className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
                         >
-                          Applications ({applicationCounts[job.id] || 0})
+                          Applications ({resolveOnPlatformApplicationCount(job, applicationCounts)})
                         </button>
                       ) : null}
                       <button
@@ -822,6 +840,16 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {modalJob ? (
+        <JobApplicantsModal
+          jobId={modalJob.id}
+          jobTitle={modalJob.title}
+          companyName={modalJob.company}
+          isOpen={Boolean(modalJob)}
+          onClose={() => setModalJob(null)}
+        />
       ) : null}
     </AdminShell>
   );

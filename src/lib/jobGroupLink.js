@@ -1,3 +1,5 @@
+import { recordAndOpenExternalApply } from '../services/jobApplyClicks.js';
+
 /** Default Instagram channel for daily Vizag job updates (Link in bio / external apply). */
 export const DEFAULT_INSTAGRAM_CHANNEL_URL =
   'https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/';
@@ -22,7 +24,7 @@ export const getDailyUpdatesChannelUrl = () => DEFAULT_INSTAGRAM_CHANNEL_URL;
 
 const EXTERNAL_APPLY_PROMPT_KEY = 'vizagjobs:external-apply-prompt';
 
-export const stashExternalApplyPrompt = ({ applyUrl, channelUrl, jobTitle } = {}) => {
+export const stashExternalApplyPrompt = ({ applyUrl, channelUrl, jobTitle, jobId } = {}) => {
   if (!applyUrl) {
     return;
   }
@@ -33,11 +35,12 @@ export const stashExternalApplyPrompt = ({ applyUrl, channelUrl, jobTitle } = {}
         applyUrl,
         channelUrl: channelUrl || DEFAULT_INSTAGRAM_CHANNEL_URL,
         jobTitle: jobTitle || '',
+        jobId: jobId || '',
       }),
     );
     window.dispatchEvent(new Event('vizagjobs:external-apply-prompt'));
   } catch {
-    window.open(applyUrl, '_blank', 'noopener,noreferrer');
+    recordAndOpenExternalApply(applyUrl, jobId);
   }
 };
 
@@ -56,6 +59,7 @@ export const consumeExternalApplyPrompt = () => {
       applyUrl: parsed.applyUrl,
       channelUrl: parsed.channelUrl || DEFAULT_INSTAGRAM_CHANNEL_URL,
       jobTitle: parsed.jobTitle || '',
+      jobId: parsed.jobId || '',
     };
   } catch {
     return null;

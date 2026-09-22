@@ -168,5 +168,6 @@ export const openExternalApplyLink = (url, options = {}) => {
     applyUrl: url,
     channelUrl: options.channelUrl || getDailyUpdatesChannelUrl(),
     jobTitle: options.jobTitle || options.job?.title || '',
+    jobId: options.jobId || options.job?.id || '',
   });
 };

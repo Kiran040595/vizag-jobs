@@ -3,7 +3,8 @@ import JoinChannelBeforeApplyModal from './JoinChannelBeforeApplyModal';
 import {
   consumeExternalApplyPrompt,
   subscribeExternalApplyPrompt,
-} from '../lib/jobGroupLink';
+} from '../lib/jobGroupLink.js';
+import { recordAndOpenExternalApply } from '../services/jobApplyClicks.js';
 
 /**
  * Global listener for external-apply prompts (login redirect, apply button, etc.).
@@ -29,10 +30,9 @@ export default function ExternalApplyPromptHost() {
 
   const continueApply = () => {
     const url = prompt.applyUrl;
+    const jobId = prompt.jobId;
     setPrompt(null);
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    recordAndOpenExternalApply(url, jobId);
   };
 
   return (

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   formatRelativePostedAt,
   shouldHighlightPostedTime,
@@ -5,6 +6,11 @@ import {
 import { useSavedJob } from '../lib/useSavedJob';
 import { pushToast } from '../lib/toast';
 import FullJobDetailsLink from './FullJobDetailsLink';
+import {
+  formatApplicantCountLabel,
+  normalizeApplicationCount,
+} from '../lib/jobApplicationCount';
+import JobApplicantsModal from './admin/JobApplicantsModal';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -31,10 +37,15 @@ const JobCard = ({
   description,
   postedAt,
   isFeatured = false,
+  directBadge = null,
+  applicationCount = 0,
+  showApplicantCount = false,
 }) => {
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
+  const applicants = normalizeApplicationCount(applicationCount);
+  const [isApplicantsOpen, setIsApplicantsOpen] = useState(false);
 
   const handleToggleSaved = (event) => {
     const wasSaved = saved;
@@ -50,7 +61,9 @@ const JobCard = ({
       className={`group relative flex h-full flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-4 ${
         isFeatured
           ? 'border-cyan-300 hover:border-cyan-400'
-          : 'border-slate-200 hover:border-slate-300'
+          : directBadge
+            ? 'border-emerald-200 hover:border-emerald-300 ring-1 ring-emerald-100/50'
+            : 'border-slate-200 hover:border-slate-300'
       }`}
     >
       <button
@@ -69,11 +82,27 @@ const JobCard = ({
       </button>
 
       <div className="mb-3 min-w-0 pr-11 sm:pr-12">
-        {isFeatured ? (
-          <span className="mb-1.5 inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
-            Featured
-          </span>
-        ) : null}
+        <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+          {directBadge ? (
+            <span
+              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                directBadge.tone === 'emerald'
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : directBadge.tone === 'cyan'
+                    ? 'border border-cyan-200 bg-cyan-50 text-cyan-800'
+                    : 'border border-indigo-200 bg-indigo-50 text-indigo-800'
+              }`}
+            >
+              <span>{directBadge.icon}</span>
+              <span>{directBadge.label}</span>
+            </span>
+          ) : null}
+          {isFeatured ? (
+            <span className="inline-flex rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
+              Featured
+            </span>
+          ) : null}
+        </div>
         <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
           {jobTitle}
         </h3>
@@ -102,6 +131,24 @@ const JobCard = ({
         </p>
       ) : null}
 
+      {showApplicantCount ? (
+        <div className="mb-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsApplicantsOpen(true);
+            }}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
+            title="View applicants (Admin)"
+          >
+            <span aria-hidden="true">👥</span>
+            <span>{formatApplicantCountLabel(applicants)}</span>
+          </button>
+        </div>
+      ) : null}
+
       {description ? (
         <p className="mb-4 line-clamp-2 text-xs leading-relaxed text-slate-600 sm:text-sm">{description}</p>
       ) : null}
@@ -109,6 +156,16 @@ const JobCard = ({
       <div className="mt-auto">
         <FullJobDetailsLink jobPath={jobPath} />
       </div>
+
+      {isApplicantsOpen ? (
+        <JobApplicantsModal
+          jobId={jobId}
+          jobTitle={jobTitle}
+          companyName={companyName}
+          isOpen={isApplicantsOpen}
+          onClose={() => setIsApplicantsOpen(false)}
+        />
+      ) : null}
     </article>
   );
 };

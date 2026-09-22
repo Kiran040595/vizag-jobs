@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import StudentProfileFields, { EMPTY_STUDENT_PROFILE_FORM } from '../components/student/StudentProfileFields';
-import StudentRegistrationConsent from '../components/student/StudentRegistrationConsent';
-import StudentSkillMatchNotice from '../components/student/StudentSkillMatchNotice';
+import { EMPTY_STUDENT_PROFILE_FORM } from '../components/student/StudentProfileFields';
+import StudentRegisterWizard from '../components/student/StudentRegisterWizard';
 import { EMPTY_STUDENT_CONSENTS, validateStudentConsents } from '../lib/studentConsent';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
@@ -21,15 +20,21 @@ import { markStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 import { validateStudentProfilePayload } from '../lib/studentProfileValidation';
 
-const INPUT_CLASS =
-  'mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
+const INITIAL_STUDENT_REGISTER_FORM = {
+  ...EMPTY_STUDENT_PROFILE_FORM,
+  availability: 'immediate',
+  role_experience_level: 'fresher',
+  is_fresher: true,
+  certifications: 'None',
+  preferred_locations: ['Visakhapatnam'],
+};
 
 export default function StudentRegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isLoading, isStudent, isSupabaseConfigured, profileComplete, session, signUp } =
     useStudentAuth();
-  const [form, setForm] = useState(EMPTY_STUDENT_PROFILE_FORM);
+  const [form, setForm] = useState(INITIAL_STUDENT_REGISTER_FORM);
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +56,7 @@ export default function StudentRegisterPage() {
     apply: shouldAutoApplyAfterAuth(searchParams),
   });
 
-  const completePostAuthNavigation = () => {
+  const completePostAuthNavigation = useCallback(() => {
     markStudentAuthSuccess({
       apply: shouldAutoApplyAfterAuth(searchParams),
       type: 'register',
@@ -70,17 +75,20 @@ export default function StudentRegisterPage() {
     const pendingApply = consumePendingApplyUrl();
     if (pendingApply && profileComplete) {
       const meta = readPendingApplyJobMeta();
-      openExternalApplyLink(pendingApply, { jobTitle: meta?.title || '' });
+      openExternalApplyLink(pendingApply, {
+        jobTitle: meta?.title || '',
+        jobId: meta?.jobId || '',
+      });
     }
     navigate(destination, { replace: true });
-  };
+  }, [navigate, profileComplete, searchParams]);
 
   useEffect(() => {
     if (!session || !isStudent || isLoading) {
       return;
     }
     completePostAuthNavigation();
-  }, [isLoading, isStudent, navigate, profileComplete, searchParams, session]);
+  }, [completePostAuthNavigation, isLoading, isStudent, session]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -115,9 +123,15 @@ export default function StudentRegisterPage() {
   };
 
   const handleFresherChange = (value) => {
+    const isFresher = value === 'yes';
     setForm((current) => ({
       ...current,
-      is_fresher: value === 'yes',
+      is_fresher: isFresher,
+      role_experience_level: isFresher
+        ? 'fresher'
+        : current.role_experience_level === 'fresher' || !current.role_experience_level
+          ? '1_2_years'
+          : current.role_experience_level,
     }));
   };
 
@@ -148,6 +162,9 @@ export default function StudentRegisterPage() {
       if (selected.has(categoryValue)) {
         selected.delete(categoryValue);
       } else {
+        if (selected.size >= 3) {
+          return current;
+        }
         selected.add(categoryValue);
       }
       return { ...current, target_job_categories: [...selected] };
@@ -159,9 +176,12 @@ export default function StudentRegisterPage() {
       if (current.target_job_categories.includes(categoryValue)) {
         return current;
       }
+      if (current.target_job_categories.length >= 3) {
+        return current;
+      }
       return {
         ...current,
-        target_job_categories: [...current.target_job_categories, categoryValue].slice(0, 8),
+        target_job_categories: [...current.target_job_categories, categoryValue],
       };
     });
   };
@@ -187,6 +207,7 @@ export default function StudentRegisterPage() {
       validateStudentConsents(consents);
       const profilePayload = {
         ...form,
+        certifications: form.certifications?.trim() ? form.certifications : 'None',
         contact_email: form.contact_email || undefined,
       };
       validateStudentProfilePayload(profilePayload);
@@ -243,73 +264,28 @@ export default function StudentRegisterPage() {
           </p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <StudentProfileFields
+        <div className="mt-8">
+          <StudentRegisterWizard
             form={form}
-            onChange={handleChange}
+            password={password}
+            onFormChange={handleChange}
             onFresherChange={handleFresherChange}
+            onPasswordChange={setPassword}
             onToggleSkill={toggleSkill}
             onAddSkill={addSkill}
             onToggleTargetCategory={toggleTargetCategory}
             onAddTargetCategory={addTargetCategory}
             onTogglePreferredLocation={togglePreferredLocation}
-            includeContactEmail={false}
-            idPrefix="student-register"
+            consents={consents}
+            onConsentsChange={setConsents}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
+            loginPath={loginPath}
           />
+        </div>
 
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Email *</span>
-            <input
-              type="email"
-              name="contact_email"
-              value={form.contact_email}
-              onChange={handleChange}
-              required
-              autoComplete="email"
-              placeholder="you@college.edu"
-              className={INPUT_CLASS}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-semibold text-slate-700">Password *</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete="new-password"
-              className={INPUT_CLASS}
-            />
-          </label>
-
-          <StudentSkillMatchNotice />
-
-          <StudentRegistrationConsent values={consents} onChange={setConsents} />
-
-          {submitError ? (
-            <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {submitError}
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-12 w-full rounded-2xl bg-indigo-500 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-70"
-          >
-            {isSubmitting ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Already registered?{' '}
-          <Link to={loginPath} className="font-semibold text-indigo-600 hover:text-indigo-700">
-            Sign in
-          </Link>
-        </p>
-        <p className="mt-3 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-slate-500">
           Hiring for a company?{' '}
           <Link to="/employer/register" className="font-semibold text-cyan-600 hover:text-cyan-700">
             Employer registration

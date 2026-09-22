@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
@@ -10,16 +11,62 @@ import { toAbsoluteUrl } from '../lib/site';
 import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
 
 export default function JobsInVizagPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const companyQuery = searchParams.get('company') || '';
+  const textQuery = searchParams.get('search') || searchParams.get('q') || '';
+  const urlQuery = companyQuery || textQuery;
+  const [searchTerm, setSearchTerm] = useState(urlQuery);
+  const listHeadingRef = useRef(null);
+
   const { allJobs, isLoading, loadError } = useCachedPublicJobs();
 
-  const filteredJobs = useMemo(
-    () =>
-      sortJobsForListing(
-        allJobs.filter((job) => jobMatchesSearchText(job, searchTerm)),
-      ),
-    [allJobs, searchTerm]
-  );
+  // Sync searchTerm when URL query params change (e.g. navigation from companies directory or back/forward)
+  useEffect(() => {
+    setSearchTerm(urlQuery);
+    if (urlQuery && listHeadingRef.current) {
+      listHeadingRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [urlQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchTerm(val);
+    const nextParams = new URLSearchParams(searchParams);
+    const trimmed = val.trim();
+    // User typing clears exact company mode and switches to global text search
+    nextParams.delete('company');
+    if (trimmed) {
+      nextParams.set('search', trimmed);
+    } else {
+      nextParams.delete('search');
+      nextParams.delete('q');
+    }
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('search');
+    nextParams.delete('q');
+    nextParams.delete('company');
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const filteredJobs = useMemo(() => {
+    // If exact company name is specified via ?company=, match ONLY exact company name
+    if (companyQuery) {
+      const target = companyQuery.trim().toLowerCase().replace(/\s+/g, ' ');
+      return sortJobsForListing(
+        allJobs.filter(
+          (job) => (job.company || '').trim().toLowerCase().replace(/\s+/g, ' ') === target,
+        ),
+      );
+    }
+
+    return sortJobsForListing(
+      allJobs.filter((job) => jobMatchesSearchText(job, searchTerm)),
+    );
+  }, [allJobs, companyQuery, searchTerm]);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -46,7 +93,7 @@ export default function JobsInVizagPage() {
           <p className="mt-4 text-lg text-slate-600">Discover all job opportunities in Visakhapatnam</p>
         </div>
 
-        <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
+        <HeroSection searchTerm={searchTerm} onSearch={handleSearchChange} />
 
         {isLoading ? (
           <LoadingSpinner />
@@ -56,47 +103,90 @@ export default function JobsInVizagPage() {
             {loadError}
           </p>
         ) : null}
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
-          {filteredJobs.length} jobs match your search
-        </p>
 
-        <h2 className="text-2xl font-semibold text-slate-800">Latest Jobs in Vizag</h2>
-        <JobList jobs={filteredJobs} />
+        {/* Company / Keyword Filter Active Banner */}
+        {companyQuery ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
+                🏢
+              </span>
+              <div>
+                <p className="font-semibold text-cyan-900">
+                  Showing jobs for company: <strong className="font-bold text-cyan-950">&quot;{companyQuery}&quot;</strong>
+                </p>
+                <p className="text-xs text-cyan-700">
+                  {filteredJobs.length} {filteredJobs.length === 1 ? 'live opening' : 'live openings'} in Visakhapatnam (exact match)
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
+            >
+              <span>✕ Show all jobs ({allJobs.length})</span>
+            </button>
+          </div>
+        ) : searchTerm ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
+                🔍
+              </span>
+              <div>
+                <p className="font-semibold text-cyan-900">
+                  Showing jobs matching <strong className="font-bold text-cyan-950">&quot;{searchTerm}&quot;</strong>
+                </p>
+                <p className="text-xs text-cyan-700">
+                  {filteredJobs.length} {filteredJobs.length === 1 ? 'opening' : 'openings'} found in Visakhapatnam
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
+            >
+              <span>✕ Show all jobs ({allJobs.length})</span>
+            </button>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
+            {filteredJobs.length} jobs match your search
+          </p>
+        )}
 
-        <div className="prose prose-slate mx-auto max-w-4xl">
-          <h2>Job Opportunities in Visakhapatnam</h2>
-          <p>Visakhapatnam, commonly known as Vizag, is a rapidly growing city in Andhra Pradesh, India, offering numerous job opportunities across various sectors. From IT and technology to manufacturing and services, Vizag has become a hub for employment in recent years.</p>
-
-          <p>The city's strategic location, excellent infrastructure, and presence of major industries make it an attractive destination for job seekers. Whether you're a fresh graduate looking for your first job or an experienced professional seeking career advancement, Vizag offers diverse opportunities to build your career.</p>
-
-          <h3>Why Choose Jobs in Vizag?</h3>
-          <ul>
-            <li><strong>Growing Economy:</strong> Vizag's economy is expanding rapidly with investments in sectors like IT, pharmaceuticals, and manufacturing.</li>
-            <li><strong>Quality of Life:</strong> The city offers a good work-life balance with beautiful beaches, parks, and a pleasant climate.</li>
-            <li><strong>Cost of Living:</strong> Compared to metros like Hyderabad or Bangalore, Vizag offers a more affordable cost of living.</li>
-            <li><strong>Educational Institutions:</strong> Presence of reputed universities and technical institutes ensures a steady supply of skilled workforce.</li>
-          </ul>
-
-          <h3>Popular Job Sectors in Vizag</h3>
-          <p>Vizag's job market spans across multiple industries:</p>
-          <ul>
-            <li><strong>Information Technology:</strong> Software development, data analysis, cybersecurity, and IT support roles.</li>
-            <li><strong>Manufacturing:</strong> Engineering, quality control, and production management positions.</li>
-            <li><strong>Healthcare:</strong> Medical professionals, nursing, and healthcare administration roles.</li>
-            <li><strong>Education:</strong> Teaching positions in schools, colleges, and training institutes.</li>
-            <li><strong>Banking and Finance:</strong> Banking operations, financial analysis, and insurance roles.</li>
-          </ul>
-
-          <h3>Career Growth Opportunities</h3>
-          <p>Many companies in Vizag offer excellent career progression opportunities. With the city's growing reputation as an industrial hub, professionals can expect competitive salaries, skill development programs, and advancement prospects.</p>
-
-          <p>Whether you're looking for entry-level positions or senior roles, Vizag's job market has something for everyone. The city's welcoming environment and supportive community make it an ideal place to start or advance your career.</p>
-
-          <h3>Finding Your Dream Job in Vizag</h3>
-          <p>Our platform connects job seekers with employers across Visakhapatnam. We regularly update our listings to ensure you have access to the latest job opportunities. Use our search functionality to find jobs that match your skills and experience level.</p>
-
-          <p>Start your job search today and discover the exciting career opportunities waiting for you in Vizag!</p>
+        <div ref={listHeadingRef} className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-slate-800">
+            {companyQuery
+              ? `Jobs at "${companyQuery}"`
+              : searchTerm
+              ? `Jobs matching "${searchTerm}"`
+              : 'Latest Jobs in Vizag'}
+          </h2>
         </div>
+
+        {filteredJobs.length === 0 && !isLoading ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+            <p className="text-base font-semibold text-slate-800">
+              No direct job openings currently listed for &quot;{companyQuery || searchTerm}&quot;
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Try searching with another keyword or explore other top employers in Visakhapatnam.
+            </p>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow hover:bg-slate-800"
+            >
+              <span>View all available jobs →</span>
+            </button>
+          </div>
+        ) : (
+          <JobList jobs={filteredJobs} />
+        )}
+
       </main>
 
       <Footer />

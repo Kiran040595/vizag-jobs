@@ -21,7 +21,7 @@ export const JOB_CATEGORIES: JobCategoryDef[] = [
   { id: 'banking', value: 'Banking & Finance', label: 'Banking & Finance', aliases: ['banking', 'finance', 'accountant', 'accounts', 'nbfc', 'insurance'] },
   { id: 'bpo', value: 'BPO / Customer Support', label: 'BPO / Customer Support', aliases: ['bpo', 'customer support', 'call center', 'voice process', 'telecaller'] },
   { id: 'sales', value: 'Sales & Marketing', label: 'Sales & Marketing', aliases: ['sales', 'marketing', 'business development', 'bde', 'digital marketing'] },
-  { id: 'hr', value: 'HR & Admin', label: 'HR & Admin', aliases: ['human resources', 'recruitment', 'admin', 'office assistant', 'back office'] },
+  { id: 'hr', value: 'HR & Admin', label: 'HR & Admin', aliases: ['hr', 'human resources', 'recruitment', 'admin', 'office assistant', 'back office'] },
   { id: 'healthcare', value: 'Healthcare', label: 'Healthcare', aliases: ['healthcare', 'medical', 'nurse', 'pharma', 'hospital', 'lab technician'] },
   { id: 'education', value: 'Education', label: 'Education', aliases: ['education', 'teacher', 'faculty', 'tutor', 'teaching'] },
   { id: 'hospitality', value: 'Hospitality & Retail', label: 'Hospitality & Retail', aliases: ['hospitality', 'hotel', 'retail', 'store', 'restaurant', 'front office'] },
@@ -33,6 +33,22 @@ export const JOB_CATEGORY_VALUES = JOB_CATEGORIES.map((c) => c.value);
 export const GEMINI_CATEGORY_LIST_TEXT = JOB_CATEGORY_VALUES.filter((v) => v !== 'General').join(' | ');
 
 const CATEGORY_BY_VALUE = new Map(JOB_CATEGORIES.map((c) => [c.value.toLowerCase(), c.value]));
+const CATEGORY_BY_ID = new Map(JOB_CATEGORIES.map((c) => [c.id, c]));
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Whole-word / phrase match so "it" does not match "waiter" or "hospitality". */
+export function textHasKeyword(hay: unknown, keyword: unknown): boolean {
+  const needle = String(keyword ?? '')
+    .trim()
+    .toLowerCase();
+  if (!needle) return false;
+  const source = String(hay ?? '').toLowerCase();
+  if (!source) return false;
+  if (needle.includes(' ')) return source.includes(needle);
+  const escaped = escapeRegExp(needle);
+  return new RegExp(`(^|[^a-z0-9])${escaped}(?![a-z0-9])`).test(source);
+}
 
 const normalize = (value: unknown): string =>
   String(value ?? '')
@@ -83,20 +99,23 @@ export function normalizeJobCategory(raw: unknown): string | null {
   const exact = CATEGORY_BY_VALUE.get(text);
   if (exact) return exact;
 
+  const byId = CATEGORY_BY_ID.get(text);
+  if (byId) return byId.value;
+
   for (const cat of JOB_CATEGORIES) {
-    if (cat.aliases.some((alias) => text === alias || text.includes(alias))) {
+    if (cat.aliases.some((alias) => text === alias || textHasKeyword(text, alias))) {
       return cat.value;
     }
   }
 
   for (const cat of JOB_CATEGORIES) {
-    if (text.includes(cat.value.toLowerCase())) return cat.value;
+    if (textHasKeyword(text, cat.value.toLowerCase())) return cat.value;
   }
 
   return null;
 }
 
-const matchesAny = (hay: string, keywords: string[]) => keywords.some((kw) => hay.includes(kw));
+const matchesAny = (hay: string, keywords: string[]) => keywords.some((kw) => textHasKeyword(hay, kw));
 
 const SENIOR_EXPERIENCE = /\b(?:[3-9]|[1-9]\d+)\s*\+?\s*(?:yr|yrs|year|years)\b/i;
 

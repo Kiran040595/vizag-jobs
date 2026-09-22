@@ -61,7 +61,7 @@ export const JOB_CATEGORIES = [
     id: 'hr',
     value: 'HR & Admin',
     label: 'HR & Admin',
-    aliases: ['human resources', 'recruitment', 'admin', 'office assistant', 'back office'],
+    aliases: ['hr', 'human resources', 'recruitment', 'admin', 'office assistant', 'back office'],
   },
   {
     id: 'healthcare',
@@ -102,6 +102,26 @@ export const GEMINI_CATEGORY_LIST_TEXT = JOB_CATEGORY_VALUES.filter((v) => v !==
 const CATEGORY_BY_VALUE = new Map(JOB_CATEGORIES.map((c) => [c.value.toLowerCase(), c.value]));
 const CATEGORY_BY_ID = new Map(JOB_CATEGORIES.map((c) => [c.id, c]));
 
+const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Whole-word / phrase match. Short aliases like "it" must not match inside
+ * "waiter", "hospitality", or "digital" ("git").
+ * @param {unknown} hay
+ * @param {unknown} keyword
+ */
+export const textHasKeyword = (hay, keyword) => {
+  const needle = String(keyword ?? '')
+    .trim()
+    .toLowerCase();
+  if (!needle) return false;
+  const source = String(hay ?? '').toLowerCase();
+  if (!source) return false;
+  if (needle.includes(' ')) return source.includes(needle);
+  const escaped = escapeRegExp(needle);
+  return new RegExp(`(^|[^a-z0-9])${escaped}(?![a-z0-9])`).test(source);
+};
+
 const normalize = (value) =>
   String(value ?? '')
     .trim()
@@ -139,21 +159,24 @@ export const normalizeJobCategory = (raw) => {
   const exact = CATEGORY_BY_VALUE.get(text);
   if (exact) return exact;
 
+  const byId = CATEGORY_BY_ID.get(text);
+  if (byId) return byId.value;
+
   for (const cat of JOB_CATEGORIES) {
     if (cat.value.toLowerCase() === text) return cat.value;
-    if (cat.aliases.some((alias) => text === alias || text.includes(alias))) {
+    if (cat.aliases.some((alias) => text === alias || textHasKeyword(text, alias))) {
       return cat.value;
     }
   }
 
   for (const cat of JOB_CATEGORIES) {
-    if (text.includes(cat.value.toLowerCase())) return cat.value;
+    if (textHasKeyword(text, cat.value.toLowerCase())) return cat.value;
   }
 
   return null;
 };
 
-const matchesAny = (hay, keywords) => keywords.some((kw) => hay.includes(kw));
+const matchesAny = (hay, keywords) => keywords.some((kw) => textHasKeyword(hay, kw));
 
 const SENIOR_EXPERIENCE = /\b(?:[3-9]|[1-9]\d+)\s*\+?\s*(?:yr|yrs|year|years)\b/i;
 
@@ -372,18 +395,21 @@ export const jobMatchesCategoryFilter = (job, filterId) => {
   if (filterId === 'all') return true;
 
   const catDef = CATEGORY_BY_ID.get(filterId);
-  if (catDef) {
-    const normalized = normalizeJobCategory(job.category);
-    if (normalized === catDef.value) return true;
-    const hay = jobToTextBlob(job);
-    if (catDef.aliases.some((alias) => hay.includes(alias))) return true;
-    if (matchesAny(hay, CATEGORY_SIGNALS.find((s) => s.value === catDef.value)?.keywords ?? [])) {
-      return true;
-    }
-    return false;
-  }
+  if (!catDef) return false;
 
-  return false;
+  const normalized = normalizeJobCategory(job.category);
+  if (normalized === catDef.value) return true;
+  // Trust a stored canonical category so IT does not steal hospitality/HR/etc.
+  if (normalized && normalized !== 'General') return false;
+
+  const hay = jobToTextBlob(job);
+  const signalKeywords = CATEGORY_SIGNALS.find((s) => s.value === catDef.value)?.keywords ?? [];
+  if (matchesAny(hay, signalKeywords)) return true;
+
+  // Skip 1–2 letter aliases ("it", "hr") against descriptions — "it" is an English pronoun.
+  return catDef.aliases
+    .filter((alias) => alias.length > 2)
+    .some((alias) => textHasKeyword(hay, alias));
 };
 
 export const FILTER_CATEGORY_OPTIONS = [

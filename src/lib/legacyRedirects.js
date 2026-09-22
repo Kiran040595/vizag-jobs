@@ -2,6 +2,7 @@ import { JOB_CATEGORY_PAGES } from './jobCategoryPages.js';
 import {
   INSTAGRAM_BIO_JOBS_PATH,
   LEGACY_INSTAGRAM_BIO_JOBS_PATH,
+  LEGACY_INSTAGRAM_LATEST_PATH,
 } from './instagramBioJobsPath.js';
 
 /** Legacy marketing URLs mapped to canonical listing routes. */
@@ -11,7 +12,13 @@ export const LEGACY_ROUTE_REDIRECTS = {
   '/fresher-jobs-in-vizag': '/jobs/fresher',
   '/part-time-jobs-vizag': '/jobs/part-time',
   [LEGACY_INSTAGRAM_BIO_JOBS_PATH]: INSTAGRAM_BIO_JOBS_PATH,
-  ...Object.fromEntries(JOB_CATEGORY_PAGES.map((page) => [page.legacyPath, page.path])),
+  [LEGACY_INSTAGRAM_LATEST_PATH]: INSTAGRAM_BIO_JOBS_PATH,
+  ...Object.fromEntries(
+    JOB_CATEGORY_PAGES.filter((page) => Boolean(page.legacyPath)).map((page) => [
+      page.legacyPath,
+      page.path,
+    ]),
+  ),
 };
 
 /** Shape used by vercel.json redirect rules. */

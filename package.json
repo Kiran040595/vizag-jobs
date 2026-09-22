@@ -16,6 +16,7 @@
     "auto:drive-youtube-short": "node scripts/upload-drive-youtube-shorts.mjs",
     "youtube:oauth-setup": "node scripts/youtube-oauth-setup.mjs",
     "drive:oauth-setup": "node scripts/drive-oauth-setup.mjs",
+    "auto:company-careers": "node scripts/auto-company-careers.mjs",
     "prune:jobs": "node scripts/prune-stale-jobs.mjs"
   },
   "dependencies": {

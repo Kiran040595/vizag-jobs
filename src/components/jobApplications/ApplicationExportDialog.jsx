@@ -5,7 +5,15 @@ import {
   getDefaultExportColumnIds,
 } from '../../lib/applicationExport';
 
-const GROUP_ORDER = ['Contact', 'Education', 'Profile', 'Application'];
+const GROUP_ORDER = [
+  'Contact',
+  'Education',
+  'Career preference',
+  'Profile',
+  'Application',
+  'Consultancy',
+  'Interview',
+];
 
 export default function ApplicationExportDialog({
   open,
@@ -68,7 +76,7 @@ export default function ApplicationExportDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
       <div
         role="dialog"
         aria-modal="true"
@@ -81,9 +89,10 @@ export default function ApplicationExportDialog({
               Download applicants (Excel)
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Choose columns, then download {applications.length} applicant
+              Choose columns, then download {applications.length} profile
               {applications.length === 1 ? '' : 's'} for{' '}
               <span className="font-semibold text-slate-800">{job?.title || 'this job'}</span>.
+              Sheets include on-platform applications and unique Apply-click student profiles.
               Resume links are clickable “Open resume” cells — they open in the browser.
             </p>
           </div>

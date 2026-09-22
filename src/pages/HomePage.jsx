@@ -13,6 +13,9 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobsForYou from '../components/JobsForYou';
+import JobSourceTabs from '../components/JobSourceTabs';
+import CommunityQaSection from '../components/CommunityQaSection';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
 import {
@@ -20,6 +23,7 @@ import {
   writeCachedPublicJobs,
 } from '../lib/publicJobsSessionCache';
 import { computeSiteStats } from '../lib/siteStats';
+import { countDirectJobs } from '../lib/jobDirectPosting';
 import {
   CATEGORY_OPTIONS,
   DEFAULT_FILTERS,
@@ -59,7 +63,14 @@ const initialJobsState = (() => {
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const filters = useMemo(() => readFiltersFromSearchParams(searchParams), [searchParams]);
+  const { isAdmin } = useAdminAuth();
+  const filters = useMemo(() => {
+    const parsed = readFiltersFromSearchParams(searchParams);
+    if (!isAdmin && parsed.source !== 'all') {
+      return { ...parsed, source: 'all' };
+    }
+    return parsed;
+  }, [searchParams, isAdmin]);
 
   const [allJobs, setAllJobs] = useState(() => initialJobsState.jobs);
   const [isLoading, setIsLoading] = useState(() => initialJobsState.jobs.length === 0);
@@ -93,6 +104,17 @@ export default function HomePage() {
     return () => window.clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      return;
+    }
+    const parsed = readFiltersFromSearchParams(searchParams);
+    if (parsed.source === 'all') {
+      return;
+    }
+    setSearchParams(writeFiltersToSearchParams({ ...parsed, source: 'all' }), { replace: true });
+  }, [isAdmin, searchParams, setSearchParams]);
 
   const refreshJobsInBackground = useCallback(async () => {
     setIsBackgroundRefreshing(true);
@@ -178,6 +200,7 @@ export default function HomePage() {
 
   // ---------- Filter / pagination derivations ----------
   const filteredJobs = useMemo(() => applyJobFilters(allJobs, filters), [allJobs, filters]);
+  const directJobsCount = useMemo(() => countDirectJobs(allJobs), [allJobs]);
   const siteStats = useMemo(() => computeSiteStats(allJobs), [allJobs]);
   const pagination = useMemo(
     () => paginate(filteredJobs, filters.page, PAGE_SIZE),
@@ -296,12 +319,19 @@ export default function HomePage() {
             <JobsForYou jobs={allJobs} />
             <JobCategoryBrowse />
             <BlogTeaserSection />
+            <JobSourceTabs
+              activeTab={filters.tab}
+              onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
+              totalCount={allJobs.length}
+              directCount={directJobsCount}
+            />
             <JobFilters
               filters={filters}
               onUpdate={updateFilters}
               onClearAll={clearAllFilters}
               resultCount={filteredJobs.length}
               isRefreshing={isBackgroundRefreshing}
+              isAdmin={isAdmin}
             />
           </>
         ) : null}
@@ -321,6 +351,8 @@ export default function HomePage() {
             onPageChange={handlePageChange}
           />
         ) : null}
+
+        <CommunityQaSection />
 
         <StatsSection stats={siteStats} isLoading={isLoading && allJobs.length === 0} />
         <CTASection />

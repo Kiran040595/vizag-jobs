@@ -56,6 +56,17 @@ export const mapHomeBootstrapJob = (job, index = 0) => {
     shortDescription: normalizeText(job.short_description ?? job.shortDescription),
     skills: joinList(job.skills),
     source: normalizeText(job.source_name ?? job.source),
+    sourceUrl: normalizeText(job.source_url ?? job.sourceUrl),
+    createdBy: job.created_by ?? job.createdBy ?? null,
+    applyMode: (job.apply_mode ?? job.applyMode) === 'internal' ? 'internal' : 'external',
+    applicationCount:
+      Number(job.application_count ?? job.applicationCount) > 0
+        ? Math.floor(Number(job.application_count ?? job.applicationCount))
+        : 0,
+    applyClickCount:
+      Number(job.apply_click_count ?? job.applyClickCount) > 0
+        ? Math.floor(Number(job.apply_click_count ?? job.applyClickCount))
+        : 0,
     postedAt: normalizeText(job.posted_at ?? job.postedAt),
     expiresAt: normalizeText(job.expires_at ?? job.expiresAt),
     status: normalizeText(job.status, 'published'),
@@ -206,6 +217,11 @@ export const fetchHomeBootstrapJobRows = async ({
     'short_description',
     'skills',
     'source_name',
+    'source_url',
+    'created_by',
+    'apply_mode',
+    'application_count',
+    'apply_click_count',
     'posted_at',
     'expires_at',
     'status',
@@ -214,7 +230,7 @@ export const fetchHomeBootstrapJobRows = async ({
   const query = new URLSearchParams({
     select,
     status: 'eq.published',
-    posted_at: `gte.${minPosted}`,
+    or: `(posted_at.gte.${minPosted},created_by.not.is.null,apply_mode.eq.internal,source_name.not.in.("naukri.com","linkedin.com","indeed.com"))`,
     order: 'is_featured.desc,posted_at.desc',
     limit: String(limit),
   });

@@ -3,7 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import { getJobDetailPath } from '../src/lib/jobRoutes.js';
-import { getMinPostedAtIsoForPublicDisplay } from '../src/lib/jobDisplayWindow.js';
+import {
+  getMinPostedAtIsoForPublicDisplay,
+  isJobWithinPublicDisplayWindow,
+} from '../src/lib/jobDisplayWindow.js';
 import { JOB_CATEGORY_PAGES } from '../src/lib/jobCategoryPages.js';
 import { isJobExpired } from '../src/lib/jobPostingSchema.js';
 
@@ -18,14 +21,17 @@ const PAGE_SIZE = 1000;
 const staticRoutes = [
   { path: '/', priority: '1.0' },
   { path: '/jobs', priority: '0.9' },
+  { path: '/companies', priority: '0.9' },
   { path: '/jobs/it', priority: '0.9' },
   { path: '/jobs/fresher', priority: '0.9' },
   { path: '/jobs/part-time', priority: '0.8' },
+  { path: '/jobs/vizagjobs', priority: '0.9' },
   ...JOB_CATEGORY_PAGES.map((page) => ({ path: page.path, priority: '0.85' })),
   { path: '/blog', priority: '0.8' },
   { path: '/about', priority: '0.6' },
   { path: '/contact', priority: '0.6' },
   { path: '/feedback', priority: '0.6' },
+  { path: '/qa', priority: '0.8' },
   { path: '/privacy-policy', priority: '0.5' },
   { path: '/terms-of-service', priority: '0.5' },
   { path: '/disclaimer', priority: '0.5' },
@@ -136,11 +142,12 @@ const fetchPublishedJobs = async () => {
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
+    const minPostedAt = getMinPostedAtIsoForPublicDisplay();
     const { data, error } = await supabase
       .from(jobsTable)
-      .select('id, slug, title, company, category, job_type, work_mode, is_fresher, short_description, description, skills, source_name, posted_at, expires_at, updated_at, status')
+      .select('id, slug, title, company, category, job_type, work_mode, is_fresher, short_description, description, skills, source_name, posted_at, expires_at, updated_at, status, created_by, apply_mode')
       .eq('status', 'published')
-      .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+      .or(`posted_at.gte.${minPostedAt},created_by.not.is.null,apply_mode.eq.internal,source_name.not.in.("naukri.com","linkedin.com","indeed.com")`)
       .not('slug', 'is', null)
       .order('updated_at', { ascending: false })
       .range(from, to);
@@ -150,7 +157,7 @@ const fetchPublishedJobs = async () => {
     }
 
     // Keep sitemap aligned with indexable inventory (skip expired / soft-404 candidates).
-    const currentBatch = (data || []).filter((job) => job.slug && !isJobExpired(job));
+    const currentBatch = (data || []).filter((job) => job.slug && isJobWithinPublicDisplayWindow(job));
     jobs.push(...currentBatch);
 
     if (currentBatch.length < PAGE_SIZE) {

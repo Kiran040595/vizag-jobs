@@ -13,11 +13,10 @@ export default function StudentResetPasswordPage() {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [recoveryReady, setRecoveryReady] = useState(false);
-  const [recoveryChecked, setRecoveryChecked] = useState(false);
+  const [recoveryChecked, setRecoveryChecked] = useState(() => !supabase);
 
   useEffect(() => {
     if (!supabase) {
-      setRecoveryChecked(true);
       return undefined;
     }
 

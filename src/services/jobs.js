@@ -1,5 +1,8 @@
 import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseClient';
-import { getMinPostedAtIsoForPublicDisplay } from '../lib/jobDisplayWindow';
+import {
+  getMinPostedAtIsoForPublicDisplay,
+  isJobWithinPublicDisplayWindow,
+} from '../lib/jobDisplayWindow';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
 import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
@@ -55,6 +58,11 @@ const LIST_COLUMNS = [
   'skills',
   'company_logo_url',
   'source_name',
+  'source_url',
+  'created_by',
+  'apply_mode',
+  'application_count',
+  'apply_click_count',
   'posted_at',
   'expires_at',
   'status',
@@ -145,6 +153,8 @@ const processJobData = (job, index) => {
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
     applyMode: job.apply_mode === 'internal' ? 'internal' : 'external',
+    applicationCount: Number(job.application_count) > 0 ? Math.floor(Number(job.application_count)) : 0,
+    applyClickCount: Number(job.apply_click_count) > 0 ? Math.floor(Number(job.apply_click_count)) : 0,
     description: normalizeText(job.description),
     shortDescription: normalizeText(job.short_description),
     responsibilities: joinList(job.responsibilities),
@@ -179,11 +189,12 @@ const buildSupabaseQuery = (filters = {}, options = {}) => {
   const limit = filters.limit ?? DEFAULT_LIST_LIMIT;
   const client = getPublicClient();
 
+  const minPostedAt = getMinPostedAtIsoForPublicDisplay();
   let query = client
     .from(jobsTable)
     .select(LIST_COLUMNS)
     .eq('status', 'published')
-    .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+    .or(`posted_at.gte.${minPostedAt},created_by.not.is.null,apply_mode.eq.internal,source_name.not.in.("naukri.com","linkedin.com","indeed.com")`)
     .order('is_featured', { ascending: false })
     .order('posted_at', { ascending: false })
     .order('created_at', { ascending: false });
@@ -335,11 +346,9 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
     let query = client.from(jobsTable).select('*').eq(lookupColumn, key).limit(1);
 
     // Admin viewers can read drafts/archived rows (RLS still gates this);
-    // public viewers only see published jobs within the display window.
+    // public viewers only see published jobs.
     if (!includeAllStatuses) {
-      query = query
-        .eq('status', 'published')
-        .gte('posted_at', getMinPostedAtIsoForPublicDisplay());
+      query = query.eq('status', 'published');
     }
 
     const { data: rows, error } = await query;
@@ -353,13 +362,19 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
   const job = row ? processJobData(row, 0) : null;
 
+  // For public requests, enforce the display window (180 days for direct/admin, 30 days for aggregator).
+  if (!includeAllStatuses && job && !isJobWithinPublicDisplayWindow(job)) {
+    jobByIdCache.set(cacheKey, { job: null, timestamp: Date.now() });
+    return null;
+  }
+
   jobByIdCache.set(cacheKey, { job, timestamp: Date.now() });
   return job;
 };
 
-/** Published jobs marked for the Instagram bio page (/jobs/latest), newest first. */
+/** Published jobs marked for the Instagram bio page (/apply), newest first (default top 5). */
 export const fetchInstagramJobs = async (options = {}) => {
-  const { forceRefresh = false } = options;
+  const { forceRefresh = false, limit = 5 } = options;
   const client = getPublicClient();
   if (!isSupabaseConfigured || !client) {
     throw new Error(
@@ -372,17 +387,24 @@ export const fetchInstagramJobs = async (options = {}) => {
     Array.isArray(instagramJobsCache.jobs) &&
     Date.now() - instagramJobsCache.timestamp < CACHE_DURATION
   ) {
-    return instagramJobsCache.jobs;
+    return instagramJobsCache.jobs.slice(0, limit);
   }
 
   const data = await retryWithBackoff(async () => {
-    const { data: rows, error } = await client
+    const minPostedAt = getMinPostedAtIsoForPublicDisplay();
+    let query = client
       .from(jobsTable)
       .select(LIST_COLUMNS)
       .eq('status', 'published')
       .eq('is_instagram', true)
-      .gte('posted_at', getMinPostedAtIsoForPublicDisplay())
+      .or(`posted_at.gte.${minPostedAt},created_by.not.is.null,apply_mode.eq.internal,source_name.not.in.("naukri.com","linkedin.com","indeed.com")`)
       .order('posted_at', { ascending: false });
+
+    if (typeof limit === 'number' && limit > 0) {
+      query = query.limit(limit);
+    }
+
+    const { data: rows, error } = await query;
 
     if (error) {
       throw new Error(`Supabase Instagram jobs fetch failed: ${error.message}`);
@@ -390,7 +412,10 @@ export const fetchInstagramJobs = async (options = {}) => {
     return rows || [];
   });
 
-  const processed = data.map((row, index) => processJobData(row, index));
+  const processed = data
+    .map((row, index) => processJobData(row, index))
+    .filter(isJobWithinPublicDisplayWindow)
+    .slice(0, typeof limit === 'number' && limit > 0 ? limit : undefined);
   instagramJobsCache.jobs = processed;
   instagramJobsCache.timestamp = Date.now();
   writeCachedInstagramJobs(processed);

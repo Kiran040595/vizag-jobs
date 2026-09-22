@@ -116,7 +116,7 @@ AUTO_YOUTUBE_SHORT_PRIVACY=private npm run auto:youtube-short
 
 Runs daily at **7:30 PM IST** via `.github/workflows/auto-naukri-daily.yml`.
 
-Manual run: **Actions → Auto daily job pipelines → Run workflow**.
+Manual run: **Actions → Auto daily LinkedIn, blog, and Shorts → Run workflow**.
 
 ## Tunables
 

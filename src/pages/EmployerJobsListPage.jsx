@@ -11,6 +11,10 @@ import {
 } from '../lib/applicationStatus';
 import { fetchMyJobs } from '../services/employerJobs';
 import { fetchJobApplicationStats } from '../services/jobApplications';
+import {
+  formatApplicationCountNoun,
+  resolveOnPlatformApplicationCount,
+} from '../lib/jobApplicationCount';
 
 const STATUS_STYLES = {
   pending: 'border-blue-200 bg-blue-50 text-blue-700',
@@ -57,10 +61,10 @@ function EmployerJobsListContent() {
           setIsLoading(false);
         }
 
-        const publishedIds = data.filter((job) => job.status === 'published').map((job) => job.id);
-        if (publishedIds.length > 0) {
+        const jobIds = data.map((job) => job.id);
+        if (jobIds.length > 0) {
           try {
-            const stats = await fetchJobApplicationStats(publishedIds);
+            const stats = await fetchJobApplicationStats(jobIds);
             if (!ignore) {
               setApplicationCounts(stats.byJobId);
               setStatusCounts(stats.byStatus);
@@ -162,20 +166,20 @@ function EmployerJobsListContent() {
                   {job.rejection_reason ? (
                     <p className="mt-2 text-sm text-rose-700">Reason: {job.rejection_reason}</p>
                   ) : null}
-                  {job.status === 'published' && job.apply_mode === 'internal' ? (
+                  {job.apply_mode === 'internal' ||
+                  resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
                     <p className="mt-2 text-sm text-slate-600">
-                      {applicationCounts[job.id] || 0} application
-                      {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
+                      {formatApplicationCountNoun(resolveOnPlatformApplicationCount(job, applicationCounts))}
                     </p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {job.status === 'published' && job.apply_mode === 'internal' ? (
+                  {job.apply_mode === 'internal' ? (
                     <Link
                       to={`/employer/jobs/${job.id}/applications`}
                       className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
                     >
-                      View applications
+                      View applications ({resolveOnPlatformApplicationCount(job, applicationCounts)})
                     </Link>
                   ) : null}
                   {['pending', 'draft'].includes(job.status) ? (

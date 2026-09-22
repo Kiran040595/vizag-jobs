@@ -11,10 +11,16 @@ const sessionRouteSrc = readFileSync(
   'utf8',
 );
 
+const authAlertSrc = readFileSync(
+  path.join(repoRoot, 'src/components/student/StudentAuthRequiredAlert.jsx'),
+  'utf8',
+);
+
 assert.match(appliedJobsPathSrc, /APPLIED_JOBS_PATH = '\/student\/applied-jobs'/);
 assert.match(appliedJobsPathSrc, /buildAppliedJobsLoginPath/);
 assert.match(navbarSrc, /NavbarAppliedJobsLink/);
 assert.match(navbarSrc, /NavbarStudentAuth variant="mobileHeader"/);
-assert.match(sessionRouteSrc, /buildStudentAuthPath/);
+assert.match(sessionRouteSrc, /StudentAuthRequiredShell/);
+assert.match(authAlertSrc, /buildStudentAuthPath/);
 
 console.log('navbar-applied-jobs.test.mjs: OK');

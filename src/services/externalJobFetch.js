@@ -119,6 +119,7 @@ async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
     if (isAbort && body?.mode === 'seo') {
       throw new Error(
         'Make SEO timed out in the browser. LinkedIn posts use a shorter prompt now — try again once. If it repeats, check Edge Function logs and GEMINI_API_KEY.',
+        { cause: e },
       );
     }
     const isNetwork =
@@ -133,7 +134,7 @@ async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
             'Fix: deploy fetch-external-jobs, match .env to your project, or disable ad-blockers.',
           ].join(' ')
         : `Request failed: ${msg}`,
-      { cause: e instanceof Error ? e : undefined },
+      { cause: e },
     );
   }
 

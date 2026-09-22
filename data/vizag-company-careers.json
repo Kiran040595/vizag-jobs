@@ -1,0 +1,51 @@
+[
+  {
+    "name": "Miracle Software Systems",
+    "careers_url": "https://www.miraclesoft.com/careers/openings",
+    "category": "IT",
+    "location_hint": "Visakhapatnam, Miracle City, Bhogapuram",
+    "active": true
+  },
+  {
+    "name": "Fluentgrid Limited",
+    "careers_url": "https://fluentgrid.com/careers/",
+    "category": "IT",
+    "location_hint": "Visakhapatnam, IT SEZ Rushikonda",
+    "active": true
+  },
+  {
+    "name": "Symbiosis Technologies",
+    "careers_url": "https://symbiosistechnologies.com/careers/",
+    "category": "IT",
+    "location_hint": "Visakhapatnam, IT Park Rushikonda",
+    "active": true
+  },
+  {
+    "name": "Pulsus Healthtech",
+    "careers_url": "https://www.pulsus.com/careers",
+    "category": "Healthcare",
+    "location_hint": "Visakhapatnam",
+    "active": true
+  },
+  {
+    "name": "Eisai Pharmaceuticals India",
+    "careers_url": "https://www.eisai.co.in/careers/",
+    "category": "Pharma",
+    "location_hint": "Visakhapatnam, Ramky Pharma City, Parawada",
+    "active": true
+  },
+  {
+    "name": "Patra India",
+    "careers_url": "https://patracorp.com/careers/",
+    "category": "BPO",
+    "location_hint": "Visakhapatnam",
+    "active": true
+  },
+  {
+    "name": "Granules India",
+    "careers_url": "https://granulesindia.com/careers/",
+    "category": "Pharma",
+    "location_hint": "Visakhapatnam",
+    "active": true
+  }
+]

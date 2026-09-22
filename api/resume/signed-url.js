@@ -10,7 +10,7 @@ import { requireUser } from '../_lib/supabaseAuth.js';
 const fileNameFromPath = (resumePath) => {
   const key = toR2ObjectKey(resumePath);
   const base = key.split('/').pop() || 'resume';
-  return base.replace(/[^\w.\-]+/g, '_') || 'resume';
+  return base.replace(/[^\w.-]+/g, '_') || 'resume';
 };
 
 const canAccessResume = async (client, user, resumePath) => {

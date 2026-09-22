@@ -1,0 +1,41 @@
+name: Auto weekly direct company career fetch
+
+on:
+  schedule:
+    # 6:00 AM IST = 00:30 UTC every Monday (day 1 of the week)
+    - cron: '30 0 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: auto-company-careers
+  cancel-in-progress: false
+
+jobs:
+  fetch-company-careers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Fetch and publish direct company career postings
+        run: npm run auto:company-careers
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          FIRECRAWL_API_KEYS: ${{ secrets.FIRECRAWL_API_KEYS }}
+      - name: Upload company careers automation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: company-careers-automation-report
+          path: 'company-careers-automation-report-*.json'
+          if-no-files-found: ignore

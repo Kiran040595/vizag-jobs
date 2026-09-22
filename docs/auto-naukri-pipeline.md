@@ -8,7 +8,7 @@
 | **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | **6:00 PM** (general preset) |
 | **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | **9:00 PM** |
 
-Each channel runs on its own schedule via GitHub Actions (`.github/workflows/auto-naukri-daily.yml`). All use the same fetch → SEO (3 min gap) → publish → report → email flow.
+Naukri runs in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. Naukri is a separate workflow because GitHub was delaying that 4:00 PM IST cron by 3–6 hours when five schedules lived in one file. All channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
 
 ## Flow
 
@@ -72,13 +72,11 @@ Add these under **Settings → Secrets and variables → Actions**:
 
 ### 3. Enable the workflow
 
-The workflow file is `.github/workflows/auto-naukri-daily.yml`.
-
-- **Schedule (IST):**
-  - Naukri: `30 10 * * *` UTC = **4:00 PM IST**
+- **Naukri** (`.github/workflows/auto-naukri-fetch.yml`): `30 10 * * *` UTC = **4:00 PM IST**
+- **LinkedIn / blog / Shorts** (`.github/workflows/auto-naukri-daily.yml`):
   - LinkedIn Posts: `30 12 * * *` UTC = **6:00 PM IST**
   - LinkedIn Jobs: `30 15 * * *` UTC = **9:00 PM IST**
-- **Manual run:** Actions → *Auto daily job pipelines* → *Run workflow* (runs all three channels)
+- **Manual run:** Actions → *Auto daily Naukri fetch* → *Run workflow* for Naukri; *Auto daily LinkedIn, blog, and Shorts* for the other channels
 
 ## Local test
 

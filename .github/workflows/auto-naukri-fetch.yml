@@ -1,0 +1,52 @@
+name: Auto daily Naukri fetch
+
+# Own workflow file so GitHub does not delay this cron behind LinkedIn / blog / Shorts
+# in auto-naukri-daily.yml (those shared schedules were starting Naukri 3–6 hours late).
+
+on:
+  schedule:
+    # 4:00 PM IST = 10:30 UTC
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: auto-naukri-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch-seo-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Naukri auto pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
+          AUTO_FETCH_CHANNEL: naukri
+          AUTO_NAUKRI_SEO_GAP_MS: '180000'
+          AUTO_NAUKRI_COLLECT_WAIT_MS: '200000'
+          AUTO_NAUKRI_MAX_JOBS: '35'
+        run: node scripts/auto-external-pipeline.mjs naukri
+
+      - name: Upload Naukri automation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: naukri-automation-report
+          path: '*-automation-report-*.json'
+          if-no-files-found: ignore

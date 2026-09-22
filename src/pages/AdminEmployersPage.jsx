@@ -6,6 +6,10 @@ import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
+  EMPLOYER_INDUSTRY_OPTIONS,
+  EMPLOYER_LOCATION_OPTIONS,
+} from '../lib/employerProfileOptions';
+import {
   createAdminEmployerAccount,
   employerSearchBlob,
   fetchAdminEmployerProfiles,
@@ -18,6 +22,8 @@ const emptyForm = {
   contactName: '',
   email: '',
   phone: '',
+  industry: '',
+  location: '',
   password: '',
 };
 
@@ -125,6 +131,8 @@ export default function AdminEmployersPage() {
         contactName: form.contactName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
+        industry: form.industry || '',
+        location: form.location || '',
         password: form.password,
       });
 
@@ -186,6 +194,36 @@ export default function AdminEmployersPage() {
                 className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="Acme Technologies"
               />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Industry / Sector</span>
+              <select
+                value={form.industry}
+                onChange={(event) => setForm((current) => ({ ...current, industry: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+              >
+                <option value="">Select industry…</option>
+                {EMPLOYER_INDUSTRY_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Office Location in Vizag</span>
+              <select
+                value={form.location}
+                onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+              >
+                <option value="">Select office area…</option>
+                {EMPLOYER_LOCATION_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">Contact name (optional)</span>
@@ -301,6 +339,11 @@ export default function AdminEmployersPage() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-lg font-bold text-slate-950">{employer.companyName}</h2>
+                        {employer.industry ? (
+                          <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
+                            {employer.industry}
+                          </span>
+                        ) : null}
                         {!employer.profileComplete ? (
                           <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
                             Profile incomplete
@@ -331,6 +374,14 @@ export default function AdminEmployersPage() {
                         </div>
                         <div>
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Office Location (Vizag)
+                          </dt>
+                          <dd className="mt-0.5 text-slate-800">
+                            {employer.location || 'Not provided'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Contact email
                           </dt>
                           <dd className="mt-0.5 break-all text-slate-800">
@@ -348,7 +399,7 @@ export default function AdminEmployersPage() {
                         </div>
                         <div>
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Phone
+                            Phone / WhatsApp
                           </dt>
                           <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-800">
                             <span>{employer.phone || 'Not provided'}</span>

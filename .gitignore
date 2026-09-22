@@ -28,3 +28,5 @@ tests/output/
 *.sln
 *.sw?
 .vercel
+.firecrawl/
+recovery-codes.txt

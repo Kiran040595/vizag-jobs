@@ -1,62 +1,22 @@
-name: Auto daily job pipelines (Naukri + LinkedIn)
+name: Auto daily LinkedIn, blog, and Shorts
 
 on:
   schedule:
-    # 4:00 PM IST = 10:30 UTC — Naukri
-    - cron: '30 10 * * *'
     # 6:00 PM IST = 12:30 UTC — LinkedIn Posts
     - cron: '30 12 * * *'
     # 9:00 PM IST = 15:30 UTC — LinkedIn Jobs
     - cron: '30 15 * * *'
-    # 10:15 PM IST = 16:45 UTC — Daily blog (after all job fetches)
+    # 10:15 PM IST = 16:45 UTC — Daily blog (after job fetches)
     - cron: '45 16 * * *'
     # 7:30 PM IST = 14:00 UTC — Daily YouTube Short
     - cron: '0 14 * * *'
   workflow_dispatch:
 
 concurrency:
-  group: auto-naukri-pipeline-${{ github.event.schedule || 'manual' }}
+  group: auto-daily-pipeline-${{ github.event.schedule || 'manual' }}
   cancel-in-progress: false
 
 jobs:
-  fetch-seo-publish:
-    if: github.event.schedule == '30 10 * * *' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Naukri auto pipeline
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          FETCH_JOBS_CRON_SECRET: ${{ secrets.FETCH_JOBS_CRON_SECRET }}
-          AUTO_FETCH_CHANNEL: naukri
-          AUTO_NAUKRI_SEO_GAP_MS: '180000'
-          AUTO_NAUKRI_COLLECT_WAIT_MS: '200000'
-          AUTO_NAUKRI_MAX_JOBS: '35'
-        run: node scripts/auto-external-pipeline.mjs naukri
-
-      - name: Upload Naukri automation report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: naukri-automation-report
-          path: '*-automation-report-*.json'
-          if-no-files-found: ignore
-
   linkedin-posts:
     if: github.event.schedule == '30 12 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

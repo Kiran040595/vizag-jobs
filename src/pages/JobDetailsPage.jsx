@@ -32,6 +32,12 @@ import {
 } from '../lib/studentApplyRedirect';
 import { consumeStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { isInternalApplyJob } from '../lib/jobApplyMode';
+import {
+  formatApplicantCountLabel,
+  jobApplicationCount,
+  shouldShowAdminApplicantCount,
+} from '../lib/jobApplicationCount';
+import JobApplicantsModal from '../components/admin/JobApplicantsModal';
 import { fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
@@ -68,6 +74,7 @@ export default function JobDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [existingApplication, setExistingApplication] = useState(null);
+  const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const [authWelcome] = useState(() => consumeStudentAuthSuccess());
 
   const routeJobIdentifier = jobSlug || jobId || '';
@@ -196,7 +203,10 @@ export default function JobDetailsPage() {
     }
 
     const pendingApply = consumePendingApplyUrl();
-    openExternalApplyLink(pendingApply || job.applyLink, { jobTitle: job.title });
+    openExternalApplyLink(pendingApply || job.applyLink, {
+      jobTitle: job.title,
+      jobId: job.id,
+    });
   }, [isStudent, job, jobDetailPath, navigate, profileComplete, searchParams, studentSession]);
 
   const skills = splitCommaValues(job?.skills);
@@ -367,6 +377,20 @@ export default function JobDetailsPage() {
                   )}
                 </span>
               </p>
+              {shouldShowAdminApplicantCount(job, isAdmin) ? (
+                <p>
+                  <span className="font-semibold text-slate-900">Applications:</span>{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsApplicantsModalOpen(true)}
+                    className="inline-flex cursor-pointer items-center gap-1 font-bold text-indigo-700 underline decoration-indigo-300 underline-offset-2 transition hover:text-indigo-900 hover:decoration-indigo-500"
+                    title="View applicant details (Admin)"
+                  >
+                    <span>👥</span>
+                    <span>{formatApplicantCountLabel(jobApplicationCount(job))}</span>
+                  </button>
+                </p>
+              ) : null}
             </div>
 
             <JobSourceAttribution job={job} />
@@ -433,6 +457,7 @@ export default function JobDetailsPage() {
 
             <JobQuestionsSection
               jobId={job.id}
+              job={job}
               canModerate={canModerateQuestions}
               userId={user?.id ?? null}
               highlightQuestionId={highlightQuestionId}
@@ -441,6 +466,16 @@ export default function JobDetailsPage() {
         ) : null}
 
         {job ? <SimilarJobs job={job} /> : null}
+
+        {job && isApplicantsModalOpen ? (
+          <JobApplicantsModal
+            jobId={job.id}
+            jobTitle={job.title}
+            companyName={displayCompanyName(job.company)}
+            isOpen={isApplicantsModalOpen}
+            onClose={() => setIsApplicantsModalOpen(false)}
+          />
+        ) : null}
       </main>
 
       {job && jobSupportsApply(job) ? (
