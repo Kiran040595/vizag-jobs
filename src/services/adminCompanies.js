@@ -1,6 +1,13 @@
 import { supabase } from '../lib/supabaseClient';
 import { fetchJobs } from './jobs';
 import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import {
+  readCachedPublicJobs,
+  readCachedPublicCompanies,
+  writeCachedPublicCompanies,
+  clearCachedPublicCompanies,
+  COMPANY_DIRECTORY_CACHE_TTL_MS,
+} from '../lib/publicJobsSessionCache';
 
 const KNOWN_COMPANY_DEFAULTS = {
   'Miracle Software Systems': {
@@ -347,9 +354,11 @@ export async function saveCompanyDetails({
     if (error) {
       console.warn('Supabase companies table upsert notice (saved locally):', error.message);
     }
+    clearPublicCompaniesCache();
     return data || payload;
   } catch (err) {
     console.warn('Could not write to companies table (saved locally):', err);
+    clearPublicCompaniesCache();
     return payload;
   }
 }
@@ -364,6 +373,8 @@ export async function toggleCompanyDirectoryApproval({ name, isDirectoryApproved
   setLocalCompanyOverride(cleanName, {
     is_directory_approved: isDirectoryApproved,
   });
+
+  clearPublicCompaniesCache();
 
   if (!supabase) return;
 
@@ -401,11 +412,43 @@ export function mapCategoryToSector(category = '') {
   return DIRECTORY_SECTORS[1]; // default to IT & Software
 }
 
+let publicCompaniesMemoryCache = null;
+
+export function clearPublicCompaniesCache() {
+  publicCompaniesMemoryCache = null;
+  clearCachedPublicCompanies();
+}
+
 /**
  * Loads approved companies for the public /companies directory page.
  * Returns only companies where `is_directory_approved = true`.
+ * Caches in browser storage (localStorage & sessionStorage) and memory for >= 10 minutes.
  */
-export async function fetchPublicDirectoryCompanies() {
+export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
+  // 1. Check in-memory cache
+  if (!forceRefresh && publicCompaniesMemoryCache) {
+    const age = Date.now() - publicCompaniesMemoryCache.timestamp;
+    if (
+      age < COMPANY_DIRECTORY_CACHE_TTL_MS &&
+      Array.isArray(publicCompaniesMemoryCache.companies) &&
+      publicCompaniesMemoryCache.companies.length > 0
+    ) {
+      return publicCompaniesMemoryCache.companies;
+    }
+  }
+
+  // 2. Check browser storage cache (localStorage / sessionStorage)
+  if (!forceRefresh) {
+    const cached = readCachedPublicCompanies();
+    if (cached?.companies?.length > 0) {
+      publicCompaniesMemoryCache = {
+        companies: cached.companies,
+        timestamp: cached.timestamp,
+      };
+      return cached.companies;
+    }
+  }
+
   if (!supabase) return [];
 
   // Fetch approved companies
@@ -415,11 +458,16 @@ export async function fetchPublicDirectoryCompanies() {
     .eq('is_directory_approved', true)
     .limit(1000);
 
-  // 2. Fetch the exact same active public jobs used on /jobs
+  // 2. Fetch active public jobs - check public session cache first to eliminate duplicate DB calls
   let publicJobs = [];
   try {
-    const rawJobs = await fetchJobs();
-    publicJobs = filterProcessedJobsForPublicDisplay(rawJobs);
+    const cachedJobs = readCachedPublicJobs();
+    if (cachedJobs?.jobs?.length) {
+      publicJobs = cachedJobs.jobs;
+    } else {
+      const rawJobs = await fetchJobs();
+      publicJobs = filterProcessedJobsForPublicDisplay(rawJobs);
+    }
   } catch (err) {
     console.warn('Could not fetch public jobs for company directory counts:', err);
   }
@@ -435,7 +483,7 @@ export async function fetchPublicDirectoryCompanies() {
   }
 
   const rawList = companiesRes.data || [];
-  return rawList
+  const result = rawList
     .map((c) => {
       const sector = mapCategoryToSector(c.category);
       const key = normalizeCompName(c.name);
@@ -461,4 +509,15 @@ export async function fetchPublicDirectoryCompanies() {
       }
       return a.name.localeCompare(b.name);
     });
+
+  // Write to browser storage and memory cache for 10+ minutes
+  if (result.length > 0) {
+    writeCachedPublicCompanies(result);
+    publicCompaniesMemoryCache = {
+      companies: result,
+      timestamp: Date.now(),
+    };
+  }
+
+  return result;
 }

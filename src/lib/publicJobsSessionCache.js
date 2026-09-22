@@ -112,3 +112,87 @@ export const clearCachedInstagramJobs = () => {
     // ignore
   }
 };
+
+/**
+ * 10-minute cache TTL for the public companies directory and job counts.
+ * Reduces database calls while keeping company profiles snappy.
+ */
+export const COMPANY_DIRECTORY_CACHE_TTL_MS = 10 * 60 * 1000;
+export const PUBLIC_COMPANIES_CACHE_KEY = 'vizagJobs_companies_v1';
+
+export const readCachedPublicCompanies = () => {
+  const getRaw = () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const item = localStorage.getItem(PUBLIC_COMPANIES_CACHE_KEY);
+        if (item) return item;
+      }
+    } catch {
+      // LocalStorage might be disabled or restricted
+    }
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        return sessionStorage.getItem(PUBLIC_COMPANIES_CACHE_KEY);
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
+  try {
+    const raw = getRaw();
+    if (!raw) return null;
+
+    const { companies, timestamp } = JSON.parse(raw);
+    const age = Date.now() - Number(timestamp);
+    if (!Array.isArray(companies) || companies.length === 0 || age >= COMPANY_DIRECTORY_CACHE_TTL_MS) {
+      return null;
+    }
+
+    return { companies, age, timestamp: Number(timestamp) };
+  } catch (error) {
+    console.error('Error parsing cached companies directory:', error);
+    return null;
+  }
+};
+
+export const writeCachedPublicCompanies = (companies) => {
+  if (!Array.isArray(companies) || companies.length === 0) return;
+
+  const payload = JSON.stringify({ companies, timestamp: Date.now() });
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(PUBLIC_COMPANIES_CACHE_KEY, payload);
+    }
+  } catch (error) {
+    console.warn('Could not write companies to localStorage:', error);
+  }
+
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(PUBLIC_COMPANIES_CACHE_KEY, payload);
+    }
+  } catch (error) {
+    console.warn('Could not write companies to sessionStorage:', error);
+  }
+};
+
+export const clearCachedPublicCompanies = () => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(PUBLIC_COMPANIES_CACHE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(PUBLIC_COMPANIES_CACHE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+};
+

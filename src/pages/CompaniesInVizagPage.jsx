@@ -7,6 +7,7 @@ import {
   DIRECTORY_SECTORS,
   fetchPublicDirectoryCompanies,
 } from '../services/adminCompanies';
+import { readCachedPublicCompanies } from '../lib/publicJobsSessionCache';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -124,8 +125,12 @@ function CompanyDirectoryCard({ company }) {
 }
 
 export default function CompaniesInVizagPage() {
-  const [companies, setCompanies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [companies, setCompanies] = useState(() => {
+    return readCachedPublicCompanies()?.companies || [];
+  });
+  const [loading, setLoading] = useState(() => {
+    return !(readCachedPublicCompanies()?.companies?.length > 0);
+  });
   const [selectedSector, setSelectedSector] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearch = useDeferredValue(searchQuery);
