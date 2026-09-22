@@ -62,9 +62,18 @@ export function useCachedPublicJobs() {
   return { allJobs, isLoading, loadError };
 }
 
+export const cleanSearchBrand = (term = '') => {
+  return String(term)
+    .replace(/\b(pvt\.?\s*ltd\.?|private\s+limited|limited|ltd\.?|llp|inc\.?|corp\.?|corporation)\b/gi, '')
+    .replace(/[,.\-–—]+$/, '')
+    .trim();
+};
+
 export const jobMatchesSearchText = (job, raw) => {
+  if (!raw) return true;
   const q = raw.trim().toLowerCase();
   if (!q) return true;
+
   const blob = [
     job.title,
     job.company,
@@ -77,5 +86,17 @@ export const jobMatchesSearchText = (job, raw) => {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
-  return blob.includes(q);
+
+  // 1. Exact substring match
+  if (blob.includes(q)) return true;
+
+  // 2. Cleaned corporate suffix match (e.g. "Miracle Software Systems Inc." -> "miracle software systems")
+  const cleanQ = cleanSearchBrand(q).toLowerCase();
+  if (cleanQ && cleanQ !== q && blob.includes(cleanQ)) return true;
+
+  // 3. Multi-word search token matching (all words with length > 2 present in job blob)
+  const words = (cleanQ || q).split(/\s+/).filter((w) => w.length > 2);
+  if (words.length > 1 && words.every((w) => blob.includes(w))) return true;
+
+  return false;
 };

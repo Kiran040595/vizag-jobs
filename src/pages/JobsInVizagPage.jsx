@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
@@ -10,8 +11,43 @@ import { toAbsoluteUrl } from '../lib/site';
 import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
 
 export default function JobsInVizagPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get('search') || searchParams.get('q') || searchParams.get('company') || '';
+  const [searchTerm, setSearchTerm] = useState(urlQuery);
+  const listHeadingRef = useRef(null);
+
   const { allJobs, isLoading, loadError } = useCachedPublicJobs();
+
+  // Sync searchTerm when URL query params change (e.g. navigation from companies directory or back/forward)
+  useEffect(() => {
+    setSearchTerm(urlQuery);
+    if (urlQuery && listHeadingRef.current) {
+      listHeadingRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [urlQuery]);
+
+  const handleSearchChange = (val) => {
+    setSearchTerm(val);
+    const nextParams = new URLSearchParams(searchParams);
+    const trimmed = val.trim();
+    if (trimmed) {
+      nextParams.set('search', trimmed);
+    } else {
+      nextParams.delete('search');
+      nextParams.delete('q');
+      nextParams.delete('company');
+    }
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('search');
+    nextParams.delete('q');
+    nextParams.delete('company');
+    setSearchParams(nextParams, { replace: true });
+  };
 
   const filteredJobs = useMemo(
     () =>
@@ -46,7 +82,7 @@ export default function JobsInVizagPage() {
           <p className="mt-4 text-lg text-slate-600">Discover all job opportunities in Visakhapatnam</p>
         </div>
 
-        <HeroSection searchTerm={searchTerm} onSearch={setSearchTerm} />
+        <HeroSection searchTerm={searchTerm} onSearch={handleSearchChange} />
 
         {isLoading ? (
           <LoadingSpinner />
@@ -56,12 +92,62 @@ export default function JobsInVizagPage() {
             {loadError}
           </p>
         ) : null}
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
-          {filteredJobs.length} jobs match your search
-        </p>
 
-        <h2 className="text-2xl font-semibold text-slate-800">Latest Jobs in Vizag</h2>
-        <JobList jobs={filteredJobs} />
+        {/* Company / Keyword Filter Active Banner */}
+        {searchTerm ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
+                🏢
+              </span>
+              <div>
+                <p className="font-semibold text-cyan-900">
+                  Showing jobs for <strong className="font-bold text-cyan-950">&quot;{searchTerm}&quot;</strong>
+                </p>
+                <p className="text-xs text-cyan-700">
+                  {filteredJobs.length} {filteredJobs.length === 1 ? 'opening' : 'openings'} found in Visakhapatnam
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
+            >
+              <span>✕ Show all jobs ({allJobs.length})</span>
+            </button>
+          </div>
+        ) : (
+          <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
+            {filteredJobs.length} jobs match your search
+          </p>
+        )}
+
+        <div ref={listHeadingRef} className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-slate-800">
+            {searchTerm ? `Jobs at "${searchTerm}"` : 'Latest Jobs in Vizag'}
+          </h2>
+        </div>
+
+        {filteredJobs.length === 0 && !isLoading ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+            <p className="text-base font-semibold text-slate-800">
+              No direct job openings currently listed for &quot;{searchTerm}&quot;
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Try searching with another keyword or explore other top employers in Visakhapatnam.
+            </p>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow hover:bg-slate-800"
+            >
+              <span>View all available jobs →</span>
+            </button>
+          </div>
+        ) : (
+          <JobList jobs={filteredJobs} />
+        )}
 
         <div className="prose prose-slate mx-auto max-w-4xl">
           <h2>Job Opportunities in Visakhapatnam</h2>

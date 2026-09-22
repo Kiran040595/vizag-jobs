@@ -420,11 +420,24 @@ export async function fetchPublicDirectoryCompanies() {
     .eq('status', 'published')
     .limit(5000);
 
-  const jobCounts = new Map();
+  const cleanBrandForCount = (name = '') =>
+    String(name)
+      .toLowerCase()
+      .replace(/\b(pvt\.?\s*ltd\.?|private\s+limited|limited|ltd\.?|llp|inc\.?|corp\.?|corporation)\b/gi, '')
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+
+  const exactJobCounts = new Map();
+  const cleanJobCounts = new Map();
   for (const j of jobsRes.data || []) {
     if (j.company) {
-      const key = j.company.trim().toLowerCase();
-      jobCounts.set(key, (jobCounts.get(key) || 0) + 1);
+      const rawKey = j.company.trim().toLowerCase();
+      exactJobCounts.set(rawKey, (exactJobCounts.get(rawKey) || 0) + 1);
+
+      const ck = cleanBrandForCount(j.company);
+      if (ck) {
+        cleanJobCounts.set(ck, (cleanJobCounts.get(ck) || 0) + 1);
+      }
     }
   }
 
@@ -432,7 +445,9 @@ export async function fetchPublicDirectoryCompanies() {
   return rawList
     .map((c) => {
       const sector = mapCategoryToSector(c.category);
-      const activeJobsCount = jobCounts.get(c.name.trim().toLowerCase()) || 0;
+      const rawKey = c.name.trim().toLowerCase();
+      const ck = cleanBrandForCount(c.name);
+      const activeJobsCount = exactJobCounts.get(rawKey) || (ck ? cleanJobCounts.get(ck) : 0) || 0;
       return {
         id: c.id,
         name: c.name,

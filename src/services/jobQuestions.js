@@ -242,7 +242,7 @@ export const fetchRecentCommunityQuestions = async ({ limit = 6, category = null
 
   if (isSupabaseConfigured && supabase) {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('job_questions')
         .select(`
           ${QUESTION_COLUMNS},
@@ -255,15 +255,10 @@ export const fetchRecentCommunityQuestions = async ({ limit = 6, category = null
         `)
         .eq('status', 'published')
         .not('answer_body', 'is', null)
-        .order('helpful_count', { ascending: false })
         .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(limit);
+        .order('created_at', { ascending: false })
+        .limit(limit * 2);
 
-      if (category && category !== 'all') {
-        query = query.eq('category', category);
-      }
-
-      const { data, error } = await query;
       if (!error && Array.isArray(data)) {
         dbQuestions = data.map(mapQuestion);
       }
@@ -272,15 +267,16 @@ export const fetchRecentCommunityQuestions = async ({ limit = 6, category = null
     }
   }
 
+  let filteredDb = dbQuestions;
+  if (category && category !== 'all') {
+    filteredDb = dbQuestions.filter((q) => q.category === category);
+  }
+
   const curatedFiltered = (category && category !== 'all')
     ? CURATED_COMMUNITY_FAQS.filter((f) => f.category === category)
     : CURATED_COMMUNITY_FAQS;
 
-  if (dbQuestions.length >= limit) {
-    return dbQuestions.slice(0, limit);
-  }
-
-  const combined = [...dbQuestions];
+  const combined = [...filteredDb];
   for (const item of curatedFiltered) {
     if (!combined.some((q) => q.id === item.id || q.body === item.body)) {
       combined.push(item);
@@ -288,7 +284,7 @@ export const fetchRecentCommunityQuestions = async ({ limit = 6, category = null
     if (combined.length >= limit) break;
   }
 
-  return combined;
+  return combined.slice(0, limit);
 };
 
 export const fetchAllCommunityQuestions = async ({
@@ -313,13 +309,9 @@ export const fetchAllCommunityQuestions = async ({
         `)
         .eq('status', 'published')
         .not('answer_body', 'is', null)
-        .order('helpful_count', { ascending: false })
         .order('published_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
-
-      if (category && category !== 'all') {
-        query = query.eq('category', category);
-      }
 
       const cleanSearch = (search || '').trim();
       if (cleanSearch) {
@@ -335,6 +327,11 @@ export const fetchAllCommunityQuestions = async ({
     }
   }
 
+  let filteredDb = dbQuestions;
+  if (category && category !== 'all') {
+    filteredDb = dbQuestions.filter((q) => q.category === category);
+  }
+
   const cleanSearch = (search || '').trim().toLowerCase();
   const matchedCurated = CURATED_COMMUNITY_FAQS.filter((item) => {
     const matchCategory = category === 'all' || item.category === category;
@@ -345,7 +342,7 @@ export const fetchAllCommunityQuestions = async ({
     return matchCategory && matchSearch;
   });
 
-  const allItems = [...dbQuestions];
+  const allItems = [...filteredDb];
   for (const item of matchedCurated) {
     if (!allItems.some((q) => q.id === item.id || q.body === item.body)) {
       allItems.push(item);
@@ -372,8 +369,7 @@ export const fetchAdminAllJobQuestions = async ({
         id,
         slug,
         title,
-        company,
-        category
+        company
       )
     `)
     .order('created_at', { ascending: false })

@@ -7,6 +7,7 @@ import {
   DIRECTORY_SECTORS,
   fetchPublicDirectoryCompanies,
 } from '../services/adminCompanies';
+import { cleanSearchBrand } from '../lib/useCachedPublicJobs';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -68,21 +69,23 @@ function CompanyDirectoryCard({ company }) {
         </div>
 
         {company.activeJobsCount > 0 ? (
-          <div className="mt-3.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
+          <Link
+            to={`/jobs?search=${encodeURIComponent(cleanSearchBrand(company.name) || company.name)}`}
+            className="group/jobs mt-3.5 flex items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90"
+            title={`View all ${company.activeJobsCount} live openings at ${company.name}`}
+          >
+            <span className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
               </span>
               <span>{company.activeJobsCount} live opening{company.activeJobsCount > 1 ? 's' : ''} in Vizag</span>
             </span>
-            <Link
-              to={`/jobs?search=${encodeURIComponent(company.name)}`}
-              className="text-emerald-700 hover:text-emerald-900 underline text-xs font-medium"
-            >
-              View jobs →
-            </Link>
-          </div>
+            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 transition-transform group-hover/jobs:translate-x-0.5">
+              <span>View jobs</span>
+              <span aria-hidden="true">→</span>
+            </span>
+          </Link>
         ) : null}
       </div>
 

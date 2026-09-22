@@ -62,6 +62,13 @@ export const DEFAULT_FILTERS = Object.freeze({
 
 const isOptionId = (id, options) => options.some((opt) => opt.id === id);
 
+export const cleanSearchBrand = (term = '') => {
+  return String(term)
+    .replace(/\b(pvt\.?\s*ltd\.?|private\s+limited|limited|ltd\.?|llp|inc\.?|corp\.?|corporation)\b/gi, '')
+    .replace(/[,.\-–—]+$/, '')
+    .trim();
+};
+
 export const readFiltersFromSearchParams = (searchParams) => {
   const rawTab = (searchParams.get('tab') ?? 'all').toLowerCase();
   const rawCategory = (searchParams.get('category') ?? 'all').toLowerCase();
@@ -69,10 +76,15 @@ export const readFiltersFromSearchParams = (searchParams) => {
   const rawFreshness = (searchParams.get('freshness') ?? 'all').toLowerCase();
   const rawSource = (searchParams.get('source') ?? 'all').toLowerCase();
   const pageNum = Number(searchParams.get('page'));
+  const rawQuery =
+    searchParams.get('q') ||
+    searchParams.get('search') ||
+    searchParams.get('company') ||
+    '';
 
   return {
     tab: rawTab === 'direct' ? 'direct' : 'all',
-    q: searchParams.get('q') ?? '',
+    q: rawQuery,
     category: isOptionId(rawCategory, CATEGORY_OPTIONS) ? rawCategory : 'all',
     jobType: isOptionId(rawJobType, JOB_TYPE_OPTIONS) ? rawJobType : 'all',
     freshness: isOptionId(rawFreshness, FRESHNESS_OPTIONS) ? rawFreshness : 'all',
@@ -119,9 +131,20 @@ const matchesSearchText = (job, q) => {
     .join(' ')
     .toLowerCase();
 
-  const tokens = q.split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return true;
-  return tokens.every((token) => blob.includes(token));
+  const rawLower = q.toLowerCase();
+  if (blob.includes(rawLower)) return true;
+
+  const tokens = rawLower.split(/\s+/).filter(Boolean);
+  if (tokens.length > 0 && tokens.every((token) => blob.includes(token))) return true;
+
+  const cleaned = cleanSearchBrand(rawLower).toLowerCase();
+  if (cleaned && cleaned !== rawLower) {
+    if (blob.includes(cleaned)) return true;
+    const cleanTokens = cleaned.split(/\s+/).filter((w) => w.length > 2);
+    if (cleanTokens.length > 0 && cleanTokens.every((token) => blob.includes(token))) return true;
+  }
+
+  return false;
 };
 
 const normalizeJobType = (value) =>
