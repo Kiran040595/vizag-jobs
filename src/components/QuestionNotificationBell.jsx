@@ -42,7 +42,7 @@ export default function QuestionNotificationBell({ className = '' }) {
   const studentUser = studentSession?.user || null;
   const canModerate = Boolean(moderatorUser && (isAdmin || isEmployer));
   const isStudentViewer = Boolean(studentUser && isStudent);
-  const inboxUserId = studentUser?.id || (isEmployer ? employerUser?.id : null) || null;
+  const inboxUserId = studentUser?.id || (isAdmin ? adminUser?.id : null) || (isEmployer ? employerUser?.id : null) || null;
   const canViewBell = canModerate || isStudentViewer;
   const authLoading = isAdminLoading || isEmployerLoading || isStudentLoading;
 
@@ -88,8 +88,8 @@ export default function QuestionNotificationBell({ className = '' }) {
         setFeedbackNotifications([]);
       }
 
-      // Students: replies + application status. Employers: new applications.
-      if (inboxUserId && (isStudentViewer || isEmployer)) {
+      // Students & Admins: replies + application status. Employers: new applications.
+      if (inboxUserId && (isStudentViewer || isEmployer || isAdmin)) {
         const [replies, rUnread] = await Promise.all([
           fetchReplyNotifications(inboxUserId),
           fetchUnreadReplyNotificationCount(inboxUserId),

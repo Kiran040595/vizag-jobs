@@ -247,6 +247,27 @@ Deno.serve(async (req) => {
 
         if (!insertError && inserted) {
           savedQuestion = inserted;
+
+          if (askerUserId) {
+            try {
+              const jobSlug = jobContext?.slug || jobId;
+              const link = `/jobs/${jobSlug}?question=${inserted.id}`;
+              await supabaseAdmin
+                .from('reply_notifications')
+                .insert({
+                  user_id: askerUserId,
+                  kind: 'job_question',
+                  ref_id: inserted.id,
+                  title: 'Reply to your job question',
+                  preview: answerText.slice(0, 180),
+                  link_path: link,
+                  is_read: false,
+                  is_dismissed: false,
+                });
+            } catch (notifErr) {
+              console.warn('Failed to insert reply notification:', notifErr);
+            }
+          }
         }
       } catch (saveError) {
         console.error('Failed to persist question to job_questions:', saveError);
