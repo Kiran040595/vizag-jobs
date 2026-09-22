@@ -262,14 +262,44 @@ async function main() {
 
   log(`Starting Direct Company Careers Pipeline (DryRun: ${isDryRun})...`);
 
-  // 1. Load curated companies
-  const catalogPath = path.join(projectRoot, 'data', 'vizag-company-careers.json');
-  if (!fs.existsSync(catalogPath)) {
-    throw new Error(`Companies catalog not found at ${catalogPath}`);
+  // 1. Load active companies from Supabase `companies` table, or fall back to catalog JSON
+  let companies = [];
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const readKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    if (pipelineConfig.supabaseUrl && readKey) {
+      const client = createClient(pipelineConfig.supabaseUrl, readKey);
+      const { data: dbCompanies } = await client
+        .from('companies')
+        .select('*')
+        .eq('is_active_for_scrape', true)
+        .not('careers_url', 'is', null);
+
+      if (Array.isArray(dbCompanies) && dbCompanies.length > 0) {
+        log(`Loaded ${dbCompanies.length} active target(s) from Supabase 'companies' table.`);
+        companies = dbCompanies.map((c) => ({
+          name: c.name,
+          careers_url: c.careers_url,
+          category: c.category || 'General',
+          location_hint: c.location || 'Visakhapatnam',
+          active: true,
+        }));
+      }
+    }
+  } catch (dbErr) {
+    log(`Notice: Database companies query skipped (${dbErr.message}). Using catalog file fallback.`);
   }
 
-  const companies = JSON.parse(fs.readFileSync(catalogPath, 'utf8')).filter((c) => {
-    if (!c.active) return false;
+  if (companies.length === 0) {
+    const catalogPath = path.join(projectRoot, 'data', 'vizag-company-careers.json');
+    if (fs.existsSync(catalogPath)) {
+      companies = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+    }
+  }
+
+  companies = companies.filter((c) => {
+    if (c.active === false) return false;
+    if (!c.careers_url) return false;
     if (targetCompanyArg) {
       return c.name.toLowerCase().includes(targetCompanyArg.toLowerCase());
     }
