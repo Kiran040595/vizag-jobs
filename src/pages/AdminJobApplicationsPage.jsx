@@ -12,18 +12,25 @@ import {
   filterApplicationsByStatus,
 } from '../lib/applicationFilters';
 import { summarizeApplicationStatuses } from '../lib/applicationExport';
+import { mergeApplicationsWithApplyClicks } from '../lib/applyClickExport';
 import { fetchAdminJobById, getAdminJobsListPath } from '../services/adminJobs';
 import {
   fetchJobApplications,
   formatApplicationStatus,
   updateApplicationStatus,
 } from '../services/jobApplications';
+import {
+  fetchJobApplyClicks,
+  fetchStudentProfileRowsByUserIds,
+} from '../services/jobApplyClicks';
 
 export default function AdminJobApplicationsPage() {
   const { jobId } = useParams();
   useAdminAuth();
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [applyClicks, setApplyClicks] = useState([]);
+  const [clickProfiles, setClickProfiles] = useState(() => new Map());
   const [statusFilter, setStatusFilter] = useState(ALL_APPLICATION_STATUSES);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,10 +41,18 @@ export default function AdminJobApplicationsPage() {
 
     const load = async () => {
       try {
-        const [jobRow, rows] = await Promise.all([fetchAdminJobById(jobId), fetchJobApplications(jobId)]);
+        const [jobRow, rows, clicks] = await Promise.all([
+          fetchAdminJobById(jobId),
+          fetchJobApplications(jobId),
+          fetchJobApplyClicks(jobId).catch(() => []),
+        ]);
+        const clickUserIds = (clicks || []).map((click) => click.user_id).filter(Boolean);
+        const profiles = await fetchStudentProfileRowsByUserIds(clickUserIds);
         if (!ignore) {
           setJob(jobRow);
           setApplications(rows);
+          setApplyClicks(clicks || []);
+          setClickProfiles(profiles);
           setError('');
         }
       } catch (loadError) {
@@ -60,6 +75,16 @@ export default function AdminJobApplicationsPage() {
   const filteredApplications = useMemo(
     () => filterApplicationsByStatus(applications, statusFilter),
     [applications, statusFilter],
+  );
+  const exportApplications = useMemo(() => {
+    if (statusFilter !== ALL_APPLICATION_STATUSES) {
+      return filteredApplications;
+    }
+    return mergeApplicationsWithApplyClicks(applications, applyClicks, clickProfiles);
+  }, [statusFilter, filteredApplications, applications, applyClicks, clickProfiles]);
+  const clickOnlyCount = useMemo(
+    () => Math.max(0, exportApplications.length - applications.length),
+    [exportApplications.length, applications.length],
   );
   const statusCounts = useMemo(
     () => summarizeApplicationStatuses(filteredApplications),
@@ -101,7 +126,7 @@ export default function AdminJobApplicationsPage() {
             </Link>
           ) : null}
         </div>
-        {!isLoading && applications.length > 0 ? (
+        {!isLoading && exportApplications.length > 0 ? (
           <button
             type="button"
             onClick={() => setExportOpen(true)}
@@ -138,10 +163,24 @@ export default function AdminJobApplicationsPage() {
                   {formatApplicationStatus(status)}: {count}
                 </span>
               ))}
+              {statusFilter === ALL_APPLICATION_STATUSES && clickOnlyCount > 0 ? (
+                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800">
+                  Unique apply clicks in Excel: {clickOnlyCount}
+                </span>
+              ) : null}
+            </p>
+          ) : clickOnlyCount > 0 ? (
+            <p className="mt-2 text-sm text-slate-700">
+              No on-platform applications yet.{' '}
+              <span className="font-semibold text-cyan-800">
+                {clickOnlyCount} unique apply-click profile{clickOnlyCount === 1 ? '' : 's'}
+              </span>{' '}
+              will be included in the Excel download.
             </p>
           ) : (
             <p className="mt-1 text-sm text-slate-600">
-              Students who apply on-platform will show here with name, email, phone, and qualifications.
+              Students who apply on-platform will show here. Unique Apply-click profiles can still be
+              downloaded as Excel when people click Apply on an external listing.
             </p>
           )}
         </div>
@@ -186,7 +225,7 @@ export default function AdminJobApplicationsPage() {
       <ApplicationExportDialog
         open={exportOpen}
         onClose={() => setExportOpen(false)}
-        applications={filteredApplications}
+        applications={exportApplications}
         job={job}
       />
     </AdminShell>

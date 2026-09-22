@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
 import {
   fetchJobApplications,
   getApplicationResumeUrl,
 } from '../../services/jobApplications';
-import { fetchJobApplyClicks } from '../../services/jobApplyClicks';
+import {
+  fetchJobApplyClicks,
+  fetchStudentProfileRowsByUserIds,
+} from '../../services/jobApplyClicks';
 import {
   formatApplicationStatus,
   getApplicationStatusStyle,
 } from '../../lib/applicationStatus';
+import { mapStudentProfileRow } from '../../lib/adminStudentProfile';
+import { mergeApplicationsWithApplyClicks } from '../../lib/applyClickExport';
 import { buildInterviewWhatsAppPassUrl } from '../../lib/whatsappContact';
+import ApplicationExportDialog from '../jobApplications/ApplicationExportDialog';
 import PhoneDialLink from '../PhoneDialLink';
 import WhatsAppContactLink from '../WhatsAppContactLink';
 import LoadingSpinner from '../LoadingSpinner';
@@ -141,6 +146,8 @@ export default function JobApplicantsModal({
   onClose,
 }) {
   const [applicants, setApplicants] = useState([]);
+  const [exportRows, setExportRows] = useState([]);
+  const [exportOpen, setExportOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [openingResumeId, setOpeningResumeId] = useState(null);
@@ -185,37 +192,26 @@ export default function JobApplicantsModal({
           }),
         ]);
 
-        // Collect all user IDs to look up student profiles
         const appUserIds = rows.map((app) => app.studentUserId).filter(Boolean);
         const clickUserIds = clicks.map((c) => c.user_id).filter(Boolean);
-        const allUserIds = Array.from(new Set([...appUserIds, ...clickUserIds]));
+        const profileMap = await fetchStudentProfileRowsByUserIds([...appUserIds, ...clickUserIds]);
+        const mappedProfiles = new Map(
+          [...profileMap.entries()].map(([userId, row]) => [userId, mapStudentProfileRow(row)]),
+        );
 
-        let profileMap = new Map();
-        if (allUserIds.length > 0 && supabase) {
-          const { data: profiles, error: profileErr } = await supabase
-            .from('student_profiles')
-            .select('user_id, full_name, phone, contact_email, college, degree, branch, graduation_year')
-            .in('user_id', allUserIds);
-
-          if (!profileErr && Array.isArray(profiles)) {
-            profileMap = new Map(profiles.map((p) => [p.user_id, p]));
-          }
-        }
-
-        // 1. Format on-platform applications
         const formattedApps = rows.map((app) => {
           const snapshot = app.profileSnapshot || {};
-          const live = profileMap.get(app.studentUserId);
+          const live = mappedProfiles.get(app.studentUserId);
           return {
             id: app.id,
             isExternal: false,
-            fullName: snapshot.fullName || live?.full_name || 'Student Applicant',
+            fullName: snapshot.fullName || live?.fullName || 'Student Applicant',
             phone: snapshot.phone || live?.phone || '',
-            email: snapshot.contactEmail || live?.contact_email || '',
+            email: snapshot.contactEmail || live?.contactEmail || '',
             education: [
               snapshot.degree || live?.degree,
               snapshot.branch || live?.branch,
-              snapshot.graduationYear || live?.graduation_year,
+              snapshot.graduationYear || live?.graduationYear,
             ]
               .filter(Boolean)
               .join(' · '),
@@ -233,20 +229,19 @@ export default function JobApplicantsModal({
           };
         });
 
-        // 2. Format external apply clicks (deduplicating users who also submitted an on-platform application)
         const appliedUserIds = new Set(appUserIds);
         const formattedClicks = clicks
           .filter((c) => !c.user_id || !appliedUserIds.has(c.user_id))
           .map((click) => {
-            const live = click.user_id ? profileMap.get(click.user_id) : null;
+            const live = click.user_id ? mappedProfiles.get(click.user_id) : null;
             const isRegistered = Boolean(click.user_id);
             return {
               id: click.id,
               isExternal: true,
-              fullName: live?.full_name || (isRegistered ? 'Registered Student' : 'External Visitor'),
+              fullName: live?.fullName || (isRegistered ? 'Registered Student' : 'External Visitor'),
               phone: live?.phone || '',
-              email: live?.contact_email || '',
-              education: [live?.degree, live?.branch, live?.graduation_year]
+              email: live?.contactEmail || '',
+              education: [live?.degree, live?.branch, live?.graduationYear]
                 .filter(Boolean)
                 .join(' · '),
               college: live?.college || '',
@@ -266,9 +261,11 @@ export default function JobApplicantsModal({
           });
 
         const combined = [...formattedApps, ...formattedClicks];
+        const excelRows = mergeApplicationsWithApplyClicks(rows, clicks, profileMap);
 
         if (!ignore) {
           setApplicants(combined);
+          setExportRows(excelRows);
         }
       } catch (err) {
         if (!ignore) {
@@ -307,9 +304,10 @@ export default function JobApplicantsModal({
   };
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs sm:p-4"
-      onClick={onClose}
+      onClick={exportOpen ? undefined : onClose}
       role="presentation"
     >
       <div
@@ -385,13 +383,22 @@ export default function JobApplicantsModal({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {applicants.length} {applicants.length === 1 ? 'Applicant / Click' : 'Applicants / Clicks'}
                 </span>
-                <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                  Admin View
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                    Admin View
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setExportOpen(true)}
+                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-indigo-500"
+                  >
+                    Download Excel
+                  </button>
+                </div>
               </div>
 
               <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
@@ -594,15 +601,33 @@ export default function JobApplicantsModal({
           >
             Open full application management page →
           </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
-          >
-            Close
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {exportRows.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setExportOpen(true)}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              >
+                Download Excel
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
+      <ApplicationExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        applications={exportRows}
+        job={{ id: jobId, title: jobTitle, company: companyName }}
+      />
+    </>
   );
 }

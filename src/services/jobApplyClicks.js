@@ -38,6 +38,25 @@ export const recordAndOpenExternalApply = (url, jobId) => {
   }
 };
 
+export const fetchStudentProfileRowsByUserIds = async (userIds = []) => {
+  const ids = Array.from(new Set((userIds || []).filter(Boolean)));
+  if (!isSupabaseConfigured || !supabase || ids.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const { data, error } = await supabase.from('student_profiles').select('*').in('user_id', ids);
+    if (error) {
+      console.warn('Could not fetch student profiles:', error.message);
+      return new Map();
+    }
+    return new Map((Array.isArray(data) ? data : []).map((row) => [row.user_id, row]));
+  } catch (error) {
+    console.warn('Could not fetch student profiles:', error);
+    return new Map();
+  }
+};
+
 export const fetchJobApplyClicks = async (jobId) => {
   if (!isSupabaseConfigured || !supabase || !jobId) {
     return [];
