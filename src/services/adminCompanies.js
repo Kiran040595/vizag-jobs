@@ -251,6 +251,11 @@ export async function fetchAdminCompanies() {
           ? Boolean(local.is_active_for_scrape)
           : Boolean(careersUrl);
 
+    const isDirectoryApproved =
+      dbRecord?.is_directory_approved !== undefined
+        ? Boolean(dbRecord.is_directory_approved)
+        : Boolean(local.is_directory_approved);
+
     result.push({
       id: dbRecord?.id || null,
       name: comp.name,
@@ -262,12 +267,16 @@ export async function fetchAdminCompanies() {
       publishedJobs: comp.publishedJobs,
       latestPostedAt: comp.latestPostedAt,
       isActiveForScrape,
+      isDirectoryApproved,
       notes: dbRecord?.notes || local.notes || '',
     });
   }
 
-  // Sort: Companies with careers_url first, then by totalJobs desc, then name asc
+  // Sort: Directory approved first, then with careers_url, then totalJobs desc, then name asc
   return result.sort((a, b) => {
+    if (b.isDirectoryApproved !== a.isDirectoryApproved) {
+      return (b.isDirectoryApproved ? 1 : 0) - (a.isDirectoryApproved ? 1 : 0);
+    }
     const aHasCareer = a.careersUrl ? 1 : 0;
     const bHasCareer = b.careersUrl ? 1 : 0;
     if (bHasCareer !== aHasCareer) return bHasCareer - aHasCareer;
@@ -277,7 +286,7 @@ export async function fetchAdminCompanies() {
 }
 
 /**
- * Saves company website, careers URL, and scrape toggle.
+ * Saves company website, careers URL, scrape toggle, and directory approval.
  * Writes to Supabase `companies` table and syncs local override fallback.
  */
 export async function saveCompanyDetails({
@@ -287,6 +296,7 @@ export async function saveCompanyDetails({
   category,
   location,
   isActiveForScrape,
+  isDirectoryApproved,
   notes,
 }) {
   if (!name?.trim()) {
@@ -307,6 +317,7 @@ export async function saveCompanyDetails({
     category: cleanCategory,
     location: cleanLocation,
     is_active_for_scrape: isActiveForScrape,
+    is_directory_approved: isDirectoryApproved,
     notes: cleanNotes,
   });
 
@@ -319,6 +330,7 @@ export async function saveCompanyDetails({
     category: cleanCategory,
     location: cleanLocation,
     is_active_for_scrape: Boolean(isActiveForScrape),
+    is_directory_approved: Boolean(isDirectoryApproved),
     notes: cleanNotes,
     updated_at: new Date().toISOString(),
   };
@@ -338,4 +350,108 @@ export async function saveCompanyDetails({
     console.warn('Could not write to companies table (saved locally):', err);
     return payload;
   }
+}
+
+/**
+ * Quick toggle for approving or hiding a company in the public /companies directory.
+ */
+export async function toggleCompanyDirectoryApproval({ name, isDirectoryApproved }) {
+  if (!name?.trim()) return;
+  const cleanName = name.trim();
+
+  setLocalCompanyOverride(cleanName, {
+    is_directory_approved: isDirectoryApproved,
+  });
+
+  if (!supabase) return;
+
+  try {
+    await supabase
+      .from('companies')
+      .update({
+        is_directory_approved: Boolean(isDirectoryApproved),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('name', cleanName);
+  } catch (err) {
+    console.warn('Could not update company directory approval:', err);
+  }
+}
+
+export const DIRECTORY_SECTORS = [
+  { id: 'all', label: 'All Sectors', icon: '🏢' },
+  { id: 'it', label: 'IT & Software', icon: '💻', match: ['IT', 'Software', 'Tech', 'Information Technology'] },
+  { id: 'pharma', label: 'Pharma & Healthcare', icon: '💊', match: ['Healthcare', 'Pharma', 'Pharmaceutical', 'Hospital', 'Biomedical'] },
+  { id: 'education', label: 'Education & Universities', icon: '🎓', match: ['Education', 'University', 'School', 'Academy', 'College'] },
+  { id: 'banking', label: 'Banking & Financial', icon: '🏦', match: ['Banking & Finance', 'Banking', 'Finance', 'Insurance', 'Fintech'] },
+  { id: 'manufacturing', label: 'Manufacturing & Engineering', icon: '🏭', match: ['Manufacturing', 'Engineering', 'Civil Engineering', 'Mechanical Engineering', 'Electrical / EEE', 'Logistics'] },
+  { id: 'hospitality', label: 'Hospitality & Retail', icon: '🏨', match: ['Hospitality & Retail', 'Hospitality', 'Retail', 'Hotel', 'Food', 'Sales & Marketing'] },
+];
+
+export function mapCategoryToSector(category = '') {
+  const norm = String(category).toLowerCase();
+  for (const s of DIRECTORY_SECTORS) {
+    if (s.id === 'all') continue;
+    if (s.match.some((m) => norm.includes(m.toLowerCase()))) {
+      return s;
+    }
+  }
+  return DIRECTORY_SECTORS[1]; // default to IT & Software
+}
+
+/**
+ * Loads approved companies for the public /companies directory page.
+ * Returns only companies where `is_directory_approved = true`.
+ */
+export async function fetchPublicDirectoryCompanies() {
+  if (!supabase) return [];
+
+  // Fetch approved companies
+  const companiesRes = await supabase
+    .from('companies')
+    .select('id, name, website, careers_url, category, location, is_directory_approved, notes')
+    .eq('is_directory_approved', true)
+    .limit(1000);
+
+  // Fetch current live jobs to count active openings per company
+  const jobsRes = await supabase
+    .from('jobs')
+    .select('company, status')
+    .eq('status', 'published')
+    .limit(5000);
+
+  const jobCounts = new Map();
+  for (const j of jobsRes.data || []) {
+    if (j.company) {
+      const key = j.company.trim().toLowerCase();
+      jobCounts.set(key, (jobCounts.get(key) || 0) + 1);
+    }
+  }
+
+  const rawList = companiesRes.data || [];
+  return rawList
+    .map((c) => {
+      const sector = mapCategoryToSector(c.category);
+      const activeJobsCount = jobCounts.get(c.name.trim().toLowerCase()) || 0;
+      return {
+        id: c.id,
+        name: c.name,
+        website: c.website || '',
+        careersUrl: c.careers_url || '',
+        category: c.category || sector.label,
+        sectorId: sector.id,
+        sectorLabel: sector.label,
+        sectorIcon: sector.icon,
+        location: c.location || 'Visakhapatnam',
+        activeJobsCount,
+        notes: c.notes || '',
+      };
+    })
+    .sort((a, b) => {
+      // Prioritize companies with live jobs, then by name
+      if (b.activeJobsCount !== a.activeJobsCount) {
+        return b.activeJobsCount - a.activeJobsCount;
+      }
+      return a.name.localeCompare(b.name);
+    });
 }

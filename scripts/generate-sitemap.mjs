@@ -21,6 +21,7 @@ const PAGE_SIZE = 1000;
 const staticRoutes = [
   { path: '/', priority: '1.0' },
   { path: '/jobs', priority: '0.9' },
+  { path: '/companies', priority: '0.9' },
   { path: '/jobs/it', priority: '0.9' },
   { path: '/jobs/fresher', priority: '0.9' },
   { path: '/jobs/part-time', priority: '0.8' },
@@ -30,6 +31,7 @@ const staticRoutes = [
   { path: '/about', priority: '0.6' },
   { path: '/contact', priority: '0.6' },
   { path: '/feedback', priority: '0.6' },
+  { path: '/qa', priority: '0.8' },
   { path: '/privacy-policy', priority: '0.5' },
   { path: '/terms-of-service', priority: '0.5' },
   { path: '/disclaimer', priority: '0.5' },

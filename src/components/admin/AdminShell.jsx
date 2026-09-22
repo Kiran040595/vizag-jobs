@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Blog posts', to: '/admin/blog' },
   { label: 'New post', to: '/admin/blog/new' },
   { label: 'Site feedback', to: '/admin/feedback' },
+  { label: 'Candidate Q&A', to: '/admin/questions' },
 ];
 
 export default function AdminShell({ children, title, description }) {

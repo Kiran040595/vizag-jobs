@@ -13,6 +13,12 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://jobsinvizag.in/companies</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://jobsinvizag.in/jobs/it</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -139,6 +145,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://jobsinvizag.in/qa</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://jobsinvizag.in/privacy-policy</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -155,6 +167,36 @@
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/it/senior-salesforce-developer-visakhapatnam-sails-software</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/hotel/human-resource-executive-jobs-visakhapatnam-devee-horizon</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/it/sap-abap-technical-developer-integration-vizag</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/bank/customer-service-executive-two-wheeler-loans-vizag-tata-capi</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/fresher/hr-executive-recruiter-jobs-visakhapatnam-the-covai-careers</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/bpo/flipkart-chat-support-executive-non-voice-vizag</loc>
@@ -1075,12 +1117,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/sales/sales-executive-srinidhi-group-vizag-2026-07-17</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://jobsinvizag.in/jobs/hospital/front-office-executive-suraksha-health-park-hospitals-vizag-2026-07-16</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>daily</changefreq>
@@ -1106,6 +1142,12 @@
   </url>
   <url>
     <loc>https://jobsinvizag.in/jobs/sales/business-development-manager-srinidhi-group-vizag-2026-07-17</loc>
+    <lastmod>2026-09-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/sales/sales-executive-srinidhi-group-vizag-2026-07-17</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -5665,49 +5707,13 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/sales/sales-executive-chargemod-visakhapatnam</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/sales/field-sales-executive-vizag-blackbuck-limited</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/hospital/firmware-engineer-medical-devices-indq-vizag</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/sales/retail-sales-manager-visakhapatnam-mahendra-mithaiwala</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/it-fresher/it-marketing-sales-internship-growww-tech-vizag</loc>
-    <lastmod>2026-08-23</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/hospital/pharmacist-suraksha-health-park-hospitals-vizag-2026-07-16</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://jobsinvizag.in/jobs/part-time/site-supervisor-sree-krishna-interiors-visakhapatnam-2026-06-29</loc>
-    <lastmod>2026-07-29</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://jobsinvizag.in/jobs/hospital/duty-nurse-suraksha-health-park-hospitals-vizag-2026-07-16</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/accounts/direct-sales-team-dst-cholamandalam-visakhapatnam-2026-07-11</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
@@ -5719,7 +5725,13 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://jobsinvizag.in/jobs/accounts/direct-sales-team-dst-cholamandalam-visakhapatnam-2026-07-11</loc>
+    <loc>https://jobsinvizag.in/jobs/part-time/site-supervisor-sree-krishna-interiors-visakhapatnam-2026-06-29</loc>
+    <lastmod>2026-07-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://jobsinvizag.in/jobs/hospital/pharmacist-suraksha-health-park-hospitals-vizag-2026-07-16</loc>
     <lastmod>2026-07-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>

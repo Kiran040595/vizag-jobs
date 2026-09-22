@@ -38,9 +38,12 @@ import EmployerJobApplicationsPage from './pages/EmployerJobApplicationsPage';
 import OAuthConsentPage from './pages/OAuthConsentPage';
 import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
+import CommunityQaPage from './pages/CommunityQaPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import AdminQuestionsPage from './pages/AdminQuestionsPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
 import AdminCompaniesPage from './pages/AdminCompaniesPage';
+import CompaniesInVizagPage from './pages/CompaniesInVizagPage';
 import AdminBillsPage from './pages/AdminBillsPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
@@ -171,6 +174,14 @@ function App() {
         )}
       />
       <Route
+        path="/admin/questions"
+        element={(
+          <AdminRoute>
+            <AdminQuestionsPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
         path="/admin/employers"
         element={(
           <AdminRoute>
@@ -207,9 +218,11 @@ function App() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
+      <Route path="/qa" element={<CommunityQaPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
+      <Route path="/companies" element={<CompaniesInVizagPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
       <Route path="/apply" element={<InstagramJobsPage />} />
       <Route path="/jobs/latest" element={<Navigate to="/apply" replace />} />

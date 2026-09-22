@@ -8,6 +8,8 @@ import QuestionNotificationBell from './QuestionNotificationBell';
 
 const primaryLinks = [
   { label: 'Home', to: '/' },
+  { label: 'Companies', to: '/companies' },
+  { label: 'Q&A', to: '/qa' },
   { label: 'Blog', to: '/blog' },
   { label: 'Feedback', to: '/feedback' },
 ];

@@ -6,6 +6,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   fetchAdminCompanies,
   saveCompanyDetails,
+  toggleCompanyDirectoryApproval,
 } from '../services/adminCompanies';
 import { pushToast } from '../lib/toast';
 
@@ -44,7 +45,7 @@ export default function AdminCompaniesPage() {
   const [loadError, setLoadError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'HAS_CAREERS' | 'MISSING_URL' | 'AUTO_SCRAPE'
+  const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'DIRECTORY_APPROVED' | 'PENDING_APPROVAL' | 'HAS_CAREERS' | 'AUTO_SCRAPE' | 'MISSING_URL'
   const [currentPage, setCurrentPage] = useState(1);
 
   // Edit Modal State
@@ -54,6 +55,7 @@ export default function AdminCompaniesPage() {
   const [editCategory, setEditCategory] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editIsActiveForScrape, setEditIsActiveForScrape] = useState(false);
+  const [editIsDirectoryApproved, setEditIsDirectoryApproved] = useState(false);
   const [editNotes, setEditNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -102,6 +104,8 @@ export default function AdminCompaniesPage() {
       }
 
       // 3. Quick filter mode
+      if (filterMode === 'DIRECTORY_APPROVED' && !c.isDirectoryApproved) return false;
+      if (filterMode === 'PENDING_APPROVAL' && c.isDirectoryApproved) return false;
       if (filterMode === 'HAS_CAREERS' && !c.careersUrl) return false;
       if (filterMode === 'MISSING_URL' && Boolean(c.website || c.careersUrl)) return false;
       if (filterMode === 'AUTO_SCRAPE' && !c.isActiveForScrape) return false;
@@ -125,10 +129,12 @@ export default function AdminCompaniesPage() {
   // Stats Counters
   const stats = useMemo(() => {
     const total = companies.length;
+    const directoryApproved = companies.filter((c) => Boolean(c.isDirectoryApproved)).length;
+    const pendingApproval = total - directoryApproved;
     const withWebsite = companies.filter((c) => Boolean(c.website)).length;
     const withCareers = companies.filter((c) => Boolean(c.careersUrl)).length;
     const autoScrape = companies.filter((c) => c.isActiveForScrape && Boolean(c.careersUrl)).length;
-    return { total, withWebsite, withCareers, autoScrape };
+    return { total, directoryApproved, pendingApproval, withWebsite, withCareers, autoScrape };
   }, [companies]);
 
   const handleOpenEdit = (comp) => {
@@ -138,6 +144,7 @@ export default function AdminCompaniesPage() {
     setEditCategory(comp.category || 'General');
     setEditLocation(comp.location || 'Visakhapatnam');
     setEditIsActiveForScrape(Boolean(comp.isActiveForScrape));
+    setEditIsDirectoryApproved(Boolean(comp.isDirectoryApproved));
     setEditNotes(comp.notes || '');
   };
 
@@ -159,6 +166,7 @@ export default function AdminCompaniesPage() {
         category: editCategory,
         location: editLocation,
         isActiveForScrape: editIsActiveForScrape,
+        isDirectoryApproved: editIsDirectoryApproved,
         notes: editNotes,
       };
 
@@ -189,6 +197,36 @@ export default function AdminCompaniesPage() {
     }
   };
 
+  const handleToggleDirectoryApproval = async (comp) => {
+    const nextVal = !comp.isDirectoryApproved;
+    try {
+      await toggleCompanyDirectoryApproval({
+        name: comp.name,
+        isDirectoryApproved: nextVal,
+      });
+
+      setCompanies((prev) =>
+        prev.map((item) =>
+          item.name === comp.name
+            ? { ...item, isDirectoryApproved: nextVal }
+            : item,
+        ),
+      );
+
+      pushToast({
+        message: nextVal
+          ? `🌟 ${comp.name} approved for public directory.`
+          : `${comp.name} hidden from public directory.`,
+        type: 'success',
+      });
+    } catch {
+      pushToast({
+        message: 'Could not update directory approval.',
+        type: 'error',
+      });
+    }
+  };
+
   const handleToggleAutoScrape = async (comp) => {
     const nextVal = !comp.isActiveForScrape;
     try {
@@ -199,6 +237,7 @@ export default function AdminCompaniesPage() {
         category: comp.category,
         location: comp.location,
         isActiveForScrape: nextVal,
+        isDirectoryApproved: comp.isDirectoryApproved,
         notes: comp.notes,
       });
 
@@ -236,17 +275,23 @@ export default function AdminCompaniesPage() {
       />
 
       {/* Summary KPI Cards */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Companies</p>
           <p className="mt-2 text-3xl font-black text-slate-900">{stats.total}</p>
-          <p className="mt-1 text-xs text-slate-500">Discovered across all job postings</p>
+          <p className="mt-1 text-xs text-slate-500">Discovered across job postings</p>
         </div>
 
-        <div className="rounded-3xl border border-blue-200 bg-blue-50/50 p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-700">With Website</p>
-          <p className="mt-2 text-3xl font-black text-blue-900">{stats.withWebsite}</p>
-          <p className="mt-1 text-xs text-blue-600">Have company domain URL</p>
+        <div className="rounded-3xl border border-cyan-200 bg-cyan-50/60 p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-cyan-800">Public Directory</p>
+          <p className="mt-2 text-3xl font-black text-cyan-950">{stats.directoryApproved}</p>
+          <p className="mt-1 text-xs text-cyan-700">Approved for /companies</p>
+        </div>
+
+        <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Pending Approval</p>
+          <p className="mt-2 text-3xl font-black text-amber-950">{stats.pendingApproval}</p>
+          <p className="mt-1 text-xs text-amber-700">Hidden from public directory</p>
         </div>
 
         <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
@@ -308,9 +353,11 @@ export default function AdminCompaniesPage() {
         {/* Quick Filter Tabs */}
         <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
           {[
-            { id: 'ALL', label: 'All Companies' },
-            { id: 'HAS_CAREERS', label: '💼 Has Careers URL' },
-            { id: 'AUTO_SCRAPE', label: '⚡ Auto-Scrape Enabled' },
+            { id: 'ALL', label: `All Companies (${stats.total})` },
+            { id: 'DIRECTORY_APPROVED', label: `🌟 Public Directory (${stats.directoryApproved})` },
+            { id: 'PENDING_APPROVAL', label: `⏳ Pending Approval (${stats.pendingApproval})` },
+            { id: 'HAS_CAREERS', label: `💼 Has Careers URL (${stats.withCareers})` },
+            { id: 'AUTO_SCRAPE', label: `⚡ Auto-Scrape Enabled (${stats.autoScrape})` },
             { id: 'MISSING_URL', label: '⚠️ Missing Website' },
           ].map((tab) => (
             <button
@@ -411,6 +458,12 @@ export default function AdminCompaniesPage() {
                           <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                             📍 {comp.location}
                           </span>
+
+                          {comp.isDirectoryApproved ? (
+                            <span className="rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-0.5 text-[11px] font-bold text-cyan-800">
+                              🌟 Public Directory
+                            </span>
+                          ) : null}
                         </div>
 
                         {/* URL Badges */}
@@ -479,6 +532,20 @@ export default function AdminCompaniesPage() {
                         <span>📋 {comp.totalJobs} {comp.totalJobs === 1 ? 'Job' : 'Jobs'}</span>
                         <span aria-hidden="true" className="text-slate-400">→</span>
                       </a>
+
+                      {/* Public Directory Approval Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDirectoryApproval(comp)}
+                        className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-bold transition ${
+                          comp.isDirectoryApproved
+                            ? 'border border-cyan-300 bg-cyan-50 text-cyan-800 hover:bg-cyan-100'
+                            : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                        }`}
+                        title="Toggle visibility in public /companies directory"
+                      >
+                        <span>{comp.isDirectoryApproved ? '🌟 In Directory' : '+ Add to Directory'}</span>
+                      </button>
 
                       {/* Auto-Scrape Toggle */}
                       <button
@@ -634,17 +701,32 @@ export default function AdminCompaniesPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="autoScrapeCheck"
-                  checked={editIsActiveForScrape}
-                  onChange={(e) => setEditIsActiveForScrape(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                />
-                <label htmlFor="autoScrapeCheck" className="text-xs font-bold text-slate-800">
-                  Include in weekly 6:00 AM careers crawler
-                </label>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="directoryApprovalCheck"
+                    checked={editIsDirectoryApproved}
+                    onChange={(e) => setEditIsDirectoryApproved(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  <label htmlFor="directoryApprovalCheck" className="text-xs font-bold text-slate-800">
+                    🌟 Show in Public &quot;Companies in Vizag&quot; Directory (/companies)
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="autoScrapeCheck"
+                    checked={editIsActiveForScrape}
+                    onChange={(e) => setEditIsActiveForScrape(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  <label htmlFor="autoScrapeCheck" className="text-xs font-bold text-slate-800">
+                    Include in weekly 6:00 AM careers crawler
+                  </label>
+                </div>
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-slate-100">

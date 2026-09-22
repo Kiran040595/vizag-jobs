@@ -14,6 +14,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JobsForYou from '../components/JobsForYou';
 import JobSourceTabs from '../components/JobSourceTabs';
+import CommunityQaSection from '../components/CommunityQaSection';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
@@ -350,6 +351,8 @@ export default function HomePage() {
             onPageChange={handlePageChange}
           />
         ) : null}
+
+        <CommunityQaSection />
 
         <StatsSection stats={siteStats} isLoading={isLoading && allJobs.length === 0} />
         <CTASection />

@@ -13,6 +13,8 @@ export default function Footer() {
         title: 'Explore',
         links: [
           { label: 'All Jobs', to: '/jobs' },
+          { label: 'Companies in Vizag', to: '/companies' },
+          { label: 'Community Q&A', to: '/qa' },
           { label: 'Saved Jobs', to: '/saved-jobs' },
           { label: 'Blog', to: '/blog' },
           ...JOB_BROWSE_LINKS,
