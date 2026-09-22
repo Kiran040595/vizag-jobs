@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStudentAuth } from '../hooks/useStudentAuth';
+import { supabase } from '../lib/supabaseClient';
+import { notifyReplyByEmailSafe } from '../lib/replyNotification';
 import {
   hasUserVotedHelpful,
   voteQuestionHelpful,
@@ -12,66 +14,155 @@ import {
   ignoreJobQuestion,
   publishJobQuestion,
   saveJobQuestionAnswer,
-  submitJobQuestion,
-  validateQuestionInput,
+  requestJobAiAnswer,
 } from '../services/jobQuestions';
 
-function QuestionAskForm({ jobId, onSubmitted }) {
+function QuestionAskForm({ jobId, job = null, onSubmitted }) {
   const { isStudent, session, profile } = useStudentAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [askerName, setAskerName] = useState('');
-  const [askerEmail, setAskerEmail] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [answeredResult, setAnsweredResult] = useState(null);
 
-  useEffect(() => {
-    if (!session || !isStudent) return;
-    if (!askerName && (profile?.full_name || profile?.fullName)) {
-      setAskerName(profile.full_name || profile.fullName || '');
-    }
-    if (!askerEmail && (session.user?.email || profile?.contact_email || profile?.contactEmail)) {
-      setAskerEmail(session.user?.email || profile?.contact_email || profile?.contactEmail || '');
-    }
-  }, [askerEmail, askerName, isStudent, profile, session]);
+  // Auto-fill name/email from session
+  const askerName = profile?.full_name || profile?.fullName || session?.user?.email?.split('@')[0] || '';
+  const askerEmail = session?.user?.email || profile?.contact_email || profile?.contactEmail || '';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    setSuccess('');
+    setAnsweredResult(null);
 
-    const validationError = validateQuestionInput({ askerName, askerEmail, body });
-    if (validationError) {
-      setError(validationError);
+    if (!body.trim() || body.trim().length < 3) {
+      setError('Please enter a question with at least 3 characters.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await submitJobQuestion({
+      const res = await requestJobAiAnswer({
         jobId,
+        job,
+        body,
         askerName,
         askerEmail,
-        body,
         askerUserId: session?.user?.id || null,
       });
-      setAskerName('');
-      setAskerEmail('');
-      setBody('');
-      setSuccess(
-        session && isStudent
-          ? 'Thanks! Your question was sent. When we reply, you will see it in the notification bell.'
-          : 'Thanks! Your question was sent. Sign in next time to get replies in your notification bell.',
-      );
-      onSubmitted?.();
+
+      if (res?.isAiAnswer && res?.answer && res?.question?.id) {
+        setAnsweredResult({
+          question: body.trim(),
+          answer: res.answer,
+          questionId: res.question.id,
+        });
+        setBody('');
+
+        // Fire notification so it shows up in the bell
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData?.session?.access_token;
+          if (accessToken) {
+            await notifyReplyByEmailSafe(accessToken, {
+              kind: 'job_question',
+              id: res.question.id,
+            });
+          }
+        } catch {
+          // notification is best-effort; never block the user
+        }
+
+        onSubmitted?.();
+      } else {
+        setBody('');
+        setAnsweredResult({ question: body.trim(), answer: null, pending: true });
+        onSubmitted?.();
+      }
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Could not submit your question.');
+      setError(submitError instanceof Error ? submitError.message : 'Could not submit your question. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Guest: show sign-in prompt instead of form
+  if (!session || !isStudent) {
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-center sm:p-5">
+        <p className="text-xs sm:text-sm font-semibold text-slate-900">Have a doubt about this job?</p>
+        <p className="mt-1 text-xs text-slate-600">
+          Sign in to ask a question and get an instant verified answer.
+        </p>
+        <Link
+          to="/student/login"
+          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-cyan-500"
+        >
+          Sign in to ask a question
+        </Link>
+      </div>
+    );
+  }
+
+  // Show the answer card after submission
+  if (answeredResult) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white">
+                ✓
+              </span>
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
+                Answer received
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAnsweredResult(null)}
+              className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+            >
+              ✕ Dismiss
+            </button>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Your question</p>
+            <p className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-900">&ldquo;{answeredResult.question}&rdquo;</p>
+          </div>
+
+          {answeredResult.answer ? (
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-sm">
+              <p className="text-xs sm:text-sm leading-relaxed text-slate-800">{answeredResult.answer}</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-slate-600">
+              Your question was submitted. Check your notification bell for a reply.
+            </p>
+          )}
+
+          {answeredResult.answer ? (
+            <p className="mt-2.5 text-[11px] text-slate-500">
+              🔔 A notification has been sent to your account. Check the bell icon in the navbar.
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => {
+              setAnsweredResult(null);
+              setIsOpen(true);
+            }}
+            className="mt-3 text-xs font-bold text-cyan-700 hover:underline"
+          >
+            Ask another question →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Collapsed state
   if (!isOpen) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-3.5 text-center sm:p-4">
@@ -81,7 +172,7 @@ function QuestionAskForm({ jobId, onSubmitted }) {
           onClick={() => setIsOpen(true)}
           className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-cyan-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-cyan-50"
         >
-          <span>💬 Ask Question About This Job</span>
+          <span>💬 Ask a Question</span>
         </button>
       </div>
     );
@@ -90,7 +181,7 @@ function QuestionAskForm({ jobId, onSubmitted }) {
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900">Have a doubt about this job?</h3>
+        <h3 className="text-sm font-bold text-slate-900">Ask a Question About This Job</h3>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
@@ -100,69 +191,44 @@ function QuestionAskForm({ jobId, onSubmitted }) {
         </button>
       </div>
       <p className="mt-1 text-xs text-slate-600">
-        {session && isStudent
-          ? 'Ask below. When we reply, a notification will appear on the bell icon in the navbar.'
-          : (
-            <>
-              Ask below. For reply notifications on the bell icon,{' '}
-              <Link to="/student/login" className="font-semibold text-cyan-700 hover:text-cyan-800">
-                sign in
-              </Link>{' '}
-              first.
-            </>
-          )}
+        Asking as <span className="font-semibold text-slate-800">{askerName || askerEmail}</span>. Your answer will appear in your notification bell.
       </p>
 
-      <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-        <label className="block text-xs">
-          <span className="font-medium text-slate-700">Your name</span>
-          <input
-            type="text"
-            value={askerName}
-            onChange={(event) => setAskerName(event.target.value)}
-            placeholder="Optional if email is provided"
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-          />
-        </label>
-
-        <label className="block text-xs">
-          <span className="font-medium text-slate-700">Your email</span>
-          <input
-            type="email"
-            value={askerEmail}
-            onChange={(event) => setAskerEmail(event.target.value)}
-            placeholder="For reply notification (recommended)"
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-          />
-        </label>
-      </div>
-
-      <label className="mt-2.5 block text-xs">
+      <label className="mt-3 block text-xs">
         <span className="font-medium text-slate-700">Your question</span>
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
           rows={3}
-          placeholder="e.g. Is this role open for 2026 batch freshers?"
+          placeholder="e.g. Is this role open for 2026 batch freshers? Is work from home available?"
           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
         />
       </label>
 
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
-      {success ? <p className="mt-2 text-xs text-emerald-700">{success}</p> : null}
 
       <div className="mt-3 flex items-center gap-2">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? 'Sending…' : 'Submit Question'}
+          {isSubmitting ? (
+            <>
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              <span>Reviewing your question…</span>
+            </>
+          ) : (
+            <span>Submit Question</span>
+          )}
         </button>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
         >
           Cancel
         </button>
@@ -248,7 +314,9 @@ function PublishedQuestionItem({ question, highlighted = false }) {
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white">
               ✓
             </span>
-            <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">Verified Answer</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
+              VizagJobs Team
+            </p>
           </div>
           <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-700">{question.answerBody}</p>
         </div>
@@ -372,6 +440,7 @@ function ModeratorQuestionCard({
 
 export default function JobQuestionsSection({
   jobId,
+  job = null,
   canModerate = false,
   userId = null,
   highlightQuestionId = null,
@@ -497,7 +566,7 @@ export default function JobQuestionsSection({
         <p className="text-sm text-slate-500">No published questions yet. Be the first to ask!</p>
       ) : null}
 
-      <QuestionAskForm jobId={jobId} onSubmitted={loadQuestions} />
+      <QuestionAskForm jobId={jobId} job={job} onSubmitted={loadQuestions} />
     </section>
   );
 }

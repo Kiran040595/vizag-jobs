@@ -457,6 +457,7 @@ export default function JobDetailsPage() {
 
             <JobQuestionsSection
               jobId={job.id}
+              job={job}
               canModerate={canModerateQuestions}
               userId={user?.id ?? null}
               highlightQuestionId={highlightQuestionId}

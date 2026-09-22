@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useDeferredValue } from 'react';
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -6,8 +6,12 @@ import SEO from '../components/SEO';
 import {
   DIRECTORY_SECTORS,
   fetchPublicDirectoryCompanies,
+  toggleCompanyDirectoryApproval,
+  clearPublicCompaniesCache,
 } from '../services/adminCompanies';
 import { readCachedPublicCompanies } from '../lib/publicJobsSessionCache';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { pushToast } from '../lib/toast';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -25,7 +29,7 @@ const SECTOR_GRADIENTS = {
   hospitality: 'from-rose-500 to-red-600 text-white',
 };
 
-function CompanyDirectoryCard({ company }) {
+function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling }) {
   const monogram = getMonogram(company.name);
   const gradientClass = SECTOR_GRADIENTS[company.sectorId] || 'from-slate-700 to-slate-900 text-white';
 
@@ -120,11 +124,44 @@ function CompanyDirectoryCard({ company }) {
           </a>
         ) : null}
       </div>
+
+      {/* Admin Publish / Unpublish overlay button */}
+      {isAdmin ? (
+        <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
+          <button
+            type="button"
+            onClick={() => onTogglePublish(company)}
+            disabled={isToggling}
+            className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition active:scale-95 disabled:opacity-60 ${
+              company.isDirectoryApproved
+                ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+            }`}
+            title={company.isDirectoryApproved ? 'Remove from public /companies directory' : 'Publish to public /companies directory'}
+          >
+            {isToggling ? (
+              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+            ) : company.isDirectoryApproved ? (
+              <>
+                <span>🔴</span>
+                <span>Unpublish from Directory</span>
+              </>
+            ) : (
+              <>
+                <span>🟢</span>
+                <span>Publish to Directory</span>
+              </>
+            )}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
 
+
 export default function CompaniesInVizagPage() {
+  const { isAdmin } = useAdminAuth();
   const [companies, setCompanies] = useState(() => {
     return readCachedPublicCompanies()?.companies || [];
   });
@@ -134,6 +171,8 @@ export default function CompaniesInVizagPage() {
   const [selectedSector, setSelectedSector] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearch = useDeferredValue(searchQuery);
+  // Track which company is being toggled to show a spinner on that card only
+  const [togglingCompany, setTogglingCompany] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -147,6 +186,7 @@ export default function CompaniesInVizagPage() {
       .catch((err) => {
         console.error('Failed to load public directory companies:', err);
         if (isMounted) setLoading(false);
+
       });
 
     return () => {
@@ -154,7 +194,33 @@ export default function CompaniesInVizagPage() {
     };
   }, []);
 
+  // Admin: toggle a company's directory visibility directly from the public /companies page
+  const handleTogglePublish = useCallback(async (comp) => {
+    const nextVal = !comp.isDirectoryApproved;
+    setTogglingCompany(comp.name);
+    try {
+      await toggleCompanyDirectoryApproval({ name: comp.name, isDirectoryApproved: nextVal });
+      // Optimistic update: flip the flag in local state (keeps card visible with new state)
+      setCompanies((prev) =>
+        prev.map((c) => (c.name === comp.name ? { ...c, isDirectoryApproved: nextVal } : c)),
+      );
+      // Bust cache so next page load reflects the change
+      clearPublicCompaniesCache();
+      pushToast({
+        message: nextVal
+          ? `✅ "${comp.name}" published to /companies directory.`
+          : `🔴 "${comp.name}" removed from /companies directory.`,
+        type: 'success',
+      });
+    } catch {
+      pushToast({ message: `Could not update "${comp.name}". Please try again.`, type: 'error' });
+    } finally {
+      setTogglingCompany(null);
+    }
+  }, []);
+
   // Compute sector counts
+
   const sectorCounts = useMemo(() => {
     const counts = { all: companies.length };
     for (const s of DIRECTORY_SECTORS) {
@@ -349,7 +415,13 @@ export default function CompaniesInVizagPage() {
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {group.companies.map((company) => (
-                      <CompanyDirectoryCard key={company.id || company.name} company={company} />
+                      <CompanyDirectoryCard
+                        key={company.id || company.name}
+                        company={company}
+                        isAdmin={isAdmin}
+                        onTogglePublish={handleTogglePublish}
+                        isToggling={togglingCompany === company.name}
+                      />
                     ))}
                   </div>
                 </section>
@@ -379,7 +451,13 @@ export default function CompaniesInVizagPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredCompanies.map((company) => (
-                  <CompanyDirectoryCard key={company.id || company.name} company={company} />
+                  <CompanyDirectoryCard
+                    key={company.id || company.name}
+                    company={company}
+                    isAdmin={isAdmin}
+                    onTogglePublish={handleTogglePublish}
+                    isToggling={togglingCompany === company.name}
+                  />
                 ))}
               </div>
             </div>

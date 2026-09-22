@@ -10,8 +10,6 @@ const QUESTION_COLUMNS = `
   asker_user_id,
   body,
   status,
-  category,
-  helpful_count,
   answer_body,
   answered_by,
   answered_at,
@@ -85,6 +83,8 @@ export const QA_CATEGORIES = [
 const mapQuestion = (row) => {
   if (!row) return null;
 
+  const isAiAnswer = !row.answered_by && Boolean(row.answer_body);
+
   return {
     id: row.id,
     jobId: row.job_id || null,
@@ -101,6 +101,10 @@ const mapQuestion = (row) => {
     publishedAt: row.published_at,
     publishedBy: row.published_by,
     createdAt: row.created_at,
+    isAiAnswer,
+    answeredByRole: row.answered_by
+      ? 'VizagJobs Admin'
+      : (row.answer_body ? '🤖 AI Assistant (Verified from Job Post)' : null),
     job: row.job
       ? {
           id: row.job.id,
@@ -157,9 +161,104 @@ export const validateQuestionInput = ({ askerName, askerEmail, body }) => {
   return '';
 };
 
+export function getAnswerJobQuestionUrl() {
+  const functionsOverride = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
+  if (functionsOverride) {
+    const base = functionsOverride.replace(/\/$/, '');
+    if (base.endsWith('/answer-job-question')) {
+      return base;
+    }
+    if (base.includes('/functions/v1')) {
+      return `${base}/answer-job-question`;
+    }
+  }
+
+  const projectUrl = import.meta.env.VITE_SUPABASE_URL?.trim()?.replace(/\/$/, '');
+  if (!projectUrl) {
+    return '';
+  }
+  return `${projectUrl}/functions/v1/answer-job-question`;
+}
+
+export const requestJobAiAnswer = async ({
+  jobId = null,
+  job = null,
+  body,
+  askerName = '',
+  askerEmail = '',
+  askerUserId = null,
+}) => {
+  const validationError = validateQuestionInput({ askerName, askerEmail, body });
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const url = getAnswerJobQuestionUrl();
+  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
+
+  let resolvedUserId = askerUserId || null;
+  if (!resolvedUserId && supabase) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      resolvedUserId = sessionData?.session?.user?.id || null;
+    } catch {
+      // ignore
+    }
+  }
+
+  if (url && anon) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${anon}`,
+          apikey: anon,
+        },
+        body: JSON.stringify({
+          jobId,
+          job,
+          question: body.trim(),
+          askerName: (askerName || '').trim() || null,
+          askerEmail: (askerEmail || '').trim() || null,
+          askerUserId: resolvedUserId,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.answer) {
+        return {
+          answer: data.answer,
+          question: data.question ? mapQuestion(data.question) : null,
+          model: data.model || 'gemini-2.5-flash',
+          source: 'gemini-ai',
+          isAiAnswer: true,
+        };
+      }
+    } catch (err) {
+      console.warn('Edge function answer-job-question call failed, falling back:', err);
+    }
+  }
+
+  // Graceful fallback: submit pending question to db
+  await submitJobQuestion({
+    jobId,
+    askerName,
+    askerEmail,
+    body,
+    askerUserId: resolvedUserId,
+  });
+
+  return {
+    answer: null,
+    question: null,
+    isAiAnswer: false,
+    submittedPending: true,
+  };
+};
+
 export const submitJobQuestion = async ({
   jobId = null,
-  category = 'general',
   askerName,
   askerEmail,
   body,
@@ -184,7 +283,6 @@ export const submitJobQuestion = async ({
     .from('job_questions')
     .insert({
       job_id: jobId || null,
-      category: category || 'general',
       asker_name: (askerName || '').trim() || null,
       asker_email: (askerEmail || '').trim() || null,
       asker_user_id: resolvedUserId,
