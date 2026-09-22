@@ -7,7 +7,6 @@ import {
   DIRECTORY_SECTORS,
   fetchPublicDirectoryCompanies,
 } from '../services/adminCompanies';
-import { cleanSearchBrand } from '../lib/useCachedPublicJobs';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -70,7 +69,7 @@ function CompanyDirectoryCard({ company }) {
 
         {company.activeJobsCount > 0 ? (
           <Link
-            to={`/jobs?search=${encodeURIComponent(cleanSearchBrand(company.name) || company.name)}`}
+            to={`/jobs?company=${encodeURIComponent(company.name)}`}
             className="group/jobs mt-3.5 flex items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90"
             title={`View all ${company.activeJobsCount} live openings at ${company.name}`}
           >

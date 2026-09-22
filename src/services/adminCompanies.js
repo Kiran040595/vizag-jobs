@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { fetchJobs } from './jobs';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 
 const KNOWN_COMPANY_DEFAULTS = {
   'Miracle Software Systems': {
@@ -413,31 +415,22 @@ export async function fetchPublicDirectoryCompanies() {
     .eq('is_directory_approved', true)
     .limit(1000);
 
-  // Fetch current live jobs to count active openings per company
-  const jobsRes = await supabase
-    .from('jobs')
-    .select('company, status')
-    .eq('status', 'published')
-    .limit(5000);
+  // 2. Fetch the exact same active public jobs used on /jobs
+  let publicJobs = [];
+  try {
+    const rawJobs = await fetchJobs();
+    publicJobs = filterProcessedJobsForPublicDisplay(rawJobs);
+  } catch (err) {
+    console.warn('Could not fetch public jobs for company directory counts:', err);
+  }
 
-  const cleanBrandForCount = (name = '') =>
-    String(name)
-      .toLowerCase()
-      .replace(/\b(pvt\.?\s*ltd\.?|private\s+limited|limited|ltd\.?|llp|inc\.?|corp\.?|corporation)\b/gi, '')
-      .replace(/[^a-z0-9]/g, '')
-      .trim();
+  const normalizeCompName = (name = '') => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
 
   const exactJobCounts = new Map();
-  const cleanJobCounts = new Map();
-  for (const j of jobsRes.data || []) {
+  for (const j of publicJobs) {
     if (j.company) {
-      const rawKey = j.company.trim().toLowerCase();
-      exactJobCounts.set(rawKey, (exactJobCounts.get(rawKey) || 0) + 1);
-
-      const ck = cleanBrandForCount(j.company);
-      if (ck) {
-        cleanJobCounts.set(ck, (cleanJobCounts.get(ck) || 0) + 1);
-      }
+      const key = normalizeCompName(j.company);
+      exactJobCounts.set(key, (exactJobCounts.get(key) || 0) + 1);
     }
   }
 
@@ -445,9 +438,8 @@ export async function fetchPublicDirectoryCompanies() {
   return rawList
     .map((c) => {
       const sector = mapCategoryToSector(c.category);
-      const rawKey = c.name.trim().toLowerCase();
-      const ck = cleanBrandForCount(c.name);
-      const activeJobsCount = exactJobCounts.get(rawKey) || (ck ? cleanJobCounts.get(ck) : 0) || 0;
+      const key = normalizeCompName(c.name);
+      const activeJobsCount = exactJobCounts.get(key) || 0;
       return {
         id: c.id,
         name: c.name,

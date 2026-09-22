@@ -12,7 +12,9 @@ import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPubli
 
 export default function JobsInVizagPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlQuery = searchParams.get('search') || searchParams.get('q') || searchParams.get('company') || '';
+  const companyQuery = searchParams.get('company') || '';
+  const textQuery = searchParams.get('search') || searchParams.get('q') || '';
+  const urlQuery = companyQuery || textQuery;
   const [searchTerm, setSearchTerm] = useState(urlQuery);
   const listHeadingRef = useRef(null);
 
@@ -30,12 +32,13 @@ export default function JobsInVizagPage() {
     setSearchTerm(val);
     const nextParams = new URLSearchParams(searchParams);
     const trimmed = val.trim();
+    // User typing clears exact company mode and switches to global text search
+    nextParams.delete('company');
     if (trimmed) {
       nextParams.set('search', trimmed);
     } else {
       nextParams.delete('search');
       nextParams.delete('q');
-      nextParams.delete('company');
     }
     setSearchParams(nextParams, { replace: true });
   };
@@ -49,13 +52,21 @@ export default function JobsInVizagPage() {
     setSearchParams(nextParams, { replace: true });
   };
 
-  const filteredJobs = useMemo(
-    () =>
-      sortJobsForListing(
-        allJobs.filter((job) => jobMatchesSearchText(job, searchTerm)),
-      ),
-    [allJobs, searchTerm]
-  );
+  const filteredJobs = useMemo(() => {
+    // If exact company name is specified via ?company=, match ONLY exact company name
+    if (companyQuery) {
+      const target = companyQuery.trim().toLowerCase().replace(/\s+/g, ' ');
+      return sortJobsForListing(
+        allJobs.filter(
+          (job) => (job.company || '').trim().toLowerCase().replace(/\s+/g, ' ') === target,
+        ),
+      );
+    }
+
+    return sortJobsForListing(
+      allJobs.filter((job) => jobMatchesSearchText(job, searchTerm)),
+    );
+  }, [allJobs, companyQuery, searchTerm]);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -94,7 +105,7 @@ export default function JobsInVizagPage() {
         ) : null}
 
         {/* Company / Keyword Filter Active Banner */}
-        {searchTerm ? (
+        {companyQuery ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
             <div className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
@@ -102,7 +113,30 @@ export default function JobsInVizagPage() {
               </span>
               <div>
                 <p className="font-semibold text-cyan-900">
-                  Showing jobs for <strong className="font-bold text-cyan-950">&quot;{searchTerm}&quot;</strong>
+                  Showing jobs for company: <strong className="font-bold text-cyan-950">&quot;{companyQuery}&quot;</strong>
+                </p>
+                <p className="text-xs text-cyan-700">
+                  {filteredJobs.length} {filteredJobs.length === 1 ? 'live opening' : 'live openings'} in Visakhapatnam (exact match)
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
+            >
+              <span>✕ Show all jobs ({allJobs.length})</span>
+            </button>
+          </div>
+        ) : searchTerm ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
+                🔍
+              </span>
+              <div>
+                <p className="font-semibold text-cyan-900">
+                  Showing jobs matching <strong className="font-bold text-cyan-950">&quot;{searchTerm}&quot;</strong>
                 </p>
                 <p className="text-xs text-cyan-700">
                   {filteredJobs.length} {filteredJobs.length === 1 ? 'opening' : 'openings'} found in Visakhapatnam
@@ -125,14 +159,18 @@ export default function JobsInVizagPage() {
 
         <div ref={listHeadingRef} className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-slate-800">
-            {searchTerm ? `Jobs at "${searchTerm}"` : 'Latest Jobs in Vizag'}
+            {companyQuery
+              ? `Jobs at "${companyQuery}"`
+              : searchTerm
+              ? `Jobs matching "${searchTerm}"`
+              : 'Latest Jobs in Vizag'}
           </h2>
         </div>
 
         {filteredJobs.length === 0 && !isLoading ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <p className="text-base font-semibold text-slate-800">
-              No direct job openings currently listed for &quot;{searchTerm}&quot;
+              No direct job openings currently listed for &quot;{companyQuery || searchTerm}&quot;
             </p>
             <p className="mt-1 text-sm text-slate-500">
               Try searching with another keyword or explore other top employers in Visakhapatnam.
