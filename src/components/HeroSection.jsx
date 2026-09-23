@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { CATEGORY_OPTIONS } from '../lib/jobFilters';
-import vsp2Image from '../assets/VSP2.jpg';
-import vsp1Image from '../assets/VSP1.jpg';
+import vizagSkylineImage from '../assets/vizag-skyline.webp';
 
 export default function HeroSection({
   searchTerm,
@@ -13,45 +12,17 @@ export default function HeroSection({
   const [localCategory, setLocalCategory] = useState('All Categories');
   const category = onCategoryChange ? categoryProp ?? 'All Categories' : localCategory;
   const [location, setLocation] = useState('Visakhapatnam');
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const sectionRef = useRef(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !imagesLoaded) {
-            // Preload images when section comes into view
-            const img1 = new Image();
-            const img2 = new Image();
-
-            let loadedCount = 0;
-            const onImageLoad = () => {
-              loadedCount++;
-              if (loadedCount === 2) {
-                setImagesLoaded(true);
-              }
-            };
-
-            img1.onload = onImageLoad;
-            img2.onload = onImageLoad;
-
-            img1.src = vsp2Image;
-            img2.src = vsp1Image;
-
-            observer.disconnect(); // Stop observing once images start loading
-          }
-        });
-      },
-      { threshold: 0.1 } // Trigger when 10% of the section is visible
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
+    const img = new Image();
+    img.src = vizagSkylineImage;
+    if (img.complete) {
+      setImageLoaded(true);
+    } else {
+      img.onload = () => setImageLoaded(true);
     }
-
-    return () => observer.disconnect();
-  }, [imagesLoaded]);
+  }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -65,17 +36,17 @@ export default function HeroSection({
   };
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative overflow-hidden text-white"
-      style={imagesLoaded ? {
-        backgroundImage: `url(${vsp2Image}), url(${vsp1Image})`,
-        backgroundSize: 'cover, cover',
-        backgroundPosition: 'center, center',
-        backgroundRepeat: 'no-repeat, no-repeat'
-      } : {}}
-    >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/75 via-blue-950/65 to-blue-900/60" />
+    <section className="relative overflow-hidden bg-slate-950 text-white">
+      {/* Background Image layer with smooth fade-in */}
+      <div
+        className={`pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 ${
+          imageLoaded ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ backgroundImage: `url(${vizagSkylineImage})` }}
+      />
+
+      {/* Atmospheric overlays for readability and brand tone */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/80 via-blue-950/70 to-blue-900/65" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.35),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.3),_transparent_35%)]" />
       <div className="relative mx-auto flex min-h-[18rem] w-full max-w-6xl flex-col items-center justify-center px-3 py-8 text-center sm:min-h-[26rem] sm:px-6 sm:py-16 lg:px-8">
         <h1 className="max-w-3xl text-[1.65rem] font-extrabold leading-tight sm:text-4xl lg:text-5xl">

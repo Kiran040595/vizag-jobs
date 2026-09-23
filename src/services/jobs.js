@@ -19,7 +19,7 @@ const instagramJobsCache = { jobs: null, timestamp: 0 };
 const DEFAULT_TABLE_NAME = 'jobs';
 const jobsTable =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_JOBS_TABLE) ||
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_JOBS_TABLE) ||
+  (typeof globalThis !== 'undefined' && globalThis.process?.env?.VITE_SUPABASE_JOBS_TABLE) ||
   DEFAULT_TABLE_NAME;
 
 
