@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   formatRelativePostedAt,
   shouldHighlightPostedTime,
@@ -41,6 +42,7 @@ const JobCard = ({
   applicationCount = 0,
   showApplicantCount = false,
 }) => {
+  const navigate = useNavigate();
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
@@ -48,6 +50,8 @@ const JobCard = ({
   const [isApplicantsOpen, setIsApplicantsOpen] = useState(false);
 
   const handleToggleSaved = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
     const wasSaved = saved;
     toggle(event);
     pushToast({
@@ -56,9 +60,21 @@ const JobCard = ({
     });
   };
 
+  const handleCardClick = (event) => {
+    if (event.defaultPrevented) return;
+    const targetTag = event.target.tagName?.toLowerCase();
+    if (targetTag === 'button' || targetTag === 'a' || event.target.closest('button, a')) {
+      return;
+    }
+    if (jobPath) {
+      navigate(jobPath);
+    }
+  };
+
   return (
     <article
-      className={`group relative flex h-full flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-4 ${
+      onClick={handleCardClick}
+      className={`group relative flex h-full cursor-pointer flex-col rounded-2xl border bg-white p-3.5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg active:scale-[0.99] sm:p-4 ${
         isFeatured
           ? 'border-cyan-300 hover:border-cyan-400'
           : directBadge

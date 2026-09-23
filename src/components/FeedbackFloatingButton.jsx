@@ -52,12 +52,12 @@ export default function FeedbackFloatingButton() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className={`fixed z-40 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-lg shadow-slate-900/10 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 right-[calc(4.75rem+max(1rem,env(safe-area-inset-right)))] ${
+        className={`fixed z-40 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-lg shadow-slate-900/10 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:px-4 sm:py-3 sm:text-sm right-[calc(3.75rem+max(0.75rem,env(safe-area-inset-right)))] sm:right-[calc(4.75rem+max(1rem,env(safe-area-inset-right)))] ${
           cookieBannerOpen
             ? 'bottom-[calc(11rem+env(safe-area-inset-bottom,0px))] sm:bottom-[calc(8rem+env(safe-area-inset-bottom,0px))]'
             : hasStickyApplyChrome
               ? 'bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] sm:bottom-6'
-              : 'bottom-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-6'
+              : 'bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] lg:bottom-6'
         }`}
         aria-haspopup="dialog"
         aria-expanded={isOpen}

@@ -23,7 +23,7 @@ export default function SavedJobsPage() {
   const savedJobs = useSavedJobsList();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cyan-50/20 to-white">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 via-cyan-50/20 to-white">
       <SEO
         title="Saved Jobs | Vizag Jobs"
         description="View jobs you saved on Jobs in Vizag. Your saved list is stored in this browser."
@@ -31,7 +31,7 @@ export default function SavedJobsPage() {
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 pb-mobile-chrome sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">Saved Jobs</h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">

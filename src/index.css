@@ -9,6 +9,7 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -16,6 +17,14 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #0f172a;
   overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 #root {
@@ -69,12 +78,12 @@ body {
   scroll-snap-align: start;
 }
 
-/* Reserve space for fixed bottom UI (feedback + cookie + safe area). */
+/* Reserve space for fixed bottom UI (mobile nav + feedback + safe area). */
 .pb-mobile-chrome {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .pb-mobile-chrome {
     padding-bottom: 0;
   }

@@ -8,6 +8,8 @@ export default function HeroSection({
   onSubmit,
   category: categoryProp,
   onCategoryChange,
+  title = 'Find the Right Job in Visakhapatnam',
+  subtitle = 'Your one-stop platform for IT, engineering, fresher and experienced jobs in Vizag',
 }) {
   const [localCategory, setLocalCategory] = useState('All Categories');
   const category = onCategoryChange ? categoryProp ?? 'All Categories' : localCategory;
@@ -35,6 +37,14 @@ export default function HeroSection({
     }
   };
 
+  const handleSelectQuickCategory = (catLabel) => {
+    if (onCategoryChange) {
+      onCategoryChange(catLabel);
+    } else {
+      setLocalCategory(catLabel);
+    }
+  };
+
   return (
     <section className="relative overflow-hidden bg-slate-950 text-white">
       {/* Background Image layer with smooth fade-in */}
@@ -48,16 +58,18 @@ export default function HeroSection({
       {/* Atmospheric overlays for readability and brand tone */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/80 via-blue-950/70 to-blue-900/65" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.35),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.3),_transparent_35%)]" />
-      <div className="relative mx-auto flex min-h-[18rem] w-full max-w-6xl flex-col items-center justify-center px-3 py-8 text-center sm:min-h-[26rem] sm:px-6 sm:py-16 lg:px-8">
-        <h1 className="max-w-3xl text-[1.65rem] font-extrabold leading-tight sm:text-4xl lg:text-5xl">
-          Find the Right Job in Visakhapatnam
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center justify-center px-3 py-6 text-center sm:min-h-[26rem] sm:px-6 sm:py-16 lg:px-8">
+        <h1 className="max-w-3xl text-2xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
+          {title}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-blue-100 sm:mt-4 sm:text-base">
-          Your one-stop platform for IT, engineering, fresher and experienced jobs in Vizag
-        </p>
+        {subtitle ? (
+          <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-blue-100/90 sm:mt-4 sm:text-base">
+            {subtitle}
+          </p>
+        ) : null}
         <form
           onSubmit={handleSubmit}
-          className="mt-5 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/95 p-2.5 shadow-2xl backdrop-blur sm:mt-8 sm:p-4"
+          className="mt-4 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/95 p-2 shadow-2xl backdrop-blur sm:mt-8 sm:p-4"
         >
           <div className="grid gap-2 md:grid-cols-[1.7fr_1.2fr_1.2fr_auto] md:gap-3">
             <input
@@ -107,6 +119,31 @@ export default function HeroSection({
             Searching jobs in Visakhapatnam
           </p>
         </form>
+
+        {/* Quick Filter Pills on Mobile */}
+        <div className="mt-3 flex w-full max-w-5xl items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none sm:hidden">
+          <span className="shrink-0 text-[11px] font-semibold text-blue-200">Quick:</span>
+          {[
+            { label: 'IT / Software', icon: '💻' },
+            { label: 'Fresher', icon: '🎓' },
+            { label: 'Banking / Finance', icon: '🏦' },
+            { label: 'Civil', icon: '🏗️' },
+            { label: 'Mechanical', icon: '⚙️' },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => handleSelectQuickCategory(item.label)}
+              className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium backdrop-blur transition active:scale-95 ${
+                category === item.label
+                  ? 'border-cyan-300 bg-cyan-500/30 text-white font-bold'
+                  : 'border-white/20 bg-white/10 text-blue-100 hover:bg-white/20'
+              }`}
+            >
+              <span>{item.icon} {item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );

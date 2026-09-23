@@ -34,18 +34,18 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
   const gradientClass = SECTOR_GRADIENTS[company.sectorId] || 'from-slate-700 to-slate-900 text-white';
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-md">
+    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-md sm:p-5">
       <div>
-        <div className="flex items-start gap-3.5">
+        <div className="flex items-start gap-3">
           <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br font-bold text-sm shadow-sm ${gradientClass}`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br font-bold text-xs shadow-sm sm:h-12 sm:w-12 sm:text-sm ${gradientClass}`}
           >
             {monogram}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h3 className="truncate font-semibold text-slate-900 text-base group-hover:text-cyan-700 transition-colors">
+              <h3 className="truncate font-semibold text-slate-900 text-sm sm:text-base group-hover:text-cyan-700 transition-colors">
                 {company.name}
               </h3>
               <span className="shrink-0 text-cyan-600" title="Verified Vizag Employer">
@@ -56,12 +56,12 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
             </div>
 
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 sm:text-xs">
                 <span>{company.sectorIcon}</span>
                 <span>{company.sectorLabel}</span>
               </span>
 
-              <span className="inline-flex items-center text-xs text-slate-500">
+              <span className="inline-flex items-center text-[11px] text-slate-500 sm:text-xs">
                 <svg className="mr-1 h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -75,7 +75,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
         {company.activeJobsCount > 0 ? (
           <Link
             to={`/jobs?company=${encodeURIComponent(company.name)}`}
-            className="group/jobs mt-3.5 flex items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90"
+            className="group/jobs mt-3 flex min-h-[42px] items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90 active:scale-[0.99] sm:mt-3.5 sm:px-3.5"
             title={`View all ${company.activeJobsCount} live openings at ${company.name}`}
           >
             <span className="flex items-center gap-2">
@@ -93,13 +93,13 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
         ) : null}
       </div>
 
-      <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+      <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs sm:mt-4 sm:pt-3.5">
         {company.website ? (
           <a
             href={company.website}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-slate-900 hover:underline"
+            className="inline-flex min-h-[36px] items-center gap-1 py-1 font-medium text-slate-600 hover:text-slate-900 hover:underline"
           >
             <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
@@ -107,7 +107,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
             Website
           </a>
         ) : (
-          <span className="text-slate-400">Website not listed</span>
+          <span className="text-slate-400 text-[11px] sm:text-xs">Website not listed</span>
         )}
 
         {company.careersUrl ? (
@@ -115,7 +115,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
             href={company.careersUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-lg bg-cyan-50 px-2.5 py-1.5 font-semibold text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800"
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg bg-cyan-50 px-2.5 py-1.5 font-semibold text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800 active:scale-95"
           >
             <span>Careers Portal</span>
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,29 +280,29 @@ export default function CompaniesInVizagPage() {
       />
       <Navbar />
 
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-28 sm:pb-16">
         {/* Hero Section */}
-        <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-cyan-900 via-slate-900 to-slate-900 px-4 py-12 text-white sm:px-6 sm:py-16">
+        <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-cyan-900 via-slate-900 to-slate-900 px-4 py-8 text-white sm:px-6 sm:py-16">
           <div className="mx-auto max-w-5xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-950/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-300 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-950/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-300 backdrop-blur-sm sm:px-3.5 sm:text-xs">
               <span>🏢</span> Visakhapatnam Corporate Directory
             </span>
 
-            <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:mt-4 sm:text-4xl lg:text-5xl">
               Top Companies & Employers in{' '}
               <span className="bg-gradient-to-r from-cyan-400 to-teal-300 bg-clip-text text-transparent">
                 Visakhapatnam
               </span>
             </h1>
 
-            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-300 sm:text-lg">
+            <p className="mx-auto mt-2.5 max-w-2xl text-sm text-slate-300 sm:mt-4 sm:text-lg">
               Discover verified premier employers across Rushikonda IT SEZ, Parawada Pharma City, hospitals, banks, and major institutions in Vizag.
             </p>
 
             {/* Search Bar */}
-            <div className="mx-auto mt-8 max-w-xl">
+            <div className="mx-auto mt-5 max-w-xl sm:mt-8">
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4">
                   <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -312,7 +312,7 @@ export default function CompaniesInVizagPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by company name, sector, or keyword..."
-                  className="w-full rounded-2xl border-0 bg-white/95 py-3.5 pl-11 pr-10 text-sm text-slate-900 shadow-xl ring-1 ring-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-base"
+                  className="w-full rounded-2xl border-0 bg-white/95 py-3 pl-10 pr-10 text-sm text-slate-900 shadow-xl ring-1 ring-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:py-3.5 sm:pl-11 sm:text-base"
                 />
                 {searchQuery ? (
                   <button
@@ -329,7 +329,7 @@ export default function CompaniesInVizagPage() {
             </div>
 
             {isAdmin ? (
-              <div className="mx-auto mt-5 inline-flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-950/60 px-4 py-2 text-xs font-semibold text-cyan-200 backdrop-blur-sm">
+              <div className="mx-auto mt-4 inline-flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-950/60 px-3.5 py-1.5 text-xs font-semibold text-cyan-200 backdrop-blur-sm sm:mt-5 sm:px-4 sm:py-2">
                 <span>🛡️ Admin Mode Active: Publish & unpublish toggles enabled on cards below.</span>
                 <Link to="/admin/companies" className="inline-flex items-center gap-1 font-bold text-white underline hover:text-cyan-300">
                   <span>Manage in Admin Panel</span>
@@ -341,9 +341,9 @@ export default function CompaniesInVizagPage() {
         </section>
 
         {/* Sector Tabs Navigation */}
-        <div className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/90 shadow-sm backdrop-blur-md">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="flex gap-2 overflow-x-auto py-3 scrollbar-none">
+        <div className="sticky top-14 z-30 border-b border-slate-200/90 bg-white/90 shadow-sm backdrop-blur-md sm:top-16">
+          <div className="mx-auto max-w-7xl px-3 sm:px-6">
+            <div className="flex gap-2 overflow-x-auto py-2.5 scrollbar-none mobile-chip-scroll overscroll-contain sm:py-3">
               {DIRECTORY_SECTORS.map((sector) => {
                 const isSelected = selectedSector === sector.id;
                 const count = sectorCounts[sector.id] || 0;
