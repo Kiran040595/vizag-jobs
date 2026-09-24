@@ -7,7 +7,7 @@ const client = createClient(
 );
 
 async function applyAuditCleanup() {
-  console.log('1. Unpublishing non-Vizag, remote-only, or dead-domain companies...');
+  console.log('1. Unpublishing non-Vizag, remote-only, dead-domain, or duplicate companies...');
   const unpublishList = [
     'BairesDev',
     'Turing',
@@ -16,7 +16,6 @@ async function applyAuditCleanup() {
     'Armani Exchange',
     'Escape Academy',
     'With Ease Education India',
-    'DA VINCI INTERNATIONAL SCHOOL',
     'Tablets India',
     'Fresenius Medical Care',
     'PlanetSpark',
@@ -109,6 +108,42 @@ async function applyAuditCleanup() {
       careers_url: 'https://patracorp.com/careers/',
       is_directory_approved: true,
     },
+    {
+      name: 'Pema Wellness Retreat',
+      website: 'https://www.pemawellness.com',
+      careers_url: 'https://www.pemawellness.com',
+      is_directory_approved: true,
+    },
+    {
+      name: 'SITARAM MOTORS',
+      website: 'https://sitarammotors.royalenfield.com',
+      careers_url: 'https://sitarammotors.royalenfield.com',
+      is_directory_approved: true,
+    },
+    {
+      name: 'GITAM Deemed University',
+      website: 'https://www.gitam.edu',
+      careers_url: 'https://careers.gitam.edu',
+      is_directory_approved: true,
+    },
+    {
+      name: 'SIMS College',
+      website: 'http://www.simsvizag.com',
+      careers_url: 'http://www.simsvizag.com/contact-us.html',
+      is_directory_approved: true,
+    },
+    {
+      name: 'MGM Healthcare',
+      website: 'https://mgmsevenhills.in',
+      careers_url: 'https://mgmhealthcare.in/careers/',
+      is_directory_approved: true,
+    },
+    {
+      name: 'DA VINCI INTERNATIONAL SCHOOL',
+      website: 'https://davincischool.in',
+      careers_url: 'https://davincischool.in/contact.html',
+      is_directory_approved: true,
+    },
   ];
 
   for (const item of updates) {
@@ -134,7 +169,7 @@ async function applyAuditCleanup() {
     }
   }
 
-  console.log('\nAudit updates applied successfully to Supabase!');
+  console.log('\nAudit updates applied successfully!');
 }
 
 applyAuditCleanup();

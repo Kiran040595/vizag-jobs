@@ -7,7 +7,6 @@
 --    - Armani Exchange (Retail mall brand with expired SSL)
 --    - Escape Academy (Non-existent synthesized domain)
 --    - With Ease Education India (Non-existent synthesized domain)
---    - DA VINCI INTERNATIONAL SCHOOL (No school in Vizag)
 --    - Tablets India (Chennai pharma with no Vizag facility)
 --    - Fresenius Medical Care (No dedicated center in Vizag)
 --    - PlanetSpark (Gurgaon edtech WFH only)
@@ -24,7 +23,6 @@ WHERE name IN (
   'Armani Exchange',
   'Escape Academy',
   'With Ease Education India',
-  'DA VINCI INTERNATIONAL SCHOOL',
   'Tablets India',
   'Fresenius Medical Care',
   'PlanetSpark',
@@ -132,3 +130,46 @@ SET website = 'https://patracorp.com',
     is_directory_approved = true,
     updated_at = NOW()
 WHERE name = 'Patra India';
+
+-- Pema Wellness Retreat (Healing Hills, Visakhapatnam)
+UPDATE public.companies
+SET website = 'https://www.pemawellness.com',
+    careers_url = 'https://www.pemawellness.com',
+    updated_at = NOW()
+WHERE name = 'Pema Wellness Retreat';
+
+-- SITARAM MOTORS (Dondaparthy, Madhurawada, Maddilapalem, Visakhapatnam)
+UPDATE public.companies
+SET website = 'https://sitarammotors.royalenfield.com',
+    careers_url = 'https://sitarammotors.royalenfield.com',
+    updated_at = NOW()
+WHERE name = 'SITARAM MOTORS';
+
+-- GITAM Deemed University (Rushikonda, Visakhapatnam)
+UPDATE public.companies
+SET website = 'https://www.gitam.edu',
+    careers_url = 'https://careers.gitam.edu',
+    updated_at = NOW()
+WHERE name = 'GITAM Deemed University';
+
+-- SIMS College (P.M. Palem, Madhurawada, Visakhapatnam)
+UPDATE public.companies
+SET website = 'http://www.simsvizag.com',
+    careers_url = 'http://www.simsvizag.com/contact-us.html',
+    updated_at = NOW()
+WHERE name = 'SIMS College';
+
+-- MGM Healthcare / MGM SevenHills Hospital (Waltair Main Road, Visakhapatnam)
+UPDATE public.companies
+SET website = 'https://mgmsevenhills.in',
+    careers_url = 'https://mgmhealthcare.in/careers/',
+    updated_at = NOW()
+WHERE name = 'MGM Healthcare';
+
+-- DA VINCI INTERNATIONAL SCHOOL (Thimmarajupeta, Anakapalli/Visakhapatnam)
+UPDATE public.companies
+SET website = 'https://davincischool.in',
+    careers_url = 'https://davincischool.in/contact.html',
+    is_directory_approved = true,
+    updated_at = NOW()
+WHERE name IN ('DA VINCI INTERNATIONAL SCHOOL', 'Da Vinci International School');

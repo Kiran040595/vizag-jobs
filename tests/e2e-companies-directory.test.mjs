@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {
   DIRECTORY_SECTORS,
   mapCategoryToSector,
+  EXCLUDED_DIRECTORY_COMPANIES,
+  KNOWN_COMPANY_DEFAULTS,
 } from '../src/services/adminCompanies.js';
 
 import {
@@ -123,7 +125,7 @@ test('Companies Directory & Jobs Page: Exact Company Name Matching', async (t) =
 });
 
 test('Companies Directory: Verified Vizag Company URLs & Non-Vizag Exclusions', async (t) => {
-  const EXCLUDED_NON_VIZAG = [
+  const EXPECTED_EXCLUDED = [
     'bairesdev',
     'turing',
     'google',
@@ -131,17 +133,25 @@ test('Companies Directory: Verified Vizag Company URLs & Non-Vizag Exclusions', 
     'armani exchange',
     'escape academy',
     'with ease education india',
-    'da vinci international school',
     'tablets india',
     'fresenius medical care',
     'planetspark',
     'patra corporation',
   ];
 
-  await t.test('all non-Vizag and invalid companies are flagged for directory exclusion', () => {
-    for (const name of EXCLUDED_NON_VIZAG) {
-      assert.ok(name.length > 0);
+  await t.test('all non-Vizag, remote-only, and invalid companies are in EXCLUDED_DIRECTORY_COMPANIES', () => {
+    for (const name of EXPECTED_EXCLUDED) {
+      assert.ok(
+        EXCLUDED_DIRECTORY_COMPANIES.has(name),
+        `Expected ${name} to be in EXCLUDED_DIRECTORY_COMPANIES`
+      );
     }
+    // Da Vinci International School has an active verified campus in Vizag and should NOT be excluded
+    assert.equal(
+      EXCLUDED_DIRECTORY_COMPANIES.has('da vinci international school'),
+      false,
+      'Da Vinci International School must not be excluded as it is a verified Vizag school'
+    );
   });
 
   const VERIFIED_URLS = {
@@ -159,12 +169,20 @@ test('Companies Directory: Verified Vizag Company URLs & Non-Vizag Exclusions', 
     'Eisai Pharmaceuticals India': 'https://www.eisai.co.in',
     'Edify Education': 'https://edifyschools.com',
     'Patra India': 'https://patracorp.com',
+    'Pema Wellness Retreat': 'https://www.pemawellness.com',
+    'SITARAM MOTORS': 'https://sitarammotors.royalenfield.com',
+    'GITAM Deemed University': 'https://www.gitam.edu',
+    'MGM Healthcare': 'https://mgmsevenhills.in',
+    'DA VINCI INTERNATIONAL SCHOOL': 'https://davincischool.in',
   };
 
-  await t.test('all premier Vizag companies have valid HTTPS official websites', () => {
-    for (const [name, url] of Object.entries(VERIFIED_URLS)) {
-      assert.ok(url.startsWith('https://'), `${name} must have a secure https website URL`);
-      assert.doesNotMatch(url, /localhost|example\.com|lnkd\.in|synthesized/i);
+  await t.test('all premier Vizag companies have valid official websites and careers URLs in KNOWN_COMPANY_DEFAULTS', () => {
+    for (const [name, expectedWeb] of Object.entries(VERIFIED_URLS)) {
+      const entry = KNOWN_COMPANY_DEFAULTS[name];
+      assert.ok(entry, `Expected KNOWN_COMPANY_DEFAULTS to have entry for ${name}`);
+      assert.equal(entry.website, expectedWeb, `Expected ${name} website to be ${expectedWeb}`);
+      assert.ok(entry.careers_url, `Expected ${name} to have a careers_url`);
+      assert.ok(entry.careers_url.startsWith('http'), `Expected ${name} careers_url to start with http`);
     }
   });
 });
