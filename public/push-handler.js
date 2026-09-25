@@ -1,7 +1,7 @@
-/* global self, clients */
+/* global clients */
 
 self.addEventListener('push', (event) => {
-  let payload = {};
+  let payload;
   try {
     payload = event.data ? event.data.json() : {};
   } catch {
@@ -9,14 +9,20 @@ self.addEventListener('push', (event) => {
   }
 
   const title = payload.title || 'New job on Vizag Jobs';
+  const dispatchId = payload.dispatchId || payload.data?.dispatchId || null;
+  const jobId = payload.jobId || payload.data?.jobId || null;
+  const targetUrl = payload.url || payload.linkPath || '/jobs';
+
   const options = {
     body: payload.body || payload.preview || 'A new job was just published.',
     icon: payload.icon || '/icon-192x192.png',
     badge: payload.badge || '/icon-192x192.png',
-    tag: payload.tag || 'vizag-job-alert',
+    tag: payload.tag || (dispatchId ? `job-alert-${dispatchId}` : 'vizag-job-alert'),
     renotify: true,
     data: {
-      url: payload.url || payload.linkPath || '/jobs',
+      url: targetUrl,
+      dispatchId,
+      jobId,
     },
   };
 
@@ -25,11 +31,30 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification?.data?.url || '/jobs';
+  const notificationData = event.notification?.data || {};
+  const targetUrl = notificationData.url || '/jobs';
   const absoluteUrl = new URL(targetUrl, self.location.origin).href;
 
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+  const trackPromise = (async () => {
+    try {
+      if (notificationData.dispatchId || notificationData.jobId) {
+        await fetch('/api/track-notification-click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dispatchId: notificationData.dispatchId,
+            jobId: notificationData.jobId,
+          }),
+        });
+      }
+    } catch {
+      // Ignore background tracking network failure
+    }
+  })();
+
+  const navigatePromise = clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then((windowClients) => {
       for (const client of windowClients) {
         if ('focus' in client) {
           client.navigate?.(absoluteUrl);
@@ -40,6 +65,7 @@ self.addEventListener('notificationclick', (event) => {
         return clients.openWindow(absoluteUrl);
       }
       return undefined;
-    }),
-  );
+    });
+
+  event.waitUntil(Promise.all([trackPromise, navigatePromise]));
 });

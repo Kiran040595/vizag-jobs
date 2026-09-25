@@ -1,13 +1,11 @@
-const viteEnv = import.meta.env || {};
-
-export const SITE_URL = viteEnv.VITE_SITE_URL || 'https://jobsinvizag.in';
+export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://jobsinvizag.in';
 
 /** Where Supabase Auth should send users after email confirm / magic links. */
 export const getAuthRedirectUrl = (path = '/employer/login') => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
-  if (viteEnv.VITE_SITE_URL) {
-    return `${viteEnv.VITE_SITE_URL.replace(/\/+$/, '')}${normalizedPath}`;
+  if (import.meta.env.VITE_SITE_URL) {
+    return `${import.meta.env.VITE_SITE_URL.replace(/\/+$/, '')}${normalizedPath}`;
   }
 
   if (typeof window !== 'undefined' && window.location?.origin) {

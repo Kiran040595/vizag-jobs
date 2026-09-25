@@ -9,8 +9,6 @@ import {
   DEFAULT_FILTERS,
   FRESHNESS_OPTIONS,
   JOB_TYPE_OPTIONS,
-  SOURCE_OPTIONS,
-  TAB_OPTIONS,
   PAGE_SIZE,
   applyJobFilters,
   buildPaginationItems,
@@ -59,8 +57,6 @@ for (const [name, opts] of [
   ['CATEGORY_OPTIONS', CATEGORY_OPTIONS],
   ['JOB_TYPE_OPTIONS', JOB_TYPE_OPTIONS],
   ['FRESHNESS_OPTIONS', FRESHNESS_OPTIONS],
-  ['SOURCE_OPTIONS', SOURCE_OPTIONS],
-  ['TAB_OPTIONS', TAB_OPTIONS],
 ]) {
   ok(Array.isArray(opts) && opts.length > 0, `${name} is a non-empty array`);
   ok(opts.some((o) => o.id === 'all'), `${name} contains 'all'`);
@@ -75,21 +71,17 @@ section('readFiltersFromSearchParams — defaults & invalid values');
 }
 {
   const r = readFiltersFromSearchParams(
-    new URLSearchParams('tab=direct&q=react&category=it&jobType=full-time&freshness=24h&source=naukri&page=3'),
+    new URLSearchParams('q=react&category=it&jobType=full-time&freshness=24h&page=3'),
   );
-  eq(
-    r,
-    { tab: 'direct', q: 'react', company: '', category: 'it', jobType: 'full-time', freshness: '24h', source: 'naukri', page: 3 },
-    'all params parsed',
-  );
+  eq(r, { q: 'react', category: 'it', jobType: 'full-time', freshness: '24h', page: 3 }, 'all params parsed');
 }
 {
   const r = readFiltersFromSearchParams(
-    new URLSearchParams('tab=bogus&category=bogus&jobType=bogus&freshness=bogus&page=-2'),
+    new URLSearchParams('category=bogus&jobType=bogus&freshness=bogus&page=-2'),
   );
   eq(
     r,
-    { tab: 'all', q: '', company: '', category: 'all', jobType: 'all', freshness: 'all', source: 'all', page: 1 },
+    { q: '', category: 'all', jobType: 'all', freshness: 'all', page: 1 },
     'invalid values fall back to defaults',
   );
 }
@@ -102,26 +94,17 @@ section('writeFiltersToSearchParams — defaults are NEVER serialized');
 }
 {
   const out = writeFiltersToSearchParams({
-    tab: 'direct',
     q: '  hello  ',
     category: 'it',
     jobType: 'all',
     freshness: '24h',
     page: 2,
   }).toString();
-  ok(out.includes('tab=direct'), 'tab=direct is serialized');
   ok(out.includes('q=hello'), 'q is trimmed before serializing');
   ok(out.includes('category=it'), 'non-default category is serialized');
   ok(!out.includes('jobType'), 'default jobType is omitted');
   ok(out.includes('freshness=24h'), 'freshness=24h is serialized');
   ok(out.includes('page=2'), 'page=2 is serialized');
-}
-{
-  const out = writeFiltersToSearchParams({
-    ...DEFAULT_FILTERS,
-    source: 'linkedin_jobs',
-  }).toString();
-  ok(out.includes('source=linkedin_jobs'), 'admin source filter is serialized');
 }
 {
   const out = writeFiltersToSearchParams({ ...DEFAULT_FILTERS, page: 1 }).toString();
@@ -133,68 +116,7 @@ section('isAnyFilterActive');
 ok(!isAnyFilterActive(DEFAULT_FILTERS), 'defaults -> not active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, q: 'foo' }), 'q -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, category: 'it' }), 'category -> active');
-ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: 'naukri' }), 'source -> active');
-ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'direct' }), 'tab=direct -> active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, page: 5 }), 'page change alone -> not active');
-
-// ------------------------------------------------------------
-section('applyJobFilters — tab filter (direct company jobs)');
-{
-  const jobs = [
-    fakeJob({ id: 'd1', createdBy: 'employer-1', title: 'Direct Employer Job' }),
-    fakeJob({ id: 'd2', source: 'Admin Post', title: 'Admin Job' }),
-    fakeJob({
-      id: 'agg',
-      source: 'naukri.com',
-      sourceUrl: 'https://www.naukri.com/job-1',
-      title: 'Scraped Naukri Job',
-    }),
-  ];
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'all' }).map((j) => j.id).sort(),
-    ['agg', 'd1', 'd2'].sort(),
-    'tab=all shows all jobs',
-  );
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'direct' }).map((j) => j.id).sort(),
-    ['d1', 'd2'].sort(),
-    'tab=direct shows only direct employer & admin jobs',
-  );
-}
-
-// ------------------------------------------------------------
-section('applyJobFilters — admin source filter');
-{
-  const jobs = [
-    fakeJob({ id: 'n', source: 'naukri.com', sourceUrl: 'https://www.naukri.com/x' }),
-    fakeJob({
-      id: 'lj',
-      source: 'linkedin.com',
-      sourceUrl: 'https://www.linkedin.com/jobs/view/1',
-    }),
-    fakeJob({
-      id: 'lp',
-      source: 'linkedin.com',
-      sourceUrl: 'https://www.linkedin.com/posts/x',
-    }),
-    fakeJob({ id: 'a', source: 'Admin Post' }),
-  ];
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'naukri' }).map((j) => j.id),
-    ['n'],
-    'source=naukri',
-  );
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'linkedin_jobs' }).map((j) => j.id),
-    ['lj'],
-    'source=linkedin_jobs',
-  );
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'linkedin' }).map((j) => j.id).sort(),
-    ['lj', 'lp'].sort(),
-    'source=linkedin matches jobs and posts',
-  );
-}
 
 // ------------------------------------------------------------
 section('applyJobFilters — search text matches title/company/skills/location');
@@ -303,50 +225,6 @@ section('applyJobFilters — fresher / walk-in categories');
 }
 
 // ------------------------------------------------------------
-section('applyJobFilters — IT category does not match hospitality / digital marketing');
-{
-  const jobs = [
-    fakeJob({
-      id: 'hotel',
-      title: 'Hotel Front Office Executive',
-      category: 'Hospitality & Retail',
-      skills: '',
-      shortDescription: 'Join our team in Vizag',
-    }),
-    fakeJob({
-      id: 'digital',
-      title: 'Digital Marketing Executive',
-      category: 'Sales & Marketing',
-      skills: 'seo, ads',
-    }),
-    fakeJob({
-      id: 'nurse',
-      title: 'Staff Nurse',
-      category: 'Healthcare',
-      skills: '',
-      shortDescription: 'Hospital duty',
-    }),
-    fakeJob({ id: 'hr', title: 'HR Executive', category: 'HR & Admin', skills: '', shortDescription: 'Recruitment' }),
-    fakeJob({ id: 'java', title: 'Java Developer', category: 'IT & Software', skills: 'java, spring' }),
-    fakeJob({ id: 'react', title: 'React Developer', category: 'IT', skills: 'react' }),
-  ];
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'it' }).map((j) => j.id).sort(),
-    ['java', 'react'].sort(),
-    'IT filter keeps software roles only',
-  );
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'hospitality' }).map((j) => j.id),
-    ['hotel'],
-    'hospitality filter',
-  );
-  eq(
-    applyJobFilters(jobs, { ...DEFAULT_FILTERS, category: 'non-it' }).map((j) => j.id).sort(),
-    ['digital', 'hotel', 'hr', 'nurse'].sort(),
-    'non-IT excludes software roles',
-  );
-}
-
 section('applyJobFilters — engineering branch categories');
 {
   const jobs = [

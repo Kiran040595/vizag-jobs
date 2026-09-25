@@ -2,7 +2,6 @@
 export const STUDENT_DEGREE_OPTIONS = [
   '10th Pass',
   '12th Pass',
-  'ITI',
   'Diploma',
   'B.Tech',
   'B.E',
@@ -26,7 +25,6 @@ export const STUDENT_BRANCH_OPTIONS = [
   'Civil Engineering',
   'Chemical Engineering',
   'Automobile Engineering',
-  'ITI Trade / Technical',
   'Commerce',
   'Accounting & Finance',
   'Business Administration',
@@ -35,10 +33,11 @@ export const STUDENT_BRANCH_OPTIONS = [
   'Not Applicable',
 ];
 
-/** Graduation years for dropdown (expanded 2010 to 2030). */
+/** Graduation years for dropdown (recent past + near future). */
 export const buildGraduationYearOptions = () => {
+  const currentYear = new Date().getFullYear();
   const years = [];
-  for (let year = 2030; year >= 2010; year -= 1) {
+  for (let year = currentYear + 3; year >= currentYear - 8; year -= 1) {
     years.push(String(year));
   }
   return years;
@@ -90,42 +89,15 @@ export const normalizeSkillValue = (value) =>
     .toLowerCase()
     .replace(/\s+/g, ' ');
 
-const titleCaseSkill = (value) =>
-  String(value || '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-
 export const formatSkillLabel = (value) => {
   const normalized = normalizeSkillValue(value);
-  return SKILL_LABEL_BY_VALUE.get(normalized) || titleCaseSkill(normalized) || value;
-};
-
-/** Resolve preset or custom skill token from chip value or typed text. */
-export const resolveSkillToken = (raw) => {
-  const text = String(raw || '').trim();
-  if (!text) {
-    return '';
-  }
-
-  const normalized = normalizeSkillValue(text);
-  const known = STUDENT_SKILL_OPTIONS.find(
-    (item) =>
-      item.value === normalized || item.label.toLowerCase() === text.toLowerCase(),
-  );
-  if (known) {
-    return known.value;
-  }
-
-  if (normalized.length < 2 || normalized.length > 48) {
-    return '';
-  }
-  return normalized;
+  return SKILL_LABEL_BY_VALUE.get(normalized) || value;
 };
 
 export const parseSkillSelection = (values) => {
+  const allowed = new Set(STUDENT_SKILL_OPTIONS.map((item) => item.value));
   const list = Array.isArray(values) ? values : [];
-  return [...new Set(list.map(resolveSkillToken).filter(Boolean))].slice(0, 16);
+  return [...new Set(list.map(normalizeSkillValue).filter((item) => allowed.has(item)))].slice(0, 12);
 };
 
 export const groupSkillOptions = () => {

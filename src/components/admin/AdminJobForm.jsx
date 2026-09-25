@@ -5,13 +5,11 @@ import {
   getEmptyJobForm,
   updateAdminJob,
 } from '../../services/adminJobs';
-import { fetchLiveJobRoles } from '../../services/jobRoles';
-import { cleanJobRoleLabel } from '../../lib/jobRoleLabel';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
-const REQUIRED_FIELDS = ['title', 'company', 'role', 'category', 'job_type'];
+const REQUIRED_FIELDS = ['title', 'company', 'category', 'job_type'];
 
 const getStoredDraft = (draftStorageKey, fallbackValues, fallbackIsSlugManual) => {
   if (!draftStorageKey) {
@@ -93,19 +91,6 @@ export default function AdminJobForm({
   const [saveError, setSaveError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [liveRoles, setLiveRoles] = useState([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchLiveJobRoles(80).then((roles) => {
-      if (!cancelled) {
-        setLiveRoles(roles);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!draftStorageKey) {
@@ -147,10 +132,6 @@ export default function AdminJobForm({
         ...currentValues,
         [name]: nextValue,
       };
-
-      if (name === 'title' && !String(currentValues.role || '').trim()) {
-        nextValues.role = cleanJobRoleLabel(value, 56) || value;
-      }
 
       if (!isSlugManual && ['title', 'company', 'posted_at'].includes(name)) {
         nextValues.slug = createSuggestedSlug({
@@ -278,20 +259,6 @@ export default function AdminJobForm({
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Field label="Title">
           <TextInput name="title" value={formValues.title} onChange={handleFieldChange} placeholder="Java Full Stack Developer" />
-        </Field>
-        <Field label="Role" hint="Short role students can target (auto-fills from title).">
-          <TextInput
-            name="role"
-            value={formValues.role}
-            onChange={handleFieldChange}
-            placeholder="Java Full Stack Developer"
-            list="admin-live-job-roles"
-          />
-          <datalist id="admin-live-job-roles">
-            {liveRoles.map((item) => (
-              <option key={item.role} value={item.role} />
-            ))}
-          </datalist>
         </Field>
         <Field label="Company">
           <TextInput name="company" value={formValues.company} onChange={handleFieldChange} placeholder="Shvintech India" />
@@ -434,20 +401,6 @@ export default function AdminJobForm({
           <input type="checkbox" name="is_featured" checked={formValues.is_featured} onChange={handleFieldChange} className="h-4 w-4 rounded border-slate-300 text-cyan-500" />
           <span className="text-sm font-medium text-slate-700">Feature on the site</span>
         </label>
-      </div>
-
-      <div className="mt-5">
-        <Field label="Recruitment group link (optional)">
-          <TextInput
-            name="group_link"
-            value={formValues.group_link}
-            onChange={handleFieldChange}
-            placeholder="https://chat.whatsapp.com/... or Instagram group URL"
-          />
-        </Field>
-        <p className="mt-2 text-xs text-slate-500">
-          If set, students see a join-group prompt after they apply on-platform. Leave blank to skip.
-        </p>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">

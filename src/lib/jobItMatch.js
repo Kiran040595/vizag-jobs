@@ -3,8 +3,6 @@
  * Replaces job.tags.includes('IT'), which misses categories like "IT & Software".
  */
 
-import { normalizeJobCategory, textHasKeyword } from './jobCategoryTaxonomy.js';
-
 const IT_TECH_KEYWORDS = [
   'java',
   'python',
@@ -98,10 +96,6 @@ const categoryOrJobTypeSuggestsIt = (job) => {
 };
 
 export const isItRelatedJob = (job) => {
-  const normalizedCategory = normalizeJobCategory(job.category);
-  if (normalizedCategory === 'IT & Software') return true;
-  if (normalizedCategory && normalizedCategory !== 'General') return false;
-
   if (categoryOrJobTypeSuggestsIt(job)) return true;
 
   const hay = [
@@ -116,5 +110,5 @@ export const isItRelatedJob = (job) => {
     .join(' ')
     .toLowerCase();
 
-  return IT_TECH_KEYWORDS.some((kw) => textHasKeyword(hay, kw));
+  return IT_TECH_KEYWORDS.some((kw) => hay.includes(kw));
 };

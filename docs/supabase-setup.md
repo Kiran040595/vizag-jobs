@@ -77,8 +77,6 @@ The frontend reads these database columns:
 
 Employers can sign up at `/employer/register`, complete their company profile, and submit jobs as `pending`. Admins review submissions at `/admin/jobs` and use **Approve** (publishes to the portal) or **Reject** (archives with an optional reason).
 
-When a direct employer or admin job becomes `published`, a database trigger writes in-app `new_job` alerts for every student and a public `job_alerts` row for live browser notifications. Scraped Naukri/LinkedIn/company-career imports are not fanned out. For background Web Push, set VAPID keys as described in `docs/pwa-setup.md`.
-
 ### Supabase Auth settings (fixes localhost redirects in production)
 
 Email confirmation links use Supabase **URL Configuration**, not only your app code.

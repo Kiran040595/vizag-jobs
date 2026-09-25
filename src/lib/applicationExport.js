@@ -1,21 +1,5 @@
 import { formatApplicationStatus } from './applicationStatus.js';
-import { toAbsoluteUrl } from './site.js';
-import {
-  formatAvailabilityLabel,
-  formatJobCategoryLabel,
-  formatRoleExperienceLabel,
-} from './studentCareerPreferences.js';
 import { normalizeWhatsAppDigits } from './whatsappContact.js';
-
-/** Stable public link companies can open from a shared Excel sheet. */
-export const getApplicationResumeShareUrl = (application) => {
-  const token = String(application?.resumeShareToken || '').trim();
-  const hasResume = Boolean(String(application?.resumePath || '').trim());
-  if (!token || !hasResume) {
-    return '';
-  }
-  return toAbsoluteUrl(`/r/${token}`);
-};
 
 /** @typedef {{ id: string, label: string, group: string, defaultSelected?: boolean, getValue: (application: object) => string }} ApplicationExportColumn */
 
@@ -112,61 +96,6 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     getValue: (app) => (snapshot(app).isFresher ? 'Yes' : 'No'),
   },
   {
-    id: 'targetJobCategories',
-    label: 'Target job categories',
-    group: 'Career preference',
-    defaultSelected: true,
-    getValue: (app) => {
-      const categories = snapshot(app).targetJobCategories;
-      return Array.isArray(categories) ? categories.map(formatJobCategoryLabel).join('; ') : '';
-    },
-  },
-  {
-    id: 'primaryTargetRole',
-    label: 'Primary target role',
-    group: 'Career preference',
-    defaultSelected: true,
-    getValue: (app) => snapshot(app).primaryTargetRole || '',
-  },
-  {
-    id: 'roleExperienceLevel',
-    label: 'Role experience',
-    group: 'Career preference',
-    defaultSelected: true,
-    getValue: (app) => formatRoleExperienceLabel(snapshot(app).roleExperienceLevel),
-  },
-  {
-    id: 'availability',
-    label: 'Availability',
-    group: 'Career preference',
-    defaultSelected: false,
-    getValue: (app) => formatAvailabilityLabel(snapshot(app).availability),
-  },
-  {
-    id: 'preferredLocations',
-    label: 'Preferred locations',
-    group: 'Career preference',
-    defaultSelected: false,
-    getValue: (app) => {
-      const locations = snapshot(app).preferredLocations;
-      return Array.isArray(locations) ? locations.join('; ') : '';
-    },
-  },
-  {
-    id: 'expectedSalary',
-    label: 'Expected salary / month',
-    group: 'Career preference',
-    defaultSelected: false,
-    getValue: (app) => {
-      const min = snapshot(app).expectedSalaryMin;
-      const max = snapshot(app).expectedSalaryMax;
-      if (min && max) return `${min} - ${max}`;
-      if (min) return `From ${min}`;
-      if (max) return `Up to ${max}`;
-      return '';
-    },
-  },
-  {
     id: 'skills',
     label: 'Skills',
     group: 'Profile',
@@ -194,13 +123,6 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     getValue: (app) => app.coverNote || '',
   },
   {
-    id: 'resumeLink',
-    label: 'Resume link',
-    group: 'Application',
-    defaultSelected: true,
-    getValue: (app) => getApplicationResumeShareUrl(app),
-  },
-  {
     id: 'status',
     label: 'Application status',
     group: 'Application',
@@ -213,48 +135,6 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     group: 'Application',
     defaultSelected: true,
     getValue: (app) => formatAppliedAt(app.submittedAt),
-  },
-  {
-    id: 'recruiterNotes',
-    label: 'Recruiter notes',
-    group: 'Consultancy',
-    defaultSelected: true,
-    getValue: (app) => app.recruiterNotes || '',
-  },
-  {
-    id: 'interviewScheduledAt',
-    label: 'Interview scheduled at',
-    group: 'Interview',
-    defaultSelected: true,
-    getValue: (app) => formatAppliedAt(app.interviewScheduledAt),
-  },
-  {
-    id: 'interviewMode',
-    label: 'Interview mode',
-    group: 'Interview',
-    defaultSelected: true,
-    getValue: (app) =>
-      app.interviewMode === 'virtual' || app.interviewMode === 'online'
-        ? 'Virtual'
-        : app.interviewMode === 'telephonic' || app.interviewMode === 'phone'
-          ? 'Telephonic'
-          : app.interviewScheduledAt
-            ? 'In-Person'
-            : '',
-  },
-  {
-    id: 'interviewLocation',
-    label: 'Interview venue / link',
-    group: 'Interview',
-    defaultSelected: true,
-    getValue: (app) => app.interviewLocation || '',
-  },
-  {
-    id: 'interviewInstructions',
-    label: 'Interview instructions',
-    group: 'Interview',
-    defaultSelected: false,
-    getValue: (app) => app.interviewInstructions || '',
   },
 ]);
 
@@ -298,54 +178,18 @@ const applyTextColumnFormats = (XLSX, worksheet, columns, rowCount) => {
   }
 };
 
-/** Turn resume URLs into real Excel hyperlinks that open in the browser on click. */
-const applyResumeHyperlinks = (XLSX, worksheet, columns, rowCount) => {
-  const resumeColumnIndexes = columns
-    .map((column, index) => (column.id === 'resumeLink' ? index : -1))
-    .filter((index) => index >= 0);
-
-  if (resumeColumnIndexes.length === 0 || rowCount < 1) {
-    return;
-  }
-
-  for (let rowIndex = 1; rowIndex <= rowCount; rowIndex += 1) {
-    for (const columnIndex of resumeColumnIndexes) {
-      const cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
-      const cell = worksheet[cellRef];
-      const url = String(cell?.v || '').trim();
-      if (!cell || !/^https?:\/\//i.test(url)) {
-        continue;
-      }
-
-      // Friendly clickable link that opens the system browser from Excel.
-      const label = 'Open resume';
-      const safeUrl = url.replace(/"/g, '');
-      cell.t = 's';
-      cell.v = label;
-      cell.f = `HYPERLINK("${safeUrl}","${label}")`;
-      cell.l = { Target: safeUrl, Tooltip: 'Open resume in browser' };
-    }
-  }
-};
-
 /** Build a real .xlsx workbook that Excel, Google Sheets, and LibreOffice can open. */
 export const buildApplicationWorkbook = (applications, columnIds, XLSX) => {
   const { headers, rows, columns } = buildApplicationExportRows(applications, columnIds);
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   applyTextColumnFormats(XLSX, worksheet, columns, rows.length);
-  applyResumeHyperlinks(XLSX, worksheet, columns, rows.length);
 
-  worksheet['!cols'] = columns.map((column, columnIndex) => {
-    if (column.id === 'resumeLink') {
-      return { wch: 16 };
-    }
-    return {
-      wch: Math.min(
-        48,
-        Math.max(column.label.length, ...rows.map((row) => String(row[columnIndex] || '').length)),
-      ),
-    };
-  });
+  worksheet['!cols'] = columns.map((column, columnIndex) => ({
+    wch: Math.min(
+      48,
+      Math.max(column.label.length, ...rows.map((row) => String(row[columnIndex] || '').length)),
+    ),
+  }));
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Applicants');

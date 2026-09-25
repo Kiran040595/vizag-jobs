@@ -95,7 +95,6 @@ export async function generateDailyBlogArticle(accessToken, options = {}) {
       isAbort
         ? 'Daily blog generation timed out after 3 minutes. Check Edge Function logs and Gemini quota, then retry.'
         : `Could not reach generate-daily-blog: ${message}`,
-      { cause: error },
     );
   }
 

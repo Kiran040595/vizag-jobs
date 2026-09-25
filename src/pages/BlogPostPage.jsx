@@ -108,7 +108,6 @@ export default function BlogPostPage() {
         canonical={canonical}
         ogUrl={canonical}
         structuredData={blogPostingSchema}
-        noindex={!post && !isLoading}
       />
       <Navbar />
 

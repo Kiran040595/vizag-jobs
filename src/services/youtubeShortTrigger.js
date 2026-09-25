@@ -80,7 +80,6 @@ export async function triggerYouTubeShortUpload(accessToken, options = {}) {
       isAbort
         ? 'YouTube Short trigger timed out. Check Supabase Edge Function logs and retry.'
         : `Could not reach trigger-youtube-short: ${message}`,
-      { cause: error },
     );
   }
 

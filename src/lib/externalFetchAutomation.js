@@ -102,130 +102,78 @@ function mergeSeoJob(job, data) {
 }
 
 async function collectNaukriJobs(accessToken, { collectMaxAttempts, onProgress, signal, report }) {
-  const allJobs = [];
-  const runIds = [];
+  const started = await startNaukriApifyFetch(accessToken);
+  if (signal?.aborted) {
+    throw new DOMException('Automation cancelled.', 'AbortError');
+  }
 
-  const waitAndCollectOne = async (runId, batchLabel) => {
-    const waitMs = NAUKRI_ASYNC_COLLECT_WAIT_MS;
+  const runId = started.apify_naukri_run_id;
+  if (!runId) {
+    throw new Error('Naukri Apify run id missing from start response.');
+  }
+
+  report.apifyRunId = runId;
+
+  const waitMs = Number(started.collect_after_ms) || NAUKRI_ASYNC_COLLECT_WAIT_MS;
+  onProgress?.({
+    phase: 'waiting',
+    message: `Apify scrape started. Waiting ${Math.round(waitMs / 1000)}s before collecting…`,
+    waitSec: Math.ceil(waitMs / 1000),
+    runId,
+    report,
+  });
+
+  const waitEnd = Date.now() + waitMs;
+  while (Date.now() < waitEnd) {
+    if (signal?.aborted) {
+      throw new DOMException('Automation cancelled.', 'AbortError');
+    }
+    const remainingSec = Math.max(0, Math.ceil((waitEnd - Date.now()) / 1000));
     onProgress?.({
       phase: 'waiting',
-      message: `Apify ${batchLabel} scrape started. Waiting ${Math.round(waitMs / 1000)}s (next batch starts only after this finishes)…`,
-      waitSec: Math.ceil(waitMs / 1000),
+      message: 'Waiting for Apify results…',
+      waitSec: remainingSec,
+      runId,
+      report,
+    });
+    await sleepMs(Math.min(1000, waitEnd - Date.now()));
+  }
+
+  for (let attempt = 1; attempt <= collectMaxAttempts; attempt += 1) {
+    if (signal?.aborted) {
+      throw new DOMException('Automation cancelled.', 'AbortError');
+    }
+
+    onProgress?.({
+      phase: 'collecting',
+      message: `Collecting Naukri jobs (attempt ${attempt}/${collectMaxAttempts})…`,
       runId,
       report,
     });
 
-    const waitEnd = Date.now() + waitMs;
-    while (Date.now() < waitEnd) {
-      if (signal?.aborted) {
-        throw new DOMException('Automation cancelled.', 'AbortError');
-      }
-      const remainingSec = Math.max(0, Math.ceil((waitEnd - Date.now()) / 1000));
-      onProgress?.({
-        phase: 'waiting',
-        message: `Waiting for Apify ${batchLabel} results…`,
-        waitSec: remainingSec,
-        runId,
-        report,
-      });
-      await sleepMs(Math.min(1000, waitEnd - Date.now()));
-    }
+    const data = await collectNaukriApifyFetch(accessToken, runId);
+    const pending = data.naukri_action === 'pending';
+    const emptyWithRetry = Array.isArray(data.jobs) && data.jobs.length === 0 && data.retry_after_sec;
 
-    for (let attempt = 1; attempt <= collectMaxAttempts; attempt += 1) {
-      if (signal?.aborted) {
-        throw new DOMException('Automation cancelled.', 'AbortError');
-      }
-
+    if (pending || emptyWithRetry) {
+      const retryMs = (Number(data.retry_after_sec) || 15) * 1000;
       onProgress?.({
         phase: 'collecting',
-        message: `Collecting Naukri ${batchLabel} jobs (attempt ${attempt}/${collectMaxAttempts})…`,
+        message: `Apify still running. Retrying in ${Math.round(retryMs / 1000)}s…`,
         runId,
         report,
       });
-
-      const data = await collectNaukriApifyFetch(accessToken, runId);
-      const pending = data.naukri_action === 'pending';
-      const emptyWithRetry = Array.isArray(data.jobs) && data.jobs.length === 0 && data.retry_after_sec;
-
-      if (pending || emptyWithRetry) {
-        const retryMs = (Number(data.retry_after_sec) || 15) * 1000;
-        onProgress?.({
-          phase: 'collecting',
-          message: `Apify ${batchLabel} still running. Retrying in ${Math.round(retryMs / 1000)}s…`,
-          runId,
-          report,
-        });
-        await sleepMs(retryMs);
-        continue;
-      }
-
-      return data;
+      await sleepMs(retryMs);
+      continue;
     }
 
-    throw new Error(`Naukri Apify ${batchLabel} run did not finish in time.`);
-  };
-
-  const first = await startNaukriApifyFetch(accessToken);
-  if (signal?.aborted) {
-    throw new DOMException('Automation cancelled.', 'AbortError');
-  }
-  if (!first.apify_naukri_run_id) {
-    throw new Error('Naukri Apify run id missing from start response.');
+    return {
+      jobs: Array.isArray(data.jobs) ? data.jobs : [],
+      payload: data,
+    };
   }
 
-  let lastPayload;
-  let batchLabel = first.naukri_batch || 'fresher';
-  let remaining = Array.isArray(first.naukri_remaining_batches) ? first.naukri_remaining_batches : [];
-  report.apifyRunId = first.apify_naukri_run_id;
-
-  const firstData = await waitAndCollectOne(first.apify_naukri_run_id, batchLabel);
-  allJobs.push(...(Array.isArray(firstData.jobs) ? firstData.jobs : []));
-  runIds.push(first.apify_naukri_run_id);
-  lastPayload = firstData;
-
-  for (const batch of remaining) {
-    if (signal?.aborted) {
-      throw new DOMException('Automation cancelled.', 'AbortError');
-    }
-    onProgress?.({
-      phase: 'fetching',
-      message: `${batchLabel} finished. Starting next Naukri batch: ${batch}…`,
-      runId: runIds.join(','),
-      report,
-    });
-    const started = await startNaukriApifyFetch(accessToken, { batch });
-    if (!started.apify_naukri_run_id) {
-      throw new Error(`Naukri Apify run id missing for batch ${batch}.`);
-    }
-    runIds.push(started.apify_naukri_run_id);
-    report.apifyRunId = runIds.join(',');
-    const data = await waitAndCollectOne(started.apify_naukri_run_id, batch);
-    allJobs.push(...(Array.isArray(data.jobs) ? data.jobs : []));
-    lastPayload = data;
-    batchLabel = batch;
-  }
-
-  const seen = new Set();
-  const jobs = [];
-  for (const job of allJobs) {
-    const key = String(job?.apply_link || job?.source_url || job?.slug || '')
-      .trim()
-      .toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    jobs.push(job);
-  }
-
-  return {
-    jobs,
-    payload: {
-      ...(lastPayload || {}),
-      jobs,
-      apify_naukri_run_id: runIds.join(','),
-      apify_naukri_run_ids: runIds,
-      message: `Loaded ${jobs.length} Vizag Naukri job(s) from ${runIds.length} sequential scrape(s).`,
-    },
-  };
+  throw new Error('Naukri Apify run did not finish in time.');
 }
 
 async function fetchChannelJobs(accessToken, channel, fetchOptions, callbacks) {

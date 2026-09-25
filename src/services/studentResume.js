@@ -1,75 +1,18 @@
 import { resolveResumeContentType, validateResumeFile } from '../lib/studentResumeFile';
-import { isR2ResumePath } from '../lib/resumeStoragePath';
 import { supabase } from '../lib/supabaseClient';
 
 const RESUME_BUCKET = 'student-resumes';
 
+const getExtension = (fileName) => {
+  const parts = String(fileName || '').split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+};
+
 export { resolveResumeContentType, validateResumeFile } from '../lib/studentResumeFile';
-export {
-  isR2ResumePath,
-  resumeOwnerUserId,
-  toR2ObjectKey,
-  toR2ResumePath,
-} from '../lib/resumeStoragePath';
-
-const getAccessToken = async () => {
-  if (!supabase) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const token = session?.access_token;
-  if (!token) {
-    throw new Error('You must be signed in.');
-  }
-
-  return token;
-};
-
-const postResumeApi = async (path, body) => {
-  const token = await getAccessToken();
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch {
-    // Non-JSON response, ignore
-  }
-
-  if (!response.ok) {
-    throw new Error(payload?.error || `Resume request failed (${response.status}).`);
-  }
-
-  return payload || {};
-};
-
-const createR2SignedUrl = async (resumePath, expiresIn = 3600) => {
-  const payload = await postResumeApi('/api/resume/signed-url', {
-    resumePath,
-    expiresIn,
-  });
-  return payload.signedUrl || '';
-};
 
 export const uploadStudentResume = async (file, userId) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
-  }
-
-  if (!userId) {
-    throw new Error('You must be signed in.');
   }
 
   const validationError = validateResumeFile(file);
@@ -77,66 +20,24 @@ export const uploadStudentResume = async (file, userId) => {
     throw new Error(validationError);
   }
 
+  const extension = getExtension(file.name);
+  const path = `${userId}/resume-${Date.now()}.${extension}`;
   const contentType = resolveResumeContentType(file.name, file.type);
 
-  // 1. Attempt Cloudflare R2 upload via API worker if available
-  try {
-    const payload = await postResumeApi('/api/resume/upload-url', {
-      fileName: file.name,
-      fileSize: file.size,
-      contentType,
-    });
+  const { error } = await supabase.storage.from(RESUME_BUCKET).upload(path, file, {
+    upsert: true,
+    contentType,
+  });
 
-    const uploadUrl = payload?.uploadUrl;
-    const resumePath = payload?.resumePath;
-    if (uploadUrl && resumePath) {
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': payload.contentType || contentType || 'application/octet-stream',
-        },
-        body: file,
-      });
-
-      if (uploadResponse.ok) {
-        return resumePath;
-      }
-    }
-  } catch (r2Error) {
-    console.warn(
-      'Cloudflare R2 resume upload unavailable, falling back to Supabase storage:',
-      r2Error instanceof Error ? r2Error.message : r2Error,
-    );
+  if (error) {
+    throw new Error(error.message);
   }
 
-  // 2. Fallback to Supabase Storage bucket 'student-resumes'
-  const fileExt = file.name.split('.').pop() || 'pdf';
-  const filePath = `${userId}/${Date.now()}.${fileExt}`;
-
-  const { data, error: uploadError } = await supabase.storage
-    .from(RESUME_BUCKET)
-    .upload(filePath, file, {
-      upsert: true,
-      contentType,
-    });
-
-  if (uploadError) {
-    throw new Error(`Resume upload failed: ${uploadError.message}`);
-  }
-
-  return data?.path || filePath;
+  return path;
 };
 
 export const createResumeSignedUrl = async (resumePath, expiresIn = 3600) => {
-  if (!resumePath) {
-    return '';
-  }
-
-  if (isR2ResumePath(resumePath)) {
-    return createR2SignedUrl(resumePath, expiresIn);
-  }
-
-  if (!supabase) {
+  if (!supabase || !resumePath) {
     return '';
   }
 

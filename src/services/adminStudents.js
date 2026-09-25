@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import {
+  formatStudentRegisteredAt,
   mapStudentProfileRow,
 } from '../lib/adminStudentProfile.js';
 

@@ -3,10 +3,12 @@ import { StudentAuthContext } from './studentAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getAuthRedirectUrl } from '../lib/site';
 import { mapStudentProfileRow } from '../lib/adminStudentProfile';
-import { validateStudentProfilePayload } from '../lib/studentProfileValidation';
 import { recordStudentRegistrationConsents } from '../services/studentConsent';
-import { upsertStudentProfile } from '../services/studentJobs';
-import { resolveStudentLoginEmail } from '../lib/studentPhoneAuth';
+import {
+  isValidStudentPhone,
+  normalizeStudentPhone,
+  resolveStudentLoginEmail,
+} from '../lib/studentPhoneAuth';
 import { deferAuthWork } from '../lib/deferAuthWork';
 
 const STUDENT_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -231,22 +233,23 @@ export function StudentAuthProvider({ children }) {
     return data;
   };
 
-  const signUp = async ({ email, phone, password, profile, consents, returnPath }) => {
+  const signUp = async ({ email, phone, password, fullName, college, consents, returnPath }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
 
+    const name = String(fullName || '').trim();
+    const collegeName = String(college || '').trim();
     const signupEmail = String(email || '').trim();
+    const normalizedPhone = normalizeStudentPhone(phone);
+
     if (!signupEmail) {
       throw new Error('Email is required.');
     }
 
-    const profileInput = {
-      ...(profile || {}),
-      contact_email: profile?.contact_email || signupEmail,
-      phone: profile?.phone || phone,
-    };
-    const validatedProfile = validateStudentProfilePayload(profileInput);
+    if (!isValidStudentPhone(normalizedPhone)) {
+      throw new Error('Enter a valid 10-digit Indian mobile number.');
+    }
 
     const postAuthPath =
       returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
@@ -259,9 +262,9 @@ export function StudentAuthProvider({ children }) {
       options: {
         data: {
           user_type: 'student',
-          full_name: validatedProfile.full_name,
-          college: validatedProfile.college,
-          phone: validatedProfile.phone,
+          full_name: name,
+          college: collegeName,
+          phone: normalizedPhone,
           auth_method: 'email',
           registration_consents: Boolean(consents),
         },
@@ -280,26 +283,19 @@ export function StudentAuthProvider({ children }) {
         email: signupEmail,
         password,
       });
-      if (signInError) {
+      if (!signInError && signInData.session) {
+        session = signInData.session;
+      } else if (signInError) {
         throw signInError;
       }
-      session = signInData.session;
     }
 
-    if (!data.user || !session) {
-      throw new Error('Account created but sign-in did not complete. Try signing in.');
+    if (data.user) {
+      if (session && consents) {
+        await recordStudentRegistrationConsents(consents, { userId: data.user.id });
+      }
+      await refreshStudentAccess(data.user.id);
     }
-
-    setSession(session);
-    if (consents) {
-      await recordStudentRegistrationConsents(consents, { userId: data.user.id });
-    }
-    await upsertStudentProfile({
-      ...profileInput,
-      contact_email: validatedProfile.contact_email || signupEmail,
-    });
-    await refreshStudentAccess(data.user.id);
-    setIsLoading(false);
 
     return { ...data, session };
   };
@@ -315,36 +311,6 @@ export function StudentAuthProvider({ children }) {
     clearStudentAccessCache();
   };
 
-  const requestPasswordReset = async (identifier) => {
-    if (!supabase) {
-      throw new Error('Supabase is not configured.');
-    }
-
-    const loginEmail = await resolveStudentLoginEmail(supabase, identifier);
-    const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: getAuthRedirectUrl('/student/reset-password'),
-    });
-    if (error) {
-      throw error;
-    }
-  };
-
-  const updatePassword = async (password) => {
-    if (!supabase) {
-      throw new Error('Supabase is not configured.');
-    }
-
-    const nextPassword = String(password || '');
-    if (nextPassword.length < 6) {
-      throw new Error('Password must be at least 6 characters.');
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: nextPassword });
-    if (error) {
-      throw error;
-    }
-  };
-
   return (
     <StudentAuthContext.Provider
       value={{
@@ -355,12 +321,10 @@ export function StudentAuthProvider({ children }) {
         profile,
         profileComplete,
         refreshStudentAccess,
-        requestPasswordReset,
         session,
         signIn,
         signOut,
         signUp,
-        updatePassword,
         user: session?.user ?? null,
       }}
     >

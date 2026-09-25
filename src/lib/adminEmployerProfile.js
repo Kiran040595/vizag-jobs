@@ -29,8 +29,6 @@ export const mapEmployerProfileRow = (row, jobStats = null) => {
     contactName: row.contact_name || '',
     contactEmail: row.contact_email || '',
     phone: row.phone || '',
-    industry: row.industry || '',
-    location: row.location || '',
     website: row.website || '',
     companyLogoUrl: row.company_logo_url || '',
     isActive: Boolean(row.is_active),
@@ -47,8 +45,6 @@ export const employerSearchBlob = (employer) =>
     employer.contactName,
     employer.contactEmail,
     employer.phone,
-    employer.industry,
-    employer.location,
     employer.website,
     employer.userId,
   ]

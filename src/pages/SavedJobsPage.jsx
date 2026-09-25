@@ -4,7 +4,6 @@ import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import FullJobDetailsLink from '../components/FullJobDetailsLink';
 import { removeSavedJob } from '../lib/savedJobs';
-import { pushToast } from '../lib/toast';
 import { useSavedJobsList } from '../lib/useSavedJob';
 import { cardCompanyName, cardLocation } from '../lib/jobCardDisplay';
 
@@ -23,7 +22,7 @@ export default function SavedJobsPage() {
   const savedJobs = useSavedJobsList();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 via-cyan-50/20 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-cyan-50/20 to-white">
       <SEO
         title="Saved Jobs | Vizag Jobs"
         description="View jobs you saved on Jobs in Vizag. Your saved list is stored in this browser."
@@ -31,7 +30,7 @@ export default function SavedJobsPage() {
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 pb-mobile-chrome sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">Saved Jobs</h1>
           <p className="mt-2 text-sm text-slate-600 sm:text-base">
@@ -79,10 +78,7 @@ export default function SavedJobsPage() {
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        removeSavedJob(job.id);
-                        pushToast({ message: 'Job removed from saved jobs.', type: 'success' });
-                      }}
+                      onClick={() => removeSavedJob(job.id)}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 sm:text-sm"
                     >
                       Remove

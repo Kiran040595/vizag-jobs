@@ -1,7 +1,6 @@
 import { clearJobsCache } from './jobs';
 import { supabase } from '../lib/supabaseClient';
 import { classifyJobRecord } from '../lib/jobCategoryTaxonomy.js';
-import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
 import {
   PUBLIC_JOB_DISPLAY,
   companyNameForSlug,
@@ -13,14 +12,8 @@ import {
   shouldUseSystemPostedAtOnPublish,
 } from '../lib/jobPostedAt';
 import { getJobPublishBlockReason } from '../lib/jobPublishQuality.js';
-import { notifyNewJobPublishedSafe } from '../lib/notifyNewJob';
 
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
-
-const rememberPublishedJob = (job) => {
-  void notifyNewJobPublishedSafe(job);
-  return job;
-};
 
 const MULTILINE_FIELDS = ['responsibilities', 'eligibility', 'skills'];
 const OPTIONAL_TEXT_FIELDS = [
@@ -49,7 +42,6 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'company',
   'location',
   'category',
-  'role',
   'job_type',
   'work_mode',
   'experience',
@@ -70,8 +62,6 @@ const SUPPORTED_JOB_COLUMNS = new Set([
   'company_logo_url',
   'status',
   'is_featured',
-  'is_instagram',
-  'group_link',
   'json_ld',
   'seo_meta',
 ]);
@@ -328,8 +318,6 @@ const invalidatePublicJobCache = () => {
   clearJobsCache();
   sessionStorage.removeItem('vizagJobs');
   sessionStorage.removeItem('vizagJobs_v2');
-  sessionStorage.removeItem('vizagJobs_ig_v1');
-  // Keep in sync with PUBLIC_JOBS_CACHE_KEY / INSTAGRAM_JOBS_CACHE_KEY
 };
 
 const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;
@@ -410,10 +398,6 @@ export const sanitizeExternalJobForInsert = (values) => {
     ...sanitized,
     company: classified.company,
     category: classified.category,
-    role:
-      cleanJobRoleLabel(sanitized.role, 56) ||
-      cleanJobRoleLabel(sanitized.title, 56) ||
-      normalizeText(sanitized.title),
     is_fresher: classified.is_fresher,
     experience: classified.experience,
   });
@@ -444,7 +428,6 @@ export const getEmptyJobForm = () => {
     company: '',
     location: REQUIRED_DEFAULTS.location,
     category: '',
-    role: '',
     job_type: '',
     work_mode: '',
     experience: REQUIRED_DEFAULTS.experience,
@@ -465,8 +448,6 @@ export const getEmptyJobForm = () => {
     company_logo_url: '',
     status: 'draft',
     is_featured: false,
-    is_instagram: false,
-    group_link: '',
   };
 };
 
@@ -477,10 +458,6 @@ export const serializeJobForm = (values, statusOverride) => {
     company: normalizeText(values.company),
     location: normalizeText(values.location) || REQUIRED_DEFAULTS.location,
     category: normalizeText(values.category),
-    role:
-      cleanJobRoleLabel(values.role, 56) ||
-      cleanJobRoleLabel(values.title, 56) ||
-      normalizeText(values.title),
     job_type: normalizeText(values.job_type),
     work_mode: normalizeOptionalText(values.work_mode),
     experience: normalizeText(values.experience) || REQUIRED_DEFAULTS.experience,
@@ -489,8 +466,6 @@ export const serializeJobForm = (values, statusOverride) => {
     expires_at: toIsoString(values.expires_at),
     status: statusOverride || values.status || 'draft',
     is_featured: toBoolean(values.is_featured),
-    is_instagram: toBoolean(values.is_instagram),
-    group_link: normalizeOptionalText(values.group_link),
     apply_mode: values.apply_mode === 'internal' ? 'internal' : 'external',
   };
 
@@ -532,8 +507,6 @@ export const deserializeJobForForm = (job) => {
     skills: Array.isArray(job.skills) ? job.skills.join('\n') : '',
     is_fresher: Boolean(job.is_fresher),
     is_featured: Boolean(job.is_featured),
-    is_instagram: Boolean(job.is_instagram),
-    group_link: job.group_link || '',
   };
 };
 
@@ -650,97 +623,6 @@ export const fetchEmployerSubmittedJobs = () => fetchAdminJobs({ scope: 'employe
 /** Route back to the correct admin jobs list for a job row. */
 export const getAdminJobsListPath = (job) => (job?.created_by ? '/admin/jobs' : '/admin/admin-jobs');
 
-/**
- * Assign one or more jobs to an employer account (sets jobs.created_by).
- * Syncs jobs.company to the employer company name when available.
- * @param {{ jobIds: string[], employerUserId: string }} params
- */
-export const assignJobsToEmployer = async ({ jobIds, employerUserId }) => {
-  if (!supabase) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const ids = Array.isArray(jobIds) ? [...new Set(jobIds.filter(Boolean))] : [];
-  const ownerId = String(employerUserId || '').trim();
-
-  if (ids.length === 0) {
-    throw new Error('Select at least one job to assign.');
-  }
-  if (!ownerId) {
-    throw new Error('Select an employer to assign jobs to.');
-  }
-
-  const { data: employer, error: employerError } = await supabase
-    .from('employer_profiles')
-    .select('user_id, company_name, is_active')
-    .eq('user_id', ownerId)
-    .maybeSingle();
-
-  if (employerError) {
-    throw mapError(employerError, 'Could not load the selected employer.');
-  }
-  if (!employer?.user_id) {
-    throw new Error('Employer not found.');
-  }
-  if (employer.is_active === false) {
-    throw new Error('That employer account is deactivated. Activate it before assigning jobs.');
-  }
-
-  const companyName = String(employer.company_name || '').trim();
-  const updates = {
-    created_by: ownerId,
-    updated_at: new Date().toISOString(),
-  };
-  if (companyName) {
-    updates.company = companyName;
-  }
-
-  const { data, error } = await supabase
-    .from(JOBS_TABLE)
-    .update(updates)
-    .in('id', ids)
-    .select('*');
-
-  if (error) {
-    throw mapError(error, 'Could not assign jobs to the employer.');
-  }
-
-  invalidatePublicJobCache();
-  return data || [];
-};
-
-/**
- * Move jobs back to admin ownership (clears jobs.created_by).
- * Employer can no longer see or manage these jobs.
- * @param {{ jobIds: string[] }} params
- */
-export const moveJobsToAdmin = async ({ jobIds }) => {
-  if (!supabase) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const ids = Array.isArray(jobIds) ? [...new Set(jobIds.filter(Boolean))] : [];
-  if (ids.length === 0) {
-    throw new Error('Select at least one job to move to admin.');
-  }
-
-  const { data, error } = await supabase
-    .from(JOBS_TABLE)
-    .update({
-      created_by: null,
-      updated_at: new Date().toISOString(),
-    })
-    .in('id', ids)
-    .select('*');
-
-  if (error) {
-    throw mapError(error, 'Could not move jobs to admin.');
-  }
-
-  invalidatePublicJobCache();
-  return data || [];
-};
-
 export const fetchAdminJobById = async (jobId) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
@@ -789,9 +671,6 @@ export const createAdminJob = async (values, statusOverride) => {
   if (!payload.category || !payload.job_type) {
     throw new Error('Missing category or job type. Edit the job before publishing.');
   }
-  if (!payload.role) {
-    throw new Error('Missing role. Edit the job before publishing.');
-  }
 
   const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();
 
@@ -809,7 +688,7 @@ export const createAdminJob = async (values, statusOverride) => {
   }
 
   invalidatePublicJobCache();
-  return rememberPublishedJob(data);
+  return data;
 };
 
 export const createAdminJobFromSql = async (sqlQuery) => {
@@ -829,7 +708,7 @@ export const createAdminJobFromSql = async (sqlQuery) => {
   }
 
   invalidatePublicJobCache();
-  return rememberPublishedJob(data);
+  return data;
 };
 
 export const updateAdminJob = async (jobId, values, statusOverride) => {
@@ -855,7 +734,7 @@ export const updateAdminJob = async (jobId, values, statusOverride) => {
   }
 
   invalidatePublicJobCache();
-  return rememberPublishedJob(data);
+  return data;
 };
 
 export const updateAdminJobStatus = async (jobId, status) => {
@@ -897,7 +776,7 @@ export const updateAdminJobStatus = async (jobId, status) => {
   }
 
   invalidatePublicJobCache();
-  return rememberPublishedJob(data);
+  return data;
 };
 
 export const approveAdminJob = async (jobId) => {
@@ -948,7 +827,7 @@ export const approveAdminJob = async (jobId) => {
   }
 
   invalidatePublicJobCache();
-  return rememberPublishedJob(data);
+  return data;
 };
 
 export const rejectAdminJob = async (jobId, rejectionReason = '') => {
@@ -999,48 +878,6 @@ export const toggleAdminJobFeatured = async (jobId, isFeatured) => {
 
   if (error) {
     throw mapError(error, 'Could not update featured status.');
-  }
-
-  invalidatePublicJobCache();
-  return data;
-};
-
-export const toggleAdminJobInstagram = async (jobId, isInstagram) => {
-  if (!supabase) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const { data, error } = await supabase
-    .from(JOBS_TABLE)
-    .update({ is_instagram: isInstagram })
-    .eq('id', jobId)
-    .select('*')
-    .single();
-
-  if (error) {
-    throw mapError(error, 'Could not update Instagram listing.');
-  }
-
-  invalidatePublicJobCache();
-  return data;
-};
-
-export const updateAdminJobGroupLink = async (jobId, groupLink) => {
-  if (!supabase) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const trimmed = String(groupLink || '').trim();
-
-  const { data, error } = await supabase
-    .from(JOBS_TABLE)
-    .update({ group_link: trimmed || null })
-    .eq('id', jobId)
-    .select('*')
-    .single();
-
-  if (error) {
-    throw mapError(error, 'Could not update group link.');
   }
 
   invalidatePublicJobCache();

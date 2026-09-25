@@ -12,18 +12,9 @@ import BlogTeaserSection from '../components/BlogTeaserSection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import JobsForYou from '../components/JobsForYou';
-import JobSourceTabs from '../components/JobSourceTabs';
-import CommunityQaSection from '../components/CommunityQaSection';
-import { useAdminAuth } from '../hooks/useAdminAuth';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
-import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
-import {
-  readCachedPublicJobs,
-  writeCachedPublicJobs,
-} from '../lib/publicJobsSessionCache';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
 import { computeSiteStats } from '../lib/siteStats';
-import { countDirectJobs } from '../lib/jobDirectPosting';
 import {
   CATEGORY_OPTIONS,
   DEFAULT_FILTERS,
@@ -35,6 +26,7 @@ import {
 } from '../lib/jobFilters';
 
 const SEARCH_DEBOUNCE_MS = 300;
+const CACHE_KEY = 'vizagJobs_v2';
 const CACHE_TTL_MS = JOB_LIST_SESSION_CACHE_TTL_MS;
 // Trigger a background refresh once we're within the last minute of the TTL.
 const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_MS * 0.8));
@@ -43,37 +35,12 @@ const CACHE_STALE_AT_MS = Math.max(CACHE_TTL_MS - 60_000, Math.floor(CACHE_TTL_M
 const CATEGORY_LABEL_TO_ID = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.label, o.id]));
 const CATEGORY_ID_TO_LABEL = Object.fromEntries(CATEGORY_OPTIONS.map((o) => [o.id, o.label]));
 
-const initialJobsState = (() => {
-  try {
-    const bootstrap = readHomeBootstrapJobs();
-    if (bootstrap?.length) {
-      return { jobs: bootstrap, fromCache: false, cacheAge: 0 };
-    }
-  } catch {
-    // ignore bootstrap parse errors
-  }
-
-  const cached = readCachedPublicJobs();
-  if (cached?.jobs?.length) {
-    return { jobs: cached.jobs, fromCache: true, cacheAge: cached.age };
-  }
-
-  return { jobs: [], fromCache: false, cacheAge: 0 };
-})();
-
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isAdmin } = useAdminAuth();
-  const filters = useMemo(() => {
-    const parsed = readFiltersFromSearchParams(searchParams);
-    if (!isAdmin && parsed.source !== 'all') {
-      return { ...parsed, source: 'all' };
-    }
-    return parsed;
-  }, [searchParams, isAdmin]);
+  const filters = useMemo(() => readFiltersFromSearchParams(searchParams), [searchParams]);
 
-  const [allJobs, setAllJobs] = useState(() => initialJobsState.jobs);
-  const [isLoading, setIsLoading] = useState(() => initialJobsState.jobs.length === 0);
+  const [allJobs, setAllJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
 
@@ -105,24 +72,13 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  useEffect(() => {
-    if (isAdmin) {
-      return;
-    }
-    const parsed = readFiltersFromSearchParams(searchParams);
-    if (parsed.source === 'all') {
-      return;
-    }
-    setSearchParams(writeFiltersToSearchParams({ ...parsed, source: 'all' }), { replace: true });
-  }, [isAdmin, searchParams, setSearchParams]);
-
   const refreshJobsInBackground = useCallback(async () => {
     setIsBackgroundRefreshing(true);
     try {
       const jobs = await fetchJobs({}, true);
       if (jobs.length > 0) {
         setAllJobs(jobs);
-        writeCachedPublicJobs(jobs);
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
       }
     } catch (error) {
       console.warn('Background refresh failed:', error);
@@ -140,7 +96,7 @@ export default function HomePage() {
         if (!isMounted) return;
         if (jobs.length > 0) {
           setAllJobs(jobs);
-          writeCachedPublicJobs(jobs);
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ jobs, timestamp: Date.now() }));
           setLoadError('');
           return;
         }
@@ -157,38 +113,24 @@ export default function HomePage() {
     };
 
     const loadJobs = async () => {
-      const cached = readCachedPublicJobs();
-      if (cached?.jobs?.length) {
-        setAllJobs(cached.jobs);
-        setIsLoading(false);
-        if (cached.age > CACHE_STALE_AT_MS) {
-          void refreshJobsInBackground();
-        }
-        return;
-      }
-
-      // Edge middleware left a first-paint snapshot — show it, then load the full list.
-      if (initialJobsState.jobs.length > 0 && !initialJobsState.fromCache) {
-        setAllJobs(initialJobsState.jobs);
-        setIsLoading(false);
-        setIsBackgroundRefreshing(true);
+      const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+      if (cachedRaw) {
         try {
-          const jobs = await fetchJobs({}, true);
-          if (!isMounted) return;
-          if (jobs.length > 0) {
-            setAllJobs(jobs);
-            writeCachedPublicJobs(jobs);
-            setLoadError('');
+          const { jobs, timestamp } = JSON.parse(cachedRaw);
+          const age = Date.now() - Number(timestamp);
+          if (Array.isArray(jobs) && jobs.length > 0 && age < CACHE_TTL_MS) {
+            const visible = filterProcessedJobsForPublicDisplay(jobs);
+            if (visible.length > 0) {
+              setAllJobs(visible);
+              setIsLoading(false);
+              if (age > CACHE_STALE_AT_MS) refreshJobsInBackground();
+              return;
+            }
           }
-        } catch (error) {
-          if (!isMounted) return;
-          console.warn('Full job refresh after SSR bootstrap failed:', error);
-        } finally {
-          if (isMounted) setIsBackgroundRefreshing(false);
+        } catch (err) {
+          console.error('Error parsing cached jobs:', err);
         }
-        return;
       }
-
       await fetchFreshJobs();
     };
 
@@ -200,7 +142,6 @@ export default function HomePage() {
 
   // ---------- Filter / pagination derivations ----------
   const filteredJobs = useMemo(() => applyJobFilters(allJobs, filters), [allJobs, filters]);
-  const directJobsCount = useMemo(() => countDirectJobs(allJobs), [allJobs]);
   const siteStats = useMemo(() => computeSiteStats(allJobs), [allJobs]);
   const pagination = useMemo(
     () => paginate(filteredJobs, filters.page, PAGE_SIZE),
@@ -277,7 +218,7 @@ export default function HomePage() {
       alternateName: 'Vizag Jobs',
       url: 'https://jobsinvizag.in',
       description:
-        'Find latest jobs in Vizag including IT, fresher, and private jobs in Visakhapatnam. Employers post openings; candidates apply on-site and track status.',
+        'Find latest jobs in Vizag including IT jobs, fresher jobs, part-time jobs and private jobs in Visakhapatnam.',
       potentialAction: {
         '@type': 'SearchAction',
         target: 'https://jobsinvizag.in/?q={search_term_string}',
@@ -305,8 +246,8 @@ export default function HomePage() {
         onCategoryChange={handleCategoryChange}
       />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-5 pb-mobile-chrome sm:gap-6 sm:px-6 sm:py-10 lg:px-8">
-        {isLoading && allJobs.length === 0 ? <LoadingSpinner /> : null}
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {isLoading ? <LoadingSpinner /> : null}
 
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">
@@ -314,25 +255,17 @@ export default function HomePage() {
           </p>
         ) : null}
 
-        {!isLoading || allJobs.length > 0 ? (
+        {!isLoading ? (
           <>
-            <JobsForYou jobs={allJobs} />
             <JobCategoryBrowse />
             <BlogTeaserSection />
-            <JobSourceTabs
-              activeTab={filters.tab}
-              onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
-              totalCount={allJobs.length}
-              directCount={directJobsCount}
-            />
             <JobFilters
-              filters={filters}
-              onUpdate={updateFilters}
-              onClearAll={clearAllFilters}
-              resultCount={filteredJobs.length}
-              isRefreshing={isBackgroundRefreshing}
-              isAdmin={isAdmin}
-            />
+            filters={filters}
+            onUpdate={updateFilters}
+            onClearAll={clearAllFilters}
+            resultCount={filteredJobs.length}
+            isRefreshing={isBackgroundRefreshing}
+          />
           </>
         ) : null}
 
@@ -341,20 +274,15 @@ export default function HomePage() {
           total={filteredJobs.length}
           onResetFilters={clearAllFilters}
           headerRef={listSectionRef}
-          isLoading={isLoading && allJobs.length === 0}
         />
 
-        {!isLoading || allJobs.length > 0 ? (
-          <Pagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
-          />
-        ) : null}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
 
-        <CommunityQaSection />
-
-        <StatsSection stats={siteStats} isLoading={isLoading && allJobs.length === 0} />
+        <StatsSection stats={siteStats} isLoading={isLoading} />
         <CTASection />
       </main>
 

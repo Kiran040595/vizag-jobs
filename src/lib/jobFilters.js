@@ -4,8 +4,7 @@
  *
  * Conventions:
  * - The URL is the source of truth for filters and page number; `q`,
- *   `category`, `jobType`, `freshness`, `source`, `page` are recognized params.
- *   The `source` param is admin-only in the UI but parsed here for shared helpers.
+ *   `category`, `jobType`, `freshness`, `page` are the only recognized params.
  * - "All" / default values are NEVER serialized to the URL — a clean URL
  *   means a clean filter state, and back/forward navigation stays predictable.
  * - All filtering is client-side over the in-memory cache so refresh,
@@ -21,17 +20,10 @@ import {
   jobMatchesCategoryFilter,
   normalizeJobCategory,
 } from './jobCategoryTaxonomy.js';
-import { ADMIN_SOURCE_OPTIONS, matchesAdminSourceFilter } from './jobSourceFilter.js';
-import { isDirectPosting } from './jobDirectPosting.js';
 
 export const PAGE_SIZE = 12;
 
 export const CATEGORY_OPTIONS = FILTER_CATEGORY_OPTIONS;
-
-export const TAB_OPTIONS = [
-  { id: 'all', label: 'All Jobs' },
-  { id: 'direct', label: 'Direct Company Jobs' },
-];
 
 export const JOB_TYPE_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -48,50 +40,27 @@ export const FRESHNESS_OPTIONS = [
   { id: '30d', label: 'Last 30 days', hours: 24 * 30 },
 ];
 
-export const SOURCE_OPTIONS = ADMIN_SOURCE_OPTIONS;
-
 export const DEFAULT_FILTERS = Object.freeze({
-  tab: 'all',
   q: '',
-  company: '',
   category: 'all',
   jobType: 'all',
   freshness: 'all',
-  source: 'all',
   page: 1,
 });
 
 const isOptionId = (id, options) => options.some((opt) => opt.id === id);
 
-export const cleanSearchBrand = (term = '') => {
-  return String(term)
-    .replace(/\b(pvt\.?\s*ltd\.?|private\s+limited|limited|ltd\.?|llp|inc\.?|corp\.?|corporation)\b/gi, '')
-    .replace(/[,.\-–—]+$/, '')
-    .trim();
-};
-
 export const readFiltersFromSearchParams = (searchParams) => {
-  const rawTab = (searchParams.get('tab') ?? 'all').toLowerCase();
   const rawCategory = (searchParams.get('category') ?? 'all').toLowerCase();
   const rawJobType = (searchParams.get('jobType') ?? 'all').toLowerCase();
   const rawFreshness = (searchParams.get('freshness') ?? 'all').toLowerCase();
-  const rawSource = (searchParams.get('source') ?? 'all').toLowerCase();
   const pageNum = Number(searchParams.get('page'));
-  const rawCompany = (searchParams.get('company') ?? '').trim();
-  const rawQuery =
-    rawCompany ||
-    searchParams.get('q') ||
-    searchParams.get('search') ||
-    '';
 
   return {
-    tab: rawTab === 'direct' ? 'direct' : 'all',
-    q: rawQuery,
-    company: rawCompany,
+    q: searchParams.get('q') ?? '',
     category: isOptionId(rawCategory, CATEGORY_OPTIONS) ? rawCategory : 'all',
     jobType: isOptionId(rawJobType, JOB_TYPE_OPTIONS) ? rawJobType : 'all',
     freshness: isOptionId(rawFreshness, FRESHNESS_OPTIONS) ? rawFreshness : 'all',
-    source: isOptionId(rawSource, SOURCE_OPTIONS) ? rawSource : 'all',
     page: Number.isFinite(pageNum) && pageNum > 0 ? Math.floor(pageNum) : 1,
   };
 };
@@ -100,25 +69,19 @@ export const readFiltersFromSearchParams = (searchParams) => {
 export const writeFiltersToSearchParams = (filters) => {
   const out = new URLSearchParams();
   const trimmed = (filters.q ?? '').trim();
-  if (filters.tab && filters.tab !== 'all') out.set('tab', filters.tab);
-  if (filters.company) out.set('company', filters.company);
-  else if (trimmed) out.set('q', trimmed);
+  if (trimmed) out.set('q', trimmed);
   if (filters.category && filters.category !== 'all') out.set('category', filters.category);
   if (filters.jobType && filters.jobType !== 'all') out.set('jobType', filters.jobType);
   if (filters.freshness && filters.freshness !== 'all') out.set('freshness', filters.freshness);
-  if (filters.source && filters.source !== 'all') out.set('source', filters.source);
   if (filters.page && filters.page > 1) out.set('page', String(filters.page));
   return out;
 };
 
 export const isAnyFilterActive = (filters) =>
   Boolean((filters.q ?? '').trim()) ||
-  Boolean(filters.company) ||
   filters.category !== 'all' ||
   filters.jobType !== 'all' ||
-  filters.freshness !== 'all' ||
-  filters.source !== 'all' ||
-  (filters.tab && filters.tab !== 'all');
+  filters.freshness !== 'all';
 
 const matchesSearchText = (job, q) => {
   if (!q) return true;
@@ -136,20 +99,9 @@ const matchesSearchText = (job, q) => {
     .join(' ')
     .toLowerCase();
 
-  const rawLower = q.toLowerCase();
-  if (blob.includes(rawLower)) return true;
-
-  const tokens = rawLower.split(/\s+/).filter(Boolean);
-  if (tokens.length > 0 && tokens.every((token) => blob.includes(token))) return true;
-
-  const cleaned = cleanSearchBrand(rawLower).toLowerCase();
-  if (cleaned && cleaned !== rawLower) {
-    if (blob.includes(cleaned)) return true;
-    const cleanTokens = cleaned.split(/\s+/).filter((w) => w.length > 2);
-    if (cleanTokens.length > 0 && cleanTokens.every((token) => blob.includes(token))) return true;
-  }
-
-  return false;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => blob.includes(token));
 };
 
 const normalizeJobType = (value) =>
@@ -215,17 +167,12 @@ export const sortJobsForListing = (jobs) =>
 export const applyJobFilters = (jobs, filters) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return [];
   const q = (filters.q ?? '').trim().toLowerCase();
-  const targetCompany = (filters.company ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-  const isDirectTab = filters.tab === 'direct';
   const filtered = jobs.filter(
     (job) =>
-      (!isDirectTab || isDirectPosting(job)) &&
-      (!targetCompany || (job.company || '').trim().toLowerCase().replace(/\s+/g, ' ') === targetCompany) &&
       matchesCategory(job, filters.category) &&
       matchesJobType(job, filters.jobType) &&
       matchesFreshness(job, filters.freshness) &&
-      matchesAdminSourceFilter(job, filters.source) &&
-      (targetCompany ? true : matchesSearchText(job, q)),
+      matchesSearchText(job, q),
   );
   return sortJobsForListing(filtered);
 };

@@ -1,12 +1,7 @@
-import {
-  unregisterLegacyServiceWorkers,
-  registerStaleAssetRecovery,
-  registerPwaAutoUpdate,
-} from './lib/pwaRecovery.js';
+import { unregisterLegacyServiceWorkers, registerStaleAssetRecovery } from './lib/pwaRecovery.js';
 
 unregisterLegacyServiceWorkers();
 registerStaleAssetRecovery();
-registerPwaAutoUpdate();
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -20,9 +15,6 @@ import { EmployerAuthProvider } from './context/EmployerAuthContext.jsx'
 import { StudentAuthProvider } from './context/StudentAuthContext.jsx'
 import { CookieConsentProvider } from './context/CookieConsentContext.jsx'
 import ConditionalAnalytics from './components/ConditionalAnalytics.jsx'
-import ConditionalAdSense from './components/ConditionalAdSense.jsx'
-import ToastViewport from './components/ToastViewport.jsx'
-import ExternalApplyPromptHost from './components/ExternalApplyPromptHost.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -34,10 +26,7 @@ createRoot(document.getElementById('root')).render(
               <CookieConsentProvider>
                 <HelmetProvider>
                   <App />
-                  <ToastViewport />
-                  <ExternalApplyPromptHost />
                   <ConditionalAnalytics />
-                  <ConditionalAdSense />
                 </HelmetProvider>
               </CookieConsentProvider>
             </StudentAuthProvider>

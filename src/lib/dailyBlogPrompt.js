@@ -187,6 +187,7 @@ export const buildDailyBlogGeminiPrompt = ({
 }) => {
   const digest = summarizeJobsForPrompt(jobs);
   const displayDate = formatDisplayDate(dateInput);
+  const istDate = formatIstDate(dateInput);
   const slug = buildDailyBlogSlug(dateInput, angle.id);
   const internalLinks = INTERNAL_LINKS.map((link) => `- [${link.label}](${link.path})`).join('\n');
 
