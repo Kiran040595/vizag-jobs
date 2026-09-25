@@ -41,6 +41,15 @@ function parseUserAgent(uaString) {
   return { deviceType, os, browser };
 }
 
+const safeQuery = async (queryBuilder, fallback = { data: [] }) => {
+  try {
+    const res = await queryBuilder;
+    return res?.error ? fallback : res;
+  } catch {
+    return fallback;
+  }
+};
+
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') {
@@ -102,34 +111,40 @@ export default async function handler(req, res) {
       replyNotificationsRes,
       vapidConfigRes,
     ] = await Promise.all([
-      admin
-        .from('web_push_subscriptions')
-        .select('id, user_id, user_agent, created_at, updated_at, endpoint')
-        .order('created_at', { ascending: false })
-        .catch(() => ({ data: [] })),
-      admin
-        .from('push_notification_dispatches')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
-        .catch(() => ({ data: [] })),
-      admin
-        .from('job_alerts')
-        .select('id, job_id, title, preview, created_at')
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .catch(() => ({ data: [] })),
-      admin
-        .from('reply_notifications')
-        .select('id, is_read, created_at')
-        .eq('kind', 'new_job')
-        .catch(() => ({ data: [] })),
-      admin
-        .from('web_push_config')
-        .select('public_key, subject')
-        .eq('id', 1)
-        .maybeSingle()
-        .catch(() => ({ data: null })),
+      safeQuery(
+        admin
+          .from('web_push_subscriptions')
+          .select('id, user_id, user_agent, created_at, updated_at, endpoint')
+          .order('created_at', { ascending: false }),
+      ),
+      safeQuery(
+        admin
+          .from('push_notification_dispatches')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100),
+      ),
+      safeQuery(
+        admin
+          .from('job_alerts')
+          .select('id, job_id, title, preview, created_at')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ),
+      safeQuery(
+        admin
+          .from('reply_notifications')
+          .select('id, is_read, created_at')
+          .eq('kind', 'new_job'),
+      ),
+      safeQuery(
+        admin
+          .from('web_push_config')
+          .select('public_key, subject')
+          .eq('id', 1)
+          .maybeSingle(),
+        { data: null },
+      ),
     ]);
 
     const subscriptions = subscriptionsRes.data || [];
