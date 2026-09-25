@@ -108,6 +108,8 @@ export const replyNotificationKindLabel = (kind) => {
       return 'Application status';
     case 'new_application':
       return 'New application';
+    case 'new_job':
+      return 'New job';
     case 'job_question':
       return 'Job question reply';
     case 'site_feedback':

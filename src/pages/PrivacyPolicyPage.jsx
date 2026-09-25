@@ -66,6 +66,7 @@ export default function PrivacyPolicyPage() {
           <li>Respond to inquiries submitted through our Contact page</li>
           <li>Manage employer accounts and job postings submitted by employers</li>
           <li>Process on-site job applications and show applicants their application status</li>
+          <li>Send optional browser or in-app job alerts when an employer or admin publishes a listing</li>
           <li>
             Share relevant candidate details with employers for roles students have applied to (or agreed to
             be considered for) during registration
@@ -73,6 +74,11 @@ export default function PrivacyPolicyPage() {
           <li>Analyze site usage to improve performance and content</li>
           <li>Display relevant advertising through Google AdSense (see Section 4)</li>
         </ul>
+        <p>
+          Browser notifications are optional. If you enable them, we store a push subscription for your
+          browser so we can alert you when a new employer or admin job is published. You can turn this off
+          in your browser notification settings.
+        </p>
         <p>We do not sell your personal information to third parties.</p>
       </section>
 
