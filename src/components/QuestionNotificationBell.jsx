@@ -125,15 +125,33 @@ export default function QuestionNotificationBell({ className = '' }) {
     moderatorUser?.id,
   ]);
 
+  const loadNotificationsRef = useRef(loadNotifications);
+  useEffect(() => {
+    loadNotificationsRef.current = loadNotifications;
+  }, [loadNotifications]);
+
   useEffect(() => {
     if (authLoading) return undefined;
     loadNotifications();
 
-    const intervalId = window.setInterval(loadNotifications, 60_000);
+    const intervalId = window.setInterval(() => {
+      loadNotificationsRef.current?.();
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [authLoading, loadNotifications]);
+
+  useEffect(() => {
+    if (authLoading || !inboxUserId || !supabase) return undefined;
+
+    const channelName = `reply-inbox-${inboxUserId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     let channel = null;
-    if (inboxUserId && supabase) {
+
+    try {
       channel = supabase
-        .channel(`reply-inbox-${inboxUserId}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -143,19 +161,28 @@ export default function QuestionNotificationBell({ className = '' }) {
             filter: `user_id=eq.${inboxUserId}`,
           },
           () => {
-            loadNotifications();
+            loadNotificationsRef.current?.();
           },
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn(`Realtime subscription status for ${channelName}:`, status);
+          }
+        });
+    } catch (error) {
+      console.warn('Realtime subscription failed for reply notifications:', error);
     }
 
     return () => {
-      window.clearInterval(intervalId);
       if (channel && supabase) {
-        void supabase.removeChannel(channel);
+        try {
+          void supabase.removeChannel(channel);
+        } catch {
+          // ignore cleanup errors
+        }
       }
     };
-  }, [authLoading, inboxUserId, loadNotifications]);
+  }, [authLoading, inboxUserId]);
 
   useEffect(() => {
     if (!isOpen) return undefined;

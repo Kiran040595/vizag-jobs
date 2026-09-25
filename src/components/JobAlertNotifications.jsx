@@ -97,26 +97,43 @@ export default function JobAlertNotifications() {
       return undefined;
     }
 
-    const channel = client
-      .channel('job-alerts-live')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'job_alerts' },
-        (payload) => {
-          const row = payload?.new;
-          if (!row) return;
-          showJobAlertBrowserNotification({
-            title: row.title,
-            body: row.preview,
-            linkPath: row.link_path,
-            tag: `job-alert-${row.job_id}`,
-          });
-        },
-      )
-      .subscribe();
+    const channelName = `job-alerts-live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    let channel = null;
+
+    try {
+      channel = client
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'job_alerts' },
+          (payload) => {
+            const row = payload?.new;
+            if (!row) return;
+            showJobAlertBrowserNotification({
+              title: row.title,
+              body: row.preview,
+              linkPath: row.link_path,
+              tag: `job-alert-${row.job_id}`,
+            });
+          },
+        )
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn(`Realtime subscription status for ${channelName}:`, status);
+          }
+        });
+    } catch (err) {
+      console.warn('Failed to subscribe to job alerts channel:', err);
+    }
 
     return () => {
-      void client.removeChannel(channel);
+      if (channel) {
+        try {
+          void client.removeChannel(channel);
+        } catch {
+          // ignore
+        }
+      }
     };
   }, [permission, userId]);
 
