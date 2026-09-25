@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useStudentAuth } from '../hooks/useStudentAuth';
 import { supabase, supabasePublic } from '../lib/supabaseClient';
 import {
@@ -55,9 +56,13 @@ async function syncPushSubscription(userId) {
   return saveWebPushSubscription(subscription, userId);
 }
 
+const HIDDEN_PREFIXES = ['/admin', '/employer', '/oauth'];
+
 export default function JobAlertNotifications() {
+  const location = useLocation();
   const { session } = useStudentAuth();
   const userId = session?.user?.id || null;
+  const isHidden = HIDDEN_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
   const [permission, setPermission] = useState(() =>
     isWebNotificationSupported() ? Notification.permission : 'unsupported',
   );
@@ -138,7 +143,7 @@ export default function JobAlertNotifications() {
     setShowPrompt(false);
   };
 
-  if (!showPrompt) {
+  if (isHidden || !showPrompt) {
     return null;
   }
 

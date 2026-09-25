@@ -1,7 +1,7 @@
-/* global self, clients */
+/* global clients */
 
 self.addEventListener('push', (event) => {
-  let payload = {};
+  let payload;
   try {
     payload = event.data ? event.data.json() : {};
   } catch {

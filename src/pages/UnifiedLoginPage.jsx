@@ -376,7 +376,7 @@ function AdminLoginPanel() {
   }
 
   if (session && isAdmin) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/admin/new" replace />;
   }
 
   if (session && !isAdmin) {
