@@ -26,6 +26,13 @@ const sample = [
       isFresher: true,
       skills: ['java', 'react'],
       certifications: ['AWS Cloud Practitioner'],
+      targetJobCategories: ['software_frontend', 'software_backend'],
+      primaryTargetRole: 'Frontend Developer',
+      roleExperienceLevel: 'fresher',
+      availability: 'immediate',
+      preferredLocations: ['Vizag', 'Remote'],
+      expectedSalaryMin: 15000,
+      expectedSalaryMax: 25000,
     },
   },
   {
@@ -43,6 +50,11 @@ const sample = [
       isFresher: false,
       skills: [],
       certifications: [],
+      targetJobCategories: ['mechanical_production'],
+      primaryTargetRole: 'Mechanical Technician',
+      roleExperienceLevel: '1_2_years',
+      availability: 'within_15_days',
+      preferredLocations: ['Gajuwaka'],
     },
   },
 ];
@@ -51,6 +63,8 @@ assert.ok(APPLICATION_EXPORT_COLUMNS.length >= 10);
 assert.ok(getDefaultExportColumnIds().includes('fullName'));
 assert.ok(getDefaultExportColumnIds().includes('contactEmail'));
 assert.ok(getDefaultExportColumnIds().includes('phone'));
+assert.ok(getDefaultExportColumnIds().includes('targetJobCategories'));
+assert.ok(getDefaultExportColumnIds().includes('primaryTargetRole'));
 
 const { headers, rows } = buildApplicationExportRows(sample, [
   'fullName',
@@ -58,12 +72,27 @@ const { headers, rows } = buildApplicationExportRows(sample, [
   'phone',
   'whatsapp',
   'degree',
+  'targetJobCategories',
+  'primaryTargetRole',
+  'roleExperienceLevel',
 ]);
-assert.deepEqual(headers, ['Name', 'Email', 'Phone number', 'WhatsApp number', 'Qualification / Degree']);
+assert.deepEqual(headers, [
+  'Name',
+  'Email',
+  'Phone number',
+  'WhatsApp number',
+  'Qualification / Degree',
+  'Target job categories',
+  'Primary target role',
+  'Role experience',
+]);
 assert.equal(rows[0][0], 'Priya Sharma');
 assert.equal(rows[0][1], 'priya@example.com');
 assert.equal(rows[0][3], '+919876543210');
 assert.equal(rows[0][4], 'B.Tech');
+assert.equal(rows[0][5], 'Software Frontend; Software Backend');
+assert.equal(rows[0][6], 'Frontend Developer');
+assert.equal(rows[0][7], 'Fresher');
 assert.equal(rows[1][3], '+919876501234');
 
 assert.throws(() => resolveExportColumns([]), /at least one column/i);

@@ -11,20 +11,17 @@ export const isDirectPublishedJob = (job) => {
   return Boolean(job.created_by) || (!sourceName && !sourceUrl);
 };
 
-export const buildWebPushMessage = (job, origin = SITE_ORIGIN, dispatchId = null) => {
+export const buildWebPushMessage = (job, origin = SITE_ORIGIN) => {
   const linkPath = job.slug ? `/job/${job.slug}` : '/jobs';
-  const querySuffix = dispatchId ? `?utm_source=web_push&notif_id=${dispatchId}` : '';
-  const absolute = `${origin}${linkPath}${querySuffix}`;
+  const absolute = `${origin}${linkPath}`;
   return {
     title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
     body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
     url: absolute,
     linkPath,
-    tag: dispatchId ? `job-alert-${dispatchId}` : `job-alert-${job.id}`,
+    tag: `job-alert-${job.id}`,
     icon: `${origin}/icon-192x192.png`,
     badge: `${origin}/icon-192x192.png`,
-    dispatchId: dispatchId || null,
-    jobId: job.id || null,
   };
 };
 
@@ -99,32 +96,7 @@ export async function sendPublishedJobWebPush(jobId) {
   const webpush = (await import('web-push')).default;
   webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
 
-  // Initialize dispatch record in database
-  let dispatchId = null;
-  const initialMessage = buildWebPushMessage(job, SITE_ORIGIN, null);
-  try {
-    const { data: dispatchRecord } = await admin
-      .from('push_notification_dispatches')
-      .insert({
-        job_id: job.id,
-        title: initialMessage.title,
-        body: initialMessage.body,
-        url: initialMessage.url,
-        tag: initialMessage.tag,
-        is_test: false,
-        sent_by: job.created_by || null,
-        target_subscribers: rows.length,
-        sent_count: 0,
-        failed_count: 0,
-      })
-      .select('id')
-      .maybeSingle();
-    dispatchId = dispatchRecord?.id || null;
-  } catch (logErr) {
-    console.warn('Dispatch tracking table not available:', logErr.message);
-  }
-
-  const messagePayload = JSON.stringify(buildWebPushMessage(job, SITE_ORIGIN, dispatchId));
+  const message = JSON.stringify(buildWebPushMessage(job));
   let sent = 0;
   const staleIds = [];
 
@@ -135,7 +107,7 @@ export async function sendPublishedJobWebPush(jobId) {
           endpoint: row.endpoint,
           keys: { p256dh: row.p256dh, auth: row.auth },
         },
-        messagePayload,
+        message,
         { TTL: 60 * 60 * 24, urgency: 'high' },
       );
       sent += 1;
@@ -153,142 +125,5 @@ export async function sendPublishedJobWebPush(jobId) {
     await admin.from('web_push_subscriptions').delete().in('id', staleIds);
   }
 
-  // Update dispatch stats
-  if (dispatchId) {
-    try {
-      await admin
-        .from('push_notification_dispatches')
-        .update({
-          sent_count: sent,
-          failed_count: staleIds.length + Math.max(0, rows.length - sent - staleIds.length),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', dispatchId);
-    } catch {
-      // ignore
-    }
-  }
-
-  return {
-    ok: true,
-    sent,
-    stale: staleIds.length,
-    total: rows.length,
-    dispatchId,
-  };
-}
-
-export async function sendCustomWebPush({ title, body, url, sentBy = null, isTest = false }) {
-  const admin = createServiceClient();
-  if (!admin) {
-    return { ok: false, status: 500, error: 'Supabase is not configured.' };
-  }
-
-  const vapid = await loadVapid(admin);
-  if (!vapid.publicKey || !vapid.privateKey) {
-    return { ok: false, status: 400, error: 'VAPID keys are not configured.' };
-  }
-
-  const { data: subscriptions, error: subError } = await admin
-    .from('web_push_subscriptions')
-    .select('id, endpoint, p256dh, auth, user_id');
-  if (subError) {
-    throw new Error(subError.message);
-  }
-
-  const rows = subscriptions || [];
-  if (rows.length === 0) {
-    return { ok: true, sent: 0, total: 0, message: 'No subscribed devices found.' };
-  }
-
-  const webpush = (await import('web-push')).default;
-  webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
-
-  let dispatchId = null;
-  const targetUrl = url || `${SITE_ORIGIN}/jobs`;
-
-  try {
-    const { data: dispatchRecord } = await admin
-      .from('push_notification_dispatches')
-      .insert({
-        title: title || 'Vizag Jobs Notification',
-        body: body || 'Check out the latest job openings in Visakhapatnam.',
-        url: targetUrl,
-        tag: `admin-push-${Date.now()}`,
-        is_test: isTest,
-        sent_by: sentBy,
-        target_subscribers: rows.length,
-        sent_count: 0,
-        failed_count: 0,
-      })
-      .select('id')
-      .maybeSingle();
-    dispatchId = dispatchRecord?.id || null;
-  } catch (logErr) {
-    console.warn('Dispatch tracking table not available:', logErr.message);
-  }
-
-  const linkWithTracking = dispatchId
-    ? `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}utm_source=web_push&notif_id=${dispatchId}`
-    : targetUrl;
-
-  const payload = JSON.stringify({
-    title: title || 'Vizag Jobs Notification',
-    body: body || 'Check out the latest job openings in Visakhapatnam.',
-    url: linkWithTracking,
-    linkPath: '/jobs',
-    tag: `admin-push-${dispatchId || Date.now()}`,
-    icon: `${SITE_ORIGIN}/icon-192x192.png`,
-    badge: `${SITE_ORIGIN}/icon-192x192.png`,
-    dispatchId,
-  });
-
-  let sent = 0;
-  const staleIds = [];
-
-  for (const row of rows) {
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: row.endpoint,
-          keys: { p256dh: row.p256dh, auth: row.auth },
-        },
-        payload,
-        { TTL: 60 * 60 * 24, urgency: 'high' },
-      );
-      sent += 1;
-    } catch (error) {
-      const statusCode = error?.statusCode;
-      if (statusCode === 404 || statusCode === 410) {
-        if (row.id) staleIds.push(row.id);
-      }
-    }
-  }
-
-  if (staleIds.length > 0) {
-    await admin.from('web_push_subscriptions').delete().in('id', staleIds);
-  }
-
-  if (dispatchId) {
-    try {
-      await admin
-        .from('push_notification_dispatches')
-        .update({
-          sent_count: sent,
-          failed_count: staleIds.length + Math.max(0, rows.length - sent - staleIds.length),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', dispatchId);
-    } catch {
-      // ignore
-    }
-  }
-
-  return {
-    ok: true,
-    sent,
-    stale: staleIds.length,
-    total: rows.length,
-    dispatchId,
-  };
+  return { ok: true, sent, stale: staleIds.length, total: rows.length };
 }

@@ -27,6 +27,12 @@ const ok = (cond, label) => {
 console.log('\nnormalizeJobCategory');
 ok(normalizeJobCategory('civil engineering') === 'Civil Engineering', 'civil alias');
 ok(normalizeJobCategory('IT & Software') === 'IT & Software', 'exact IT');
+ok(normalizeJobCategory('IT') === 'IT & Software', 'short IT label');
+ok(normalizeJobCategory('hr') === 'HR & Admin', 'HR id/alias');
+ok(normalizeJobCategory('Hospitality') === 'Hospitality & Retail', 'hospitality alias');
+ok(normalizeJobCategory('Waiter') === null, 'waiter is not IT via substring "it"');
+ok(normalizeJobCategory('credit') === null, 'credit is not IT via substring "it"');
+ok(normalizeJobCategory('necessary') === null, 'necessary is not ECE via substring "ece"');
 ok(normalizeJobCategory('random sector') === null, 'unknown returns null');
 
 console.log('\ninferJobCategoryFromSignals');
@@ -67,6 +73,37 @@ console.log('\nclassifyJobRecord');
 
 console.log('\njobMatchesCategoryFilter');
 ok(jobMatchesCategoryFilter({ title: 'Accountant', category: 'Banking & Finance' }, 'banking'), 'banking filter');
+ok(jobMatchesCategoryFilter({ title: 'Java Developer', category: 'IT & Software' }, 'it'), 'IT canonical category');
+ok(jobMatchesCategoryFilter({ title: 'React Developer', category: 'IT' }, 'it'), 'IT short category label');
+ok(
+  !jobMatchesCategoryFilter(
+    { title: 'Hotel Front Office Executive', category: 'Hospitality & Retail', shortDescription: 'Great opportunity' },
+    'it',
+  ),
+  'hospitality job is not IT',
+);
+ok(
+  !jobMatchesCategoryFilter(
+    { title: 'Staff Nurse', category: 'Healthcare', shortDescription: 'Hospital duty' },
+    'it',
+  ),
+  'nurse is not IT via "hospital" containing "it"',
+);
+ok(
+  !jobMatchesCategoryFilter({ title: 'HR Executive', category: 'HR & Admin', shortDescription: 'Recruitment' }, 'it'),
+  'HR job is not IT via "recruitment" containing "it"',
+);
+ok(
+  !jobMatchesCategoryFilter(
+    { title: 'Digital Marketing Executive', category: 'Sales & Marketing', skills: 'seo, ads' },
+    'it',
+  ),
+  'digital marketing is not IT',
+);
+ok(
+  jobMatchesCategoryFilter({ title: 'Python Developer', category: 'General', skills: 'django' }, 'it'),
+  'uncategorized developer still matches IT',
+);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

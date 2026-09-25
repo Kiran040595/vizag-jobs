@@ -6,14 +6,28 @@ import AdminShell from '../components/admin/AdminShell';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   approveAdminJob,
+  assignJobsToEmployer,
   fetchAdminCreatedJobs,
   fetchEmployerSubmittedJobs,
   isExternalFetchSourceName,
+  moveJobsToAdmin,
   rejectAdminJob,
   toggleAdminJobFeatured,
+  toggleAdminJobInstagram,
+  updateAdminJobGroupLink,
   updateAdminJobStatus,
 } from '../services/adminJobs';
+import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
+import {
+  formatApplicationCountNoun,
+  formatUniqueApplyClickNoun,
+  jobApplyClickCount,
+  resolveOnPlatformApplicationCount,
+} from '../lib/jobApplicationCount';
+import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
+import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
+import JobApplicantsModal from '../components/admin/JobApplicantsModal';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -78,32 +92,59 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [searchParams] = useSearchParams();
   useAdminAuth();
   const [jobs, setJobs] = useState([]);
+  const [employers, setEmployers] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
+  const [selectedJobIds, setSelectedJobIds] = useState(() => new Set());
+  const [assignEmployerId, setAssignEmployerId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
   const [busyJobId, setBusyJobId] = useState('');
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('q') || '');
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'all');
+  const [employerIdFilter, setEmployerIdFilter] = useState(() => searchParams.get('employerId') || '');
+  const [employerLabelById, setEmployerLabelById] = useState(() => new Map());
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [modalJob, setModalJob] = useState(null);
+
   useEffect(() => {
     let ignore = false;
 
     const loadJobs = async () => {
       try {
         const data = isAdminScope ? await fetchAdminCreatedJobs() : await fetchEmployerSubmittedJobs();
-        const internalPublishedIds = data
-          .filter((job) => job.status === 'published' && job.apply_mode === 'internal')
-          .map((job) => job.id);
-        const counts = await fetchJobApplicationCounts(internalPublishedIds);
         if (ignore) {
           return;
         }
 
         setJobs(sortJobs(data));
-        setApplicationCounts(counts);
         setLoadError('');
+        setIsLoading(false);
+
+        const jobIds = data.map((job) => job.id);
+
+        Promise.all([
+          fetchAdminEmployerProfiles(),
+          jobIds.length > 0 ? fetchJobApplicationCounts(jobIds) : Promise.resolve({}),
+        ])
+          .then(([employerRows, counts]) => {
+            if (ignore) {
+              return;
+            }
+
+            setEmployers(employerRows.filter((row) => row.isActive));
+            const labelMap = new Map();
+            for (const row of employerRows) {
+              labelMap.set(row.userId, row.companyName || row.contactEmail || row.userId);
+            }
+            setEmployerLabelById(labelMap);
+            setApplicationCounts(counts);
+          })
+          .catch((error) => {
+            console.warn('Could not load admin job secondary data:', error);
+          });
       } catch (error) {
         if (ignore) {
           return;
@@ -124,12 +165,26 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     };
   }, [isAdminScope]);
 
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearchTerm(searchParams.get('q') || '');
+      setStatusFilter(searchParams.get('status') || 'all');
+      setEmployerIdFilter(searchParams.get('employerId') || '');
+    }, 0);
+
+    return () => window.clearTimeout(handle);
+  }, [searchParams]);
+
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const filteredJobs = useMemo(() => {
     const normalizedTerm = deferredSearchTerm.trim().toLowerCase();
 
     return jobs.filter((job) => {
+      if (employerIdFilter && job.created_by !== employerIdFilter) {
+        return false;
+      }
+
       if (statusFilter === 'pending' && job.status !== 'pending') {
         return false;
       }
@@ -140,9 +195,136 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
       return normalizeSearchText(job).includes(normalizedTerm);
     });
-  }, [deferredSearchTerm, jobs, statusFilter]);
+  }, [deferredSearchTerm, employerIdFilter, jobs, statusFilter]);
 
-  const pendingCount = useMemo(() => jobs.filter((job) => job.status === 'pending').length, [jobs]);
+  const pendingCount = useMemo(() => {
+    const scoped = employerIdFilter
+      ? jobs.filter((job) => job.created_by === employerIdFilter)
+      : jobs;
+    return scoped.filter((job) => job.status === 'pending').length;
+  }, [employerIdFilter, jobs]);
+  const selectedCount = selectedJobIds.size;
+
+  const activeEmployerLabel = employerIdFilter
+    ? employerLabelById.get(employerIdFilter) || 'Selected employer'
+    : '';
+
+  const clearEmployerFilter = () => {
+    setEmployerIdFilter('');
+    const next = new URLSearchParams(searchParams);
+    next.delete('employerId');
+    const query = next.toString();
+    navigate(query ? `${jobsListPath}?${query}` : jobsListPath, { replace: true });
+  };
+
+  const toggleJobSelected = (jobId) => {
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectFiltered = () => {
+    const filteredIds = filteredJobs.map((job) => job.id);
+    const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedJobIds.has(id));
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      if (allSelected) {
+        for (const id of filteredIds) next.delete(id);
+      } else {
+        for (const id of filteredIds) next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleAssignSelected = async () => {
+    if (selectedCount === 0 || !assignEmployerId) {
+      setLoadError('Select jobs and an employer before assigning.');
+      return;
+    }
+
+    setIsAssigning(true);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJobs = await assignJobsToEmployer({
+        jobIds: [...selectedJobIds],
+        employerUserId: assignEmployerId,
+      });
+      const employerName =
+        employerLabelById.get(assignEmployerId) || 'the selected employer';
+
+      if (isAdminScope) {
+        // Assigned jobs leave the admin-created list (they now have created_by).
+        const assignedIds = new Set(updatedJobs.map((job) => job.id));
+        setJobs((current) => current.filter((job) => !assignedIds.has(job.id)));
+      } else {
+        setJobs((current) => {
+          let next = current;
+          for (const updated of updatedJobs) {
+            next = upsertJob(next, updated);
+          }
+          return next;
+        });
+      }
+
+      setSelectedJobIds(new Set());
+      setAssignEmployerId('');
+      setNotice(
+        `Assigned ${updatedJobs.length} job${updatedJobs.length === 1 ? '' : 's'} to ${employerName}.`,
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not assign jobs.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleMoveSelectedToAdmin = async () => {
+    if (selectedCount === 0) {
+      setLoadError('Select at least one job to move to admin.');
+      return;
+    }
+
+    setIsAssigning(true);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJobs = await moveJobsToAdmin({ jobIds: [...selectedJobIds] });
+      const movedIds = new Set(updatedJobs.map((job) => job.id));
+
+      if (!isAdminScope) {
+        // Unassigned jobs leave the employer submissions list.
+        setJobs((current) => current.filter((job) => !movedIds.has(job.id)));
+      } else {
+        setJobs((current) => {
+          let next = current;
+          for (const updated of updatedJobs) {
+            next = upsertJob(next, updated);
+          }
+          return next;
+        });
+      }
+
+      setSelectedJobIds(new Set());
+      setAssignEmployerId('');
+      setNotice(
+        `Moved ${updatedJobs.length} job${updatedJobs.length === 1 ? '' : 's'} back to admin ownership.`,
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not move jobs to admin.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const handleStatusChange = async (jobId, status) => {
     setBusyJobId(jobId);
@@ -214,13 +396,62 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     }
   };
 
+  const handleInstagramToggle = async (job) => {
+    setBusyJobId(job.id);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJob = await toggleAdminJobInstagram(job.id, !job.is_instagram);
+      setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+      setNotice(
+        updatedJob.is_instagram
+          ? `Job added to the Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH}).`
+          : 'Job removed from the Instagram bio page.',
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not update Instagram listing.');
+    } finally {
+      setBusyJobId('');
+    }
+  };
+
+  const handleGroupLink = async (job) => {
+    const current = String(job.group_link || '').trim();
+    const next = window.prompt(
+      'Recruitment group link (WhatsApp or Instagram). Leave empty to clear. Shown after on-platform apply only.',
+      current,
+    );
+    if (next === null) {
+      return;
+    }
+
+    setBusyJobId(job.id);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJob = await updateAdminJobGroupLink(job.id, next);
+      setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+      setNotice(
+        updatedJob.group_link
+          ? 'Group link saved. Applicants will see it after applying on-platform.'
+          : 'Group link cleared.',
+      );
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not update group link.');
+    } finally {
+      setBusyJobId('');
+    }
+  };
+
   return (
     <AdminShell
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
       description={
         isAdminScope
-          ? 'Manage jobs you posted manually from the admin form.'
-          : 'Review employer submissions, approve jobs for the public portal, or reject listings.'
+          ? 'Manage jobs you posted manually from the admin form. Assign them to employers, or take jobs back under admin ownership.'
+          : 'Review employer submissions, approve jobs, assign ownership, or move jobs back to admin.'
       }
     >
       <SEO
@@ -265,6 +496,74 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           </div>
         </div>
 
+        {employerIdFilter ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+            <p>
+              Showing jobs for{' '}
+              <span className="font-semibold">{activeEmployerLabel}</span>
+              {filteredJobs.length > 0 ? ` (${filteredJobs.length})` : ''}. Edit, publish, feature,
+              or manage applications as usual.
+            </p>
+            <button
+              type="button"
+              onClick={clearEmployerFilter}
+              className="rounded-xl border border-cyan-300 bg-white px-3 py-1.5 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100"
+            >
+              Clear employer filter
+            </button>
+          </div>
+        ) : null}
+
+        {!isLoading && filteredJobs.length > 0 ? (
+          <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <input
+                type="checkbox"
+                checked={
+                  filteredJobs.length > 0 && filteredJobs.every((job) => selectedJobIds.has(job.id))
+                }
+                onChange={toggleSelectFiltered}
+                className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400"
+              />
+              Select filtered ({selectedCount} selected)
+            </label>
+            <label className="block min-w-[14rem] flex-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Assign to employer
+              </span>
+              <select
+                value={assignEmployerId}
+                onChange={(event) => setAssignEmployerId(event.target.value)}
+                className="mt-1 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+              >
+                <option value="">Choose employer…</option>
+                {employers.map((employer) => (
+                  <option key={employer.userId} value={employer.userId}>
+                    {employer.companyName}
+                    {employer.contactEmail ? ` · ${employer.contactEmail}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={isAssigning || selectedCount === 0 || !assignEmployerId}
+              onClick={handleAssignSelected}
+              className="h-11 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isAssigning ? 'Working…' : `Assign to employer`}
+            </button>
+            <button
+              type="button"
+              disabled={isAssigning || selectedCount === 0}
+              onClick={handleMoveSelectedToAdmin}
+              className="h-11 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Move to admin
+            </button>
+          </div>
+        ) : null}
+
         {loadError ? (
           <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{loadError}</p>
         ) : null}
@@ -281,7 +580,9 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
             <h3 className="text-lg font-bold text-slate-900">No jobs match this filter.</h3>
             <p className="mt-2 text-sm text-slate-600">
-              {isAdminScope
+              {employerIdFilter
+                ? 'This employer has no jobs matching the current status/search filters.'
+                : isAdminScope
                 ? 'Create a new job from New Job to get started. External fetch jobs stay on Fetch external jobs.'
                 : 'Try a different search or status filter.'}
             </p>
@@ -291,71 +592,123 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             {filteredJobs.map((job) => {
               const isBusy = busyJobId === job.id;
               const isPending = job.status === 'pending';
+              const isSelected = selectedJobIds.has(job.id);
+              const ownerLabel = job.created_by ? employerLabelById.get(job.created_by) : '';
 
               return (
                 <article
                   key={job.id}
-                  className={`rounded-3xl border p-5 ${isPending ? 'border-blue-200 bg-blue-50/50' : 'border-slate-200 bg-slate-50/70'}`}
+                  className={`rounded-3xl border p-5 ${
+                    isSelected
+                      ? 'border-violet-300 bg-violet-50/40'
+                      : isPending
+                        ? 'border-blue-200 bg-blue-50/50'
+                        : 'border-slate-200 bg-slate-50/70'
+                  }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
-                        <span
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
-                            STATUS_STYLES[job.status] || STATUS_STYLES.draft
-                          }`}
-                        >
-                          {job.status}
-                        </span>
-                        {job.created_by ? (
-                          <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
-                            Employer submitted
+                    <div className="flex min-w-0 gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleJobSelected(job.id)}
+                        className="mt-1.5 h-4 w-4 shrink-0 rounded border-slate-300 text-violet-600 focus:ring-violet-400"
+                        aria-label={`Select ${job.title}`}
+                      />
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                              STATUS_STYLES[job.status] || STATUS_STYLES.draft
+                            }`}
+                          >
+                            {job.status}
                           </span>
-                        ) : isExternalFetchSourceName(job.source_name) ? (
-                          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
-                            External fetch
-                          </span>
-                        ) : (
-                          <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                            Admin created
-                          </span>
-                        )}
-                        {job.is_featured ? (
-                          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
-                            Featured
-                          </span>
+                          {job.created_by ? (
+                            <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+                              {ownerLabel ? `Owner: ${ownerLabel}` : 'Employer submitted'}
+                            </span>
+                          ) : isExternalFetchSourceName(job.source_name) ? (
+                            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700">
+                              External fetch
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                              Admin created
+                            </span>
+                          )}
+                          {job.is_featured ? (
+                            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
+                              Featured
+                            </span>
+                          ) : null}
+                          {job.is_instagram ? (
+                            <span className="rounded-full border border-pink-200 bg-pink-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-pink-800">
+                              Instagram
+                            </span>
+                          ) : null}
+                          {job.group_link ? (
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+                              Group link
+                            </span>
+                          ) : null}
+                          {job.apply_mode === 'internal' ? (
+                            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
+                              On-platform apply
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {job.company} / {job.location || 'Visakhapatnam'} / {job.category || 'No category'}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">Slug: {job.slug}</p>
+                        <p className="mt-1 text-xs text-slate-500">Posted: {formatDateTime(job.posted_at)}</p>
+                        {job.rejection_reason ? (
+                          <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                         ) : null}
-                        {job.apply_mode === 'internal' ? (
-                          <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
-                            On-platform apply
-                          </span>
+                        {job.apply_mode === 'internal' ||
+                        resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
+                          <p className="mt-2">
+                            <button
+                              type="button"
+                              onClick={() => setModalJob(job)}
+                              className="cursor-pointer text-sm font-semibold text-indigo-700 underline hover:text-indigo-900"
+                              title="Click to preview applicant details"
+                            >
+                              {formatApplicationCountNoun(
+                                resolveOnPlatformApplicationCount(job, applicationCounts),
+                              )}
+                            </button>
+                          </p>
+                        ) : null}
+                        {jobApplyClickCount(job) > 0 ? (
+                          <p className="mt-1 text-sm font-semibold text-cyan-800">
+                            {formatUniqueApplyClickNoun(jobApplyClickCount(job))}
+                          </p>
                         ) : null}
                       </div>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {job.company} / {job.location || 'Visakhapatnam'} / {job.category || 'No category'}
-                      </p>
-                      <p className="mt-2 text-xs text-slate-500">Slug: {job.slug}</p>
-                      <p className="mt-1 text-xs text-slate-500">Posted: {formatDateTime(job.posted_at)}</p>
-                      {job.rejection_reason ? (
-                        <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
-                      ) : null}
-                      {job.status === 'published' && job.apply_mode === 'internal' ? (
-                        <p className="mt-2 text-sm font-semibold text-indigo-700">
-                          {applicationCounts[job.id] || 0} application
-                          {(applicationCounts[job.id] || 0) === 1 ? '' : 's'}
-                        </p>
-                      ) : null}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {job.status === 'published' && job.apply_mode === 'internal' ? (
+                      {job.status === 'published' ? (
+                        <CopyInstagramCaptionButton
+                          job={job}
+                          disabled={isBusy}
+                          onInstagramMarked={() => {
+                            setJobs((currentJobs) =>
+                              upsertJob(currentJobs, { ...job, is_instagram: true }),
+                            );
+                          }}
+                        />
+                      ) : null}
+                      {job.apply_mode === 'internal' ? (
                         <button
                           type="button"
                           onClick={() => navigate(`/admin/jobs/${job.id}/applications`)}
                           className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
                         >
-                          Applications ({applicationCounts[job.id] || 0})
+                          Applications ({resolveOnPlatformApplicationCount(job, applicationCounts)})
                         </button>
                       ) : null}
                       <button
@@ -404,6 +757,32 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {job.is_featured ? 'Unfeature' : 'Feature'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleGroupLink(job)}
+                        className={`rounded-2xl px-3.5 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          job.group_link
+                            ? 'border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800'
+                        }`}
+                        title="WhatsApp/Instagram group shown after students apply on-platform"
+                      >
+                        {job.group_link ? 'Edit group link' : 'Add group link'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleInstagramToggle(job)}
+                        className={`rounded-2xl px-3.5 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          job.is_instagram
+                            ? 'border border-pink-300 bg-pink-50 text-pink-800 hover:bg-pink-100'
+                            : 'border border-slate-200 bg-white text-slate-700 hover:border-pink-200 hover:bg-pink-50 hover:text-pink-800'
+                        }`}
+                        title={`Show this job on the Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH})`}
+                      >
+                        {job.is_instagram ? 'Remove Insta' : 'Insta'}
                       </button>
                       {!isPending || isAdminScope ? (
                         <button
@@ -461,6 +840,16 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {modalJob ? (
+        <JobApplicantsModal
+          jobId={modalJob.id}
+          jobTitle={modalJob.title}
+          companyName={modalJob.company}
+          isOpen={Boolean(modalJob)}
+          onClose={() => setModalJob(null)}
+        />
       ) : null}
     </AdminShell>
   );

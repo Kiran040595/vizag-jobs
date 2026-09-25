@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
+import QuestionNotificationBell from '../QuestionNotificationBell';
 
 const navItems = [
   { label: 'My profile', to: '/student/profile' },
@@ -23,6 +24,7 @@ export default function StudentShell({ children, title, description }) {
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <QuestionNotificationBell />
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
               {user?.email}
             </div>

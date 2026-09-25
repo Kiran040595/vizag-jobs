@@ -13,6 +13,8 @@ export default function Footer() {
         title: 'Explore',
         links: [
           { label: 'All Jobs', to: '/jobs' },
+          { label: 'Companies in Vizag', to: '/companies' },
+          { label: 'Community Q&A', to: '/qa' },
           { label: 'Saved Jobs', to: '/saved-jobs' },
           { label: 'Blog', to: '/blog' },
           ...JOB_BROWSE_LINKS,
@@ -40,7 +42,7 @@ export default function Footer() {
         <div>
           <h3 className="text-xl font-black text-white">JobsInVizag.in</h3>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">
-            A focused local job board for Visakhapatnam — IT, civil, mechanical, engineering, fresher, and part-time roles.
+            Visakhapatnam job portal — employers post openings, students apply on-site and track status, plus featured local roles.
           </p>
           <a
             href="https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/"

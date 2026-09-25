@@ -2,7 +2,6 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import {
   APPLICATION_STATUSES,
-  formatApplicationStatus,
   normalizeApplicationStatus,
 } from '../lib/applicationStatus';
 import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';
@@ -15,7 +14,13 @@ const APPLICATION_COLUMNS = `
   status,
   cover_note,
   resume_path,
+  resume_share_token,
   profile_snapshot,
+  recruiter_notes,
+  interview_scheduled_at,
+  interview_mode,
+  interview_location,
+  interview_instructions,
   submitted_at,
   updated_at
 `;
@@ -44,7 +49,13 @@ const mapApplication = (row) => {
     status: normalizeApplicationStatus(row.status),
     coverNote: row.cover_note || '',
     resumePath: row.resume_path || '',
+    resumeShareToken: row.resume_share_token || '',
     profileSnapshot: row.profile_snapshot || {},
+    recruiterNotes: row.recruiter_notes || '',
+    interviewScheduledAt: row.interview_scheduled_at || null,
+    interviewMode: row.interview_mode || 'in_person',
+    interviewLocation: row.interview_location || '',
+    interviewInstructions: row.interview_instructions || '',
     submittedAt: row.submitted_at,
     updatedAt: row.updated_at,
     job,
@@ -63,6 +74,17 @@ const buildProfileSnapshot = (profile) => ({
   skills: Array.isArray(profile.skills) ? profile.skills : [],
   certifications: Array.isArray(profile.certifications) ? profile.certifications : [],
   isFresher: Boolean(profile.is_fresher),
+  targetJobCategories: Array.isArray(profile.target_job_categories)
+    ? profile.target_job_categories
+    : [],
+  primaryTargetRole: profile.primary_target_role || '',
+  roleExperienceLevel: profile.role_experience_level || '',
+  preferredLocations: Array.isArray(profile.preferred_locations)
+    ? profile.preferred_locations
+    : [],
+  availability: profile.availability || '',
+  expectedSalaryMin: profile.expected_salary_min || null,
+  expectedSalaryMax: profile.expected_salary_max || null,
 });
 
 export const fetchMyApplicationForJob = async (jobId) => {
@@ -146,23 +168,38 @@ export const fetchJobApplications = async (jobId) => {
 };
 
 export const fetchJobApplicationCounts = async (jobIds = []) => {
+  const stats = await fetchJobApplicationStats(jobIds);
+  return stats.byJobId;
+};
+
+/** Aggregate application counts across jobs (per job + per status). */
+export const fetchJobApplicationStats = async (jobIds = []) => {
+  const empty = { total: 0, byJobId: {}, byStatus: {} };
+
   if (!isSupabaseConfigured || !supabase || jobIds.length === 0) {
-    return {};
+    return empty;
   }
 
   const { data, error } = await supabase
     .from('job_applications')
-    .select('job_id')
-    .in('job_id', jobIds);
+    .select('job_id, status')
+    .in('job_id', jobIds)
+    .neq('status', 'withdrawn');
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data || []).reduce((counts, row) => {
-    counts[row.job_id] = (counts[row.job_id] || 0) + 1;
-    return counts;
-  }, {});
+  return (data || []).reduce(
+    (stats, row) => {
+      const status = normalizeApplicationStatus(row.status);
+      stats.total += 1;
+      stats.byJobId[row.job_id] = (stats.byJobId[row.job_id] || 0) + 1;
+      stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
+      return stats;
+    },
+    { total: 0, byJobId: {}, byStatus: {} },
+  );
 };
 
 export const submitJobApplication = async ({ jobId, coverNote, resumeFile, existingResumePath }) => {
@@ -229,6 +266,90 @@ export const updateApplicationStatus = async ({ applicationId, status }) => {
   const { data, error } = await supabase
     .from('job_applications')
     .update({ status: normalizedStatus })
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const updateApplicationRecruiterNotes = async ({ applicationId, recruiterNotes }) => {
+  if (!isSupabaseConfigured || !supabase || !applicationId) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const trimmed = typeof recruiterNotes === 'string' ? recruiterNotes.trim() : '';
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update({ recruiter_notes: trimmed || null })
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const scheduleApplicationInterview = async ({
+  applicationId,
+  interviewScheduledAt,
+  interviewMode = 'in_person',
+  interviewLocation = '',
+  interviewInstructions = '',
+  status = 'interview_scheduled',
+}) => {
+  if (!isSupabaseConfigured || !supabase || !applicationId) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const updates = {
+    interview_scheduled_at: interviewScheduledAt ? new Date(interviewScheduledAt).toISOString() : null,
+    interview_mode: interviewMode || 'in_person',
+    interview_location: interviewLocation ? interviewLocation.trim() : null,
+    interview_instructions: interviewInstructions ? interviewInstructions.trim() : null,
+  };
+
+  if (status) {
+    const normalizedStatus = normalizeApplicationStatus(status);
+    if (APPLICATION_STATUSES_SET.has(normalizedStatus)) {
+      updates.status = normalizedStatus;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update(updates)
+    .eq('id', applicationId)
+    .select(APPLICATION_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapApplication(data);
+};
+
+export const cancelApplicationInterview = async ({ applicationId }) => {
+  if (!isSupabaseConfigured || !supabase || !applicationId) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from('job_applications')
+    .update({
+      interview_scheduled_at: null,
+      interview_location: null,
+      interview_instructions: null,
+    })
     .eq('id', applicationId)
     .select(APPLICATION_COLUMNS)
     .single();

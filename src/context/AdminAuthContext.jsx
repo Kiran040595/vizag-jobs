@@ -77,6 +77,13 @@ export function AdminAuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase));
   const [authError, setAuthError] = useState('');
 
+  const refreshAdminAccess = async (userId) => {
+    const adminAccess = await getAdminMembership(userId);
+    setIsAdmin(adminAccess);
+    writeAdminAccessCache(userId, adminAccess);
+    return adminAccess;
+  };
+
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       return undefined;
@@ -159,8 +166,6 @@ export function AdminAuthProvider({ children }) {
         }
 
         const shouldShowLoader =
-          event === 'INITIAL_SESSION' ||
-          event === 'SIGNED_IN' ||
           event === 'SIGNED_OUT' ||
           event === 'USER_UPDATED' ||
           event === 'PASSWORD_RECOVERY';
@@ -180,10 +185,18 @@ export function AdminAuthProvider({ children }) {
       throw new Error('Supabase is not configured.');
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       throw error;
     }
+
+    if (data.session?.user) {
+      setSession(data.session);
+      await refreshAdminAccess(data.session.user.id);
+      setIsLoading(false);
+    }
+
+    return data;
   };
 
   const signOut = async () => {

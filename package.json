@@ -16,6 +16,7 @@
     "auto:drive-youtube-short": "node scripts/upload-drive-youtube-shorts.mjs",
     "youtube:oauth-setup": "node scripts/youtube-oauth-setup.mjs",
     "drive:oauth-setup": "node scripts/drive-oauth-setup.mjs",
+    "auto:company-careers": "node scripts/auto-company-careers.mjs",
     "prune:jobs": "node scripts/prune-stale-jobs.mjs"
   },
   "dependencies": {
@@ -32,6 +33,7 @@
     "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
     "vite-plugin-pwa": "^1.3.0",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

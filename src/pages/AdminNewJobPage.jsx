@@ -73,15 +73,15 @@ export default function AdminNewJobPage() {
   // New-tab path: external fetch page stashes the prefill in localStorage and
   // opens us with `?prefillKey=<id>`. Consume the entry once on mount and
   // strip the param from the URL so a refresh doesn't try to replay it.
-  const [prefillFromStorage, setPrefillFromStorage] = useState(null);
-  useEffect(() => {
+  const [prefillFromStorage] = useState(() => {
     const params = new URLSearchParams(location.search);
     const id = params.get('prefillKey');
-    if (!id) return;
-    const stored = consumeAdminJobPrefill(id);
-    if (stored) {
-      setPrefillFromStorage(stored);
-    }
+    return id ? consumeAdminJobPrefill(id) : null;
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (!params.has('prefillKey')) return;
     params.delete('prefillKey');
     const cleanedSearch = params.toString();
     const cleanedPath = `${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}`;

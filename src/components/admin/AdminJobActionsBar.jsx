@@ -8,10 +8,14 @@ import {
   toggleAdminJobFeatured,
   updateAdminJob,
   updateAdminJobStatus,
+  toggleAdminJobInstagram,
+  updateAdminJobGroupLink,
 } from '../../services/adminJobs';
 import { seoOptimizeExternalJob, fetchSeoGeminiKeys } from '../../services/externalJobFetch';
 import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
 import { buildGeminiSeoKeySelectOptions, parseGeminiSeoKeySelectValue } from '../../lib/geminiSeoKeyOptions';
+import CopyInstagramCaptionButton from '../CopyInstagramCaptionButton';
+import { INSTAGRAM_BIO_JOBS_PATH } from '../../lib/instagramBioJobsPath';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -94,6 +98,8 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
   const status = job?.status || 'draft';
   const isPublished = status === 'published';
   const isFeatured = Boolean(job?.isFeatured ?? job?.is_featured);
+  const isInstagram = Boolean(job?.isInstagram ?? job?.is_instagram);
+  const groupLink = String(job?.groupLink || job?.group_link || '').trim();
 
   const runAction = async (key, action, successMessage, patch) => {
     setBusyAction(key);
@@ -137,6 +143,35 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
       () => toggleAdminJobFeatured(job.id, nextFeatured),
       nextFeatured ? 'Marked as featured.' : 'Removed from featured listings.',
       { isFeatured: nextFeatured },
+    );
+  };
+
+  const handleInstagramToggle = () => {
+    const nextInstagram = !isInstagram;
+    runAction(
+      'instagram',
+      () => toggleAdminJobInstagram(job.id, nextInstagram),
+      nextInstagram
+        ? `Added to Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH}).`
+        : 'Removed from Instagram bio page.',
+      { isInstagram: nextInstagram },
+    );
+  };
+
+  const handleGroupLink = () => {
+    const next = window.prompt(
+      'Recruitment group link (WhatsApp or Instagram). Leave empty to clear. Shown after on-platform apply only.',
+      groupLink,
+    );
+    if (next === null) {
+      return;
+    }
+    const trimmed = String(next).trim();
+    runAction(
+      'groupLink',
+      () => updateAdminJobGroupLink(job.id, trimmed),
+      trimmed ? 'Group link saved.' : 'Group link cleared.',
+      { groupLink: trimmed },
     );
   };
 
@@ -247,6 +282,16 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
               Featured
             </span>
           ) : null}
+          {isInstagram ? (
+            <span className="rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-pink-800">
+              Instagram
+            </span>
+          ) : null}
+          {groupLink ? (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+              Group link
+            </span>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -264,6 +309,14 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
           >
             Edit
           </a>
+          {isPublished ? (
+            <CopyInstagramCaptionButton
+              job={job}
+              disabled={Boolean(busyAction)}
+              onInstagramMarked={() => onPatch?.({ isInstagram: true })}
+              className={`${baseBtn} border-pink-200 bg-pink-50 text-pink-800 hover:bg-pink-100 disabled:opacity-50`}
+            />
+          ) : null}
           <select
             value={String(seoGeminiKeyIndex || 0)}
             onChange={(e) => setSeoGeminiKeyIndex(parseGeminiSeoKeySelectValue(e.target.value))}
@@ -302,6 +355,32 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
             disabled={Boolean(busyAction)}
           >
             {busyAction === 'featured' ? 'Working…' : isFeatured ? 'Unfeature' : 'Feature'}
+          </button>
+          <button
+            type="button"
+            className={`${baseBtn} ${
+              groupLink
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 focus:ring-emerald-300'
+                : 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50 focus:ring-emerald-300'
+            }`}
+            onClick={handleGroupLink}
+            disabled={Boolean(busyAction)}
+            title="WhatsApp/Instagram group shown after students apply on-platform"
+          >
+            {busyAction === 'groupLink' ? 'Saving…' : groupLink ? 'Edit group link' : 'Add group link'}
+          </button>
+          <button
+            type="button"
+            className={`${baseBtn} ${
+              isInstagram
+                ? 'border-pink-300 bg-pink-50 text-pink-800 hover:bg-pink-100 focus:ring-pink-300'
+                : 'border-pink-200 bg-white text-pink-800 hover:bg-pink-50 focus:ring-pink-300'
+            }`}
+            onClick={handleInstagramToggle}
+            disabled={Boolean(busyAction)}
+            title={`Show this job on the Instagram bio page (${INSTAGRAM_BIO_JOBS_PATH})`}
+          >
+            {busyAction === 'instagram' ? 'Working…' : isInstagram ? 'Remove Insta' : 'Insta'}
           </button>
           <button
             type="button"

@@ -1,11 +1,16 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import LoadingSpinner from '../LoadingSpinner';
+import StudentAuthRequiredShell from './StudentAuthRequiredShell';
+import { useJobPreviewFromPath } from '../../hooks/useJobPreviewFromPath';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
-import { buildStudentAuthPath } from '../../lib/studentApplyRedirect';
+import { shouldAutoApplyAfterAuth } from '../../lib/studentApplyRedirect';
 
 export default function StudentSessionRoute({ children }) {
   const location = useLocation();
   const { isLoading, isSupabaseConfigured, session } = useStudentAuth();
+  const jobPreview = useJobPreviewFromPath(location.pathname);
+  const searchParams = new URLSearchParams(location.search);
+  const wantsApply = shouldAutoApplyAfterAuth(searchParams);
 
   if (!isSupabaseConfigured) {
     return (
@@ -28,10 +33,20 @@ export default function StudentSessionRoute({ children }) {
   }
 
   if (!session) {
-    const loginPath = `/student/login${buildStudentAuthPath({
-      pathname: `${location.pathname}${location.search}`,
-    })}`;
-    return <Navigate to={loginPath} replace />;
+    const returnPath = `${location.pathname}${location.search}`;
+
+    return (
+      <StudentAuthRequiredShell
+        returnPath={returnPath}
+        jobTitle={jobPreview.title}
+        jobCompany={jobPreview.company}
+        intent="apply"
+        source="student_session_route"
+        apply={wantsApply}
+        headline="Sign in to continue"
+        description="Sign in or register to access your student account and apply for jobs."
+      />
+    );
   }
 
   return children;

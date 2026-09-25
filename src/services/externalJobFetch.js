@@ -12,6 +12,7 @@ import {
   parseGeminiKeyIndexFromError,
   parseSeoRetryWaitMs,
 } from '../lib/seoRetry';
+import { SEO_PUBLISH_SAFE_INSTRUCTIONS } from '../lib/seoPublishSafeInstructions';
 
 export function getFetchExternalJobsUrl() {
   const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
@@ -118,6 +119,7 @@ async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
     if (isAbort && body?.mode === 'seo') {
       throw new Error(
         'Make SEO timed out in the browser. LinkedIn posts use a shorter prompt now — try again once. If it repeats, check Edge Function logs and GEMINI_API_KEY.',
+        { cause: e },
       );
     }
     const isNetwork =
@@ -132,7 +134,7 @@ async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
             'Fix: deploy fetch-external-jobs, match .env to your project, or disable ad-blockers.',
           ].join(' ')
         : `Request failed: ${msg}`,
-      { cause: e instanceof Error ? e : undefined },
+      { cause: e },
     );
   }
 
@@ -259,14 +261,19 @@ export const NAUKRI_ASYNC_COLLECT_WAIT_MS = 3 * 60 * 1000;
 /**
  * Start Naukri Apify scrape without waiting for completion.
  * @param {string} accessToken
+ * @param {{ batch?: string }} [options] — dual mode: 'fresher' | 'roles'
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function startNaukriApifyFetch(accessToken) {
-  return callFetchExternalJobsEdge(accessToken, {
+export async function startNaukriApifyFetch(accessToken, options = {}) {
+  const body = {
     mode: 'fetch',
     fetch_channel: 'naukri',
     naukri_action: 'start',
-  });
+  };
+  if (options.batch) {
+    body.naukri_batch = options.batch;
+  }
+  return callFetchExternalJobsEdge(accessToken, body);
 }
 
 /**

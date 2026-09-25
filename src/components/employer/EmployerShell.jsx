@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
+import QuestionNotificationBell from '../QuestionNotificationBell';
 
 const navItems = [
   { label: 'My jobs', to: '/employer/jobs' },
@@ -7,8 +8,18 @@ const navItems = [
   { label: 'Company profile', to: '/employer/profile' },
 ];
 
+const isEmployerNavActive = (to, pathname) => {
+  if (to === '/employer/jobs') {
+    if (pathname === '/employer/jobs') return true;
+    if (pathname === '/employer/jobs/new') return false;
+    return pathname.startsWith('/employer/jobs/');
+  }
+  return pathname === to;
+};
+
 export default function EmployerShell({ children, title, description }) {
   const { profile, signOut, user } = useEmployerAuth();
+  const { pathname } = useLocation();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.14),_transparent_30%),linear-gradient(180deg,_#f8fbff_0%,_#f8fafc_55%,_#ffffff_100%)]">
@@ -23,6 +34,7 @@ export default function EmployerShell({ children, title, description }) {
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <QuestionNotificationBell />
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
               {user?.email}
             </div>
@@ -37,21 +49,24 @@ export default function EmployerShell({ children, title, description }) {
         </div>
 
         <div className="mx-auto flex w-full max-w-7xl flex-wrap gap-3 px-4 pb-5 sm:px-6 lg:px-8">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+          {navItems.map((item) => {
+            const isActive = isEmployerNavActive(item.to, pathname);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
                   isActive
                     ? 'bg-cyan-500 text-slate-950'
                     : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+                }`}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {item.label}
+              </NavLink>
+            );
+          })}
           <a
             href="/"
             className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"

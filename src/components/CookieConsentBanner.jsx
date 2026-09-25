@@ -38,19 +38,19 @@ export default function CookieConsentBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-slate-200 bg-white/95 p-4 shadow-[0_-12px_40px_rgba(15,23,42,0.12)] backdrop-blur sm:p-5"
+      className="fixed inset-x-0 bottom-0 z-[60] border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_40px_rgba(15,23,42,0.12)] backdrop-blur sm:p-5 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-modal={showDetails && hasDecision ? 'true' : 'false'}
       aria-labelledby="cookie-consent-title"
       aria-describedby="cookie-consent-description"
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 sm:gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-3xl">
             <h2 id="cookie-consent-title" className="text-base font-bold text-slate-900 sm:text-lg">
               Cookie preferences
             </h2>
-            <p id="cookie-consent-description" className="mt-2 text-sm leading-6 text-slate-600">
+            <p id="cookie-consent-description" className="mt-1.5 text-sm leading-6 text-slate-600 sm:mt-2">
               We use essential cookies to run the site (for example, saved jobs in your browser). With your
               permission, we also use analytics cookies and advertising cookies for services such as Vercel
               Analytics and Google AdSense. Read our{' '}
@@ -62,27 +62,27 @@ export default function CookieConsentBanner() {
           </div>
 
           {!showDetails ? (
-            <div className="flex flex-wrap gap-2 sm:shrink-0">
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:shrink-0 sm:flex-wrap">
               <button
                 type="button"
-                onClick={() => setShowDetails(true)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                onClick={acceptAll}
+                className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:py-2.5"
               >
-                Manage
+                Accept all
               </button>
               <button
                 type="button"
                 onClick={acceptEssentialOnly}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 sm:py-2.5"
               >
                 Essential only
               </button>
               <button
                 type="button"
-                onClick={acceptAll}
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                onClick={() => setShowDetails(true)}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 sm:py-2.5"
               >
-                Accept all
+                Manage
               </button>
             </div>
           ) : null}

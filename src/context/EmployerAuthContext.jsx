@@ -206,8 +206,6 @@ export function EmployerAuthProvider({ children }) {
         }
 
         const shouldShowLoader =
-          event === 'INITIAL_SESSION' ||
-          event === 'SIGNED_IN' ||
           event === 'SIGNED_OUT' ||
           event === 'USER_UPDATED' ||
           event === 'PASSWORD_RECOVERY';
@@ -227,16 +225,38 @@ export function EmployerAuthProvider({ children }) {
       throw new Error('Supabase is not configured.');
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       throw error;
     }
+
+    if (data.session?.user) {
+      setSession(data.session);
+      await refreshEmployerAccess(data.session.user.id);
+      setIsLoading(false);
+    }
+
+    return data;
   };
 
-  const signUp = async ({ email, password, companyName }) => {
+  const signUp = async ({
+    email,
+    password,
+    companyName,
+    contactName,
+    phone,
+    industry,
+    location,
+  }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
+
+    const trimmedCompany = String(companyName || '').trim();
+    const trimmedContact = String(contactName || '').trim();
+    const trimmedPhone = String(phone || '').trim();
+    const trimmedIndustry = String(industry || '').trim();
+    const trimmedLocation = String(location || '').trim();
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -244,7 +264,11 @@ export function EmployerAuthProvider({ children }) {
       options: {
         data: {
           user_type: 'employer',
-          company_name: companyName,
+          company_name: trimmedCompany,
+          contact_name: trimmedContact,
+          phone: trimmedPhone,
+          industry: trimmedIndustry,
+          location: trimmedLocation,
         },
         emailRedirectTo: getAuthRedirectUrl('/employer/login'),
       },
@@ -255,6 +279,18 @@ export function EmployerAuthProvider({ children }) {
     }
 
     if (data.user) {
+      try {
+        await upsertEmployerProfile({
+          company_name: trimmedCompany,
+          contact_name: trimmedContact,
+          contact_email: email,
+          phone: trimmedPhone,
+          industry: trimmedIndustry,
+          location: trimmedLocation,
+        });
+      } catch (upsertError) {
+        console.warn('Could not immediately upsert employer profile after signup:', upsertError);
+      }
       await refreshEmployerAccess(data.user.id);
     }
 
@@ -296,6 +332,40 @@ export function EmployerAuthProvider({ children }) {
     clearEmployerAccessCache();
   };
 
+  const requestPasswordReset = async (email) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const trimmed = String(email || '').trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      throw new Error('Enter the email address for your employer account.');
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: getAuthRedirectUrl('/employer/reset-password'),
+    });
+    if (error) {
+      throw error;
+    }
+  };
+
+  const updatePassword = async (password) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const nextPassword = String(password || '');
+    if (nextPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters.');
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: nextPassword });
+    if (error) {
+      throw error;
+    }
+  };
+
   return (
     <EmployerAuthContext.Provider
       value={{
@@ -305,11 +375,13 @@ export function EmployerAuthProvider({ children }) {
         isSupabaseConfigured,
         profile,
         refreshEmployerAccess,
+        requestPasswordReset,
         session,
         signIn,
         signInWithGoogle,
         signOut,
         signUp,
+        updatePassword,
         user: session?.user ?? null,
       }}
     >

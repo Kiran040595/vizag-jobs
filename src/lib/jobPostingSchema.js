@@ -219,7 +219,6 @@ export const enrichJobLocation = (jobLocation, job) => {
       : { ...fallback.address };
 
   const address = {
-    '@type': 'PostalAddress',
     addressLocality: rawAddress.addressLocality || fallback.address.addressLocality,
     addressRegion: rawAddress.addressRegion || fallback.address.addressRegion || 'Andhra Pradesh',
     addressCountry: rawAddress.addressCountry || fallback.address.addressCountry || 'IN',

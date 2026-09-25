@@ -1,3 +1,5 @@
+import { JOB_CATEGORY_PAGES } from './jobCategoryPages.js';
+
 const SCHEMA_CONTEXT = 'https://schema.org';
 const DEFAULT_SITE_URL = 'https://jobsinvizag.in';
 
@@ -7,6 +9,21 @@ const buildAbsoluteUrl = (path, siteUrl) => {
   if (/^https?:\/\//i.test(path)) return path;
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 };
+
+const categoryListingMeta = Object.fromEntries(
+  JOB_CATEGORY_PAGES.map((page) => [
+    page.path,
+    {
+      title: page.seoTitle,
+      description: page.seoDescription,
+      name: page.headline,
+      keywords: page.seoKeywords
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean),
+    },
+  ]),
+);
 
 /** SEO metadata for each indexable listing route. */
 export const LISTING_PAGE_META = {
@@ -45,6 +62,7 @@ export const LISTING_PAGE_META = {
     name: 'Vizag Jobs Blog',
     keywords: ['Vizag Jobs Blog', 'Career Tips Vizag', 'Job Trends Visakhapatnam'],
   },
+  ...categoryListingMeta,
 };
 
 export const getListingMeta = (path) => LISTING_PAGE_META[path] || null;

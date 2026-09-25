@@ -5,12 +5,14 @@ import {
   getEmptyEmployerJobForm,
   updateEmployerJob,
 } from '../../services/employerJobs';
+import { fetchLiveJobRoles } from '../../services/jobRoles';
+import { cleanJobRoleLabel } from '../../lib/jobRoleLabel';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
-const REQUIRED_FIELDS = ['title', 'company', 'category', 'job_type'];
+const REQUIRED_FIELDS = ['title', 'company', 'role', 'category', 'job_type'];
 
 function Field({ label, children, hint }) {
   return (
@@ -36,6 +38,19 @@ export default function EmployerJobForm({
   const [saveError, setSaveError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [liveRoles, setLiveRoles] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLiveJobRoles(80).then((roles) => {
+      if (!cancelled) {
+        setLiveRoles(roles);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (initialValues) {
@@ -53,6 +68,15 @@ export default function EmployerJobForm({
     if (!String(formValues.slug || '').trim()) {
       return 'Please provide a slug for this job.';
     }
+    if (formValues.apply_mode === 'external') {
+      const link = String(formValues.apply_link || '').trim();
+      if (!link) {
+        return 'Please provide an external application URL.';
+      }
+      if (!/^https?:\/\/.+/i.test(link)) {
+        return 'External application link must be a valid URL starting with http:// or https://';
+      }
+    }
     return '';
   };
 
@@ -62,6 +86,10 @@ export default function EmployerJobForm({
 
     setFormValues((currentValues) => {
       const nextValues = { ...currentValues, [name]: nextValue };
+
+      if (name === 'title' && !String(currentValues.role || '').trim()) {
+        nextValues.role = cleanJobRoleLabel(value, 56) || value;
+      }
 
       if (!isSlugManual && ['title', 'company', 'posted_at'].includes(name)) {
         nextValues.slug = createSuggestedSlug({
@@ -128,6 +156,21 @@ export default function EmployerJobForm({
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Field label="Title">
           <input name="title" value={formValues.title} onChange={handleFieldChange} className={INPUT_CLASS} />
+        </Field>
+        <Field label="Role" hint="Short role students can target (auto-fills from title).">
+          <input
+            name="role"
+            value={formValues.role || ''}
+            onChange={handleFieldChange}
+            className={INPUT_CLASS}
+            list="employer-live-job-roles"
+            placeholder="Java Developer, Telecaller, Site Engineer..."
+          />
+          <datalist id="employer-live-job-roles">
+            {liveRoles.map((item) => (
+              <option key={item.role} value={item.role} />
+            ))}
+          </datalist>
         </Field>
         <Field label="Company">
           <input name="company" value={formValues.company} onChange={handleFieldChange} className={INPUT_CLASS} readOnly={Boolean(companyName)} />

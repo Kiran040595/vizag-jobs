@@ -3,8 +3,8 @@ import { useAppliedJobsCount } from '../hooks/useAppliedJobsCount';
 import { APPLIED_JOBS_PATH } from '../lib/studentAppliedJobsPath';
 
 const getDesktopClassName = ({ isActive }) =>
-  `inline-flex items-center gap-1.5 text-sm font-medium transition-colors ${
-    isActive ? 'text-cyan-600' : 'text-slate-700 hover:text-cyan-600'
+  `inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors ${
+    isActive ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
   }`;
 
 const getMobileClassName = ({ isActive }) =>

@@ -5,6 +5,7 @@ import JobsInVizagPage from './pages/JobsInVizagPage';
 import ItJobsInVizagPage from './pages/ItJobsInVizagPage';
 import FresherJobsInVizagPage from './pages/FresherJobsInVizagPage';
 import PartTimeJobsVizagPage from './pages/PartTimeJobsVizagPage';
+import DirectJobsInVizagPage from './pages/DirectJobsInVizagPage';
 import BranchJobsInVizagPage from './pages/BranchJobsInVizagPage';
 import { JOB_CATEGORY_PAGES } from './lib/jobCategoryPages';
 import { LEGACY_ROUTE_REDIRECTS } from './lib/legacyRedirects';
@@ -37,8 +38,12 @@ import EmployerJobApplicationsPage from './pages/EmployerJobApplicationsPage';
 import OAuthConsentPage from './pages/OAuthConsentPage';
 import SavedJobsPage from './pages/SavedJobsPage';
 import FeedbackPage from './pages/FeedbackPage';
+import CommunityQaPage from './pages/CommunityQaPage';
 import AdminFeedbackPage from './pages/AdminFeedbackPage';
+import AdminQuestionsPage from './pages/AdminQuestionsPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
+import AdminCompaniesPage from './pages/AdminCompaniesPage';
+import CompaniesInVizagPage from './pages/CompaniesInVizagPage';
 import AdminBillsPage from './pages/AdminBillsPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
@@ -53,10 +58,14 @@ import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import SiteChatBot from './components/SiteChatBot';
 import CookieConsentBanner from './components/CookieConsentBanner';
+import JobAlertNotifications from './components/JobAlertNotifications';
+import MobileBottomNav from './components/MobileBottomNav';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <>
+    <ScrollToTop />
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -169,10 +178,26 @@ function App() {
         )}
       />
       <Route
+        path="/admin/questions"
+        element={(
+          <AdminRoute>
+            <AdminQuestionsPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
         path="/admin/employers"
         element={(
           <AdminRoute>
             <AdminEmployersPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/companies"
+        element={(
+          <AdminRoute>
+            <AdminCompaniesPage />
           </AdminRoute>
         )}
       />
@@ -197,15 +222,19 @@ function App() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
+      <Route path="/qa" element={<CommunityQaPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
+      <Route path="/companies" element={<CompaniesInVizagPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />
-      <Route path="/jobs/latest" element={<InstagramJobsPage />} />
+      <Route path="/apply" element={<InstagramJobsPage />} />
+      <Route path="/jobs/latest" element={<Navigate to="/apply" replace />} />
       <Route path="/saved-jobs" element={<SavedJobsPage />} />
       <Route path="/jobs/it" element={<ItJobsInVizagPage />} />
       <Route path="/jobs/fresher" element={<FresherJobsInVizagPage />} />
       <Route path="/jobs/part-time" element={<PartTimeJobsVizagPage />} />
+      <Route path="/jobs/vizagjobs" element={<DirectJobsInVizagPage />} />
       {JOB_CATEGORY_PAGES.map((page) => (
         <Route
           key={page.id}
@@ -242,8 +271,10 @@ function App() {
       ))}
     </Routes>
     <CookieConsentBanner />
+    <JobAlertNotifications />
     <FeedbackFloatingButton />
     <SiteChatBot />
+    <MobileBottomNav />
     </>
   );
 }
