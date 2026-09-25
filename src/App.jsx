@@ -58,6 +58,7 @@ import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import SiteChatBot from './components/SiteChatBot';
 import CookieConsentBanner from './components/CookieConsentBanner';
+import JobAlertNotifications from './components/JobAlertNotifications';
 import MobileBottomNav from './components/MobileBottomNav';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -270,6 +271,7 @@ function App() {
       ))}
     </Routes>
     <CookieConsentBanner />
+    <JobAlertNotifications />
     <FeedbackFloatingButton />
     <SiteChatBot />
     <MobileBottomNav />

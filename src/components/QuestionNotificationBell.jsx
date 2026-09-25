@@ -31,6 +31,8 @@ import {
   markReplyNotificationRead,
   replyNotificationKindLabel,
 } from '../services/replyNotifications';
+import { supabase } from '../lib/supabaseClient';
+import { isWebNotificationSupported, readPushPromptDismissed } from '../lib/webPush';
 
 export default function QuestionNotificationBell({ className = '' }) {
   const { isAdmin, user: adminUser, isLoading: isAdminLoading } = useAdminAuth();
@@ -128,8 +130,32 @@ export default function QuestionNotificationBell({ className = '' }) {
     loadNotifications();
 
     const intervalId = window.setInterval(loadNotifications, 60_000);
-    return () => window.clearInterval(intervalId);
-  }, [authLoading, loadNotifications]);
+    let channel = null;
+    if (inboxUserId && supabase) {
+      channel = supabase
+        .channel(`reply-inbox-${inboxUserId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'reply_notifications',
+            filter: `user_id=eq.${inboxUserId}`,
+          },
+          () => {
+            loadNotifications();
+          },
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (channel && supabase) {
+        void supabase.removeChannel(channel);
+      }
+    };
+  }, [authLoading, inboxUserId, loadNotifications]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -385,15 +411,19 @@ export default function QuestionNotificationBell({ className = '' }) {
                     const accentClass =
                       notification.kind === 'new_application'
                         ? 'text-cyan-700'
-                        : notification.kind === 'application_status'
-                          ? 'text-indigo-700'
-                          : 'text-emerald-700';
+                        : notification.kind === 'new_job'
+                          ? 'text-sky-700'
+                          : notification.kind === 'application_status'
+                            ? 'text-indigo-700'
+                            : 'text-emerald-700';
                     const unreadBg =
                       notification.kind === 'new_application'
                         ? 'bg-cyan-50/50'
-                        : notification.kind === 'application_status'
-                          ? 'bg-indigo-50/50'
-                          : 'bg-emerald-50/50';
+                        : notification.kind === 'new_job'
+                          ? 'bg-sky-50/50'
+                          : notification.kind === 'application_status'
+                            ? 'bg-indigo-50/50'
+                            : 'bg-emerald-50/50';
 
                     return (
                       <div
@@ -531,6 +561,15 @@ export default function QuestionNotificationBell({ className = '' }) {
                 })
               : null}
           </div>
+
+          {isStudentViewer &&
+          isWebNotificationSupported() &&
+          Notification.permission === 'default' &&
+          !readPushPromptDismissed() ? (
+            <div className="border-t border-slate-100 bg-sky-50 px-3.5 py-2 text-xs text-sky-800">
+              Enable browser alerts to hear about new jobs immediately.
+            </div>
+          ) : null}
 
           {combinedNotifications.length > 0 ? (
             <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/90 px-3.5 py-2.5">

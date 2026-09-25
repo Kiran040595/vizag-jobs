@@ -30,6 +30,10 @@ verify_jwt = false
 [functions.notify-reply]
 verify_jwt = false
 
+[functions.notify-new-job]
+# Auth is enforced inside the function (admin/employer JWT or service role).
+verify_jwt = false
+
 [functions.resume-share]
 verify_jwt = false
 
