@@ -369,3 +369,35 @@ export const markFeedbackNotificationRead = async ({ notificationId, userId }) =
     throw new Error(error.message);
   }
 };
+
+export const dismissFeedbackNotification = async ({ notificationId, userId }) => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { error } = await supabase
+    .from('site_feedback_notifications')
+    .update({ is_dismissed: true, is_read: true })
+    .eq('id', notificationId)
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+};
+
+export const dismissAllFeedbackNotifications = async (userId) => {
+  if (!isSupabaseConfigured || !supabase || !userId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from('site_feedback_notifications')
+    .update({ is_dismissed: true, is_read: true })
+    .eq('user_id', userId)
+    .eq('is_dismissed', false);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+};

@@ -56,6 +56,38 @@ export const markReplyNotificationRead = async ({ notificationId, userId }) => {
   }
 };
 
+export const dismissReplyNotification = async ({ notificationId, userId }) => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { error } = await supabase
+    .from('reply_notifications')
+    .update({ is_dismissed: true, is_read: true })
+    .eq('id', notificationId)
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+};
+
+export const dismissAllReplyNotifications = async (userId) => {
+  if (!isSupabaseConfigured || !supabase || !userId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from('reply_notifications')
+    .update({ is_dismissed: true, is_read: true })
+    .eq('user_id', userId)
+    .eq('is_dismissed', false);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+};
+
 export const formatReplyNotificationTime = (value) => {
   if (!value) return '';
   const date = new Date(value);
