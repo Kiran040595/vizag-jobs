@@ -46,6 +46,7 @@ import AdminCompaniesPage from './pages/AdminCompaniesPage';
 import CompaniesInVizagPage from './pages/CompaniesInVizagPage';
 import AdminBillsPage from './pages/AdminBillsPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
+import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
 import StudentForgotPasswordPage from './pages/StudentForgotPasswordPage';
@@ -214,6 +215,14 @@ function App() {
         element={(
           <AdminRoute>
             <AdminStudentsPage />
+          </AdminRoute>
+        )}
+      />
+      <Route
+        path="/admin/notifications"
+        element={(
+          <AdminRoute>
+            <AdminNotificationsPage />
           </AdminRoute>
         )}
       />
