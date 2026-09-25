@@ -82,9 +82,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.trim() || '';
-    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.trim() || '';
-    const vapidSubject = Deno.env.get('VAPID_SUBJECT')?.trim() || 'mailto:kkumardadi@gmail.com';
+    let vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.trim() || '';
+    let vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.trim() || '';
+    let vapidSubject = Deno.env.get('VAPID_SUBJECT')?.trim() || 'mailto:kkumardadi@gmail.com';
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      const { data: vapidRow, error: vapidError } = await supabaseAdmin
+        .from('web_push_config')
+        .select('public_key, private_key, subject')
+        .eq('id', 1)
+        .maybeSingle();
+      if (vapidError) {
+        throw new Error(vapidError.message);
+      }
+      vapidPublicKey = String(vapidRow?.public_key || '').trim();
+      vapidPrivateKey = String(vapidRow?.private_key || '').trim();
+      vapidSubject = String(vapidRow?.subject || vapidSubject).trim();
+    }
     if (!vapidPublicKey || !vapidPrivateKey) {
       return jsonResponse({
         ok: true,
