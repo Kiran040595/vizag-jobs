@@ -10,6 +10,7 @@ import {
   isValidEmployerPhone,
   normalizeEmployerPhone,
 } from '../lib/employerProfileOptions';
+import { SITE_LEGAL_NAME } from '../lib/siteLegal';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function EmployerRegisterPage() {
@@ -23,7 +24,7 @@ export default function EmployerRegisterPage() {
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [notice, setNotice] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   if (!isSupabaseConfigured) {
     return (
@@ -70,6 +71,10 @@ export default function EmployerRegisterPage() {
     }
     if (!location) {
       setSubmitError('Please select your office location in Vizag.');
+      return;
+    }
+    if (!acceptedTerms) {
+      setSubmitError('Please agree to the Terms of Service and Privacy Policy.');
       return;
     }
 
@@ -222,12 +227,36 @@ export default function EmployerRegisterPage() {
             </p>
           </div>
 
+          <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(event) => setAcceptedTerms(event.target.checked)}
+              required
+              className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+            />
+            <span>
+              I agree to the{' '}
+              <Link to="/terms-of-service" className="font-semibold text-cyan-700 hover:text-cyan-800" target="_blank">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy-policy" className="font-semibold text-cyan-700 hover:text-cyan-800" target="_blank">
+                Privacy Policy
+              </Link>{' '}
+              of {SITE_LEGAL_NAME}. I will post only genuine openings I am authorized to advertise and will
+              handle candidate data lawfully for recruitment only.
+            </span>
+          </label>
+
           {/* Google Sign-up (optional integration) */}
           {SHOW_EMPLOYER_GOOGLE_AUTH ? (
             <div className="border-t border-slate-100 pt-4">
               <EmployerGoogleButton
                 companyName={companyName}
                 requireCompanyName
+                requireAcceptedTerms
+                acceptedTerms={acceptedTerms}
                 label="Sign up with Google"
               />
               <div className="relative my-4">

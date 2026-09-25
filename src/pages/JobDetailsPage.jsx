@@ -393,7 +393,7 @@ export default function JobDetailsPage() {
               ) : null}
             </div>
 
-            <JobSourceAttribution job={job} />
+            <JobSourceAttribution job={job} jobPath={jobDetailPath} />
 
             {job.shortDescription && !structuredDescription ? (
               <div className="mt-6">

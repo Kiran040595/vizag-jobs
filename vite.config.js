@@ -9,10 +9,11 @@ function adsenseHeadPlugin(clientId) {
     name: 'adsense-head-injection',
     transformIndexHtml(html) {
       const id = String(clientId || '').trim();
-      if (!/^ca-pub-\d+$/i.test(id) || html.includes('adsbygoogle.js')) {
+      if (!/^ca-pub-\d+$/i.test(id) || html.includes('google-adsense-account')) {
         return html;
       }
-      const tag = `    <!-- Google AdSense -->\n    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${id}" crossorigin="anonymous"></script>`;
+      // Meta verification only — the adsbygoogle.js loader is injected after advertising consent.
+      const tag = `    <meta name="google-adsense-account" content="${id}" />`;
       return html.replace('</head>', `${tag}\n  </head>`);
     },
   };

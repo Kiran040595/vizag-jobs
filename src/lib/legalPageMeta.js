@@ -1,5 +1,6 @@
 import {
   SITE_CONTACT_EMAIL,
+  SITE_GRIEVANCE_OFFICER_NAME,
   SITE_LEGAL_NAME,
   SITE_LOCATION_DISPLAY,
   SITE_PUBLISHER_NAME,
@@ -35,7 +36,7 @@ export const LEGAL_PAGE_META = {
     schemaType: 'AboutPage',
     paragraphs: [
       `${SITE_LEGAL_NAME} is a regional job portal for Visakhapatnam. Employers post openings based on their hiring needs, and students and job seekers apply directly on our website.`,
-      'Applicants can track the status of jobs they have applied for in their account. We also feature employer-posted and curated local roles across IT, engineering, fresher, and other categories.',
+      'Applicants can track the status of jobs they have applied for in their account. We also feature employer-posted roles and summaries of publicly advertised local openings. We are not affiliated with third-party job boards.',
       `${SITE_LEGAL_NAME} is operated independently by ${SITE_PUBLISHER_NAME} from ${SITE_LOCATION_DISPLAY}. Contact: ${SITE_CONTACT_EMAIL}.`,
     ],
   },
@@ -46,46 +47,46 @@ export const LEGAL_PAGE_META = {
     keywords: ['Contact Vizag Jobs', 'JobsInVizag contact'],
     schemaType: 'ContactPage',
     paragraphs: [
-      `Contact ${SITE_LEGAL_NAME} for listing corrections, employer posting support, student application help, or general feedback.`,
-      `Operator: ${SITE_PUBLISHER_NAME}. Location: ${SITE_LOCATION_DISPLAY}. Email: ${SITE_CONTACT_EMAIL}.`,
-      'We aim to respond within 2–3 business days. For urgent listing takedown requests, include the job URL and reason in your subject line.',
+      `Contact ${SITE_LEGAL_NAME} for listing corrections, employer posting support, student application help, privacy or data requests, or general feedback.`,
+      `Operator and Grievance Officer: ${SITE_GRIEVANCE_OFFICER_NAME}. Location: ${SITE_LOCATION_DISPLAY}. Email: ${SITE_CONTACT_EMAIL}.`,
+      'We aim to respond within 2–3 business days. For urgent listing takedown or privacy requests, include the job URL or account email and reason in your subject line.',
     ],
   },
   '/privacy-policy': {
     title: 'Privacy Policy | Jobs in Vizag',
     description:
-      'Privacy Policy for JobsInVizag.in — how we collect and use data for employer posting, student applications, cookies, and advertising.',
+      'Privacy Policy for JobsInVizag.in — how we collect and use data for employer posting, student applications, cookies, advertising, and DPDP rights.',
     heading: 'Privacy Policy',
     keywords: ['Privacy Policy Vizag Jobs', 'JobsInVizag privacy'],
     schemaType: 'WebPage',
     paragraphs: [
-      `${SITE_LEGAL_NAME} collects account and application information when employers post jobs and when students register or apply on our site.`,
-      'We use this information to operate the portal, show application status, share candidate details with employers when students have agreed, improve the site, and (where enabled) display advertising.',
-      `Questions: ${SITE_CONTACT_EMAIL}.`,
+      `${SITE_LEGAL_NAME} collects account and application information when employers post jobs and when students register or apply on our site. ${SITE_PUBLISHER_NAME} is the Data Fiduciary.`,
+      'We use this information to operate the portal, show application status, share candidate details with employers when students have agreed, improve the site, and display advertising only if you accept advertising cookies.',
+      `Grievance Officer: ${SITE_GRIEVANCE_OFFICER_NAME}. Questions: ${SITE_CONTACT_EMAIL}.`,
     ],
   },
   '/terms-of-service': {
     title: 'Terms of Service | Jobs in Vizag',
     description:
-      'Terms of Service for JobsInVizag.in — employer posting, student applications, featured jobs, and platform responsibilities.',
+      'Terms of Service for JobsInVizag.in — employer posting, student applications, featured public job ads, and platform responsibilities.',
     heading: 'Terms of Service',
     keywords: ['Terms of Service Vizag Jobs', 'JobsInVizag terms'],
     schemaType: 'WebPage',
     paragraphs: [
       `By using ${SITE_LEGAL_NAME} you agree to these Terms. The platform lets employers post jobs for Visakhapatnam roles and lets students apply on-site and track application status.`,
-      'We are not the hiring employer for listed roles unless stated otherwise. Employers are responsible for the accuracy of their postings; applicants should verify details before sharing sensitive information.',
+      'We are not the hiring employer for listed roles unless stated otherwise. Some listings are summaries of publicly advertised jobs; we are not affiliated with third-party job boards. Applicants should verify details before sharing sensitive information.',
       `Contact: ${SITE_CONTACT_EMAIL}.`,
     ],
   },
   '/disclaimer': {
     title: 'Disclaimer | Jobs in Vizag',
     description:
-      'Disclaimer for JobsInVizag.in — platform role for employer-posted and featured jobs, and your responsibilities when applying.',
+      'Disclaimer for JobsInVizag.in — platform role for employer-posted jobs and summaries of public job ads, and your responsibilities when applying.',
     heading: 'Disclaimer',
     keywords: ['Disclaimer Vizag Jobs', 'JobsInVizag disclaimer'],
     schemaType: 'WebPage',
     paragraphs: [
-      `${SITE_LEGAL_NAME} hosts employer-posted jobs and may also feature other local openings. We are not the hiring employer unless explicitly stated.`,
+      `${SITE_LEGAL_NAME} hosts employer-posted jobs and may also feature summaries of other publicly advertised local openings. We are not the hiring employer unless explicitly stated.`,
       'Students may apply on our site and view application status in their account. Always verify role details with the employer before interviews or sharing sensitive documents.',
       `Report suspicious listings via the Contact page or ${SITE_CONTACT_EMAIL}.`,
     ],

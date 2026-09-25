@@ -223,7 +223,9 @@ function App() {
       <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/qa" element={<CommunityQaPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
       <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+      <Route path="/terms" element={<Navigate to="/terms-of-service" replace />} />
       <Route path="/disclaimer" element={<DisclaimerPage />} />
       <Route path="/companies" element={<CompaniesInVizagPage />} />
       <Route path="/jobs" element={<JobsInVizagPage />} />

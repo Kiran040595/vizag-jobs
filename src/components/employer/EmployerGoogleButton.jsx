@@ -4,6 +4,8 @@ import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 export default function EmployerGoogleButton({
   companyName = '',
   requireCompanyName = false,
+  requireAcceptedTerms = false,
+  acceptedTerms = false,
   label = 'Continue with Google',
 }) {
   const { signInWithGoogle } = useEmployerAuth();
@@ -15,6 +17,11 @@ export default function EmployerGoogleButton({
 
     if (requireCompanyName && !String(companyName || '').trim()) {
       setError('Enter your company name before continuing with Google.');
+      return;
+    }
+
+    if (requireAcceptedTerms && !acceptedTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy.');
       return;
     }
 
