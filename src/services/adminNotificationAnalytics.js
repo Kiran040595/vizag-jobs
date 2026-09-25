@@ -122,6 +122,39 @@ export const fetchNotificationAnalyticsData = async () => {
   const jobAlerts = jobAlertsRes.data || [];
   const replyNotifications = replyNotificationsRes.data || [];
 
+  const allJobIds = [
+    ...new Set(
+      [
+        ...dispatches.map((d) => d.job_id),
+        ...jobAlerts.map((a) => a.job_id),
+        ...opens.map((o) => o.job_id),
+      ].filter(Boolean),
+    ),
+  ];
+
+  const jobsRes =
+    allJobIds.length > 0
+      ? await safeQuery(
+          supabase
+            .from('jobs')
+            .select('id, title, company, location, slug, created_by, posted_at, status, source_name')
+            .in('id', allJobIds),
+        )
+      : { data: [] };
+  const jobsById = Object.fromEntries((jobsRes.data || []).map((j) => [j.id, j]));
+
+  const creatorIds = [...new Set((jobsRes.data || []).map((j) => j.created_by).filter(Boolean))];
+  const employersRes =
+    creatorIds.length > 0
+      ? await safeQuery(
+          supabase
+            .from('employer_profiles')
+            .select('user_id, company_name, contact_name, email')
+            .in('user_id', creatorIds),
+        )
+      : { data: [] };
+  const employersByUserId = Object.fromEntries((employersRes.data || []).map((e) => [e.user_id, e]));
+
   const totalSubscribers = subscriptions.length;
   let registeredCount = 0;
   let anonymousCount = 0;
@@ -153,14 +186,127 @@ export const fetchNotificationAnalyticsData = async () => {
     };
   });
 
+  const resolveTriggerType = (dispatch, job, employer) => {
+    if (dispatch.trigger_type && dispatch.trigger_type !== 'auto') {
+      return dispatch.trigger_type;
+    }
+    const tag = String(dispatch.tag || '');
+    if (tag.includes('__manual_admin')) return 'manual_admin';
+    if (tag.includes('__auto_employer')) return 'auto_employer';
+    if (tag.includes('__auto_admin')) return 'auto_admin';
+    if (tag.includes('__manual_test') || dispatch.is_test) return 'manual_test';
+    if (tag.includes('__manual_custom')) return 'manual_custom';
+    if (!dispatch.job_id) return 'manual_custom';
+    if (employer) return 'auto_employer';
+    return 'auto_admin';
+  };
+
+  const dispatchesById = Object.fromEntries(dispatches.map((d) => [d.id, d]));
+
+  const enrichedOpens = opens.map((open) => {
+    const uaInfo = parseUserAgentDetails(open.user_agent);
+    const linkedDispatch = open.dispatch_id ? dispatchesById[open.dispatch_id] : null;
+    const jobId = open.job_id || linkedDispatch?.job_id || null;
+    const job = jobId ? jobsById[jobId] : null;
+    return {
+      ...open,
+      job_id: jobId,
+      jobTitle: job?.title || (linkedDispatch?.title ? linkedDispatch.title.replace(/^New job:\s*/i, '') : 'Broadcast Alert'),
+      jobCompany: job?.company || null,
+      jobSlug: job?.slug || null,
+      deviceType: uaInfo.deviceType,
+      os: uaInfo.os,
+      browser: uaInfo.browser,
+    };
+  });
+
   let totalPushesSent = 0;
   let totalPushesFailed = 0;
   let totalOpens = 0;
-  for (const d of dispatches) {
+  let autoDispatchesCount = 0;
+  let manualDispatchesCount = 0;
+  const jobAnalyticsMap = new Map();
+
+  const enrichedDispatches = dispatches.map((d) => {
     totalPushesSent += d.sent_count || 0;
     totalPushesFailed += d.failed_count || 0;
     totalOpens += d.open_count || 0;
+
+    const job = d.job_id ? jobsById[d.job_id] : null;
+    const employer = job?.created_by ? employersByUserId[job.created_by] : null;
+    const triggerType = resolveTriggerType(d, job, employer);
+    const isAuto = triggerType === 'auto_employer' || triggerType === 'auto_admin';
+
+    if (isAuto) autoDispatchesCount += 1;
+    else manualDispatchesCount += 1;
+
+    const jobTitle = job?.title || (d.title ? d.title.replace(/^New job:\s*/i, '') : 'Custom Broadcast');
+    const jobCompany = job?.company || employer?.company_name || null;
+    const jobLocation = job?.location || null;
+    const jobPath = job ? `/job/${job.slug || job.id}` : d.url || '/jobs';
+
+    if (d.job_id) {
+      const existing = jobAnalyticsMap.get(d.job_id) || {
+        jobId: d.job_id,
+        title: jobTitle,
+        company: jobCompany || 'Direct Employer',
+        location: jobLocation || 'Visakhapatnam',
+        url: jobPath,
+        status: job?.status || 'published',
+        postedAt: job?.posted_at || d.created_at,
+        posterRole: employer ? 'Company / Employer' : 'Admin',
+        posterName: employer?.company_name || jobCompany || 'Vizag Jobs Admin',
+        dispatchesCount: 0,
+        autoCount: 0,
+        manualCount: 0,
+        triggers: [],
+        totalTarget: 0,
+        totalSent: 0,
+        totalFailed: 0,
+        totalOpens: 0,
+        lastSentAt: d.created_at,
+        clicks: [],
+      };
+
+      existing.dispatchesCount += 1;
+      if (isAuto) existing.autoCount += 1;
+      else existing.manualCount += 1;
+      if (!existing.triggers.includes(triggerType)) {
+        existing.triggers.push(triggerType);
+      }
+      existing.totalTarget += d.target_subscribers || 0;
+      existing.totalSent += d.sent_count || 0;
+      existing.totalFailed += d.failed_count || 0;
+      existing.totalOpens += d.open_count || 0;
+      if (new Date(d.created_at) > new Date(existing.lastSentAt)) {
+        existing.lastSentAt = d.created_at;
+      }
+      jobAnalyticsMap.set(d.job_id, existing);
+    }
+
+    return {
+      ...d,
+      triggerType,
+      isAuto,
+      jobTitle,
+      jobCompany,
+      jobLocation,
+      jobPath,
+      posterRole: employer ? 'Company / Employer' : 'Admin',
+      posterName: employer?.company_name || jobCompany || 'Admin',
+    };
+  });
+
+  for (const open of enrichedOpens) {
+    if (open.job_id && jobAnalyticsMap.has(open.job_id)) {
+      jobAnalyticsMap.get(open.job_id).clicks.push(open);
+    }
   }
+
+  const jobAnalytics = Array.from(jobAnalyticsMap.values()).map((item) => ({
+    ...item,
+    ctr: item.totalSent > 0 ? ((item.totalOpens / item.totalSent) * 100).toFixed(1) : '0.0',
+  }));
 
   const overallCtr = totalPushesSent > 0
     ? ((totalOpens / totalPushesSent) * 100).toFixed(1)
@@ -183,6 +329,9 @@ export const fetchNotificationAnalyticsData = async () => {
       registeredCount,
       anonymousCount,
       totalDispatches: dispatches.length,
+      autoDispatchesCount,
+      manualDispatchesCount,
+      totalJobsNotified: jobAnalytics.length,
       totalPushesSent,
       totalPushesFailed,
       totalOpens,
@@ -198,9 +347,10 @@ export const fetchNotificationAnalyticsData = async () => {
       operatingSystems: osCounts,
       browsers: browserCounts,
     },
-    recentDispatches: dispatches.slice(0, 30),
-    recentOpens: opens.slice(0, 30),
-    recentJobAlerts: jobAlerts.slice(0, 15),
+    jobAnalytics,
+    recentDispatches: enrichedDispatches.slice(0, 50),
+    recentOpens: enrichedOpens.slice(0, 50),
+    recentJobAlerts: jobAlerts.slice(0, 20),
     subscribers: formattedSubscribers.slice(0, 50),
   };
 };

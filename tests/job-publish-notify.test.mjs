@@ -146,6 +146,18 @@ assert.match(shareButtonsSrc, /useAdminAuth/);
 assert.match(shareButtonsSrc, /sendJobPushBroadcast/);
 assert.match(shareButtonsSrc, /isAdmin/);
 
+const statsApiSrc = readFileSync(path.join(repoRoot, 'api/admin-push-stats.js'), 'utf8');
+assert.match(statsApiSrc, /jobAnalytics/);
+assert.match(statsApiSrc, /auto_employer/);
+assert.match(statsApiSrc, /auto_admin/);
+assert.match(statsApiSrc, /manual_admin/);
+
+const adminNotifPageSrc = readFileSync(path.join(repoRoot, 'src/pages/AdminNotificationsPage.jsx'), 'utf8');
+assert.match(adminNotifPageSrc, /Job-Wise Analytics/);
+assert.match(adminNotifPageSrc, /Auto: Company Posted/);
+assert.match(adminNotifPageSrc, /Auto: Admin Posted/);
+assert.match(adminNotifPageSrc, /Manual: Admin Bell/);
+
 assert.match(rpcMigration, /register_web_push_subscription/);
 assert.match(rpcMigration, /grant execute on function public.register_web_push_subscription/);
 

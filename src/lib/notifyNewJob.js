@@ -28,6 +28,7 @@ export async function notifyNewJobPublished(job) {
     },
     body: JSON.stringify({
       jobId: job.id,
+      triggerType: 'auto',
     }),
   });
 
@@ -72,6 +73,7 @@ export async function sendJobPushBroadcast(jobId) {
     body: JSON.stringify({
       jobId: cleanId,
       force: true,
+      triggerType: 'manual_admin',
     }),
   });
 

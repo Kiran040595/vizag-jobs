@@ -54,7 +54,12 @@ export default async function handler(req, res) {
     }
 
     const force = Boolean(body.force && isAdmin);
-    const result = await sendPublishedJobWebPush(jobId, { force, sentBy: auth.user.id });
+    const triggerType = body.triggerType || (force ? 'manual_admin' : 'auto');
+    const result = await sendPublishedJobWebPush(jobId, {
+      force,
+      sentBy: auth.user.id,
+      triggerType,
+    });
     sendJson(res, result.status || 200, result);
   } catch (error) {
     sendJson(res, 500, {

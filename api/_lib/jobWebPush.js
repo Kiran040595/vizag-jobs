@@ -52,7 +52,7 @@ async function loadVapid(admin) {
 }
 
 export async function sendPublishedJobWebPush(jobId, options = {}) {
-  const { force = false, sentBy = null } = options;
+  const { force = false, sentBy = null, triggerType = null } = options;
   const admin = createServiceClient();
   if (!admin) {
     return { ok: false, status: 500, error: 'Supabase is not configured.' };
@@ -129,27 +129,59 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
   const webpush = (await import('web-push')).default;
   webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
 
+  // Resolve trigger type: auto_employer, auto_admin, or manual_admin
+  let resolvedTriggerType = triggerType;
+  if (!resolvedTriggerType) {
+    if (force) {
+      resolvedTriggerType = 'manual_admin';
+    } else if (job.created_by) {
+      const { data: empRow } = await admin
+        .from('employer_profiles')
+        .select('user_id')
+        .eq('user_id', job.created_by)
+        .maybeSingle();
+      resolvedTriggerType = empRow?.user_id ? 'auto_employer' : 'auto_admin';
+    } else {
+      resolvedTriggerType = 'auto_admin';
+    }
+  }
+
   // Initialize push dispatch record for tracking
   let dispatchId = null;
   try {
-    const { data: dispatchRecord } = await admin
+    const basePayload = {
+      job_id: job.id,
+      title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
+      body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
+      url: `${SITE_ORIGIN}${job.slug ? `/job/${job.slug}` : '/jobs'}`,
+      tag: `job-alert-${job.id}__${resolvedTriggerType}`,
+      is_test: false,
+      sent_by: sentBy || job.created_by || null,
+      target_subscribers: rows.length,
+      sent_count: 0,
+      failed_count: 0,
+    };
+
+    const { data: dispatchRecord, error: dispatchErr } = await admin
       .from('push_notification_dispatches')
       .insert({
-        job_id: job.id,
-        title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
-        body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
-        url: `${SITE_ORIGIN}${job.slug ? `/job/${job.slug}` : '/jobs'}`,
-        tag: `job-alert-${job.id}`,
-        is_test: false,
-        sent_by: sentBy || job.created_by || null,
-        target_subscribers: rows.length,
-        sent_count: 0,
-        failed_count: 0,
+        ...basePayload,
+        trigger_type: resolvedTriggerType,
       })
       .select('id')
       .maybeSingle();
+
     if (dispatchRecord?.id) {
       dispatchId = dispatchRecord.id;
+    } else if (dispatchErr) {
+      const { data: fallbackRecord } = await admin
+        .from('push_notification_dispatches')
+        .insert(basePayload)
+        .select('id')
+        .maybeSingle();
+      if (fallbackRecord?.id) {
+        dispatchId = fallbackRecord.id;
+      }
     }
   } catch (err) {
     console.warn('Could not initialize push dispatch record:', err?.message);
@@ -199,7 +231,14 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
     }
   }
 
-  return { ok: true, sent, stale: staleIds.length, total: rows.length, dispatchId };
+  return {
+    ok: true,
+    sent,
+    stale: staleIds.length,
+    total: rows.length,
+    dispatchId,
+    triggerType: resolvedTriggerType,
+  };
 }
 
 export async function sendCustomWebPush({
@@ -233,28 +272,44 @@ export async function sendCustomWebPush({
   }
 
   const cleanUrl = url ? String(url).trim() : `${origin}/jobs`;
+  const resolvedTriggerType = isTest ? 'manual_test' : 'manual_custom';
   const tag = isTest ? `test-${Date.now()}` : `broadcast-${Date.now()}`;
 
   let dispatchId = null;
   try {
-    const { data: dispatchRecord } = await admin
+    const basePayload = {
+      job_id: null,
+      title: String(title).slice(0, 100),
+      body: String(body || '').slice(0, 200),
+      url: cleanUrl,
+      tag: `${tag}__${resolvedTriggerType}`,
+      is_test: Boolean(isTest),
+      sent_by: sentBy,
+      target_subscribers: rows.length,
+      sent_count: 0,
+      failed_count: 0,
+    };
+
+    const { data: dispatchRecord, error: dispatchErr } = await admin
       .from('push_notification_dispatches')
       .insert({
-        job_id: null,
-        title: String(title).slice(0, 100),
-        body: String(body || '').slice(0, 200),
-        url: cleanUrl,
-        tag,
-        is_test: Boolean(isTest),
-        sent_by: sentBy,
-        target_subscribers: rows.length,
-        sent_count: 0,
-        failed_count: 0,
+        ...basePayload,
+        trigger_type: resolvedTriggerType,
       })
       .select('id')
       .maybeSingle();
+
     if (dispatchRecord?.id) {
       dispatchId = dispatchRecord.id;
+    } else if (dispatchErr) {
+      const { data: fallbackRecord } = await admin
+        .from('push_notification_dispatches')
+        .insert(basePayload)
+        .select('id')
+        .maybeSingle();
+      if (fallbackRecord?.id) {
+        dispatchId = fallbackRecord.id;
+      }
     }
   } catch (err) {
     console.warn('Could not initialize push dispatch record:', err?.message);
