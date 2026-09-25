@@ -51,7 +51,8 @@ async function loadVapid(admin) {
   };
 }
 
-export async function sendPublishedJobWebPush(jobId) {
+export async function sendPublishedJobWebPush(jobId, options = {}) {
+  const { force = false, sentBy = null } = options;
   const admin = createServiceClient();
   if (!admin) {
     return { ok: false, status: 500, error: 'Supabase is not configured.' };
@@ -65,7 +66,10 @@ export async function sendPublishedJobWebPush(jobId) {
   if (jobError) {
     throw new Error(jobError.message);
   }
-  if (!isDirectPublishedJob(job)) {
+  if (!job) {
+    return { ok: false, status: 404, error: 'Job not found.' };
+  }
+  if (!force && !isDirectPublishedJob(job)) {
     return { ok: true, skipped: true, reason: 'not_direct_job', sent: 0 };
   }
 
@@ -78,11 +82,37 @@ export async function sendPublishedJobWebPush(jobId) {
     throw new Error(alertError.message);
   }
   if (!alert) {
-    return { ok: true, skipped: true, reason: 'no_job_alert', sent: 0 };
+    if (force) {
+      const alertTitle = `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`;
+      const alertPreview = [job.company, job.location || 'Visakhapatnam']
+        .filter(Boolean)
+        .join(' · ')
+        .slice(0, 180);
+      const alertPath = `/job/${job.slug || job.id}`;
+      await admin
+        .from('job_alerts')
+        .insert({
+          job_id: job.id,
+          title: alertTitle,
+          preview: alertPreview,
+          link_path: alertPath,
+        });
+    } else {
+      return { ok: true, skipped: true, reason: 'no_job_alert', sent: 0 };
+    }
   }
 
   const vapid = await loadVapid(admin);
   if (!vapid.publicKey || !vapid.privateKey) {
+    if (force) {
+      return {
+        ok: false,
+        status: 400,
+        reason: 'vapid_not_configured',
+        error: 'VAPID keys not configured in database or environment.',
+        sent: 0,
+      };
+    }
     return { ok: true, skipped: true, reason: 'vapid_not_configured', sent: 0 };
   }
 
@@ -93,7 +123,9 @@ export async function sendPublishedJobWebPush(jobId) {
     throw new Error(subError.message);
   }
 
-  const rows = (subscriptions || []).filter((row) => row.user_id !== job.created_by);
+  const rows = force
+    ? subscriptions || []
+    : (subscriptions || []).filter((row) => row.user_id !== job.created_by);
   const webpush = (await import('web-push')).default;
   webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
 
@@ -109,7 +141,7 @@ export async function sendPublishedJobWebPush(jobId) {
         url: `${SITE_ORIGIN}${job.slug ? `/job/${job.slug}` : '/jobs'}`,
         tag: `job-alert-${job.id}`,
         is_test: false,
-        sent_by: job.created_by || null,
+        sent_by: sentBy || job.created_by || null,
         target_subscribers: rows.length,
         sent_count: 0,
         failed_count: 0,

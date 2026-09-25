@@ -139,6 +139,13 @@ assert.match(apiSrc, /sendPublishedJobWebPush/);
 assert.match(pushSrc, /web-push/);
 assert.match(pushSrc, /web_push_subscriptions/);
 assert.match(clientSrc, /\/api\/notify-new-job/);
+assert.match(clientSrc, /sendJobPushBroadcast/);
+
+const shareButtonsSrc = readFileSync(path.join(repoRoot, 'src/components/JobShareButtons.jsx'), 'utf8');
+assert.match(shareButtonsSrc, /useAdminAuth/);
+assert.match(shareButtonsSrc, /sendJobPushBroadcast/);
+assert.match(shareButtonsSrc, /isAdmin/);
+
 assert.match(rpcMigration, /register_web_push_subscription/);
 assert.match(rpcMigration, /grant execute on function public.register_web_push_subscription/);
 

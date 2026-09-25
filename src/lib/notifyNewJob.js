@@ -46,3 +46,38 @@ export async function notifyNewJobPublishedSafe(job) {
     return { ok: false, error: 'unexpected' };
   }
 }
+
+export async function sendJobPushBroadcast(jobId) {
+  const cleanId = String(jobId || '').trim();
+  if (!cleanId) {
+    throw new Error('Job ID is required.');
+  }
+
+  const url = getNotifyNewJobUrl();
+  let accessToken = '';
+  if (supabase) {
+    const { data } = await supabase.auth.getSession();
+    accessToken = data?.session?.access_token || '';
+  }
+  if (!accessToken) {
+    throw new Error('You must be signed in as an administrator to send notifications.');
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      jobId: cleanId,
+      force: true,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data?.ok === false) {
+    throw new Error(data?.error || `HTTP ${res.status}: Failed to broadcast push notification.`);
+  }
+  return data;
+}

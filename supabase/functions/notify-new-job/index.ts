@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, error: auth.message }, auth.status);
     }
 
+    let isAdmin = Boolean(auth.serviceRole);
     if (!auth.serviceRole && auth.userId) {
       const [{ data: adminRow }, { data: employerRow }] = await Promise.all([
         supabaseAdmin.from('admin_users').select('user_id').eq('user_id', auth.userId).maybeSingle(),
@@ -77,6 +78,7 @@ Deno.serve(async (req) => {
           .eq('is_active', true)
           .maybeSingle(),
       ]);
+      isAdmin = Boolean(adminRow?.user_id);
       if (!adminRow?.user_id && !employerRow?.user_id) {
         return jsonResponse({ ok: false, error: 'Not allowed to send job alerts.' }, 403);
       }
@@ -107,11 +109,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = (await req.json().catch(() => ({}))) as { jobId?: string; job_id?: string };
+    const body = (await req.json().catch(() => ({}))) as {
+      jobId?: string;
+      job_id?: string;
+      force?: boolean;
+    };
     const jobId = String(body.jobId || body.job_id || '').trim();
     if (!jobId) {
       return jsonResponse({ ok: false, error: 'jobId is required.' }, 400);
     }
+    const force = Boolean(body.force && isAdmin);
 
     const { data: job, error: jobError } = await supabaseAdmin
       .from('jobs')
@@ -126,27 +133,29 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, error: 'Published job not found.' }, 404);
     }
 
-    const sourceName = String(job.source_name || '').trim();
-    const sourceUrl = String(job.source_url || '').trim();
-    const isDirect = Boolean(job.created_by) || (!sourceName && !sourceUrl);
-    if (!isDirect) {
-      return jsonResponse({ ok: true, skipped: true, reason: 'not_direct_job', sent: 0 });
-    }
+    if (!force) {
+      const sourceName = String(job.source_name || '').trim();
+      const sourceUrl = String(job.source_url || '').trim();
+      const isDirect = Boolean(job.created_by) || (!sourceName && !sourceUrl);
+      if (!isDirect) {
+        return jsonResponse({ ok: true, skipped: true, reason: 'not_direct_job', sent: 0 });
+      }
 
-    const { data: alert, error: alertError } = await supabaseAdmin
-      .from('job_alerts')
-      .select('id, created_at')
-      .eq('job_id', job.id)
-      .maybeSingle();
-    if (alertError) {
-      throw new Error(alertError.message);
-    }
-    if (!alert) {
-      return jsonResponse({ ok: true, skipped: true, reason: 'no_job_alert', sent: 0 });
-    }
-    const ageMs = Date.now() - new Date(alert.created_at).getTime();
-    if (Number.isFinite(ageMs) && ageMs > 5 * 60 * 1000) {
-      return jsonResponse({ ok: true, skipped: true, reason: 'already_notified', sent: 0 });
+      const { data: alert, error: alertError } = await supabaseAdmin
+        .from('job_alerts')
+        .select('id, created_at')
+        .eq('job_id', job.id)
+        .maybeSingle();
+      if (alertError) {
+        throw new Error(alertError.message);
+      }
+      if (!alert) {
+        return jsonResponse({ ok: true, skipped: true, reason: 'no_job_alert', sent: 0 });
+      }
+      const ageMs = Date.now() - new Date(alert.created_at).getTime();
+      if (Number.isFinite(ageMs) && ageMs > 5 * 60 * 1000) {
+        return jsonResponse({ ok: true, skipped: true, reason: 'already_notified', sent: 0 });
+      }
     }
 
     const { data: subscriptions, error: subError } = await supabaseAdmin
@@ -157,7 +166,9 @@ Deno.serve(async (req) => {
       throw new Error(subError.message);
     }
 
-    const rows = (subscriptions || []).filter((row) => row.user_id !== job.created_by);
+    const rows = force
+      ? subscriptions || []
+      : (subscriptions || []).filter((row) => row.user_id !== job.created_by);
     const origin = siteOrigin();
     const linkPath = job.slug ? `/job/${job.slug}` : '/jobs';
     const payload = {
