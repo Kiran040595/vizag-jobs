@@ -1,6 +1,13 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { serializePushSubscription } from '../lib/webPush';
 
+const expirationToIso = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
 export const saveWebPushSubscription = async (subscription, userId = null) => {
   if (!isSupabaseConfigured || !supabase) {
     return { ok: false, skipped: true, reason: 'config' };
@@ -11,17 +18,12 @@ export const saveWebPushSubscription = async (subscription, userId = null) => {
     return { ok: false, skipped: true, reason: 'subscription' };
   }
 
-  const row = {
-    endpoint: payload.endpoint,
-    p256dh: payload.keys.p256dh,
-    auth: payload.keys.auth,
-    expiration_time: payload.expirationTime,
-    user_id: userId || null,
-    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 240) : null,
-  };
-
-  const { error } = await supabase.from('web_push_subscriptions').upsert(row, {
-    onConflict: 'endpoint',
+  const { error } = await supabase.rpc('register_web_push_subscription', {
+    p_endpoint: payload.endpoint,
+    p_p256dh: payload.keys.p256dh,
+    p_auth: payload.keys.auth,
+    p_expiration: expirationToIso(payload.expirationTime),
+    p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 240) : null,
   });
 
   if (error) {
@@ -29,7 +31,7 @@ export const saveWebPushSubscription = async (subscription, userId = null) => {
     return { ok: false, error: error.message };
   }
 
-  return { ok: true };
+  return { ok: true, userId: userId || null };
 };
 
 export const deleteWebPushSubscription = async (endpoint) => {
@@ -37,7 +39,9 @@ export const deleteWebPushSubscription = async (endpoint) => {
     return { ok: false, skipped: true };
   }
 
-  const { error } = await supabase.from('web_push_subscriptions').delete().eq('endpoint', endpoint);
+  const { error } = await supabase.rpc('unregister_web_push_subscription', {
+    p_endpoint: endpoint,
+  });
   if (error) {
     console.warn('Could not delete web push subscription:', error.message);
     return { ok: false, error: error.message };

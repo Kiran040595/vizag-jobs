@@ -128,4 +128,18 @@ assert.match(adminJobsSrc, /rememberPublishedJob/);
 const appSrc = readFileSync(path.join(repoRoot, 'src/App.jsx'), 'utf8');
 assert.match(appSrc, /JobAlertNotifications/);
 
+const apiSrc = readFileSync(path.join(repoRoot, 'api/notify-new-job.js'), 'utf8');
+const pushSrc = readFileSync(path.join(repoRoot, 'api/_lib/jobWebPush.js'), 'utf8');
+const clientSrc = readFileSync(path.join(repoRoot, 'src/lib/notifyNewJob.js'), 'utf8');
+const rpcMigration = readFileSync(
+  path.join(repoRoot, 'supabase/migrations/20260925123000_web_push_subscription_rpc.sql'),
+  'utf8',
+);
+assert.match(apiSrc, /sendPublishedJobWebPush/);
+assert.match(pushSrc, /web-push/);
+assert.match(pushSrc, /web_push_subscriptions/);
+assert.match(clientSrc, /\/api\/notify-new-job/);
+assert.match(rpcMigration, /register_web_push_subscription/);
+assert.match(rpcMigration, /grant execute on function public.register_web_push_subscription/);
+
 console.log('job-publish-notify.test.mjs: OK');

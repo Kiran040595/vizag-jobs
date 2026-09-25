@@ -117,7 +117,7 @@ vercel deploy
 4. Set Supabase Edge Function secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and optional `VAPID_SUBJECT`.
 5. Deploy the `notify-new-job` function (included in the functions workflow).
 
-Without VAPID keys, signed-in users still get in-app bell alerts, and open tabs can still show browser notifications via Realtime.
+Without a separate Edge Function deploy, the site sends Web Push from `/api/notify-new-job` after an admin or employer publishes a direct job. Visitors who allow notifications are subscribed even when they are signed out, so an installed PWA can receive the alert after the browser is closed.
 
 ## 🐛 Testing
 

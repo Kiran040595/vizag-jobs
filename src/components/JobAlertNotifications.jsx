@@ -34,7 +34,12 @@ async function syncPushSubscription(userId) {
     return { ok: false, skipped: true };
   }
 
-  const registration = await waitForServiceWorker();
+  const registration = await Promise.race([
+    waitForServiceWorker(),
+    new Promise((resolve) => {
+      window.setTimeout(() => resolve(null), 8000);
+    }),
+  ]);
   if (!registration?.pushManager) {
     return { ok: false, skipped: true, reason: 'no_sw' };
   }
@@ -80,10 +85,7 @@ export default function JobAlertNotifications() {
       return undefined;
     }
 
-    void waitForServiceWorker();
-    if (userId) {
-      void syncPushSubscription(userId);
-    }
+    void syncPushSubscription(userId);
 
     const client = supabasePublic || supabase;
     if (!client) {
@@ -122,9 +124,7 @@ export default function JobAlertNotifications() {
       if (result === 'granted') {
         writePushPromptDismissed();
         setShowPrompt(false);
-        if (userId) {
-          await syncPushSubscription(userId);
-        }
+        await syncPushSubscription(userId);
       }
     } catch (error) {
       console.warn('Notification permission request failed:', error);
