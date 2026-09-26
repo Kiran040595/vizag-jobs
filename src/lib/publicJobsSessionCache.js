@@ -61,7 +61,7 @@ const isInstagramListedJob = (job) => Boolean(job?.isInstagram ?? job?.is_instag
  * Instant /apply paint: dedicated Instagram cache, or Instagram-flagged rows from
  * the shared public list cache (after someone already loaded the home page).
  */
-export const readCachedInstagramJobs = (limit = 5) => {
+export const readCachedInstagramJobs = (limit = 10) => {
   if (typeof sessionStorage === 'undefined') return null;
 
   try {

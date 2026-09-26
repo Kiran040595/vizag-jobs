@@ -377,9 +377,9 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   return job;
 };
 
-/** Published jobs marked for the Instagram bio page (/apply), newest first (default top 5). */
+/** Published jobs marked for the Instagram bio page (/apply), newest first (default top 10). */
 export const fetchInstagramJobs = async (options = {}) => {
-  const { forceRefresh = false, limit = 5 } = options;
+  const { forceRefresh = false, limit = 10 } = options;
   const client = getPublicClient();
   if (!isSupabaseConfigured || !client) {
     throw new Error(
