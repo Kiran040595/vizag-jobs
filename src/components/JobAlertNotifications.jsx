@@ -66,7 +66,10 @@ export default function JobAlertNotifications() {
   const [permission, setPermission] = useState(() =>
     isWebNotificationSupported() ? Notification.permission : 'unsupported',
   );
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(() => {
+    readPushPromptDismissed();
+    return isWebNotificationSupported() && Notification.permission === 'default';
+  });
   const [isBusy, setIsBusy] = useState(false);
 
   const refreshPermission = useCallback(() => {
@@ -78,11 +81,28 @@ export default function JobAlertNotifications() {
   }, []);
 
   useEffect(() => {
-    refreshPermission();
-    readPushPromptDismissed();
-    const canPrompt =
-      isWebNotificationSupported() && Notification.permission === 'default';
-    setShowPrompt(canPrompt);
+    const checkAndShowPrompt = () => {
+      refreshPermission();
+      readPushPromptDismissed();
+      const canPrompt =
+        isWebNotificationSupported() && Notification.permission === 'default';
+      setShowPrompt(canPrompt);
+    };
+
+    checkAndShowPrompt();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndShowPrompt();
+      }
+    };
+
+    window.addEventListener('pageshow', checkAndShowPrompt);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pageshow', checkAndShowPrompt);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [refreshPermission]);
 
   useEffect(() => {
