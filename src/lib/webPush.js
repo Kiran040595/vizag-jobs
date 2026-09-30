@@ -43,15 +43,17 @@ export const serializePushSubscription = (subscription) => {
 
 export const readPushPromptDismissed = () => {
   try {
-    return window.localStorage.getItem(PROMPT_DISMISSED_KEY) === '1';
+    // Clear any legacy persistent dismissal so visitors are prompted on every new visit
+    window.localStorage.removeItem(PROMPT_DISMISSED_KEY);
   } catch {
-    return false;
+    // ignore storage errors
   }
+  return false;
 };
 
 export const writePushPromptDismissed = () => {
   try {
-    window.localStorage.setItem(PROMPT_DISMISSED_KEY, '1');
+    window.localStorage.removeItem(PROMPT_DISMISSED_KEY);
   } catch {
     // ignore quota / private mode
   }

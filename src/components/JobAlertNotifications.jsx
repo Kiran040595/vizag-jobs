@@ -79,9 +79,9 @@ export default function JobAlertNotifications() {
 
   useEffect(() => {
     refreshPermission();
-    const dismissed = readPushPromptDismissed();
+    readPushPromptDismissed();
     const canPrompt =
-      isWebNotificationSupported() && Notification.permission === 'default' && !dismissed;
+      isWebNotificationSupported() && Notification.permission === 'default';
     setShowPrompt(canPrompt);
   }, [refreshPermission]);
 
@@ -138,7 +138,7 @@ export default function JobAlertNotifications() {
     };
   }, [permission, userId]);
 
-  const enableNotifications = async () => {
+  const enableNotifications = useCallback(async () => {
     if (!isWebNotificationSupported()) return;
     setIsBusy(true);
     try {
@@ -154,7 +154,17 @@ export default function JobAlertNotifications() {
     } finally {
       setIsBusy(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    const handleEnableRequest = () => {
+      void enableNotifications();
+    };
+    window.addEventListener('vizag:enable-push-notifications', handleEnableRequest);
+    return () => {
+      window.removeEventListener('vizag:enable-push-notifications', handleEnableRequest);
+    };
+  }, [enableNotifications]);
 
   const dismissPrompt = () => {
     writePushPromptDismissed();
