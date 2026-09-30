@@ -17,6 +17,8 @@ self.addEventListener('push', (event) => {
     renotify: true,
     data: {
       url: payload.url || payload.linkPath || '/jobs',
+      jobId: payload.jobId || null,
+      dispatchId: payload.dispatchId || null,
     },
   };
 
@@ -25,8 +27,19 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification?.data?.url || '/jobs';
-  const absoluteUrl = new URL(targetUrl, self.location.origin).href;
+  const data = event.notification?.data || {};
+  const rawUrl = data.url || '/jobs';
+  const parsedUrl = new URL(rawUrl, self.location.origin);
+  if (!parsedUrl.searchParams.get('utm_source')) {
+    parsedUrl.searchParams.set('utm_source', 'web_push');
+  }
+  if (data.dispatchId && !parsedUrl.searchParams.get('notif_id')) {
+    parsedUrl.searchParams.set('notif_id', String(data.dispatchId));
+  }
+  if (data.jobId && !parsedUrl.searchParams.get('job_id')) {
+    parsedUrl.searchParams.set('job_id', String(data.jobId));
+  }
+  const absoluteUrl = parsedUrl.href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
@@ -43,3 +56,4 @@ self.addEventListener('notificationclick', (event) => {
     }),
   );
 });
+

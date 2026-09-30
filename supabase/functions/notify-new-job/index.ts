@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
 
     let vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')?.trim() || '';
     let vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')?.trim() || '';
-    let vapidSubject = Deno.env.get('VAPID_SUBJECT')?.trim() || 'mailto:kkumardadi@gmail.com';
+    let vapidSubject = Deno.env.get('VAPID_SUBJECT')?.trim() || 'mailto:kiran@jobsinvizag.in';
     if (!vapidPublicKey || !vapidPrivateKey) {
       const { data: vapidRow, error: vapidError } = await supabaseAdmin
         .from('web_push_config')
@@ -113,6 +113,7 @@ Deno.serve(async (req) => {
       jobId?: string;
       job_id?: string;
       force?: boolean;
+      triggerType?: string;
     };
     const jobId = String(body.jobId || body.job_id || '').trim();
     if (!jobId) {
@@ -122,7 +123,7 @@ Deno.serve(async (req) => {
 
     const { data: job, error: jobError } = await supabaseAdmin
       .from('jobs')
-      .select('id, slug, title, company, location, status, created_by, source_name, source_url')
+      .select('id, slug, title, company, location, status, created_by, reviewed_by, source_name, source_url, seo_meta')
       .eq('id', jobId)
       .maybeSingle();
 
@@ -133,6 +134,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: false, error: 'Published job not found.' }, 404);
     }
 
+    let { data: alert, error: alertError } = await supabaseAdmin
+      .from('job_alerts')
+      .select('id, created_at')
+      .eq('job_id', job.id)
+      .maybeSingle();
+    if (alertError) {
+      throw new Error(alertError.message);
+    }
+
     if (!force) {
       const sourceName = String(job.source_name || '').trim();
       const sourceUrl = String(job.source_url || '').trim();
@@ -141,21 +151,35 @@ Deno.serve(async (req) => {
         return jsonResponse({ ok: true, skipped: true, reason: 'not_direct_job', sent: 0 });
       }
 
-      const { data: alert, error: alertError } = await supabaseAdmin
+      if (alert) {
+        const ageMs = Date.now() - new Date(alert.created_at).getTime();
+        if (Number.isFinite(ageMs) && ageMs > 5 * 60 * 1000) {
+          return jsonResponse({ ok: true, skipped: true, reason: 'already_notified', sent: 0 });
+        }
+      }
+    }
+
+    if (!alert) {
+      const alertTitle = `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`;
+      const alertPreview = [job.company, job.location || 'Visakhapatnam']
+        .filter(Boolean)
+        .join(' · ')
+        .slice(0, 180);
+      const alertPath = `/job/${job.slug || job.id}`;
+      const { data: insertedAlert } = await supabaseAdmin
         .from('job_alerts')
+        .upsert(
+          {
+            job_id: job.id,
+            title: alertTitle,
+            preview: alertPreview,
+            link_path: alertPath,
+          },
+          { onConflict: 'job_id' },
+        )
         .select('id, created_at')
-        .eq('job_id', job.id)
         .maybeSingle();
-      if (alertError) {
-        throw new Error(alertError.message);
-      }
-      if (!alert) {
-        return jsonResponse({ ok: true, skipped: true, reason: 'no_job_alert', sent: 0 });
-      }
-      const ageMs = Date.now() - new Date(alert.created_at).getTime();
-      if (Number.isFinite(ageMs) && ageMs > 5 * 60 * 1000) {
-        return jsonResponse({ ok: true, skipped: true, reason: 'already_notified', sent: 0 });
-      }
+      alert = insertedAlert || null;
     }
 
     const { data: subscriptions, error: subError } = await supabaseAdmin
@@ -169,15 +193,77 @@ Deno.serve(async (req) => {
     const rows = force
       ? subscriptions || []
       : (subscriptions || []).filter((row) => row.user_id !== job.created_by);
+
+    let resolvedTriggerType = body.triggerType || '';
+    if (!resolvedTriggerType || resolvedTriggerType === 'auto') {
+      if (force) {
+        resolvedTriggerType = 'manual_admin';
+      } else if (job.created_by || job.reviewed_by) {
+        resolvedTriggerType = 'auto_employer';
+      } else {
+        resolvedTriggerType = 'auto_admin';
+      }
+    }
+
     const origin = siteOrigin();
     const linkPath = job.slug ? `/job/${job.slug}` : '/jobs';
-    const payload = {
+    const basePayload = {
+      job_id: job.id,
       title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
       body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
       url: `${origin}${linkPath}`,
+      tag: `job-alert-${job.id}__${resolvedTriggerType}`,
+      is_test: false,
+      sent_by: auth.userId || job.reviewed_by || job.created_by || null,
+      target_subscribers: rows.length,
+      sent_count: 0,
+      failed_count: 0,
+    };
+
+    let dispatchId: string | null = null;
+    try {
+      const { data: dispatchRecord, error: dispatchErr } = await supabaseAdmin
+        .from('push_notification_dispatches')
+        .insert({
+          ...basePayload,
+          trigger_type: resolvedTriggerType,
+        })
+        .select('id')
+        .maybeSingle();
+
+      if (dispatchRecord?.id) {
+        dispatchId = String(dispatchRecord.id);
+      } else if (dispatchErr) {
+        const { data: fallbackRecord } = await supabaseAdmin
+          .from('push_notification_dispatches')
+          .insert(basePayload)
+          .select('id')
+          .maybeSingle();
+        if (fallbackRecord?.id) {
+          dispatchId = String(fallbackRecord.id);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not initialize push dispatch record:', err);
+    }
+
+    const trackingDispatchId = dispatchId || String(alert?.id || job.id);
+    const params = new URLSearchParams({
+      utm_source: 'web_push',
+      notif_id: trackingDispatchId,
+      job_id: String(job.id),
+    });
+
+    const payload = {
+      title: basePayload.title,
+      body: basePayload.body,
+      url: `${origin}${linkPath}?${params.toString()}`,
       linkPath,
+      jobId: job.id,
+      dispatchId: trackingDispatchId,
       tag: `job-alert-${job.id}`,
       icon: `${origin}/icon-192x192.png`,
+      badge: `${origin}/icon-192x192.png`,
     };
 
     let sent = 0;
@@ -204,7 +290,61 @@ Deno.serve(async (req) => {
       await supabaseAdmin.from('web_push_subscriptions').delete().in('id', staleIds);
     }
 
-    return jsonResponse({ ok: true, sent, stale: staleIds.length, total: rows.length });
+    const nowIso = new Date().toISOString();
+    if (dispatchId) {
+      try {
+        await supabaseAdmin
+          .from('push_notification_dispatches')
+          .update({
+            sent_count: sent,
+            failed_count: rows.length - sent,
+            updated_at: nowIso,
+          })
+          .eq('id', dispatchId);
+      } catch (err) {
+        console.warn('Could not update push dispatch counts:', err);
+      }
+    } else {
+      try {
+        const existingMeta =
+          job.seo_meta && typeof job.seo_meta === 'object' && !Array.isArray(job.seo_meta)
+            ? (job.seo_meta as Record<string, unknown>)
+            : {};
+        const prevDispatches = Array.isArray(existingMeta._push_dispatches)
+          ? existingMeta._push_dispatches
+          : [];
+        const fallbackEntry = {
+          id: trackingDispatchId,
+          ...basePayload,
+          trigger_type: resolvedTriggerType,
+          sent_count: sent,
+          failed_count: rows.length - sent,
+          open_count: 0,
+          created_at: nowIso,
+          updated_at: nowIso,
+        };
+        await supabaseAdmin
+          .from('jobs')
+          .update({
+            seo_meta: {
+              ...existingMeta,
+              _push_dispatches: [fallbackEntry, ...prevDispatches].slice(0, 25),
+            },
+          })
+          .eq('id', job.id);
+      } catch (err) {
+        console.warn('Could not store fallback dispatch metadata:', err);
+      }
+    }
+
+    return jsonResponse({
+      ok: true,
+      sent,
+      stale: staleIds.length,
+      total: rows.length,
+      dispatchId: trackingDispatchId,
+      triggerType: resolvedTriggerType,
+    });
   } catch (error) {
     return jsonResponse(
       { ok: false, error: error instanceof Error ? error.message : 'Failed to send job notifications.' },

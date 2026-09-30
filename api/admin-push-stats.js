@@ -135,14 +135,14 @@ export default async function handler(req, res) {
       safeQuery(
         admin
           .from('job_alerts')
-          .select('id, job_id, title, preview, created_at')
+          .select('id, job_id, title, preview, link_path, created_at')
           .order('created_at', { ascending: false })
-          .limit(50),
+          .limit(100),
       ),
       safeQuery(
         admin
           .from('reply_notifications')
-          .select('id, is_read, created_at')
+          .select('id, user_id, ref_id, is_read, created_at')
           .eq('kind', 'new_job'),
       ),
       safeQuery(
@@ -156,8 +156,8 @@ export default async function handler(req, res) {
     ]);
 
     const subscriptions = subscriptionsRes.data || [];
-    const dispatches = dispatchesRes.data || [];
-    const opens = opensRes.data || [];
+    const rawDispatches = dispatchesRes.data || [];
+    const rawOpens = opensRes.data || [];
     const jobAlerts = jobAlertsRes.data || [];
     const replyNotifications = replyNotificationsRes.data || [];
 
@@ -165,9 +165,9 @@ export default async function handler(req, res) {
     const allJobIds = [
       ...new Set(
         [
-          ...dispatches.map((d) => d.job_id),
+          ...rawDispatches.map((d) => d.job_id),
           ...jobAlerts.map((a) => a.job_id),
-          ...opens.map((o) => o.job_id),
+          ...rawOpens.map((o) => o.job_id),
         ].filter(Boolean),
       ),
     ];
@@ -177,7 +177,9 @@ export default async function handler(req, res) {
         ? await safeQuery(
             admin
               .from('jobs')
-              .select('id, title, company, location, slug, created_by, posted_at, status, source_name')
+              .select(
+                'id, title, company, location, slug, created_by, reviewed_by, reviewed_at, posted_at, status, source_name, apply_click_count, application_count, seo_meta',
+              )
               .in('id', allJobIds),
           )
         : { data: [] };
@@ -189,7 +191,7 @@ export default async function handler(req, res) {
         ? await safeQuery(
             admin
               .from('employer_profiles')
-              .select('user_id, company_name, contact_name, email')
+              .select('user_id, company_name, contact_name, contact_email')
               .in('user_id', creatorIds),
           )
         : { data: [] };
@@ -239,11 +241,158 @@ export default async function handler(req, res) {
       if (tag.includes('__manual_test') || dispatch.is_test) return 'manual_test';
       if (tag.includes('__manual_custom')) return 'manual_custom';
       if (!dispatch.job_id) return 'manual_custom';
-      if (employer) return 'auto_employer';
+      if (employer || job?.created_by || job?.reviewed_by) return 'auto_employer';
       return 'auto_admin';
     };
 
+    // Merge dispatches from push_notification_dispatches, job.seo_meta._push_dispatches, and job_alerts
+    const dispatches = [...rawDispatches];
+    const seenDispatchIds = new Set(dispatches.map((d) => String(d.id)));
+
+    for (const job of jobsRes.data || []) {
+      const metaDispatches = job?.seo_meta?._push_dispatches;
+      if (Array.isArray(metaDispatches)) {
+        for (const md of metaDispatches) {
+          if (md && md.id && !seenDispatchIds.has(String(md.id))) {
+            seenDispatchIds.add(String(md.id));
+            dispatches.push({
+              ...md,
+              job_id: md.job_id || job.id,
+            });
+          }
+        }
+      }
+    }
+
+    const autoDispatchedJobIds = new Set(
+      dispatches
+        .filter((d) => {
+          if (!d.job_id || d.is_test) return false;
+          const t = String(d.trigger_type || '');
+          const tag = String(d.tag || '');
+          return !t.startsWith('manual') && !tag.includes('__manual');
+        })
+        .map((d) => d.job_id),
+    );
+
+    for (const alert of jobAlerts) {
+      if (!alert.job_id || autoDispatchedJobIds.has(alert.job_id)) continue;
+      autoDispatchedJobIds.add(alert.job_id);
+
+      const job = jobsById[alert.job_id] || null;
+      const employer = job?.created_by ? employersByUserId[job.created_by] : null;
+      const isEmployerJob = Boolean(employer || job?.created_by || job?.reviewed_by);
+      const triggerType = isEmployerJob ? 'auto_employer' : 'auto_admin';
+
+      const eligibleSubs = subscriptions.filter(
+        (sub) => !job?.created_by || sub.user_id !== job.created_by,
+      );
+      const subsAtAlertTime = eligibleSubs.filter(
+        (sub) => !sub.created_at || new Date(sub.created_at) <= new Date(alert.created_at),
+      );
+      const targetCount =
+        subsAtAlertTime.length > 0 ? subsAtAlertTime.length : eligibleSubs.length;
+
+      const synthId = String(alert.id || `alert-${alert.job_id}`);
+      if (!seenDispatchIds.has(synthId)) {
+        seenDispatchIds.add(synthId);
+        dispatches.push({
+          id: synthId,
+          job_id: alert.job_id,
+          title: alert.title || `New job: ${job?.title || 'Vizag opening'}`,
+          body:
+            alert.preview ||
+            [job?.company, job?.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
+          url: alert.link_path || (job?.slug ? `/job/${job.slug}` : '/jobs'),
+          tag: `job-alert-${alert.job_id}__${triggerType}`,
+          trigger_type: triggerType,
+          is_test: false,
+          sent_by: job?.reviewed_by || job?.created_by || null,
+          target_subscribers: targetCount,
+          sent_count: targetCount,
+          failed_count: 0,
+          open_count: 0,
+          created_at: alert.created_at,
+          updated_at: alert.created_at,
+        });
+      }
+    }
+
+    dispatches.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
     const dispatchesById = Object.fromEntries(dispatches.map((d) => [d.id, d]));
+    const latestDispatchByJobId = {};
+    for (const d of dispatches) {
+      if (d.job_id && !latestDispatchByJobId[d.job_id]) {
+        latestDispatchByJobId[d.job_id] = d;
+      }
+    }
+
+    // Merge opens from push_notification_opens, job.seo_meta._push_opens, and read new_job reply_notifications
+    const opens = [...rawOpens];
+    const seenOpenKeys = new Set(
+      opens.map((o) => `${o.dispatch_id || o.job_id || 'none'}::${o.visitor_key || o.id}`),
+    );
+
+    for (const job of jobsRes.data || []) {
+      const metaOpens = job?.seo_meta?._push_opens;
+      if (Array.isArray(metaOpens)) {
+        for (const mo of metaOpens) {
+          const dispatchId = mo.dispatch_id || latestDispatchByJobId[job.id]?.id || null;
+          const vKey = mo.visitor_key || mo.id || `anon-${mo.opened_at}`;
+          const dedupKey = `${dispatchId || job.id}::${vKey}`;
+          if (!seenOpenKeys.has(dedupKey)) {
+            seenOpenKeys.add(dedupKey);
+            opens.push({
+              id: mo.id || dedupKey,
+              dispatch_id: dispatchId,
+              job_id: job.id,
+              visitor_key: vKey,
+              user_agent: mo.user_agent || '',
+              opened_at: mo.opened_at || job.posted_at,
+            });
+          }
+        }
+      }
+    }
+
+    const subByUserId = Object.fromEntries(
+      subscriptions.filter((s) => s.user_id).map((s) => [s.user_id, s]),
+    );
+    for (const rn of replyNotifications) {
+      if (!rn.is_read || !rn.ref_id) continue;
+      const linkedDispatch = latestDispatchByJobId[rn.ref_id] || null;
+      const dispatchId = linkedDispatch?.id || null;
+      const vKey = rn.user_id ? `user:${rn.user_id}` : `inapp:${rn.id}`;
+      const dedupKey = `${dispatchId || rn.ref_id}::${vKey}`;
+      const jobKey = `${rn.ref_id}::${vKey}`;
+      if (!seenOpenKeys.has(dedupKey) && !seenOpenKeys.has(jobKey)) {
+        seenOpenKeys.add(dedupKey);
+        seenOpenKeys.add(jobKey);
+        const userSub = rn.user_id ? subByUserId[rn.user_id] : null;
+        opens.push({
+          id: `rn-${rn.id}`,
+          dispatch_id: dispatchId,
+          job_id: rn.ref_id,
+          visitor_key: vKey,
+          user_agent: userSub?.user_agent || '',
+          opened_at: rn.created_at,
+        });
+      }
+    }
+
+    opens.sort((a, b) => new Date(b.opened_at || 0) - new Date(a.opened_at || 0));
+
+    // Count opens per dispatch & job so synthesized dispatches also reflect opens
+    const openCountByDispatchId = {};
+    for (const open of opens) {
+      const targetDispatchId =
+        open.dispatch_id || (open.job_id ? latestDispatchByJobId[open.job_id]?.id : null);
+      if (targetDispatchId) {
+        openCountByDispatchId[targetDispatchId] =
+          (openCountByDispatchId[targetDispatchId] || 0) + 1;
+      }
+    }
 
     const enrichedOpens = opens.map((open) => {
       const uaInfo = parseUserAgent(open.user_agent);
@@ -253,7 +402,9 @@ export default async function handler(req, res) {
       return {
         ...open,
         job_id: jobId,
-        jobTitle: job?.title || (linkedDispatch?.title ? linkedDispatch.title.replace(/^New job:\s*/i, '') : 'Broadcast Alert'),
+        jobTitle:
+          job?.title ||
+          (linkedDispatch?.title ? linkedDispatch.title.replace(/^New job:\s*/i, '') : 'Broadcast Alert'),
         jobCompany: job?.company || null,
         jobSlug: job?.slug || null,
         deviceType: uaInfo.deviceType,
@@ -271,12 +422,14 @@ export default async function handler(req, res) {
     const jobAnalyticsMap = new Map();
 
     const enrichedDispatches = dispatches.map((d) => {
+      const resolvedOpenCount = Math.max(d.open_count || 0, openCountByDispatchId[d.id] || 0);
       totalPushesSent += d.sent_count || 0;
       totalPushesFailed += d.failed_count || 0;
-      totalOpens += d.open_count || 0;
+      totalOpens += resolvedOpenCount;
 
       const job = d.job_id ? jobsById[d.job_id] : null;
       const employer = job?.created_by ? employersByUserId[job.created_by] : null;
+      const isEmployerJob = Boolean(employer || job?.created_by || job?.reviewed_by);
       const triggerType = resolveTriggerType(d, job, employer);
       const isAuto = triggerType === 'auto_employer' || triggerType === 'auto_admin';
 
@@ -287,18 +440,21 @@ export default async function handler(req, res) {
       const jobCompany = job?.company || employer?.company_name || null;
       const jobLocation = job?.location || null;
       const jobPath = job ? `/job/${job.slug || job.id}` : d.url || '/jobs';
+      const posterRole = isEmployerJob ? 'Company / Employer' : 'Admin';
+      const posterName =
+        employer?.company_name || (isEmployerJob ? jobCompany || 'Direct Employer' : 'Vizag Jobs Admin');
 
       if (d.job_id) {
         const existing = jobAnalyticsMap.get(d.job_id) || {
           jobId: d.job_id,
           title: jobTitle,
-          company: jobCompany || 'Direct Employer',
+          company: jobCompany || (isEmployerJob ? 'Direct Employer' : 'Vizag Jobs'),
           location: jobLocation || 'Visakhapatnam',
           url: jobPath,
           status: job?.status || 'published',
           postedAt: job?.posted_at || d.created_at,
-          posterRole: employer ? 'Company / Employer' : 'Admin',
-          posterName: employer?.company_name || jobCompany || 'Vizag Jobs Admin',
+          posterRole,
+          posterName,
           dispatchesCount: 0,
           autoCount: 0,
           manualCount: 0,
@@ -320,7 +476,7 @@ export default async function handler(req, res) {
         existing.totalTarget += d.target_subscribers || 0;
         existing.totalSent += d.sent_count || 0;
         existing.totalFailed += d.failed_count || 0;
-        existing.totalOpens += d.open_count || 0;
+        existing.totalOpens += resolvedOpenCount;
         if (new Date(d.created_at) > new Date(existing.lastSentAt)) {
           existing.lastSentAt = d.created_at;
         }
@@ -329,14 +485,15 @@ export default async function handler(req, res) {
 
       return {
         ...d,
+        open_count: resolvedOpenCount,
         triggerType,
         isAuto,
         jobTitle,
         jobCompany,
         jobLocation,
         jobPath,
-        posterRole: employer ? 'Company / Employer' : 'Admin',
-        posterName: employer?.company_name || jobCompany || 'Admin',
+        posterRole,
+        posterName,
       };
     });
 
@@ -346,10 +503,16 @@ export default async function handler(req, res) {
       }
     }
 
-    const jobAnalytics = Array.from(jobAnalyticsMap.values()).map((item) => ({
-      ...item,
-      ctr: item.totalSent > 0 ? ((item.totalOpens / item.totalSent) * 100).toFixed(1) : '0.0',
-    }));
+    const jobAnalytics = Array.from(jobAnalyticsMap.values())
+      .map((item) => {
+        const opensCount = Math.max(item.totalOpens || 0, item.clicks.length);
+        return {
+          ...item,
+          totalOpens: opensCount,
+          ctr: item.totalSent > 0 ? ((opensCount / item.totalSent) * 100).toFixed(1) : '0.0',
+        };
+      })
+      .sort((a, b) => new Date(b.lastSentAt || 0) - new Date(a.lastSentAt || 0));
 
     const overallCtr = totalPushesSent > 0
       ? ((totalOpens / totalPushesSent) * 100).toFixed(1)
@@ -374,7 +537,7 @@ export default async function handler(req, res) {
         totalSubscribers,
         registeredCount,
         anonymousCount,
-        totalDispatches: dispatches.length,
+        totalDispatches: enrichedDispatches.length,
         autoDispatchesCount,
         manualDispatchesCount,
         totalJobsNotified: jobAnalytics.length,

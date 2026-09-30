@@ -13,13 +13,18 @@ export const isDirectPublishedJob = (job) => {
 
 export const buildWebPushMessage = (job, origin = SITE_ORIGIN, dispatchId = null) => {
   const linkPath = job.slug ? `/job/${job.slug}` : '/jobs';
-  const trackingParam = dispatchId ? `?utm_source=web_push&notif_id=${dispatchId}` : '';
-  const absolute = `${origin}${linkPath}${trackingParam}`;
+  const trackingId = dispatchId || job?.id || null;
+  const params = new URLSearchParams({ utm_source: 'web_push' });
+  if (trackingId) params.set('notif_id', String(trackingId));
+  if (job?.id) params.set('job_id', String(job.id));
+  const absolute = `${origin}${linkPath}?${params.toString()}`;
   return {
     title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
     body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
     url: absolute,
     linkPath,
+    jobId: job?.id || null,
+    dispatchId: trackingId,
     tag: `job-alert-${job.id}`,
     icon: `${origin}/icon-192x192.png`,
     badge: `${origin}/icon-192x192.png`,
@@ -30,7 +35,7 @@ async function loadVapid(admin) {
   const fromEnv = {
     publicKey: (process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY || '').trim(),
     privateKey: (process.env.VAPID_PRIVATE_KEY || '').trim(),
-    subject: (process.env.VAPID_SUBJECT || 'mailto:kkumardadi@gmail.com').trim(),
+    subject: (process.env.VAPID_SUBJECT || 'mailto:kiran@jobsinvizag.in').trim(),
   };
   if (fromEnv.publicKey && fromEnv.privateKey) {
     return fromEnv;
@@ -60,7 +65,7 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
 
   const { data: job, error: jobError } = await admin
     .from('jobs')
-    .select('id, slug, title, company, location, status, created_by, source_name, source_url')
+    .select('id, slug, title, company, location, status, created_by, reviewed_by, source_name, source_url, seo_meta')
     .eq('id', jobId)
     .maybeSingle();
   if (jobError) {
@@ -73,7 +78,7 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
     return { ok: true, skipped: true, reason: 'not_direct_job', sent: 0 };
   }
 
-  const { data: alert, error: alertError } = await admin
+  let { data: alert, error: alertError } = await admin
     .from('job_alerts')
     .select('id, created_at')
     .eq('job_id', job.id)
@@ -82,24 +87,26 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
     throw new Error(alertError.message);
   }
   if (!alert) {
-    if (force) {
-      const alertTitle = `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`;
-      const alertPreview = [job.company, job.location || 'Visakhapatnam']
-        .filter(Boolean)
-        .join(' · ')
-        .slice(0, 180);
-      const alertPath = `/job/${job.slug || job.id}`;
-      await admin
-        .from('job_alerts')
-        .insert({
+    const alertTitle = `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`;
+    const alertPreview = [job.company, job.location || 'Visakhapatnam']
+      .filter(Boolean)
+      .join(' · ')
+      .slice(0, 180);
+    const alertPath = `/job/${job.slug || job.id}`;
+    const { data: insertedAlert } = await admin
+      .from('job_alerts')
+      .upsert(
+        {
           job_id: job.id,
           title: alertTitle,
           preview: alertPreview,
           link_path: alertPath,
-        });
-    } else {
-      return { ok: true, skipped: true, reason: 'no_job_alert', sent: 0 };
-    }
+        },
+        { onConflict: 'job_id' },
+      )
+      .select('id, created_at')
+      .maybeSingle();
+    alert = insertedAlert || null;
   }
 
   const vapid = await loadVapid(admin);
@@ -131,37 +138,32 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
 
   // Resolve trigger type: auto_employer, auto_admin, or manual_admin
   let resolvedTriggerType = triggerType;
-  if (!resolvedTriggerType) {
+  if (!resolvedTriggerType || resolvedTriggerType === 'auto') {
     if (force) {
       resolvedTriggerType = 'manual_admin';
-    } else if (job.created_by) {
-      const { data: empRow } = await admin
-        .from('employer_profiles')
-        .select('user_id')
-        .eq('user_id', job.created_by)
-        .maybeSingle();
-      resolvedTriggerType = empRow?.user_id ? 'auto_employer' : 'auto_admin';
+    } else if (job.created_by || job.reviewed_by) {
+      resolvedTriggerType = 'auto_employer';
     } else {
       resolvedTriggerType = 'auto_admin';
     }
   }
 
+  const basePayload = {
+    job_id: job.id,
+    title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
+    body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
+    url: `${SITE_ORIGIN}${job.slug ? `/job/${job.slug}` : '/jobs'}`,
+    tag: `job-alert-${job.id}__${resolvedTriggerType}`,
+    is_test: false,
+    sent_by: sentBy || job.reviewed_by || job.created_by || null,
+    target_subscribers: rows.length,
+    sent_count: 0,
+    failed_count: 0,
+  };
+
   // Initialize push dispatch record for tracking
   let dispatchId = null;
   try {
-    const basePayload = {
-      job_id: job.id,
-      title: `New job: ${String(job.title || 'Vizag opening').slice(0, 80)}`,
-      body: [job.company, job.location || 'Visakhapatnam'].filter(Boolean).join(' · '),
-      url: `${SITE_ORIGIN}${job.slug ? `/job/${job.slug}` : '/jobs'}`,
-      tag: `job-alert-${job.id}__${resolvedTriggerType}`,
-      is_test: false,
-      sent_by: sentBy || job.created_by || null,
-      target_subscribers: rows.length,
-      sent_count: 0,
-      failed_count: 0,
-    };
-
     const { data: dispatchRecord, error: dispatchErr } = await admin
       .from('push_notification_dispatches')
       .insert({
@@ -187,7 +189,8 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
     console.warn('Could not initialize push dispatch record:', err?.message);
   }
 
-  const message = JSON.stringify(buildWebPushMessage(job, SITE_ORIGIN, dispatchId));
+  const trackingDispatchId = dispatchId || alert?.id || job.id;
+  const message = JSON.stringify(buildWebPushMessage(job, SITE_ORIGIN, trackingDispatchId));
   let sent = 0;
   const staleIds = [];
 
@@ -216,6 +219,7 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
     await admin.from('web_push_subscriptions').delete().in('id', staleIds);
   }
 
+  const nowIso = new Date().toISOString();
   if (dispatchId) {
     try {
       await admin
@@ -223,11 +227,44 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
         .update({
           sent_count: sent,
           failed_count: rows.length - sent,
-          updated_at: new Date().toISOString(),
+          updated_at: nowIso,
         })
         .eq('id', dispatchId);
     } catch (err) {
       console.warn('Could not update push dispatch record counts:', err?.message);
+    }
+  } else {
+    try {
+      const existingMeta =
+        job.seo_meta && typeof job.seo_meta === 'object' && !Array.isArray(job.seo_meta)
+          ? job.seo_meta
+          : {};
+      const prevDispatches = Array.isArray(existingMeta._push_dispatches)
+        ? existingMeta._push_dispatches
+        : [];
+      const fallbackEntry = {
+        id: trackingDispatchId && !prevDispatches.some((d) => d.id === trackingDispatchId)
+          ? trackingDispatchId
+          : `${job.id}-${Date.now()}`,
+        ...basePayload,
+        trigger_type: resolvedTriggerType,
+        sent_count: sent,
+        failed_count: rows.length - sent,
+        open_count: 0,
+        created_at: nowIso,
+        updated_at: nowIso,
+      };
+      await admin
+        .from('jobs')
+        .update({
+          seo_meta: {
+            ...existingMeta,
+            _push_dispatches: [fallbackEntry, ...prevDispatches].slice(0, 25),
+          },
+        })
+        .eq('id', job.id);
+    } catch (err) {
+      console.warn('Could not store fallback dispatch metadata:', err?.message);
     }
   }
 
@@ -236,7 +273,7 @@ export async function sendPublishedJobWebPush(jobId, options = {}) {
     sent,
     stale: staleIds.length,
     total: rows.length,
-    dispatchId,
+    dispatchId: trackingDispatchId,
     triggerType: resolvedTriggerType,
   };
 }

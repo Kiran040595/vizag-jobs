@@ -70,6 +70,12 @@ export const showJobAlertBrowserNotification = (alert) => {
     return false;
   }
 
+  const baseLink = alert?.linkPath || '/jobs';
+  const sep = baseLink.includes('?') ? '&' : '?';
+  const trackedLink = baseLink.includes('utm_source=')
+    ? baseLink
+    : `${baseLink}${sep}utm_source=web_push${alert?.jobId ? `&job_id=${encodeURIComponent(alert.jobId)}` : ''}`;
+
   const title = alert?.title || 'New job on Vizag Jobs';
   const options = {
     body: alert?.body || alert?.preview || 'A new job was just published.',
@@ -78,7 +84,8 @@ export const showJobAlertBrowserNotification = (alert) => {
     tag: alert?.tag || 'vizag-job-alert',
     renotify: true,
     data: {
-      url: alert?.linkPath || '/jobs',
+      url: trackedLink,
+      jobId: alert?.jobId || null,
     },
   };
 
@@ -91,9 +98,7 @@ export const showJobAlertBrowserNotification = (alert) => {
     const notification = new Notification(title, options);
     notification.onclick = () => {
       window.focus();
-      if (alert?.linkPath) {
-        window.location.assign(alert.linkPath);
-      }
+      window.location.assign(trackedLink);
       notification.close();
     };
     return true;
@@ -102,3 +107,4 @@ export const showJobAlertBrowserNotification = (alert) => {
     return false;
   }
 };
+

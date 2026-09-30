@@ -114,6 +114,7 @@ export default function JobAlertNotifications() {
               body: row.preview,
               linkPath: row.link_path,
               tag: `job-alert-${row.job_id}`,
+              jobId: row.job_id,
             });
           },
         )

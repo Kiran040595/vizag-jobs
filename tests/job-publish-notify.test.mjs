@@ -161,4 +161,37 @@ assert.match(adminNotifPageSrc, /Manual: Admin Bell/);
 assert.match(rpcMigration, /register_web_push_subscription/);
 assert.match(rpcMigration, /grant execute on function public.register_web_push_subscription/);
 
+const { buildWebPushMessage } = await import('../api/_lib/jobWebPush.js');
+const msg = buildWebPushMessage(
+  {
+    id: '42cb6910-e5c9-4e43-876a-d480a710bc79',
+    slug: 'sales-executive-vizag',
+    title: 'Sales Executive',
+    company: 'Amasis India Pvt Ltd',
+    location: 'Visakhapatnam',
+  },
+  null,
+);
+assert.match(msg.url, /utm_source=web_push/);
+assert.match(msg.url, /job_id=42cb6910-e5c9-4e43-876a-d480a710bc79/);
+
+assert.match(statsApiSrc, /contact_email/);
+assert.doesNotMatch(statsApiSrc, /company_name,\s*contact_name,\s*email\b/);
+assert.match(statsApiSrc, /autoDispatchedJobIds/);
+
+const analyticsServiceSrc = readFileSync(
+  path.join(repoRoot, 'src/services/adminNotificationAnalytics.js'),
+  'utf8',
+);
+assert.match(analyticsServiceSrc, /contact_email/);
+assert.doesNotMatch(analyticsServiceSrc, /company_name,\s*contact_name,\s*email\b/);
+assert.match(analyticsServiceSrc, /autoDispatchedJobIds/);
+
+const scrollToTopSrc = readFileSync(
+  path.join(repoRoot, 'src/components/ScrollToTop.jsx'),
+  'utf8',
+);
+assert.match(scrollToTopSrc, /checkAndTrackNotificationClick/);
+
 console.log('job-publish-notify.test.mjs: OK');
+
