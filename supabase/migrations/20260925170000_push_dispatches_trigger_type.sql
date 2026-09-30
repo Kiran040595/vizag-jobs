@@ -15,88 +15,80 @@ security definer
 set search_path = public
 as $$
 declare
-  v_should_notify boolean := false;
-  v_title text;
-  v_preview text;
-  v_link text;
+  alert_title text;
+  alert_preview text;
+  alert_path text;
+  inserted_alert_id uuid;
   v_trigger_type text;
   v_sub_count integer := 0;
 begin
-  if tg_op = 'INSERT' then
-    v_should_notify := (new.status = 'published');
-  elsif tg_op = 'UPDATE' then
-    v_should_notify := (coalesce(old.status, '') <> 'published' and new.status = 'published');
-  end if;
-
-  if not v_should_notify then
+  if tg_op = 'UPDATE' and new.status is distinct from 'published' then
+    delete from public.job_alerts where job_id = new.id;
     return new;
   end if;
 
-  v_title := 'New job: ' || coalesce(nullif(trim(new.title), ''), 'Job opening')
-    || case
-      when coalesce(nullif(trim(new.company), ''), '') <> '' then ' at ' || trim(new.company)
-      else ''
-    end;
-
-  v_preview := concat_ws(
-    ' • ',
-    nullif(trim(coalesce(new.location, 'Visakhapatnam')), ''),
-    nullif(trim(coalesce(new.qualification, '')), ''),
-    nullif(trim(coalesce(new.salary_label, '')), '')
-  );
-  if coalesce(v_preview, '') = '' then
-    v_preview := 'Tap to view eligibility and apply on Vizag Jobs.';
+  if new.status is distinct from 'published' then
+    return new;
   end if;
 
-  v_link := '/job/' || coalesce(nullif(trim(new.slug), ''), new.id::text);
+  if tg_op = 'UPDATE' and coalesce(old.status, '') = 'published' then
+    return new;
+  end if;
 
-  insert into public.job_alerts (
-    job_id,
-    job_slug,
-    title,
-    company,
-    location,
-    preview,
-    link_path
-  )
-  values (
-    new.id,
-    coalesce(nullif(trim(new.slug), ''), new.id::text),
-    v_title,
-    coalesce(nullif(trim(new.company), ''), 'Vizag Employer'),
-    coalesce(nullif(trim(new.location), ''), 'Visakhapatnam'),
-    v_preview,
-    v_link
-  )
-  on conflict (job_id) do update
-    set job_slug = excluded.job_slug,
-        title = excluded.title,
-        company = excluded.company,
-        location = excluded.location,
-        preview = excluded.preview,
-        link_path = excluded.link_path,
-        created_at = now();
+  if not public.is_direct_portal_job(new.created_by, new.source_name, new.source_url) then
+    return new;
+  end if;
+
+  alert_title := 'New job: ' || left(coalesce(nullif(btrim(new.title), ''), 'Vizag opening'), 80);
+  alert_preview := left(
+    concat_ws(
+      ' · ',
+      nullif(btrim(coalesce(new.company, '')), ''),
+      coalesce(nullif(btrim(coalesce(new.location, '')), ''), 'Visakhapatnam')
+    ),
+    180
+  );
+  alert_path := '/job/' || coalesce(nullif(btrim(new.slug), ''), new.id::text);
+
+  insert into public.job_alerts (job_id, title, preview, link_path)
+  values (new.id, alert_title, alert_preview, alert_path)
+  on conflict (job_id) do nothing
+  returning id into inserted_alert_id;
+
+  if inserted_alert_id is null then
+    return new;
+  end if;
 
   insert into public.reply_notifications (
     user_id,
-    source_type,
+    kind,
     ref_id,
     title,
     preview,
     link_path,
-    is_read
+    is_read,
+    is_dismissed
   )
   select
     sp.user_id,
     'new_job',
     new.id,
-    v_title,
-    v_preview,
-    v_link,
+    alert_title,
+    alert_preview,
+    alert_path,
+    false,
     false
   from public.student_profiles sp
   where sp.user_id is not null
-    and (new.created_by is null or sp.user_id <> new.created_by);
+    and (new.created_by is null or sp.user_id <> new.created_by)
+  on conflict (user_id, kind, ref_id) do update
+    set
+      title = excluded.title,
+      preview = excluded.preview,
+      link_path = excluded.link_path,
+      is_read = false,
+      is_dismissed = false,
+      created_at = timezone('utc', now());
 
   v_trigger_type := case
     when new.created_by is not null or new.reviewed_by is not null then 'auto_employer'
@@ -127,9 +119,9 @@ begin
     )
     values (
       new.id,
-      v_title,
-      v_preview,
-      v_link,
+      alert_title,
+      alert_preview,
+      alert_path,
       'job-alert-' || new.id::text || '__' || v_trigger_type,
       false,
       coalesce(new.reviewed_by, new.created_by),
@@ -178,7 +170,7 @@ select
   (select count(*)::integer from public.web_push_subscriptions wps where wps.created_at <= coalesce(ja.created_at, now()) + interval '1 day'),
   (select count(*)::integer from public.web_push_subscriptions wps where wps.created_at <= coalesce(ja.created_at, now()) + interval '1 day'),
   0,
-  (select count(*)::integer from public.reply_notifications rn where rn.source_type = 'new_job' and rn.ref_id = ja.job_id and rn.is_read = true),
+  (select count(*)::integer from public.reply_notifications rn where rn.kind = 'new_job' and rn.ref_id::text = ja.job_id::text and rn.is_read = true),
   case
     when j.created_by is not null or j.reviewed_by is not null then 'auto_employer'
     else 'auto_admin'
@@ -193,5 +185,6 @@ where ja.job_id is not null
       from public.push_notification_dispatches d
      where d.job_id = ja.job_id
   );
+
 
 
