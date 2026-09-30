@@ -5,6 +5,8 @@ import { displayCompanyName, displayLocation } from '../lib/jobDisplayLabels';
 import { buildInstagramJobCaption } from '../lib/instagramJobCaption';
 import { getInstagramBioJobsDisplayUrl } from '../lib/instagramBioJobsPath';
 import { pushToast } from '../lib/toast';
+import { useAdminAuth } from '../hooks/useAdminAuth';
+import { sendJobPushBroadcast } from '../lib/notifyNewJob';
 
 const buildSharePayload = (job = {}) => {
   const path = getJobDetailPath(job);
@@ -18,15 +20,16 @@ const buildSharePayload = (job = {}) => {
   return { url, title, text, fullMessage };
 };
 
-const ShareButton = ({ children, label, href, onClick, accent = 'default' }) => {
+const ShareButton = ({ children, label, href, onClick, accent = 'default', disabled = false }) => {
   const accentClasses = {
     whatsapp: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100',
     telegram: 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300 hover:bg-sky-100',
+    push: 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300 hover:bg-amber-100',
     copy: 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700',
     default: 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700',
   };
 
-  const className = `inline-flex h-10 w-10 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${accentClasses[accent]}`;
+  const className = `inline-flex h-10 w-10 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${accentClasses[accent]}`;
 
   if (href) {
     return (
@@ -44,14 +47,23 @@ const ShareButton = ({ children, label, href, onClick, accent = 'default' }) => 
   }
 
   return (
-    <button type="button" onClick={onClick} className={className} aria-label={label} title={label}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={className}
+      aria-label={label}
+      title={label}
+    >
       {children}
     </button>
   );
 };
 
 export default function JobShareButtons({ job }) {
+  const { isAdmin } = useAdminAuth();
   const [copyStatus, setCopyStatus] = useState('idle');
+  const [pushStatus, setPushStatus] = useState('idle');
   const { url, title, text, fullMessage } = useMemo(() => buildSharePayload(job), [job]);
 
   const canNativeShare =
@@ -94,8 +106,49 @@ export default function JobShareButtons({ job }) {
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(fullMessage)}`;
   const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 
+  const handleSendPush = useCallback(async () => {
+    if (!isAdmin || !job?.id || pushStatus === 'sending') return;
+
+    const jobTitle = job.title || 'this job';
+    const confirmed = window.confirm(
+      `Send web push notification for "${jobTitle}" to all notification subscribers?`,
+    );
+    if (!confirmed) return;
+
+    setPushStatus('sending');
+    try {
+      const result = await sendJobPushBroadcast(job.id);
+      setPushStatus('sent');
+      const sentCount = result.sent ?? 0;
+      pushToast({
+        message:
+          sentCount > 0
+            ? `Push notification sent to ${sentCount} subscriber${sentCount === 1 ? '' : 's'}!`
+            : result.message || 'Notification broadcast completed (no active subscribers found).',
+        type: 'success',
+        durationMs: 5000,
+      });
+    } catch (err) {
+      setPushStatus('error');
+      pushToast({
+        message: err instanceof Error ? err.message : 'Failed to send push notification.',
+        type: 'error',
+        durationMs: 5000,
+      });
+    } finally {
+      window.setTimeout(() => setPushStatus('idle'), 3000);
+    }
+  }, [isAdmin, job, pushStatus]);
+
   const copyLabel =
     copyStatus === 'copied' ? 'Link copied!' : copyStatus === 'error' ? 'Copy failed' : 'Copy link';
+
+  const pushLabel =
+    pushStatus === 'sending'
+      ? 'Sending push notification...'
+      : pushStatus === 'sent'
+        ? 'Push notification sent!'
+        : 'Send push notification to all subscribers';
 
   return (
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Share this job">
@@ -135,6 +188,58 @@ export default function JobShareButtons({ job }) {
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
       </ShareButton>
+
+      {isAdmin ? (
+        <ShareButton
+          label={pushLabel}
+          onClick={handleSendPush}
+          accent="push"
+          disabled={pushStatus === 'sending'}
+        >
+          {pushStatus === 'sending' ? (
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4.5 w-4.5 animate-spin"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                strokeDasharray="32"
+                strokeDashoffset="12"
+                strokeLinecap="round"
+              />
+            </svg>
+          ) : pushStatus === 'sent' ? (
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4.5 w-4.5 text-emerald-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4.5 w-4.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+            </svg>
+          )}
+        </ShareButton>
+      ) : null}
     </div>
   );
 }

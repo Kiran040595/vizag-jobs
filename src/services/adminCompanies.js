@@ -1,39 +1,157 @@
-import { supabase } from '../lib/supabaseClient';
-import { fetchJobs } from './jobs';
-import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow';
+import { supabase } from '../lib/supabaseClient.js';
+import { fetchJobs } from './jobs.js';
+import { filterProcessedJobsForPublicDisplay } from '../lib/jobDisplayWindow.js';
 import {
   readCachedPublicJobs,
   readCachedPublicCompanies,
   writeCachedPublicCompanies,
   clearCachedPublicCompanies,
   COMPANY_DIRECTORY_CACHE_TTL_MS,
-} from '../lib/publicJobsSessionCache';
+} from '../lib/publicJobsSessionCache.js';
 
-const KNOWN_COMPANY_DEFAULTS = {
+
+export const EXCLUDED_DIRECTORY_COMPANIES = new Set([
+  'bairesdev',
+  'turing',
+  'google',
+  'uber',
+  'armani exchange',
+  'escape academy',
+  'with ease education india',
+  'tablets india',
+  'fresenius medical care',
+  'planetspark',
+  'patra corporation',
+]);
+
+export const KNOWN_COMPANY_DEFAULTS = {
+  // IT & Software
+  'Tata Consultancy Services': {
+    website: 'https://www.tcs.com',
+    careers_url: 'https://www.tcs.com/careers',
+    category: 'IT & Software',
+  },
+  'TCS': {
+    website: 'https://www.tcs.com',
+    careers_url: 'https://www.tcs.com/careers',
+    category: 'IT & Software',
+  },
+  'Infosys': {
+    website: 'https://www.infosys.com',
+    careers_url: 'https://www.infosys.com/careers.html',
+    category: 'IT & Software',
+  },
+  'Cognizant': {
+    website: 'https://www.cognizant.com',
+    careers_url: 'https://careers.cognizant.com/global/en',
+    category: 'IT & Software',
+  },
+  'Tech Mahindra': {
+    website: 'https://www.techmahindra.com',
+    careers_url: 'https://careers.techmahindra.com',
+    category: 'IT & Software',
+  },
+  'Conduent': {
+    website: 'https://www.conduent.com',
+    careers_url: 'https://jobs.conduent.com',
+    category: 'IT & Software',
+  },
+  'WNS': {
+    website: 'https://www.wns.com',
+    careers_url: 'https://www.wns.com/careers',
+    category: 'IT & Software',
+  },
   'Miracle Software Systems': {
     website: 'https://www.miraclesoft.com',
     careers_url: 'https://www.miraclesoft.com/careers/openings',
-    category: 'IT',
+    category: 'IT & Software',
   },
   'Miraclesoft': {
     website: 'https://www.miraclesoft.com',
     careers_url: 'https://www.miraclesoft.com/careers/openings',
-    category: 'IT',
+    category: 'IT & Software',
   },
   'Fluentgrid Limited': {
     website: 'https://fluentgrid.com',
     careers_url: 'https://fluentgrid.com/careers/',
-    category: 'IT',
+    category: 'IT & Software',
   },
   'Fluentgrid': {
     website: 'https://fluentgrid.com',
     careers_url: 'https://fluentgrid.com/careers/',
-    category: 'IT',
+    category: 'IT & Software',
   },
   'Symbiosis Technologies': {
     website: 'https://symbiosistechnologies.com',
     careers_url: 'https://symbiosistechnologies.com/careers/',
-    category: 'IT',
+    category: 'IT & Software',
+  },
+  'Mouri Tech': {
+    website: 'https://www.mouritech.com',
+    careers_url: 'https://www.mouritech.com/careers/',
+    category: 'IT & Software',
+  },
+  'Patra India': {
+    website: 'https://patracorp.com',
+    careers_url: 'https://patracorp.com/careers/',
+    category: 'IT & Software',
+  },
+  'Innocito': {
+    website: 'https://innocito.com',
+    careers_url: 'https://innocito.com/careers',
+    category: 'IT & Software',
+  },
+  'Sails Software': {
+    website: 'https://sailssoftware.com',
+    careers_url: 'https://sailssoftware.com/careers/',
+    category: 'IT & Software',
+  },
+  'iMerit': {
+    website: 'https://imerit.ai',
+    careers_url: 'https://imerit.ai/careers/',
+    category: 'IT & Software',
+  },
+  'XTGlobal': {
+    website: 'https://www.xtglobal.com',
+    careers_url: 'https://www.xtglobal.com/careers',
+    category: 'IT & Software',
+  },
+
+  // Healthcare & Pharma
+  'Pfizer': {
+    website: 'https://www.pfizer.com',
+    careers_url: 'https://www.pfizer.com/about/careers',
+    category: 'Healthcare',
+  },
+  "Dr. Reddy's Laboratories": {
+    website: 'https://www.drreddys.com',
+    careers_url: 'https://careers.drreddys.com',
+    category: 'Healthcare',
+  },
+  'Hetero': {
+    website: 'https://www.hetero.com',
+    careers_url: 'https://www.heterohealthcare.com/careers',
+    category: 'Healthcare',
+  },
+  'Amneal Pharmaceuticals': {
+    website: 'https://www.amneal.com',
+    careers_url: 'https://amneal.com/careers/',
+    category: 'Healthcare',
+  },
+  'Biocon': {
+    website: 'https://www.biocon.com',
+    careers_url: 'https://www.biocon.com/careers/',
+    category: 'Healthcare',
+  },
+  'Granules India': {
+    website: 'https://granulesindia.com',
+    careers_url: 'https://granulesindia.com/careers/',
+    category: 'Healthcare',
+  },
+  'Eisai Pharmaceuticals India': {
+    website: 'https://www.eisai.co.in',
+    careers_url: 'https://www.eisai.co.in/contactus.html',
+    category: 'Healthcare',
   },
   'Pulsus Healthtech': {
     website: 'https://www.pulsus.com',
@@ -45,20 +163,308 @@ const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://www.pulsus.com/careers',
     category: 'Healthcare',
   },
-  'Eisai Pharmaceuticals India': {
-    website: 'https://www.eisai.co.in',
-    careers_url: 'https://www.eisai.co.in/careers/',
-    category: 'Pharma',
+  'Apollo Hospitals': {
+    website: 'https://www.apollohospitals.com',
+    careers_url: 'https://www.apollohospitals.com/careers/',
+    category: 'Healthcare',
   },
-  'Patra India': {
-    website: 'https://patracorp.com',
-    careers_url: 'https://patracorp.com/careers/',
-    category: 'BPO',
+  'Care Hospitals': {
+    website: 'https://www.carehospitals.com',
+    careers_url: 'https://www.carehospitals.com/careers',
+    category: 'Healthcare',
   },
-  'Granules India': {
-    website: 'https://granulesindia.com',
-    careers_url: 'https://granulesindia.com/careers/',
-    category: 'Pharma',
+  'Medicover Hospitals': {
+    website: 'https://www.medicoverhospitals.in',
+    careers_url: 'https://www.medicoverhospitals.in/careers',
+    category: 'Healthcare',
+  },
+  'MGM Healthcare': {
+    website: 'https://mgmsevenhills.in',
+    careers_url: 'https://mgmhealthcare.in/careers/',
+    category: 'Healthcare',
+  },
+  'Aspiro Pharma': {
+    website: 'https://aspiropharma.com',
+    careers_url: 'https://aspiropharma.com/careers/',
+    category: 'Healthcare',
+  },
+  'Deccan Fine Chemicals': {
+    website: 'https://deccanfinechemicals.com',
+    careers_url: 'https://deccanfinechemicals.com/careers',
+    category: 'Healthcare',
+  },
+  'Transasia Bio-Medicals Ltd.': {
+    website: 'https://transasia.co.in',
+    careers_url: 'https://erbamannheim.com/careers',
+    category: 'Healthcare',
+  },
+  'Benovymed Healthcare': {
+    website: 'https://benovymed.com',
+    careers_url: 'https://benovymed.com/contact-us',
+    category: 'Healthcare',
+  },
+
+  // Manufacturing, Engineering & Infrastructure
+  'Adani Group': {
+    website: 'https://www.adani.com',
+    careers_url: 'https://www.adani.com/careers',
+    category: 'Manufacturing',
+  },
+  'Asian Paints': {
+    website: 'https://www.asianpaints.com',
+    careers_url: 'https://careers.asianpaints.com',
+    category: 'Manufacturing',
+  },
+  'brandix': {
+    website: 'https://brandix.com',
+    careers_url: 'https://brandix.com/careers',
+    category: 'Manufacturing',
+  },
+  'Foxconn': {
+    website: 'https://www.foxconn.com',
+    careers_url: 'https://recruit.foxconn.com',
+    category: 'Manufacturing',
+  },
+  'GMR Group': {
+    website: 'https://www.gmrgroup.in',
+    careers_url: 'https://www.gmrgroup.in/careers/',
+    category: 'Manufacturing',
+  },
+  'Indus Towers': {
+    website: 'https://www.industowers.com',
+    careers_url: 'https://www.industowers.com/careers',
+    category: 'Manufacturing',
+  },
+  'JLL': {
+    website: 'https://www.jll.co.in',
+    careers_url: 'https://www.jll.co.in/en/careers',
+    category: 'Manufacturing',
+  },
+  'JSE Engineering': {
+    website: 'https://www.jseengineering.com',
+    careers_url: 'https://jseacademy.com/contact-us/',
+    category: 'Manufacturing',
+  },
+  'KONE': {
+    website: 'https://www.kone.in',
+    careers_url: 'https://www.kone.in/careers/',
+    category: 'Manufacturing',
+  },
+  'PBL Transport Corporation': {
+    website: 'https://www.pbltransport.co.in/',
+    careers_url: 'https://www.pbltransport.co.in/',
+    category: 'Manufacturing',
+  },
+  'Stantec': {
+    website: 'https://www.stantec.com',
+    careers_url: 'https://www.stantec.com/en/careers',
+    category: 'Manufacturing',
+  },
+  'URC Construction (P) Ltd': {
+    website: 'https://urcc.in',
+    careers_url: 'https://urcc.in/careers',
+    category: 'Manufacturing',
+  },
+
+  // Education & Academics
+  'GITAM Deemed University': {
+    website: 'https://www.gitam.edu',
+    careers_url: 'https://careers.gitam.edu',
+    category: 'Education',
+  },
+  'DA VINCI INTERNATIONAL SCHOOL': {
+    website: 'https://davincischool.in',
+    careers_url: 'https://davincischool.in/contact.html',
+    category: 'Education',
+  },
+  'Da Vinci International School': {
+    website: 'https://davincischool.in',
+    careers_url: 'https://davincischool.in/contact.html',
+    category: 'Education',
+  },
+  'Nxtwave Disruptive Technologies': {
+    website: 'https://www.ccbp.in',
+    careers_url: 'https://www.ccbp.in/careers',
+    category: 'Education',
+  },
+  'Teks Academy': {
+    website: 'https://teksacademy.com',
+    careers_url: 'https://teksacademy.com/contact-us/',
+    category: 'Education',
+  },
+  'Kiya World School': {
+    website: 'https://kiyaworldschool.com',
+    careers_url: 'https://kiyaworldschool.com',
+    category: 'Education',
+  },
+  'Edify Education': {
+    website: 'https://edifyschools.com',
+    careers_url: 'https://edifyschools.com/careers/',
+    category: 'Education',
+  },
+  'Mdn Edify Education': {
+    website: 'https://edifyschools.com',
+    careers_url: 'https://edifyschools.com/careers/',
+    category: 'Education',
+  },
+  'SIMS College': {
+    website: 'http://www.simsvizag.com',
+    careers_url: 'http://www.simsvizag.com/contact-us.html',
+    category: 'Education',
+  },
+
+  // Banking & Financial Services
+  'Bajaj Finance': {
+    website: 'https://www.bajajfinserv.in/finance',
+    careers_url: 'https://www.bajajfinserv.in/careers',
+    category: 'Banking & Finance',
+  },
+  'Bajaj Finserv': {
+    website: 'https://www.bajajfinserv.in',
+    careers_url: 'https://www.bajajfinserv.in/careers',
+    category: 'Banking & Finance',
+  },
+  'Kotak Mahindra Bank': {
+    website: 'https://www.kotak.com',
+    careers_url: 'https://www.kotak.com/en/careers.html',
+    category: 'Banking & Finance',
+  },
+  'IDFC FIRST Bank': {
+    website: 'https://www.idfcfirstbank.com',
+    careers_url: 'https://www.idfcfirstbank.com/careers',
+    category: 'Banking & Finance',
+  },
+  'AU SMALL FINANCE BANK': {
+    website: 'https://www.aubank.in',
+    careers_url: 'https://www.aubank.in/careers',
+    category: 'Banking & Finance',
+  },
+  'CSB Bank': {
+    website: 'https://www.csb.co.in',
+    careers_url: 'https://www.csb.co.in/careers',
+    category: 'Banking & Finance',
+  },
+  'DBS Bank': {
+    website: 'https://www.dbs.com',
+    careers_url: 'https://www.dbs.com/careers',
+    category: 'Banking & Finance',
+  },
+  'Indusind Bank': {
+    website: 'https://www.indusind.com',
+    careers_url: 'https://www.indusind.com/in/en/personal/careers.html',
+    category: 'Banking & Finance',
+  },
+  'Karur Vysya Bank': {
+    website: 'https://www.kvb.co.in',
+    careers_url: 'https://careers.karurvysya.bank.in',
+    category: 'Banking & Finance',
+  },
+  'Muthoot Finance': {
+    website: 'https://www.muthootfinance.com',
+    careers_url: 'https://www.muthootfinance.com/careers',
+    category: 'Banking & Finance',
+  },
+  'Ujjivan Small Finance Bank': {
+    website: 'https://www.ujjivansfb.in',
+    careers_url: 'https://www.ujjivansfb.in/careers',
+    category: 'Banking & Finance',
+  },
+  'Tata Capital': {
+    website: 'https://www.tatacapital.com',
+    careers_url: 'https://www.tatacapital.com/careers.html',
+    category: 'Banking & Finance',
+  },
+  'Grihum Housing Finance': {
+    website: 'https://grihumhousing.com',
+    careers_url: 'https://grihumhousing.com/careers',
+    category: 'Banking & Finance',
+  },
+  'Credit Saison India': {
+    website: 'https://creditsaison.in',
+    careers_url: 'https://creditsaison.in/careers',
+    category: 'Banking & Finance',
+  },
+  'Policybazaar': {
+    website: 'https://www.policybazaar.com',
+    careers_url: 'https://www.policybazaar.com/careers/',
+    category: 'Banking & Finance',
+  },
+  'Star Union Dai ichi Life Insurance (SUD Life)': {
+    website: 'https://www.sudlife.in',
+    careers_url: 'https://www.sudlife.in/careers',
+    category: 'Banking & Finance',
+  },
+  'Axis Max Life Insurance': {
+    website: 'https://www.maxlifeinsurance.com',
+    careers_url: 'https://www.maxlifeinsurance.com/careers',
+    category: 'Banking & Finance',
+  },
+  'Phonepe': {
+    website: 'https://www.phonepe.com',
+    careers_url: 'https://www.phonepe.com/careers/',
+    category: 'Banking & Finance',
+  },
+
+  // Hospitality & Retail
+  'Accor': {
+    website: 'https://all.accor.com',
+    careers_url: 'https://careers.accor.com',
+    category: 'Hospitality & Retail',
+  },
+  'Marriott': {
+    website: 'https://www.marriott.com',
+    careers_url: 'https://careers.marriott.com',
+    category: 'Hospitality & Retail',
+  },
+  'Pema Wellness Retreat': {
+    website: 'https://www.pemawellness.com',
+    careers_url: 'https://www.pemawellness.com',
+    category: 'Hospitality & Retail',
+  },
+  'SITARAM MOTORS': {
+    website: 'https://sitarammotors.royalenfield.com',
+    careers_url: 'https://sitarammotors.royalenfield.com',
+    category: 'Hospitality & Retail',
+  },
+  'Decorpot': {
+    website: 'https://www.decorpot.com',
+    careers_url: 'https://www.decorpot.com/contact-us',
+    category: 'Hospitality & Retail',
+  },
+  'HomeLane': {
+    website: 'https://www.homelane.com',
+    careers_url: 'https://www.homelane.com/careers',
+    category: 'Hospitality & Retail',
+  },
+  'Livspace': {
+    website: 'https://www.livspace.com',
+    careers_url: 'https://www.livspace.com/in/careers',
+    category: 'Hospitality & Retail',
+  },
+  'Lenskart': {
+    website: 'https://www.lenskart.com',
+    careers_url: 'https://lenskart.darwinbox.in/ms/candidatev2/main/careers',
+    category: 'Hospitality & Retail',
+  },
+  'cult fit': {
+    website: 'https://www.cult.fit',
+    careers_url: 'https://www.cult.fit/careers',
+    category: 'Hospitality & Retail',
+  },
+  'H&M': {
+    website: 'https://www.hm.com',
+    careers_url: 'https://career.hm.com',
+    category: 'Hospitality & Retail',
+  },
+  'Sodexo': {
+    website: 'https://in.sodexo.com',
+    careers_url: 'https://in.sodexo.com/careers',
+    category: 'Hospitality & Retail',
+  },
+  'Swiggy': {
+    website: 'https://www.swiggy.com',
+    careers_url: 'https://careers.swiggy.com',
+    category: 'Hospitality & Retail',
   },
 };
 
@@ -260,10 +666,15 @@ export async function fetchAdminCompanies() {
           ? Boolean(local.is_active_for_scrape)
           : Boolean(careersUrl);
 
+    const isExcluded = EXCLUDED_DIRECTORY_COMPANIES.has(comp.name.trim().toLowerCase());
     const isDirectoryApproved =
-      dbRecord?.is_directory_approved !== undefined
-        ? Boolean(dbRecord.is_directory_approved)
-        : Boolean(local.is_directory_approved);
+      local.is_directory_approved !== undefined
+        ? Boolean(local.is_directory_approved)
+        : isExcluded
+          ? false
+          : dbRecord?.is_directory_approved !== undefined
+            ? Boolean(dbRecord.is_directory_approved)
+            : Boolean(knownDefault.careers_url || careersUrl);
 
     result.push({
       id: dbRecord?.id || null,
@@ -402,13 +813,31 @@ export const DIRECTORY_SECTORS = [
 ];
 
 export function mapCategoryToSector(category = '') {
-  const norm = String(category).toLowerCase();
+  const text = String(category || '').trim();
+  if (!text) return DIRECTORY_SECTORS[1];
+
+  // Explicit guard: hospitality must always map to hospitality sector, never pharma
+  if (/hospitality/i.test(text)) {
+    return DIRECTORY_SECTORS.find((s) => s.id === 'hospitality') || DIRECTORY_SECTORS[6];
+  }
+
   for (const s of DIRECTORY_SECTORS) {
     if (s.id === 'all') continue;
-    if (s.match.some((m) => norm.includes(m.toLowerCase()))) {
+    for (const m of s.match) {
+      const regex = new RegExp(`\\b${m}\\b`, 'i');
+      if (regex.test(text)) return s;
+    }
+  }
+
+  // Fallback to substring match for compound terms
+  const lower = text.toLowerCase();
+  for (const s of DIRECTORY_SECTORS) {
+    if (s.id === 'all') continue;
+    if (s.match.some((m) => lower.includes(m.toLowerCase()))) {
       return s;
     }
   }
+
   return DIRECTORY_SECTORS[1]; // default to IT & Software
 }
 
@@ -482,24 +911,45 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
     }
   }
 
+
+
   const rawList = companiesRes.data || [];
+  const localOverrides = getLocalCompanyOverrides();
+
   const result = rawList
-    .map((c) => {
-      const sector = mapCategoryToSector(c.category);
+    .filter((c) => {
       const key = normalizeCompName(c.name);
+      const local = localOverrides[c.name];
+      if (local && local.is_directory_approved !== undefined) {
+        return Boolean(local.is_directory_approved);
+      }
+      if (EXCLUDED_DIRECTORY_COMPANIES.has(key)) {
+        return false;
+      }
+      return Boolean(c.is_directory_approved);
+    })
+    .map((c) => {
+      const key = normalizeCompName(c.name);
+      const local = localOverrides[c.name] || {};
+      const known = KNOWN_COMPANY_DEFAULTS[c.name] || {};
+      const sector = mapCategoryToSector(local.category || c.category || known.category);
       const activeJobsCount = exactJobCounts.get(key) || 0;
+      const website = local.website || known.website || c.website || '';
+      const careersUrl = local.careers_url || known.careers_url || c.careers_url || '';
+
       return {
         id: c.id,
         name: c.name,
-        website: c.website || '',
-        careersUrl: c.careers_url || '',
-        category: c.category || sector.label,
+        website,
+        careersUrl,
+        category: local.category || c.category || known.category || sector.label,
         sectorId: sector.id,
         sectorLabel: sector.label,
         sectorIcon: sector.icon,
-        location: c.location || 'Visakhapatnam',
+        location: local.location || c.location || 'Visakhapatnam',
         activeJobsCount,
-        notes: c.notes || '',
+        isDirectoryApproved: local.is_directory_approved !== undefined ? Boolean(local.is_directory_approved) : true,
+        notes: local.notes || c.notes || '',
       };
     })
     .sort((a, b) => {
@@ -509,6 +959,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       }
       return a.name.localeCompare(b.name);
     });
+
 
   // Write to browser storage and memory cache for 10+ minutes
   if (result.length > 0) {

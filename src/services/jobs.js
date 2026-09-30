@@ -1,14 +1,15 @@
-import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase, supabasePublic } from '../lib/supabaseClient.js';
 import {
   getMinPostedAtIsoForPublicDisplay,
   isJobWithinPublicDisplayWindow,
-} from '../lib/jobDisplayWindow';
+} from '../lib/jobDisplayWindow.js';
 import { sanitizeJobSeoRecord } from '../lib/jobDisplayLabels.js';
 import { resolveJobExperienceForDisplay } from '../lib/jobRecordInference.js';
 import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
-import { writeCachedInstagramJobs } from '../lib/publicJobsSessionCache';
+import { writeCachedInstagramJobs } from '../lib/publicJobsSessionCache.js';
 
-export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache';
+export { JOB_LIST_SESSION_CACHE_TTL_MS } from '../lib/publicJobsSessionCache.js';
+
 
 /** Prefer the anon client so public lists never block on auth session refresh. */
 const getPublicClient = () => supabasePublic || supabase;
@@ -16,7 +17,11 @@ const getPublicClient = () => supabasePublic || supabase;
 const CACHE_DURATION = 60_000;
 const instagramJobsCache = { jobs: null, timestamp: 0 };
 const DEFAULT_TABLE_NAME = 'jobs';
-const jobsTable = import.meta.env.VITE_SUPABASE_JOBS_TABLE || DEFAULT_TABLE_NAME;
+const jobsTable =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_JOBS_TABLE) ||
+  (typeof globalThis !== 'undefined' && globalThis.process?.env?.VITE_SUPABASE_JOBS_TABLE) ||
+  DEFAULT_TABLE_NAME;
+
 
 /**
  * Optional hard cap when callers pass `filters.limit`.
@@ -372,9 +377,9 @@ export const fetchJobById = async (idOrSlug, options = {}) => {
   return job;
 };
 
-/** Published jobs marked for the Instagram bio page (/apply), newest first (default top 5). */
+/** Published jobs marked for the Instagram bio page (/apply), newest first (default top 10). */
 export const fetchInstagramJobs = async (options = {}) => {
-  const { forceRefresh = false, limit = 5 } = options;
+  const { forceRefresh = false, limit = 10 } = options;
   const client = getPublicClient();
   if (!isSupabaseConfigured || !client) {
     throw new Error(

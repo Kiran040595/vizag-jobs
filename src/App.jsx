@@ -46,6 +46,7 @@ import AdminCompaniesPage from './pages/AdminCompaniesPage';
 import CompaniesInVizagPage from './pages/CompaniesInVizagPage';
 import AdminBillsPage from './pages/AdminBillsPage';
 import AdminStudentsPage from './pages/AdminStudentsPage';
+import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentRegisterPage from './pages/StudentRegisterPage';
 import StudentForgotPasswordPage from './pages/StudentForgotPasswordPage';
@@ -58,10 +59,14 @@ import JobDetailsAuthGate from './components/student/JobDetailsAuthGate';
 import FeedbackFloatingButton from './components/FeedbackFloatingButton';
 import SiteChatBot from './components/SiteChatBot';
 import CookieConsentBanner from './components/CookieConsentBanner';
+import JobAlertNotifications from './components/JobAlertNotifications';
+import MobileBottomNav from './components/MobileBottomNav';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <>
+    <ScrollToTop />
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -213,6 +218,14 @@ function App() {
           </AdminRoute>
         )}
       />
+      <Route
+        path="/admin/notifications"
+        element={(
+          <AdminRoute>
+            <AdminNotificationsPage />
+          </AdminRoute>
+        )}
+      />
       <Route path="/blog" element={<BlogListPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/about" element={<AboutPage />} />
@@ -267,8 +280,10 @@ function App() {
       ))}
     </Routes>
     <CookieConsentBanner />
+    <JobAlertNotifications />
     <FeedbackFloatingButton />
     <SiteChatBot />
+    <MobileBottomNav />
     </>
   );
 }

@@ -78,10 +78,16 @@ export function AdminAuthProvider({ children }) {
   const [authError, setAuthError] = useState('');
 
   const refreshAdminAccess = async (userId) => {
-    const adminAccess = await getAdminMembership(userId);
-    setIsAdmin(adminAccess);
-    writeAdminAccessCache(userId, adminAccess);
-    return adminAccess;
+    try {
+      const adminAccess = await getAdminMembership(userId);
+      setIsAdmin(adminAccess);
+      writeAdminAccessCache(userId, adminAccess);
+      return adminAccess;
+    } catch (error) {
+      setIsAdmin(false);
+      setAuthError(error instanceof Error ? error.message : 'Could not verify admin access.');
+      return false;
+    }
   };
 
   useEffect(() => {

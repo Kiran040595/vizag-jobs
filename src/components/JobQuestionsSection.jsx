@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStudentAuth } from '../hooks/useStudentAuth';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 import { supabase } from '../lib/supabaseClient';
 import { notifyReplyByEmailSafe } from '../lib/replyNotification';
 import {
@@ -18,16 +19,31 @@ import {
 } from '../services/jobQuestions';
 
 function QuestionAskForm({ jobId, job = null, onSubmitted }) {
-  const { isStudent, session, profile } = useStudentAuth();
+  const { isStudent, session: studentSession, profile } = useStudentAuth();
+  const { isAdmin, session: adminSession, user: adminUser } = useAdminAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [answeredResult, setAnsweredResult] = useState(null);
 
-  // Auto-fill name/email from session
-  const askerName = profile?.full_name || profile?.fullName || session?.user?.email?.split('@')[0] || '';
-  const askerEmail = session?.user?.email || profile?.contact_email || profile?.contactEmail || '';
+  const isAuthenticated = Boolean((isStudent && studentSession) || (isAdmin && (adminSession || adminUser)));
+  const activeSession = (isStudent && studentSession) ? studentSession : adminSession;
+  const activeUserId = studentSession?.user?.id || adminUser?.id || adminSession?.user?.id || null;
+
+  // Auto-fill name/email from profile, admin session, or student session
+  const askerName =
+    profile?.full_name ||
+    profile?.fullName ||
+    (isAdmin ? (adminUser?.user_metadata?.full_name || adminUser?.email?.split('@')[0] || 'Admin') : '') ||
+    activeSession?.user?.email?.split('@')[0] ||
+    '';
+  const askerEmail =
+    activeSession?.user?.email ||
+    adminUser?.email ||
+    profile?.contact_email ||
+    profile?.contactEmail ||
+    '';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -47,7 +63,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         body,
         askerName,
         askerEmail,
-        askerUserId: session?.user?.id || null,
+        askerUserId: activeUserId,
       });
 
       if (res?.isAiAnswer && res?.answer && res?.question?.id) {
@@ -61,7 +77,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         // Fire notification so it shows up in the bell
         try {
           const { data: sessionData } = await supabase.auth.getSession();
-          const accessToken = sessionData?.session?.access_token;
+          const accessToken = sessionData?.session?.access_token || activeSession?.access_token;
           if (accessToken) {
             await notifyReplyByEmailSafe(accessToken, {
               kind: 'job_question',
@@ -86,7 +102,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
   };
 
   // Guest: show sign-in prompt instead of form
-  if (!session || !isStudent) {
+  if (!isAuthenticated) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-center sm:p-5">
         <p className="text-xs sm:text-sm font-semibold text-slate-900">Have a doubt about this job?</p>
@@ -191,7 +207,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         </button>
       </div>
       <p className="mt-1 text-xs text-slate-600">
-        Asking as <span className="font-semibold text-slate-800">{askerName || askerEmail}</span>. Your answer will appear in your notification bell.
+        Asking as <span className="font-semibold text-slate-800">{askerName || askerEmail}</span>{isAdmin && !isStudent ? ' (Admin)' : ''}. Your answer will appear in your notification bell.
       </p>
 
       <label className="mt-3 block text-xs">

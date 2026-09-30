@@ -123,8 +123,8 @@ const writeSitemap = (entries) => {
 };
 
 const fetchPublishedJobs = async () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Skipping job sitemap generation because Supabase env vars are missing.');
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project-ref')) {
+    console.warn('Skipping job sitemap generation because Supabase env vars are missing or placeholder.');
     return [];
   }
 
@@ -171,8 +171,8 @@ const fetchPublishedJobs = async () => {
 };
 
 const fetchPublishedBlogPosts = async () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Skipping blog sitemap generation because Supabase env vars are missing.');
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project-ref')) {
+    console.warn('Skipping blog sitemap generation because Supabase env vars are missing or placeholder.');
     return [];
   }
 
@@ -238,9 +238,7 @@ const buildSitemap = async () => {
       })
     );
   } catch (error) {
-    console.error(error instanceof Error ? error.message : 'Failed to generate job sitemap.');
-    process.exitCode = 1;
-    return;
+    console.warn(error instanceof Error ? error.message : 'Failed to generate job sitemap.');
   }
 
   try {

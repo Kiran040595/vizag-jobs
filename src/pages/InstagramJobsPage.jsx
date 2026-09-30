@@ -54,7 +54,7 @@ const getCompanyInitials = (name = '') => {
 
 const initialCached = (() => {
   try {
-    return readCachedInstagramJobs(5);
+    return readCachedInstagramJobs(10);
   } catch {
     return null;
   }
@@ -70,7 +70,7 @@ export default function InstagramJobsPage() {
     let ignore = false;
 
     const loadJobs = async () => {
-      const cached = readCachedInstagramJobs(5);
+      const cached = readCachedInstagramJobs(10);
       if (cached?.jobs?.length) {
         setJobs(cached.jobs);
         setIsLoading(false);
@@ -79,7 +79,7 @@ export default function InstagramJobsPage() {
         }
         setIsRefreshing(true);
         try {
-          const rows = await fetchInstagramJobs({ forceRefresh: true, limit: 5 });
+          const rows = await fetchInstagramJobs({ forceRefresh: true, limit: 10 });
           if (!ignore) {
             setJobs(rows);
             setLoadError('');
@@ -93,7 +93,7 @@ export default function InstagramJobsPage() {
       }
 
       try {
-        const rows = await fetchInstagramJobs({ limit: 5 });
+        const rows = await fetchInstagramJobs({ limit: 10 });
         if (!ignore) {
           setJobs(rows);
           setLoadError('');
@@ -204,7 +204,7 @@ export default function InstagramJobsPage() {
           </div>
         ) : null}
 
-        {/* Curated Jobs List (Top 5) */}
+        {/* Curated Jobs List (Top 10) */}
         {!isLoading && jobs.length > 0 ? (
           <section className="mt-6 space-y-4" aria-label="Featured Instagram jobs">
             <div className="flex items-center justify-between px-1 text-xs font-semibold text-slate-500">

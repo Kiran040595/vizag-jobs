@@ -79,7 +79,7 @@ section('readFiltersFromSearchParams — defaults & invalid values');
   );
   eq(
     r,
-    { tab: 'direct', q: 'react', category: 'it', jobType: 'full-time', freshness: '24h', source: 'naukri', page: 3 },
+    { tab: 'direct', q: 'react', company: '', category: 'it', jobType: 'full-time', freshness: '24h', source: 'naukri', page: 3 },
     'all params parsed',
   );
 }
@@ -89,7 +89,7 @@ section('readFiltersFromSearchParams — defaults & invalid values');
   );
   eq(
     r,
-    { tab: 'all', q: '', category: 'all', jobType: 'all', freshness: 'all', source: 'all', page: 1 },
+    { tab: 'all', q: '', company: '', category: 'all', jobType: 'all', freshness: 'all', source: 'all', page: 1 },
     'invalid values fall back to defaults',
   );
 }

@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import LoadingSpinner from '../LoadingSpinner';
+import ErrorBoundary from '../ErrorBoundary';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 
 function AdminAccessDenied() {
@@ -73,5 +74,5 @@ export default function AdminRoute({ children }) {
     return <AdminAccessDenied />;
   }
 
-  return children;
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 }

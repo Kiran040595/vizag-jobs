@@ -13,8 +13,14 @@ import {
   shouldUseSystemPostedAtOnPublish,
 } from '../lib/jobPostedAt';
 import { getJobPublishBlockReason } from '../lib/jobPublishQuality.js';
+import { notifyNewJobPublishedSafe } from '../lib/notifyNewJob';
 
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
+
+const rememberPublishedJob = (job) => {
+  void notifyNewJobPublishedSafe(job);
+  return job;
+};
 
 const MULTILINE_FIELDS = ['responsibilities', 'eligibility', 'skills'];
 const OPTIONAL_TEXT_FIELDS = [
@@ -803,7 +809,7 @@ export const createAdminJob = async (values, statusOverride) => {
   }
 
   invalidatePublicJobCache();
-  return data;
+  return rememberPublishedJob(data);
 };
 
 export const createAdminJobFromSql = async (sqlQuery) => {
@@ -823,7 +829,7 @@ export const createAdminJobFromSql = async (sqlQuery) => {
   }
 
   invalidatePublicJobCache();
-  return data;
+  return rememberPublishedJob(data);
 };
 
 export const updateAdminJob = async (jobId, values, statusOverride) => {
@@ -849,7 +855,7 @@ export const updateAdminJob = async (jobId, values, statusOverride) => {
   }
 
   invalidatePublicJobCache();
-  return data;
+  return rememberPublishedJob(data);
 };
 
 export const updateAdminJobStatus = async (jobId, status) => {
@@ -891,7 +897,7 @@ export const updateAdminJobStatus = async (jobId, status) => {
   }
 
   invalidatePublicJobCache();
-  return data;
+  return rememberPublishedJob(data);
 };
 
 export const approveAdminJob = async (jobId) => {
@@ -942,7 +948,7 @@ export const approveAdminJob = async (jobId) => {
   }
 
   invalidatePublicJobCache();
-  return data;
+  return rememberPublishedJob(data);
 };
 
 export const rejectAdminJob = async (jobId, rejectionReason = '') => {

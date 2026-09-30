@@ -53,6 +53,7 @@ export const registerPwaAutoUpdate = () => {
       immediate: true,
       onRegisteredSW(_swUrl, registration) {
         if (!registration) return;
+        window.__vizagJobsSwRegistration = registration;
 
         const checkForUpdate = () => {
           registration.update().catch(() => {});

@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
         'robots.txt',
         'sitemap.xml',
         'ads.txt',
+        'push-handler.js',
       ],
       manifest: {
         name: 'Jobs in Vizag',
@@ -93,6 +94,7 @@ export default defineConfig(({ mode }) => {
         ]
       },
       workbox: {
+        importScripts: ['push-handler.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}'],
         globIgnores: ['**/assets/**/*.{jpg,jpeg}'],
         cleanupOutdatedCaches: true,

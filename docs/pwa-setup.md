@@ -106,8 +106,18 @@ vercel deploy
 2. **Works Offline** - Uses cached content when offline
 3. **App-like** - Shows in fullscreen mode (no browser chrome)
 4. **Faster Loads** - Service worker caches assets
-5. **Push Notifications** - Can add later with Web Push API
+5. **Push Notifications** - Job alerts when an employer or admin publishes a listing (see Web Push below)
 6. **Responsive** - One codebase works on all devices
+
+## Web Push job alerts
+
+1. Apply migration `supabase/migrations/20260925_job_publish_web_notifications.sql`.
+2. Generate VAPID keys: `npx web-push generate-vapid-keys`.
+3. Set `VITE_VAPID_PUBLIC_KEY` on Vercel.
+4. Set Supabase Edge Function secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and optional `VAPID_SUBJECT`.
+5. Deploy the `notify-new-job` function (included in the functions workflow).
+
+Without a separate Edge Function deploy, the site sends Web Push from `/api/notify-new-job` after an admin or employer publishes a direct job. Visitors who allow notifications are subscribed even when they are signed out, so an installed PWA can receive the alert after the browser is closed.
 
 ## 🐛 Testing
 

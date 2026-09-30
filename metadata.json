@@ -1,0 +1,6 @@
+{
+  "name": "Jobs in Vizag",
+  "description": "Jobs in Vizag — find the latest IT jobs, fresher jobs, part-time jobs, government jobs and bank jobs in Visakhapatnam. Updated daily.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

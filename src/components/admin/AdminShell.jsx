@@ -14,6 +14,7 @@ const navItems = [
   { label: 'New post', to: '/admin/blog/new' },
   { label: 'Site feedback', to: '/admin/feedback' },
   { label: 'Candidate Q&A', to: '/admin/questions' },
+  { label: 'Notifications', to: '/admin/notifications' },
 ];
 
 export default function AdminShell({ children, title, description }) {

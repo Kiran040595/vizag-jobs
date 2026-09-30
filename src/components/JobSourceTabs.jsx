@@ -17,7 +17,7 @@ function JobSourceTabs({
       <div
         role="tablist"
         aria-label="Filter job listings by source type"
-        className="flex w-full items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner sm:w-auto sm:inline-flex"
+        className="grid w-full grid-cols-2 gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner sm:inline-flex sm:w-auto sm:gap-2"
       >
         {/* Tab 1: All Openings */}
         <button
@@ -27,15 +27,15 @@ function JobSourceTabs({
           aria-selected={activeTab === 'all'}
           aria-controls="job-list-section"
           onClick={() => onTabChange('all')}
-          className={`group flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 sm:flex-initial sm:px-5 sm:py-2.5 ${
+          className={`group flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
             activeTab === 'all'
               ? 'bg-white text-slate-900 shadow-sm shadow-slate-300/40 ring-1 ring-slate-950/5'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
           }`}
         >
-          <span className="flex items-center gap-1.5">
+          <span className="flex min-w-0 items-center gap-1.5">
             <svg
-              className={`h-4 w-4 transition-colors ${
+              className={`h-4 w-4 shrink-0 transition-colors ${
                 activeTab === 'all' ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
               }`}
               viewBox="0 0 20 20"
@@ -44,10 +44,13 @@ function JobSourceTabs({
             >
               <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
             </svg>
-            <span>All Openings</span>
+            <span className="whitespace-nowrap">
+              <span className="min-[400px]:hidden">All Jobs</span>
+              <span className="hidden min-[400px]:inline">All Openings</span>
+            </span>
           </span>
           <span
-            className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold transition-colors ${
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-bold transition-colors sm:px-2 ${
               activeTab === 'all'
                 ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
                 : 'bg-slate-200/70 text-slate-600'
@@ -65,15 +68,15 @@ function JobSourceTabs({
           aria-selected={activeTab === 'direct'}
           aria-controls="job-list-section"
           onClick={() => onTabChange('direct')}
-          className={`group relative flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 sm:flex-initial sm:px-5 sm:py-2.5 ${
+          className={`group relative flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
             activeTab === 'direct'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-700/20'
-              : 'text-slate-700 hover:text-emerald-800 hover:bg-emerald-50/60'
+              : 'text-slate-700 hover:bg-emerald-50/60 hover:text-emerald-800'
           }`}
         >
-          <span className="flex items-center gap-1.5">
+          <span className="flex min-w-0 items-center gap-1.5">
             <svg
-              className={`h-4 w-4 transition-colors ${
+              className={`h-4 w-4 shrink-0 transition-colors ${
                 activeTab === 'direct' ? 'text-white' : 'text-emerald-600'
               }`}
               viewBox="0 0 20 20"
@@ -86,11 +89,15 @@ function JobSourceTabs({
                 clipRule="evenodd"
               />
             </svg>
-            <span className="whitespace-nowrap">Direct Company Jobs</span>
+            <span className="whitespace-nowrap">
+              <span className="min-[400px]:hidden">Direct Jobs</span>
+              <span className="hidden min-[400px]:inline sm:hidden">Direct Company</span>
+              <span className="hidden sm:inline">Direct Company Jobs</span>
+            </span>
           </span>
 
           <span
-            className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold transition-colors ${
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-bold transition-colors sm:px-2 ${
               activeTab === 'direct'
                 ? 'bg-white text-emerald-800'
                 : 'bg-emerald-100/80 text-emerald-800'

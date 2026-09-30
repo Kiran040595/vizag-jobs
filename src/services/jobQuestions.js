@@ -784,6 +784,22 @@ export const dismissQuestionNotification = async ({ notificationId, userId }) =>
   }
 };
 
+export const dismissAllQuestionNotifications = async (userId) => {
+  if (!isSupabaseConfigured || !supabase || !userId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from('job_question_notifications')
+    .update({ is_dismissed: true, is_read: true })
+    .eq('user_id', userId)
+    .eq('is_dismissed', false);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+};
+
 export const formatQuestionAsker = (question) => {
   if (question.askerName) return question.askerName;
   if (question.askerEmail) return question.askerEmail;
