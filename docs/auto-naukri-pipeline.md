@@ -4,17 +4,17 @@
 
 | Channel | Admin UI | CLI | Daily cron (IST) |
 |---------|----------|-----|------------------|
-| **Naukri** | Start automation on Naukri card | `npm run auto:naukri` | **4:00 PM** |
+| **Naukri** | Start automation on Naukri card | `npm run auto:naukri` | **3:00 PM** |
 | **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | **6:00 PM** (general preset) |
 | **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | **9:00 PM** |
 
-Naukri runs in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. Naukri is a separate workflow because GitHub was delaying that 4:00 PM IST cron by 3–6 hours when five schedules lived in one file. All channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
+Naukri runs in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. Naukri is a separate workflow because GitHub was delaying the previous shared 4:00 PM IST cron by 3–6 hours when five schedules lived in one file. All channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
 
 ## Flow
 
 ```mermaid
 sequenceDiagram
-  participant GH as GitHub Actions (4/6/9 PM IST)
+  participant GH as GitHub Actions (3/6/9 PM IST)
   participant Edge as fetch-external-jobs
   participant Apify as Apify Naukri actor
   participant Gemini as Gemini Make SEO
@@ -72,7 +72,7 @@ Add these under **Settings → Secrets and variables → Actions**:
 
 ### 3. Enable the workflow
 
-- **Naukri** (`.github/workflows/auto-naukri-fetch.yml`): `30 10 * * *` UTC = **4:00 PM IST**
+- **Naukri** (`.github/workflows/auto-naukri-fetch.yml`): `30 9 * * *` UTC = **3:00 PM IST**
 - **LinkedIn / blog / Shorts** (`.github/workflows/auto-naukri-daily.yml`):
   - LinkedIn Posts: `30 12 * * *` UTC = **6:00 PM IST**
   - LinkedIn Jobs: `30 15 * * *` UTC = **9:00 PM IST**
