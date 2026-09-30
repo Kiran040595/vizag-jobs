@@ -39,16 +39,22 @@ jobs:
           # Apply idempotent push analytics migrations directly via Supabase Management API
           # so legacy migration history mismatches do not block schema updates
           for sql_file in \
-            supabase/migrations/20260925120000_job_push_notifications.sql \
-            supabase/migrations/20260925150000_push_notification_analytics.sql \
+            supabase/migrations/20260925121000_web_push_config.sql \
+            supabase/migrations/20260925123000_web_push_subscription_rpc.sql \
+            supabase/migrations/20260925140000_push_notifications_dashboard.sql \
             supabase/migrations/20260925170000_push_dispatches_trigger_type.sql; do
             if [ -f "$sql_file" ]; then
               echo "Applying $sql_file via Supabase Management API..."
-              jq -Rs '{query: .}' "$sql_file" | curl -fsSL -X POST \
+              HTTP_CODE=$(jq -Rs '{query: .}' "$sql_file" | curl -sS -o /tmp/sql_resp.json -w "%{http_code}" -X POST \
                 "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
                 -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d @-
+                -d @-)
+              if [ "$HTTP_CODE" -ge 400 ]; then
+                echo "Error ($HTTP_CODE) applying $sql_file:"
+                cat /tmp/sql_resp.json
+                exit 1
+              fi
             fi
           done
 
@@ -58,4 +64,5 @@ jobs:
             supabase link --project-ref "$PROJECT_REF" || true
           fi
           supabase db push --include-all --yes || true
+
 
