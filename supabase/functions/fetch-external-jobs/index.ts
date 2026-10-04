@@ -60,6 +60,7 @@ import {
 import {
   buildCompanyCareersExtractPrompt,
   COMPANY_CAREERS_EXTRACT_SCHEMA,
+  PARSE_RAW_TEXT_JOBS_SCHEMA,
   type CompanyCareerTarget,
   type ExtractedCompanyCareerJob,
   resolveCompanyJobApplyLink,
@@ -5763,7 +5764,9 @@ Deno.serve(async (req) => {
         ? 'seo_keys'
         : modeRaw === 'company_careers'
           ? 'company_careers'
-          : 'fetch';
+          : modeRaw === 'parse_text_jobs'
+            ? 'parse_text_jobs'
+            : 'fetch';
   const debugTrace = requestBody.debug_trace === true;
 
   if (mode === 'seo_keys') {
@@ -6199,6 +6202,179 @@ Deno.serve(async (req) => {
       const message = e instanceof Error ? e.message : 'Company career fetch failed.';
       return jsonResponse(
         { ok: false, mode: 'company_careers', error: message, runtime_ms: Date.now() - startedAt },
+        502,
+      );
+    }
+  }
+
+  if (mode === 'parse_text_jobs') {
+    const startedAt = Date.now();
+    try {
+      const rawText = typeof requestBody.text === 'string' ? requestBody.text.trim() : '';
+      if (!rawText) {
+        return jsonResponse(
+          { ok: false, error: 'Please provide a text or paragraph containing job description(s).' },
+          400,
+        );
+      }
+
+      if (getGeminiApiKeysForMakeSeo(false).length === 0) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              'GEMINI_API_KEY_SEO or GEMINI_API_KEY is required in Edge Function secrets to parse job descriptions with AI.',
+          },
+          502,
+        );
+      }
+
+      const customInstructions =
+        typeof requestBody.custom_instructions === 'string'
+          ? requestBody.custom_instructions.trim()
+          : '';
+
+      const prompt = `You are an expert HR recruiter and job editor for jobsinvizag.in (Visakhapatnam job portal).
+Analyze the following text/paragraph pasted by the site administrator. The text may contain one or multiple job descriptions, hiring drive notices, recruitment emails, or forwarded messages.
+
+CRITICAL INSTRUCTION - MULTIPLE JOBS SUPPORT:
+If the text contains multiple job vacancies or positions (e.g. 2, 3, or more roles mentioned together), extract EACH AND EVERY job opening as an independent item in the "jobs" array. Never combine distinct roles into one.
+
+Rules:
+- For company name: if not explicitly stated, use "Vizag Opportunities" or "Confidential".
+- For location: if not specified or within Vizag, default to "Visakhapatnam".
+- Extract qualifications, graduation batch/years, technical and soft skills, salary, experience, and key responsibilities accurately.
+- Classify category into one of: IT/Software, Core Technical, Operations, Sales & Marketing, Finance & Accounts, Healthcare & Pharma, Education & Teaching, General.
+- In-Platform Apply: All jobs posted here are internal/in-platform applications.
+
+${customInstructions ? `Additional Admin Instructions: ${customInstructions}\n` : ''}
+
+Raw Text Content:
+"""
+${rawText.slice(0, 30_000)}
+"""
+
+Extract all valid job listings in JSON according to the schema.`;
+
+      const geminiBody = {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 6144,
+          responseMimeType: 'application/json',
+          responseSchema: PARSE_RAW_TEXT_JOBS_SCHEMA,
+        },
+      };
+
+      const gemRes = await geminiGenerateContentForSeo(geminiBody, {
+        linkedInPost: false,
+        timeoutMs: 65_000,
+      });
+
+      const rawJson = extractGeminiSeoResponseText(gemRes.payload);
+      let parsed = tryParseJson<{ jobs?: ExtractedCompanyCareerJob[] }>(rawJson, 'parse_text_jobs');
+      if (!parsed && rawJson.trim()) {
+        const repaired = tryRepairTruncatedJson(rawJson);
+        if (repaired) {
+          parsed = tryParseJson<{ jobs?: ExtractedCompanyCareerJob[] }>(repaired, 'parse_text_jobs_repaired');
+        }
+      }
+
+      const extractedJobs = Array.isArray(parsed?.jobs) ? parsed.jobs : [];
+      const fetchInstant = new Date().toISOString();
+      const mappedJobs: Array<SiteJobRecord & { apply_mode: string }> = [];
+
+      for (const rawJob of extractedJobs) {
+        const title = typeof rawJob?.title === 'string' ? rawJob.title.trim() : '';
+        if (!title) continue;
+
+        const companyName =
+          (typeof rawJob?.company === 'string' && rawJob.company.trim()) || 'Vizag Opportunities';
+        const location =
+          (typeof rawJob.location === 'string' && rawJob.location.trim()) || 'Visakhapatnam';
+        const category =
+          normalizeJobCategory(rawJob.category) || 'General';
+        const jobType =
+          (typeof rawJob.job_type === 'string' && rawJob.job_type.trim()) || 'Full-Time';
+        const workMode =
+          (typeof rawJob.work_mode === 'string' && rawJob.work_mode.trim()) || 'On-site';
+        const experience =
+          (typeof rawJob.experience === 'string' && rawJob.experience.trim()) || 'Not specified';
+        const description =
+          (typeof rawJob.description === 'string' && rawJob.description.trim()) ||
+          `${title} opening at ${companyName} in ${location}.`;
+        const shortDescription =
+          (typeof rawJob.short_description === 'string' && rawJob.short_description.trim()) ||
+          buildShortDescription(description, title);
+        const responsibilities = normalizeSeoStringList(rawJob.responsibilities, 12);
+        const eligibility = normalizeSeoStringList(rawJob.eligibility, 10);
+        const skills = normalizeSeoStringList(rawJob.skills, 16);
+        const isFresher =
+          typeof rawJob.is_fresher === 'boolean'
+            ? rawJob.is_fresher
+            : inferIsFresher(experience === 'Not specified' ? '' : experience, title, description);
+
+        const draft: SiteJobRecord = {
+          slug: createJobSlug(title, companyName, fetchInstant),
+          title,
+          company: companyName,
+          location,
+          category,
+          job_type: jobType,
+          work_mode: workMode,
+          experience,
+          is_fresher: isFresher,
+          salary: typeof rawJob.salary === 'string' && rawJob.salary.trim() ? rawJob.salary.trim() : null,
+          apply_link: '',
+          short_description: shortDescription,
+          description,
+          responsibilities,
+          eligibility,
+          warning: DEFAULT_JOB_WARNING,
+          posted_at: fetchInstant,
+          expires_at: null,
+          source_name: 'Admin Post',
+          source_url: '',
+          skills,
+          company_logo_url: null,
+          status: 'published',
+          is_featured: false,
+        };
+
+        const classified = classifyJobRecord(draft);
+        mappedJobs.push({
+          ...draft,
+          apply_mode: 'internal',
+          apply_link: '',
+          company: companyName,
+          category: classified.category,
+          is_fresher: classified.is_fresher,
+          experience: classified.experience,
+        });
+      }
+
+      const dedupedJobs = resolveSiteJobSlugCollisions(mappedJobs).map((job) => ({
+        ...job,
+        apply_mode: 'internal',
+        apply_link: null,
+        source_name: 'Admin Post',
+      }));
+
+      return jsonResponse({
+        ok: true,
+        mode: 'parse_text_jobs',
+        fetched_at: fetchInstant,
+        runtime_ms: Date.now() - startedAt,
+        gemini_model: gemRes.model,
+        gemini_key_index: gemRes.keyUsage?.index,
+        gemini_keys_total: gemRes.keyUsage?.total,
+        gemini_key_label: gemRes.keyUsage?.label,
+        jobs: dedupedJobs,
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'AI job description parsing failed.';
+      return jsonResponse(
+        { ok: false, mode: 'parse_text_jobs', error: message, runtime_ms: Date.now() - startedAt },
         502,
       );
     }

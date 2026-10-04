@@ -70,6 +70,43 @@ export const COMPANY_CAREERS_EXTRACT_SCHEMA = {
   required: ['jobs'],
 };
 
+export const PARSE_RAW_TEXT_JOBS_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    jobs: {
+      type: 'ARRAY',
+      description: 'List of distinct job vacancies extracted from the raw text.',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          title: { type: 'STRING', description: 'Clean job title' },
+          company: { type: 'STRING', description: 'Company or hiring organization name' },
+          location: { type: 'STRING', description: 'Visakhapatnam or specific locality' },
+          category: { type: 'STRING', description: 'Job category' },
+          job_type: {
+            type: 'STRING',
+            enum: ['Full-Time', 'Part-Time', 'Internship', 'Contract'],
+          },
+          work_mode: {
+            type: 'STRING',
+            enum: ['On-site', 'Remote', 'Hybrid'],
+          },
+          experience: { type: 'STRING', description: 'Experience requirements e.g. 0-1 Years, Fresher' },
+          is_fresher: { type: 'BOOLEAN', description: 'True if freshers / 0-year can apply' },
+          salary: { type: 'STRING', description: 'Salary or CTC' },
+          short_description: { type: 'STRING', description: 'Concise summary' },
+          description: { type: 'STRING', description: 'Comprehensive job description' },
+          responsibilities: { type: 'ARRAY', items: { type: 'STRING' } },
+          eligibility: { type: 'ARRAY', items: { type: 'STRING' } },
+          skills: { type: 'ARRAY', items: { type: 'STRING' } },
+        },
+        required: ['title'],
+      },
+    },
+  },
+  required: ['jobs'],
+};
+
 const MAX_CAREER_PAGE_CHARS = 48_000;
 
 /**

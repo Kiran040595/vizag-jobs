@@ -245,35 +245,255 @@ const parseSqlLiteral = (token) => {
   return trimmedToken;
 };
 
-const parseSqlInsertToRecord = (sqlQuery) => {
-  const normalizedSql = String(sqlQuery || '').trim();
-  const matchedSql = normalizedSql.match(SUPPORTED_SQL_TABLE_PATTERN);
+export const splitSqlValuesTuples = (valuesBlock) => {
+  const tuples = [];
+  let currentTuple = '';
+  let singleQuoteOpen = false;
+  let doubleQuoteOpen = false;
+  let parenDepth = 0;
 
-  if (!matchedSql) {
-    throw new Error('Use a single INSERT INTO public.jobs (...) VALUES (...) query.');
-  }
+  for (let index = 0; index < valuesBlock.length; index += 1) {
+    const character = valuesBlock[index];
+    const nextCharacter = valuesBlock[index + 1];
 
-  const [, rawColumns, rawValues] = matchedSql;
-  const columns = splitTopLevelCommaValues(rawColumns, { bracketPairs: {} }).map((column) =>
-    column.trim().replace(/^"|"$/g, '').toLowerCase()
-  );
-  const values = splitTopLevelCommaValues(rawValues);
-
-  if (columns.length !== values.length) {
-    throw new Error('The number of SQL columns does not match the number of values.');
-  }
-
-  const parsedRecord = {};
-
-  columns.forEach((column, index) => {
-    if (!SUPPORTED_JOB_COLUMNS.has(column)) {
-      throw new Error(`The SQL column "${column}" is not supported in this importer.`);
+    if (singleQuoteOpen) {
+      if (parenDepth > 0) {
+        currentTuple += character;
+      }
+      if (character === "'" && nextCharacter === "'") {
+        if (parenDepth > 0) {
+          currentTuple += nextCharacter;
+        }
+        index += 1;
+        continue;
+      }
+      if (character === "'") {
+        singleQuoteOpen = false;
+      }
+      continue;
     }
 
-    parsedRecord[column] = parseSqlLiteral(values[index]);
+    if (doubleQuoteOpen) {
+      if (parenDepth > 0) {
+        currentTuple += character;
+      }
+      if (character === '"' && nextCharacter === '"') {
+        if (parenDepth > 0) {
+          currentTuple += nextCharacter;
+        }
+        index += 1;
+        continue;
+      }
+      if (character === '"') {
+        doubleQuoteOpen = false;
+      }
+      continue;
+    }
+
+    if (character === "'") {
+      singleQuoteOpen = true;
+      if (parenDepth > 0) {
+        currentTuple += character;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      doubleQuoteOpen = true;
+      if (parenDepth > 0) {
+        currentTuple += character;
+      }
+      continue;
+    }
+
+    if (character === '(') {
+      if (parenDepth > 0) {
+        currentTuple += character;
+      }
+      parenDepth += 1;
+      continue;
+    }
+
+    if (character === ')') {
+      parenDepth -= 1;
+      if (parenDepth === 0) {
+        if (currentTuple.trim()) {
+          tuples.push(currentTuple.trim());
+        }
+        currentTuple = '';
+      } else if (parenDepth > 0) {
+        currentTuple += character;
+      } else {
+        throw new Error('Mismatched closing parenthesis in SQL VALUES clause.');
+      }
+      continue;
+    }
+
+    if (parenDepth > 0) {
+      currentTuple += character;
+    }
+  }
+
+  if (singleQuoteOpen || doubleQuoteOpen || parenDepth !== 0) {
+    throw new Error('The SQL query has unclosed quotes or parentheses.');
+  }
+
+  return tuples;
+};
+
+const SQL_INSERT_PATTERN =
+  /insert\s+into\s+(?:public\.)?jobs\s*\(([\s\S]*?)\)\s*values\s*([\s\S]*?)(?=insert\s+into\s+(?:public\.)?jobs|$)/gi;
+
+export const parseSqlInsertToRecords = (sqlQuery) => {
+  const normalizedSql = String(sqlQuery || '').trim();
+  if (!normalizedSql) {
+    throw new Error('Please enter an SQL query.');
+  }
+
+  const matches = [...normalizedSql.matchAll(SQL_INSERT_PATTERN)];
+  if (matches.length === 0) {
+    throw new Error(
+      'Use INSERT INTO public.jobs (...) VALUES (...) with single or multiple rows.'
+    );
+  }
+
+  const allRecords = [];
+
+  for (const match of matches) {
+    const [, rawColumns, rawValues] = match;
+    const columns = splitTopLevelCommaValues(rawColumns, { bracketPairs: {} }).map((column) =>
+      column.trim().replace(/^"|"$/g, '').toLowerCase()
+    );
+
+    const tuples = splitSqlValuesTuples(rawValues);
+    if (tuples.length === 0) {
+      throw new Error('No VALUES found in SQL query.');
+    }
+
+    tuples.forEach((tuple, tupleIdx) => {
+      const values = splitTopLevelCommaValues(tuple);
+      if (columns.length !== values.length) {
+        throw new Error(
+          `The number of SQL columns (${columns.length}) does not match the number of values (${values.length}) in job row #${allRecords.length + 1}.`
+        );
+      }
+
+      const parsedRecord = {};
+      columns.forEach((column, index) => {
+        if (!SUPPORTED_JOB_COLUMNS.has(column)) {
+          throw new Error(`The SQL column "${column}" is not supported in this importer.`);
+        }
+        parsedRecord[column] = parseSqlLiteral(values[index]);
+      });
+
+      // Constraint: All admin jobs should be in-platform application only unless explicitly set external
+      if (parsedRecord.apply_mode === 'internal' || !parsedRecord.apply_mode) {
+        parsedRecord.apply_mode = 'internal';
+        parsedRecord.apply_link = null;
+      }
+      if (!parsedRecord.source_name) {
+        parsedRecord.source_name = 'Admin Post';
+      }
+      if (!parsedRecord.status) {
+        parsedRecord.status = 'published';
+      }
+
+      allRecords.push(parsedRecord);
+    });
+  }
+
+  return allRecords;
+};
+
+export const parseSqlInsertToRecord = (sqlQuery) => {
+  const records = parseSqlInsertToRecords(sqlQuery);
+  if (!records.length) {
+    throw new Error('No job records found in SQL query.');
+  }
+  return records[0];
+};
+
+export const formatJobsToSqlInsert = (jobs) => {
+  const list = Array.isArray(jobs) ? jobs : [jobs];
+  if (list.length === 0) return '';
+
+  const columns = [
+    'slug',
+    'title',
+    'company',
+    'location',
+    'category',
+    'job_type',
+    'work_mode',
+    'experience',
+    'is_fresher',
+    'salary',
+    'apply_mode',
+    'apply_link',
+    'short_description',
+    'description',
+    'responsibilities',
+    'eligibility',
+    'warning',
+    'posted_at',
+    'expires_at',
+    'source_name',
+    'source_url',
+    'skills',
+    'company_logo_url',
+    'status',
+    'is_featured',
+  ];
+
+  const escapeSqlValue = (val, col) => {
+    if (col === 'apply_mode') return "'internal'";
+    if (col === 'apply_link') return 'NULL';
+    if (col === 'source_name') return "'Admin Post'";
+
+    if (val === null || val === undefined || val === '') {
+      if (['expires_at', 'source_url', 'company_logo_url'].includes(col)) {
+        return 'NULL';
+      }
+      if (['responsibilities', 'eligibility', 'skills'].includes(col)) {
+        return "'{}'";
+      }
+      if (['is_fresher', 'is_featured'].includes(col)) {
+        return 'false';
+      }
+      if (col === 'status') return "'published'";
+      if (col === 'warning') return "'Never pay money to apply for any job.'";
+      return 'NULL';
+    }
+
+    if (typeof val === 'boolean') {
+      return val ? 'true' : 'false';
+    }
+
+    if (typeof val === 'number') {
+      return String(val);
+    }
+
+    if (Array.isArray(val)) {
+      if (val.length === 0) return "'{}'";
+      const items = val
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .map((item) => `"${item.replace(/"/g, '""')}"`)
+        .join(',');
+      const pgLiteral = `{${items}}`.replaceAll("'", "''");
+      return `'${pgLiteral}'`;
+    }
+
+    const str = String(val).replaceAll("'", "''");
+    return `'${str}'`;
+  };
+
+  const rows = list.map((job) => {
+    const rowValues = columns.map((col) => escapeSqlValue(job[col], col));
+    return `(\n  ${rowValues.join(',\n  ')}\n)`;
   });
 
-  return parsedRecord;
+  return `INSERT INTO public.jobs (\n  ${columns.join(',\n  ')}\n) VALUES \n${rows.join(',\n')};`;
 };
 
 const normalizeLineItems = (value) =>
@@ -330,9 +550,11 @@ export const createSuggestedSlug = ({ title, company, postedAt }) => {
 
 const invalidatePublicJobCache = () => {
   clearJobsCache();
-  sessionStorage.removeItem('vizagJobs');
-  sessionStorage.removeItem('vizagJobs_v2');
-  sessionStorage.removeItem('vizagJobs_ig_v1');
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.removeItem('vizagJobs');
+    sessionStorage.removeItem('vizagJobs_v2');
+    sessionStorage.removeItem('vizagJobs_ig_v1');
+  }
   // Keep in sync with PUBLIC_JOBS_CACHE_KEY / INSTAGRAM_JOBS_CACHE_KEY
 };
 
@@ -816,24 +1038,89 @@ export const createAdminJob = async (values, statusOverride) => {
   return rememberPublishedJob(data);
 };
 
-export const createAdminJobFromSql = async (sqlQuery) => {
+export const createAdminJobs = async (jobsList, statusOverride) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+  const items = Array.isArray(jobsList) ? jobsList : [jobsList];
+  if (items.length === 0) {
+    throw new Error('No jobs to create.');
+  }
+
+  const created = [];
+  for (const job of items) {
+    const jobWithInPlatform = {
+      ...job,
+      apply_mode: 'internal',
+      apply_link: null,
+      source_name: job.source_name || 'Admin Post',
+    };
+    const saved = await createAdminJob(
+      jobWithInPlatform,
+      statusOverride || job.status || 'published'
+    );
+    created.push(saved);
+  }
+  return created;
+};
+
+export const createAdminJobsFromSql = async (sqlQuery) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
   }
 
-  const parsedRecord = parseSqlInsertToRecord(sqlQuery);
-  let payload = serializeJobForm(parsedRecord, parsedRecord.status || undefined);
-  if (shouldUseSystemPostedAtOnPublish(payload.status, parsedRecord.status)) {
-    payload = applySystemPostedAtToPayload(payload);
+  const parsedRecords = parseSqlInsertToRecords(sqlQuery);
+  if (parsedRecords.length === 0) {
+    throw new Error('No valid job records found in SQL query.');
   }
-  const { data, error } = await supabase.from(JOBS_TABLE).insert(payload).select('*').single();
 
-  if (error) {
-    throw mapError(error, 'Could not create the job from SQL.');
+  const createdJobs = [];
+
+  for (let index = 0; index < parsedRecords.length; index += 1) {
+    const parsedRecord = parsedRecords[index];
+    let payload = serializeJobForm(parsedRecord, parsedRecord.status || undefined);
+
+    if (shouldUseSystemPostedAtOnPublish(payload.status, parsedRecord.status)) {
+      payload = applySystemPostedAtToPayload(payload);
+    }
+
+    if (!payload.title || !payload.company) {
+      throw new Error(`Job #${index + 1} is missing title or company.`);
+    }
+
+    if (!payload.slug) {
+      payload.slug = createSuggestedSlug({
+        title: payload.title,
+        company: payload.company,
+        postedAt: payload.posted_at,
+      });
+    }
+
+    const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();
+
+    let { data, error } = await insertOnce(payload);
+
+    if (error?.code === '23505' && payload.slug) {
+      const suffix = `${Date.now().toString(36).slice(-4)}-${index + 1}`;
+      const nextSlug = `${payload.slug}-${suffix}`.replace(/-+/g, '-').slice(0, 160);
+      payload = { ...payload, slug: nextSlug };
+      ({ data, error } = await insertOnce(payload));
+    }
+
+    if (error) {
+      throw mapError(error, `Could not create job #${index + 1} (${payload.title}) from SQL.`);
+    }
+
+    createdJobs.push(rememberPublishedJob(data));
   }
 
   invalidatePublicJobCache();
-  return rememberPublishedJob(data);
+  return createdJobs;
+};
+
+export const createAdminJobFromSql = async (sqlQuery) => {
+  const jobs = await createAdminJobsFromSql(sqlQuery);
+  return jobs[0];
 };
 
 export const updateAdminJob = async (jobId, values, statusOverride) => {

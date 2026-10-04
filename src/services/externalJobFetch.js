@@ -456,3 +456,75 @@ export async function fetchCompanyCareerJobs(accessToken, company, options = {})
   );
 }
 
+/**
+ * Parse an unstructured job description or recruitment paragraph using Gemini into one or more structured jobs.
+ * All admin jobs are strictly configured for in-platform application (`apply_mode: 'internal'`, `apply_link: null`).
+ *
+ * @param {string} accessToken
+ * @param {string} rawText
+ * @param {{ customInstructions?: string, timeoutMs?: number }} [options]
+ * @returns {Promise<Array<Record<string, unknown>>>}
+ */
+export async function parseRawJobTextWithGemini(accessToken, rawText, options = {}) {
+  const text = String(rawText || '').trim();
+  if (!text) {
+    throw new Error('Please enter or paste a job description paragraph.');
+  }
+
+  try {
+    const data = await callFetchExternalJobsEdge(
+      accessToken,
+      {
+        mode: 'parse_text_jobs',
+        text,
+        custom_instructions: options.customInstructions,
+      },
+      { timeoutMs: options.timeoutMs ?? 75_000 },
+    );
+
+    if (data?.ok && Array.isArray(data.jobs)) {
+      return data.jobs.map((job) => ({
+        ...job,
+        apply_mode: 'internal',
+        apply_link: null,
+        source_name: 'Admin Post',
+      }));
+    }
+  } catch (edgeError) {
+    const msg = edgeError instanceof Error ? edgeError.message : String(edgeError);
+    console.warn('parse_text_jobs edge call failed, attempting fallback to seo mode:', msg);
+
+    try {
+      const fallbackRes = await seoOptimizeExternalJob(
+        accessToken,
+        {
+          title: 'Job opening',
+          company: 'Vizag Opportunities',
+          description: text,
+          source_kind: 'admin_raw_text',
+          source_name: 'Admin Post',
+        },
+        text,
+        options,
+      );
+
+      if (fallbackRes?.job) {
+        return [
+          {
+            ...fallbackRes.job,
+            apply_mode: 'internal',
+            apply_link: null,
+            source_name: 'Admin Post',
+          },
+        ];
+      }
+    } catch {
+      throw edgeError;
+    }
+
+    throw edgeError;
+  }
+
+  return [];
+}
+
