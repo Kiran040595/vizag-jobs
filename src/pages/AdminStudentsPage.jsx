@@ -1,4 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WhatsAppContactLink from '../components/WhatsAppContactLink';
@@ -7,6 +8,7 @@ import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
+import { formatSkillLabel, normalizeSkillValue } from '../lib/studentProfileOptions';
 import {
   fetchAdminStudentProfiles,
   formatStudentRegisteredAt,
@@ -62,14 +64,20 @@ const studentsForRole = (students, roleValue) =>
 
 export default function AdminStudentsPage() {
   useAdminAuth();
+  const [searchParams] = useSearchParams();
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
   const [busyUserId, setBusyUserId] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || searchParams.get('q') || '');
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || '');
+  const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || '');
+  const [graduationYearFilter, setGraduationYearFilter] = useState(() => searchParams.get('year') || searchParams.get('batch') || '');
+  const [degreeFilter, setDegreeFilter] = useState(() => searchParams.get('degree') || '');
+  const [branchFilter, setBranchFilter] = useState(() => searchParams.get('branch') || '');
+  const [fresherFilter, setFresherFilter] = useState(() => searchParams.get('fresher') || searchParams.get('exp') || '');
+  const [skillFilter, setSkillFilter] = useState(() => searchParams.get('skill') || '');
   const [shareStudent, setShareStudent] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportStudents, setExportStudents] = useState([]);
@@ -97,20 +105,83 @@ export default function AdminStudentsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [deferredSearch, categoryFilter, roleFilter, pageSize]);
+  }, [
+    deferredSearch,
+    categoryFilter,
+    roleFilter,
+    graduationYearFilter,
+    degreeFilter,
+    branchFilter,
+    fresherFilter,
+    skillFilter,
+    pageSize,
+  ]);
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
       const matchesSearch = !deferredSearch || studentSearchBlob(student).includes(deferredSearch);
+
       const matchesCategory =
         !categoryFilter || student.targetJobCategories?.includes(categoryFilter);
+
       const matchesRole =
         !roleFilter ||
         String(student.primaryTargetRole || '').trim().toLowerCase() ===
           String(roleFilter).trim().toLowerCase();
-      return matchesSearch && matchesCategory && matchesRole;
+
+      const matchesYear =
+        !graduationYearFilter ||
+        String(student.graduationYear || '').trim() === String(graduationYearFilter).trim();
+
+      const matchesDegree =
+        !degreeFilter ||
+        String(student.degree || '').trim().toLowerCase() ===
+          String(degreeFilter).trim().toLowerCase();
+
+      const matchesBranch =
+        !branchFilter ||
+        String(student.branch || '').trim().toLowerCase() ===
+          String(branchFilter).trim().toLowerCase();
+
+      const matchesFresher =
+        !fresherFilter
+          ? true
+          : fresherFilter === 'fresher'
+            ? student.isFresher === true || student.roleExperienceLevel === 'fresher'
+            : fresherFilter === 'experienced'
+              ? student.isFresher === false ||
+                (Boolean(student.roleExperienceLevel) && student.roleExperienceLevel !== 'fresher')
+              : student.roleExperienceLevel === fresherFilter;
+
+      const matchesSkill =
+        !skillFilter ||
+        (Array.isArray(student.skills) &&
+          student.skills.some(
+            (s) => normalizeSkillValue(s) === normalizeSkillValue(skillFilter),
+          ));
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesRole &&
+        matchesYear &&
+        matchesDegree &&
+        matchesBranch &&
+        matchesFresher &&
+        matchesSkill
+      );
     });
-  }, [students, deferredSearch, categoryFilter, roleFilter]);
+  }, [
+    students,
+    deferredSearch,
+    categoryFilter,
+    roleFilter,
+    graduationYearFilter,
+    degreeFilter,
+    branchFilter,
+    fresherFilter,
+    skillFilter,
+  ]);
 
   const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(filteredStudents.length / (Number(pageSize) || 50)));
   const paginatedStudents = useMemo(() => {
@@ -137,6 +208,30 @@ export default function AdminStudentsPage() {
       categories: countByValue(activeStudents, (student) => student.targetJobCategories || []),
       roles: countByValue(activeStudents, (student) => [student.primaryTargetRole].filter(Boolean)),
     };
+  }, [students]);
+
+  const filterBreakdown = useMemo(() => {
+    // Graduation Years: sorted descending (e.g. 2026, 2025, 2024...)
+    const years = countByValue(students, (s) => (s.graduationYear ? [String(s.graduationYear)] : []))
+      .sort((a, b) => Number(b.value) - Number(a.value));
+
+    // Degrees: sorted by count descending
+    const degrees = countByValue(students, (s) => (s.degree ? [s.degree] : []));
+
+    // Branches: sorted by count descending
+    const branches = countByValue(students, (s) => (s.branch ? [s.branch] : []));
+
+    // Skills: sorted by count descending
+    const rawSkills = countByValue(students, (s) =>
+      Array.isArray(s.skills) ? s.skills.map(normalizeSkillValue).filter(Boolean) : [],
+    );
+    const skills = rawSkills.map((item) => ({
+      value: item.value,
+      label: formatSkillLabel(item.value),
+      count: item.count,
+    }));
+
+    return { years, degrees, branches, skills };
   }, [students]);
 
   const openExport = (rows, label) => {
@@ -166,18 +261,74 @@ export default function AdminStudentsPage() {
     }
   };
 
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    categoryFilter ||
+    roleFilter ||
+    graduationYearFilter ||
+    degreeFilter ||
+    branchFilter ||
+    fresherFilter ||
+    skillFilter
+  );
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setCategoryFilter('');
+    setRoleFilter('');
+    setGraduationYearFilter('');
+    setDegreeFilter('');
+    setBranchFilter('');
+    setFresherFilter('');
+    setSkillFilter('');
+  };
+
   const downloadScopeLabel = useMemo(() => {
+    const parts = [];
+    if (graduationYearFilter) {
+      parts.push(`Batch ${graduationYearFilter}`);
+    }
+    if (degreeFilter) {
+      parts.push(degreeFilter);
+    }
+    if (branchFilter) {
+      parts.push(branchFilter);
+    }
+    if (fresherFilter) {
+      parts.push(
+        fresherFilter === 'fresher'
+          ? 'Freshers'
+          : fresherFilter === 'experienced'
+            ? 'Experienced'
+            : `Exp: ${fresherFilter}`,
+      );
+    }
+    if (skillFilter) {
+      parts.push(`Skill: ${formatSkillLabel(skillFilter)}`);
+    }
     if (categoryFilter) {
-      return formatJobCategoryLabel(categoryFilter);
+      parts.push(formatJobCategoryLabel(categoryFilter));
     }
     if (roleFilter) {
-      return roleFilter;
+      parts.push(roleFilter);
     }
     if (deferredSearch) {
-      return 'Filtered students';
+      parts.push(`Search "${deferredSearch}"`);
+    }
+    if (parts.length > 0) {
+      return parts.join(' · ');
     }
     return 'All students';
-  }, [categoryFilter, roleFilter, deferredSearch]);
+  }, [
+    graduationYearFilter,
+    degreeFilter,
+    branchFilter,
+    fresherFilter,
+    skillFilter,
+    categoryFilter,
+    roleFilter,
+    deferredSearch,
+  ]);
 
   return (
     <>
@@ -315,71 +466,311 @@ export default function AdminStudentsPage() {
           </section>
         </div>
 
-        <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search name, college, role, category, skills…"
-            className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-          />
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <select
-              value={categoryFilter}
-              onChange={(event) => {
-                setRoleFilter('');
-                setCategoryFilter(event.target.value);
-              }}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-            >
-              <option value="">All job categories / roles</option>
-              {availabilityBreakdown.categories.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {formatJobCategoryLabel(item.value)} ({item.count})
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={loadStudents}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-            >
-              Refresh
-            </button>
-            {!isLoading && students.length > 0 ? (
+        {/* Filters Card */}
+        <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search name, college, email, phone, role, category, skills…"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+              />
+              <span className="absolute left-3.5 top-3.5 text-slate-400">🔍</span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => openExport(filteredStudents, downloadScopeLabel)}
-                className="rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                onClick={loadStudents}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                Download Excel
-                {filteredStudents.length !== students.length
-                  ? ` (${filteredStudents.length})`
-                  : ` (all ${students.length})`}
+                Refresh
               </button>
-            ) : null}
+              {!isLoading && students.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => openExport(filteredStudents, downloadScopeLabel)}
+                  className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                >
+                  Download Excel
+                  {filteredStudents.length !== students.length
+                    ? ` (${filteredStudents.length})`
+                    : ` (all ${students.length})`}
+                </button>
+              ) : null}
+            </div>
           </div>
-        </div>
 
-        {(categoryFilter || roleFilter) && (
-          <p className="mb-4 text-sm text-slate-600">
-            Showing{' '}
-            <span className="font-semibold text-slate-900">
-              {categoryFilter ? formatJobCategoryLabel(categoryFilter) : roleFilter}
-            </span>{' '}
-            · {filteredStudents.length} student{filteredStudents.length === 1 ? '' : 's'}{' '}
-            <button
-              type="button"
-              onClick={() => {
-                setCategoryFilter('');
-                setRoleFilter('');
-              }}
-              className="font-semibold text-cyan-700 hover:underline"
-            >
-              Clear filter
-            </button>
-          </p>
-        )}
+          {/* Detailed Filters Grid */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 border-t border-slate-100 pt-3">
+            {/* 1. Graduation Year / Batch */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Passout Year / Batch
+              </label>
+              <select
+                value={graduationYearFilter}
+                onChange={(e) => setGraduationYearFilter(e.target.value)}
+                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                  graduationYearFilter
+                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="">All Batches</option>
+                {filterBreakdown.years.map((y) => (
+                  <option key={y.value} value={y.value}>
+                    Batch {y.value} ({y.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 2. Degree */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Degree Qualification
+              </label>
+              <select
+                value={degreeFilter}
+                onChange={(e) => setDegreeFilter(e.target.value)}
+                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                  degreeFilter
+                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="">All Degrees</option>
+                {filterBreakdown.degrees.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.value} ({d.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 3. Branch / Stream */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Branch / Stream
+              </label>
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                  branchFilter
+                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="">All Branches</option>
+                {filterBreakdown.branches.map((b) => (
+                  <option key={b.value} value={b.value}>
+                    {b.value} ({b.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 4. Fresher vs Experienced */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Fresher / Experience
+              </label>
+              <select
+                value={fresherFilter}
+                onChange={(e) => setFresherFilter(e.target.value)}
+                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                  fresherFilter
+                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="">All Experience Levels</option>
+                <option value="fresher">Freshers Only ({summary.freshers})</option>
+                <option value="experienced">Experienced Only ({students.length - summary.freshers})</option>
+                <option value="0_1">0 – 1 Year Exp</option>
+                <option value="1_3">1 – 3 Years Exp</option>
+                <option value="3_5">3 – 5 Years Exp</option>
+                <option value="5_plus">5+ Years Exp</option>
+              </select>
+            </div>
+
+            {/* 5. Key Skills */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Technical / Business Skill
+              </label>
+              <select
+                value={skillFilter}
+                onChange={(e) => setSkillFilter(e.target.value)}
+                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                  skillFilter
+                    ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="">All Skills</option>
+                {filterBreakdown.skills.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label} ({s.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 6. Job Category */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Career Category
+              </label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setRoleFilter('');
+                  setCategoryFilter(e.target.value);
+                }}
+                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                  categoryFilter
+                    ? 'border-cyan-500 bg-cyan-50/70 text-cyan-900'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <option value="">All Categories</option>
+                {availabilityBreakdown.categories.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {formatJobCategoryLabel(item.value)} ({item.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Active Filter Badges */}
+          {hasActiveFilters ? (
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+              <span className="font-bold text-slate-700">
+                Filtered: <span className="text-indigo-600">{filteredStudents.length}</span> of {students.length} students
+              </span>
+
+              {graduationYearFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-800">
+                  Batch: {graduationYearFilter}
+                  <button
+                    type="button"
+                    onClick={() => setGraduationYearFilter('')}
+                    className="hover:text-indigo-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {degreeFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-800">
+                  Degree: {degreeFilter}
+                  <button
+                    type="button"
+                    onClick={() => setDegreeFilter('')}
+                    className="hover:text-indigo-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {branchFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-800">
+                  Branch: {branchFilter}
+                  <button
+                    type="button"
+                    onClick={() => setBranchFilter('')}
+                    className="hover:text-indigo-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {fresherFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-800">
+                  Exp: {fresherFilter === 'fresher' ? 'Freshers Only' : fresherFilter === 'experienced' ? 'Experienced Only' : fresherFilter}
+                  <button
+                    type="button"
+                    onClick={() => setFresherFilter('')}
+                    className="hover:text-indigo-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {skillFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-800">
+                  Skill: {formatSkillLabel(skillFilter)}
+                  <button
+                    type="button"
+                    onClick={() => setSkillFilter('')}
+                    className="hover:text-indigo-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {categoryFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-50 px-2.5 py-1 font-semibold text-cyan-800">
+                  Category: {formatJobCategoryLabel(categoryFilter)}
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter('')}
+                    className="hover:text-cyan-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {roleFilter ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-800">
+                  Role: {roleFilter}
+                  <button
+                    type="button"
+                    onClick={() => setRoleFilter('')}
+                    className="hover:text-indigo-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              {searchTerm ? (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-800">
+                  Search: "{searchTerm}"
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="hover:text-slate-950 font-bold"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="ml-auto font-bold text-rose-600 hover:text-rose-700 hover:underline"
+              >
+                Clear all filters
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         {notice ? (
           <p className="mb-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
@@ -429,10 +820,19 @@ export default function AdminStudentsPage() {
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
             <p className="text-lg font-semibold text-slate-900">No student registrations found</p>
             <p className="mt-2 text-sm text-slate-600">
-              {searchTerm || categoryFilter || roleFilter
-                ? 'Try another search or clear the category/role filter.'
+              {hasActiveFilters
+                ? 'No students matched your active filter combination. Try clearing some filters.'
                 : 'Student sign-ups at /student/register will appear here.'}
             </p>
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500 shadow-sm"
+              >
+                <span>✕</span> Clear all filters
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-4">
@@ -456,10 +856,32 @@ export default function AdminStudentsPage() {
                         </span>
                       ) : null}
                       {student.isFresher ? (
-                        <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-800">
+                        <button
+                          type="button"
+                          onClick={() => setFresherFilter((curr) => (curr === 'fresher' ? '' : 'fresher'))}
+                          className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold transition ${
+                            fresherFilter === 'fresher'
+                              ? 'border-indigo-600 bg-indigo-600 text-white'
+                              : 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100'
+                          }`}
+                          title="Click to filter Freshers only"
+                        >
                           Fresher
-                        </span>
-                      ) : null}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setFresherFilter((curr) => (curr === 'experienced' ? '' : 'experienced'))}
+                          className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold transition ${
+                            fresherFilter === 'experienced'
+                              ? 'border-amber-600 bg-amber-600 text-white'
+                              : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                          }`}
+                          title="Click to filter Experienced only"
+                        >
+                          Experienced
+                        </button>
+                      )}
                       <span
                         className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
                           student.isActive
@@ -481,13 +903,47 @@ export default function AdminStudentsPage() {
                       </div>
                       <div>
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Degree / branch</dt>
-                        <dd className="mt-0.5 text-slate-800">
-                          {[student.degree, student.branch].filter(Boolean).join(' · ') || 'Not provided'}
+                        <dd className="mt-0.5 flex flex-wrap items-center gap-1.5 text-slate-800">
+                          {student.degree ? (
+                            <button
+                              type="button"
+                              onClick={() => setDegreeFilter((curr) => (curr === student.degree ? '' : student.degree))}
+                              className="font-medium text-slate-900 hover:text-indigo-600 hover:underline"
+                              title={`Filter candidates with degree: ${student.degree}`}
+                            >
+                              {student.degree}
+                            </button>
+                          ) : null}
+                          {student.degree && student.branch ? <span className="text-slate-300">·</span> : null}
+                          {student.branch ? (
+                            <button
+                              type="button"
+                              onClick={() => setBranchFilter((curr) => (curr === student.branch ? '' : student.branch))}
+                              className="font-medium text-slate-800 hover:text-indigo-600 hover:underline"
+                              title={`Filter candidates with branch: ${student.branch}`}
+                            >
+                              {student.branch}
+                            </button>
+                          ) : null}
+                          {!student.degree && !student.branch ? 'Not provided' : null}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Graduation year</dt>
-                        <dd className="mt-0.5 text-slate-800">{student.graduationYear || 'Not provided'}</dd>
+                        <dd className="mt-0.5 text-slate-800">
+                          {student.graduationYear ? (
+                            <button
+                              type="button"
+                              onClick={() => setGraduationYearFilter((curr) => (curr === String(student.graduationYear) ? '' : String(student.graduationYear)))}
+                              className="font-semibold text-slate-900 hover:text-indigo-600 hover:underline"
+                              title={`Filter Batch ${student.graduationYear}`}
+                            >
+                              Batch {student.graduationYear}
+                            </button>
+                          ) : (
+                            'Not provided'
+                          )}
+                        </dd>
                       </div>
                       <div>
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Contact email</dt>
@@ -542,12 +998,60 @@ export default function AdminStudentsPage() {
                       </div>
                       <div className="sm:col-span-2">
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Skills</dt>
-                        <dd className="mt-0.5 text-slate-800">
-                          {student.skillLabels?.length > 0
-                            ? student.skillLabels.join(', ')
-                            : student.skills.length > 0
-                              ? student.skills.join(', ')
-                              : 'Not provided'}
+                        <dd className="mt-1 flex flex-wrap gap-1.5 text-slate-800">
+                          {student.skillLabels?.length > 0 ? (
+                            student.skillLabels.map((lbl, idx) => {
+                              const rawVal = student.skills?.[idx] || lbl.toLowerCase();
+                              const isSelected =
+                                skillFilter && normalizeSkillValue(skillFilter) === normalizeSkillValue(rawVal);
+                              return (
+                                <button
+                                  key={lbl}
+                                  type="button"
+                                  onClick={() =>
+                                    setSkillFilter((curr) =>
+                                      normalizeSkillValue(curr) === normalizeSkillValue(rawVal) ? '' : rawVal,
+                                    )
+                                  }
+                                  className={`rounded-lg border px-2 py-0.5 text-xs font-medium transition ${
+                                    isSelected
+                                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs'
+                                      : 'border-indigo-100 bg-indigo-50/70 text-indigo-700 hover:border-indigo-300 hover:bg-indigo-100'
+                                  }`}
+                                  title={`Filter candidates with skill: ${lbl}`}
+                                >
+                                  {lbl}
+                                </button>
+                              );
+                            })
+                          ) : student.skills?.length > 0 ? (
+                            student.skills.map((rawVal) => {
+                              const lbl = formatSkillLabel(rawVal);
+                              const isSelected =
+                                skillFilter && normalizeSkillValue(skillFilter) === normalizeSkillValue(rawVal);
+                              return (
+                                <button
+                                  key={rawVal}
+                                  type="button"
+                                  onClick={() =>
+                                    setSkillFilter((curr) =>
+                                      normalizeSkillValue(curr) === normalizeSkillValue(rawVal) ? '' : rawVal,
+                                    )
+                                  }
+                                  className={`rounded-lg border px-2 py-0.5 text-xs font-medium transition ${
+                                    isSelected
+                                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs'
+                                      : 'border-indigo-100 bg-indigo-50/70 text-indigo-700 hover:border-indigo-300 hover:bg-indigo-100'
+                                  }`}
+                                  title={`Filter candidates with skill: ${lbl}`}
+                                >
+                                  {lbl}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <span className="text-xs text-slate-400">Not provided</span>
+                          )}
                         </dd>
                       </div>
                       <div className="sm:col-span-2">
