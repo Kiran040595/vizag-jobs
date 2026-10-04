@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
@@ -8,6 +8,11 @@ import {
   saveCompanyDetails,
   toggleCompanyDirectoryApproval,
 } from '../services/adminCompanies';
+import { fetchAdminPlatformJobs } from '../services/adminJobs';
+import {
+  fetchAndClassifyCompanyJobs,
+} from '../lib/companyCareerFetchAutomation';
+import CompanyCareerJobApprovalModal from '../components/admin/CompanyCareerJobApprovalModal';
 import { pushToast } from '../lib/toast';
 
 const AVATAR_GRADIENTS = [
@@ -38,7 +43,7 @@ const getCompanyInitials = (name = '') => {
 const ITEMS_PER_PAGE = 25;
 
 export default function AdminCompaniesPage() {
-  useAdminAuth();
+  const { session } = useAdminAuth();
 
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +63,14 @@ export default function AdminCompaniesPage() {
   const [editIsDirectoryApproved, setEditIsDirectoryApproved] = useState(false);
   const [editNotes, setEditNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Single-Company Manual Fetch + Gemini SEO + Auto-Publish State
+  const [fetchingCompanyName, setFetchingCompanyName] = useState('');
+  const [fetchProgress, setFetchProgress] = useState(null);
+  const [fetchReportModal, setFetchReportModal] = useState(null);
+  const [approvalModalData, setApprovalModalData] = useState(null);
+  const existingJobsCacheRef = useRef(null);
+  const fetchAbortRef = useRef(null);
 
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
@@ -263,6 +276,97 @@ export default function AdminCompaniesPage() {
     }
   };
 
+  const handleCancelCompanyFetch = () => {
+    fetchAbortRef.current?.abort();
+  };
+
+  const handleFetchCompanyJobs = async (comp) => {
+    if (!comp.careersUrl) {
+      handleOpenEdit(comp);
+      pushToast({
+        message: `Add a Careers Page URL for ${comp.name} first to fetch Vizag jobs.`,
+        type: 'info',
+      });
+      return;
+    }
+
+    if (fetchingCompanyName) {
+      pushToast({
+        message: `Already fetching jobs for ${fetchingCompanyName}. Please wait or cancel.`,
+        type: 'info',
+      });
+      return;
+    }
+
+    if (!session?.access_token) {
+      pushToast({
+        message: 'Sign in as admin to fetch and publish company jobs.',
+        type: 'error',
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
+    setFetchingCompanyName(comp.name);
+    setFetchProgress({
+      phase: 'fetching',
+      company: comp.name,
+      message: `Scraping ${comp.name} careers page & extracting Vizag roles…`,
+    });
+
+    try {
+      if (!existingJobsCacheRef.current) {
+        try {
+          existingJobsCacheRef.current = await fetchAdminPlatformJobs();
+        } catch {
+          existingJobsCacheRef.current = [];
+        }
+      }
+
+      const classifiedResult = await fetchAndClassifyCompanyJobs({
+        company: comp,
+        accessToken: session.access_token,
+        existingJobs: existingJobsCacheRef.current,
+        signal: controller.signal,
+      });
+
+      setApprovalModalData({
+        company: comp,
+        initialData: classifiedResult,
+      });
+
+      if (classifiedResult.jobs.length === 0) {
+        pushToast({
+          message: `No active Vizag openings found on ${comp.name}'s careers page.`,
+          type: 'info',
+        });
+      } else {
+        const newCount = classifiedResult.jobs.filter((j) => !j.isDuplicate).length;
+        pushToast({
+          message: `Found ${classifiedResult.jobs.length} Vizag role(s) for ${comp.name} (${newCount} new). Review & approve before optimizing.`,
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        pushToast({
+          message: `Cancelled job fetch for ${comp.name}.`,
+          type: 'info',
+        });
+      } else {
+        pushToast({
+          message: err instanceof Error ? err.message : `Failed to fetch jobs for ${comp.name}.`,
+          type: 'error',
+        });
+      }
+    } finally {
+      setFetchingCompanyName('');
+      setFetchProgress(null);
+      fetchAbortRef.current = null;
+    }
+  };
+
   return (
     <AdminShell
       title="Companies Directory"
@@ -375,6 +479,33 @@ export default function AdminCompaniesPage() {
           ))}
         </div>
       </section>
+
+      {/* Active Single-Company Fetch Progress Banner */}
+      {fetchingCompanyName && fetchProgress ? (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-emerald-300 bg-emerald-50/90 p-5 text-sm text-emerald-950 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <span
+              className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="font-extrabold text-emerald-950">
+                Fetching &amp; Refining Vizag Jobs: {fetchingCompanyName}
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-emerald-800">
+                {fetchProgress.message}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleCancelCompanyFetch}
+            className="rounded-xl border border-emerald-300 bg-white px-3.5 py-2 text-xs font-bold text-emerald-900 shadow-2xs transition hover:bg-emerald-100"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
 
       {/* Error Notice */}
       {loadError ? (
@@ -559,6 +690,43 @@ export default function AdminCompaniesPage() {
                         title="Include in weekly 6:00 AM career scraper"
                       >
                         <span>{comp.isActiveForScrape && comp.careersUrl ? '⚡ Scraper ON' : 'Scraper OFF'}</span>
+                      </button>
+
+                      {/* Manual Fetch + Gemini SEO + Auto-Publish Button */}
+                      <button
+                        type="button"
+                        disabled={Boolean(fetchingCompanyName) && fetchingCompanyName !== comp.name}
+                        onClick={() => handleFetchCompanyJobs(comp)}
+                        className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-bold shadow-2xs transition active:scale-95 disabled:opacity-45 ${
+                          fetchingCompanyName === comp.name
+                            ? 'border border-emerald-400 bg-emerald-600 text-white'
+                            : comp.careersUrl
+                              ? 'border border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-600 hover:text-white'
+                              : 'border border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:border-emerald-300 hover:bg-emerald-50/50 hover:text-emerald-800'
+                        }`}
+                        title={
+                          comp.careersUrl
+                            ? `Fetch Vizag jobs from ${comp.careersUrl}, refine with Gemini SEO, and publish`
+                            : `Add Careers URL for ${comp.name} first to fetch jobs`
+                        }
+                      >
+                        {fetchingCompanyName === comp.name ? (
+                          <>
+                            <span
+                              className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"
+                              aria-hidden="true"
+                            />
+                            <span>
+                              {fetchProgress?.phase === 'seo'
+                                ? `Gemini SEO (${fetchProgress.current || 1}/${fetchProgress.total || 1})…`
+                                : fetchProgress?.phase === 'publishing'
+                                  ? `Publishing (${fetchProgress.current || 1}/${fetchProgress.total || 1})…`
+                                  : 'Fetching…'}
+                            </span>
+                          </>
+                        ) : (
+                          <span>🚀 Fetch Jobs</span>
+                        )}
                       </button>
 
                       {/* Edit Details Button */}
@@ -748,6 +916,184 @@ export default function AdminCompaniesPage() {
             </form>
           </div>
         </div>
+      ) : null}
+
+      {/* Company Fetch Results Summary Modal */}
+      {fetchReportModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
+          onClick={() => setFetchReportModal(null)}
+        >
+          <div
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                  Company Career Fetch &amp; Gemini SEO Report
+                </p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  {fetchReportModal.company}
+                </h2>
+                <a
+                  href={fetchReportModal.careersUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-cyan-700 hover:underline"
+                >
+                  <span>{fetchReportModal.careersUrl}</span>
+                  <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFetchReportModal(null)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5 text-center">
+                <p className="text-[11px] font-bold uppercase text-slate-500">Vizag Found</p>
+                <p className="mt-1 text-2xl font-black text-slate-900">
+                  {fetchReportModal.stats?.fetched ?? 0}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-center">
+                <p className="text-[11px] font-bold uppercase text-emerald-800">Published</p>
+                <p className="mt-1 text-2xl font-black text-emerald-950">
+                  {fetchReportModal.stats?.published ?? 0}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 text-center">
+                <p className="text-[11px] font-bold uppercase text-amber-800">Skipped</p>
+                <p className="mt-1 text-2xl font-black text-amber-950">
+                  {fetchReportModal.stats?.skipped ?? 0}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-3.5 text-center">
+                <p className="text-[11px] font-bold uppercase text-rose-800">Failed</p>
+                <p className="mt-1 text-2xl font-black text-rose-950">
+                  {(fetchReportModal.stats?.seoFailed ?? 0) +
+                    (fetchReportModal.stats?.publishFailed ?? 0)}
+                </p>
+              </div>
+            </div>
+
+            {Array.isArray(fetchReportModal.jobs) && fetchReportModal.jobs.length > 0 ? (
+              <div className="mt-5 space-y-2.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Processed Vizag Roles ({fetchReportModal.jobs.length})
+                </p>
+                <div className="space-y-2">
+                  {fetchReportModal.jobs.map((item, idx) => (
+                    <div
+                      key={`${item.title}-${idx}`}
+                      className="flex flex-col justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 sm:flex-row sm:items-center"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-bold text-slate-900">{item.title}</span>
+                          {item.status === 'published' ? (
+                            <span className="rounded-lg border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-900">
+                              ✅ Published
+                            </span>
+                          ) : item.status === 'skipped' ? (
+                            <span className="rounded-lg border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+                              ⏭️ Skipped
+                            </span>
+                          ) : (
+                            <span className="rounded-lg border border-rose-300 bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-900">
+                              ⚠️ Failed
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs text-slate-600">
+                          {item.reason}
+                          {item.error ? ` — ${item.error}` : ''}
+                        </p>
+                      </div>
+
+                      {item.status === 'published' && item.publishedSlug ? (
+                        <div className="flex shrink-0 items-center gap-2">
+                          <a
+                            href={`/jobs/${item.publishedSlug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
+                          >
+                            View Job ↗
+                          </a>
+                          {item.id ? (
+                            <a
+                              href={`/admin/edit/${item.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                            >
+                              Edit
+                            </a>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
+                No active Visakhapatnam / Vizag job vacancies were listed on this careers page.
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-400">
+              <span>
+                Scrape mode: {fetchReportModal.scrapeSource || 'direct_html'} (
+                {fetchReportModal.scrapedChars || 0} chars)
+              </span>
+              <button
+                type="button"
+                onClick={() => setFetchReportModal(null)}
+                className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white hover:bg-slate-800"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {approvalModalData ? (
+        <CompanyCareerJobApprovalModal
+          isOpen={Boolean(approvalModalData)}
+          company={approvalModalData.company}
+          accessToken={session?.access_token}
+          initialData={approvalModalData.initialData}
+          onClose={() => setApprovalModalData(null)}
+          onJobsPublished={(publishedList) => {
+            if (Array.isArray(publishedList) && publishedList.length > 0) {
+              existingJobsCacheRef.current = [
+                ...publishedList,
+                ...(existingJobsCacheRef.current || []),
+              ];
+              setCompanies((prev) =>
+                prev.map((item) =>
+                  item.name === approvalModalData.company?.name
+                    ? {
+                        ...item,
+                        totalJobs: (item.totalJobs || 0) + publishedList.length,
+                        publishedJobs: (item.publishedJobs || 0) + publishedList.length,
+                      }
+                    : item,
+                ),
+              );
+            }
+          }}
+          pushToast={pushToast}
+        />
       ) : null}
     </AdminShell>
   );

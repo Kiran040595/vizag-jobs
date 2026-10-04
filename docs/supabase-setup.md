@@ -308,7 +308,7 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `FETCH_JOBS_CRON_SECRET` | Optional long random string for scheduled runs (see below). |
 | `RESEND_API_KEY` | Resend API key for automation summary emails (`send-automation-summary`). |
 | `RESEND_FROM_EMAIL` | Optional sender, e.g. `Vizag Jobs <noreply@jobsinvizag.in>` (domain must be verified in Resend). |
-| `AUTOMATION_SUMMARY_EMAIL` | Optional recipient for automation reports (default **kkumardadi@gmail.com**). |
+| `AUTOMATION_SUMMARY_EMAIL` | Optional recipient for automation reports (default **kiran@jobsinvizag.in**). |
 | `SITE_URL` | Optional site base URL for links in emails (default `https://jobsinvizag.in`). |
 
 ### Frontend env
@@ -338,7 +338,7 @@ Persisting snapshots (e.g. private Storage or email) is not implemented in-repo;
 
 For hands-off Naukri fetch → Make SEO (3 min between jobs) → publish, see **`docs/auto-naukri-pipeline.md`**. It uses the same `FETCH_JOBS_CRON_SECRET` plus `SUPABASE_SERVICE_ROLE_KEY` in GitHub Actions (`.github/workflows/auto-naukri-fetch.yml` for Naukri; `.github/workflows/auto-naukri-daily.yml` for LinkedIn / blog / Shorts).
 
-Email summaries use Edge Function `send-automation-summary` with **Resend** (`RESEND_API_KEY`, default recipient `kkumardadi@gmail.com`).
+Email summaries use Edge Function `send-automation-summary` with **Resend** (`RESEND_API_KEY`, default recipient `kiran@jobsinvizag.in`).
 
 ### Compliance
 

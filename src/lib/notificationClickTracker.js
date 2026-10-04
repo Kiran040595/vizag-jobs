@@ -50,7 +50,19 @@ export async function checkAndTrackNotificationClick() {
 
   markNotifIdSeen(trackingKey);
 
-  const visitorKey = `v_${Math.random().toString(36).slice(2, 10)}_${Date.now()}`;
+  let visitorKey = `v_${Math.random().toString(36).slice(2, 10)}_${Date.now()}`;
+  try {
+    if (isSupabaseConfigured && supabase) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData?.session?.user?.id;
+      if (currentUserId) {
+        visitorKey = `user:${currentUserId}`;
+      }
+    }
+  } catch {
+    // Keep generated visitorKey
+  }
+
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 240) : '';
 
   // Send ping to API first (service role handles both RPC and fallback storage), with Supabase RPC fallback

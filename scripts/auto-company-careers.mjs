@@ -18,10 +18,13 @@ import { fileURLToPath } from 'node:url';
 import { applyLocalEnv, pipelineConfig } from './lib/pipeline-env.mjs';
 import {
   fetchExistingJobKeys,
-  getJobDedupeKey,
   publishJob,
-  shouldSkipJob,
 } from './lib/pipeline-publish.mjs';
+import {
+  normalizeCompanyTitleKey,
+  normalizeUrlForCompare,
+  shouldSkipCompanyCareerJob,
+} from '../src/lib/companyCareerFetchAutomation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -309,7 +312,7 @@ async function main() {
   log(`Loaded ${companies.length} active company target(s).`);
 
   // 2. Fetch existing job keys to avoid duplicates
-  let existing = { slugs: new Set(), applyLinks: new Set() };
+  let existing = { slugs: new Set(), applyLinks: new Set(), companyTitleKeys: new Set() };
   if (!isDryRun) {
     try {
       existing = await fetchExistingJobKeys(30);
@@ -380,7 +383,7 @@ async function main() {
           apply_link: rawJob.apply_link || company.careers_url,
         };
 
-        const { skip, reason } = shouldSkipJob(job, existing);
+        const { skip, reason } = shouldSkipCompanyCareerJob(job, company.careers_url, existing);
         if (skip) {
           log(`  [SKIP] "${job.title}" -> ${reason}`);
           companyReport.skipped += 1;
@@ -389,11 +392,14 @@ async function main() {
           continue;
         }
 
+        const ctKey = normalizeCompanyTitleKey(job.company, job.title);
+
         if (isDryRun) {
           log(`  [DRY-RUN WOULD PUBLISH] "${job.title}" (${job.location})`);
           companyReport.published += 1;
           report.publishedJobs += 1;
           companyReport.jobs.push({ title: job.title, status: 'dry_run_published' });
+          if (ctKey) existing.companyTitleKeys.add(ctKey);
         } else {
           try {
             const inserted = await publishJob(job, 'published');
@@ -404,7 +410,8 @@ async function main() {
 
             // Add to in-memory set to prevent duplicate within the same run
             if (inserted.slug) existing.slugs.add(inserted.slug.toLowerCase());
-            if (inserted.apply_link) existing.applyLinks.add(inserted.apply_link.toLowerCase());
+            if (inserted.apply_link) existing.applyLinks.add(normalizeUrlForCompare(inserted.apply_link));
+            if (ctKey) existing.companyTitleKeys.add(ctKey);
           } catch (pubErr) {
             log(`  [ERROR PUBLISHING] "${job.title}": ${pubErr.message}`);
             companyReport.skipped += 1;

@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
   }
 
   const defaultTo =
-    Deno.env.get('AUTOMATION_SUMMARY_EMAIL')?.trim() || 'kkumardadi@gmail.com';
+    Deno.env.get('AUTOMATION_SUMMARY_EMAIL')?.trim() || 'kiran@jobsinvizag.in';
   const to = (body.to || defaultTo).trim();
   if (!to || !to.includes('@')) {
     return jsonResponse({ ok: false, error: 'Invalid recipient email.' }, 400);

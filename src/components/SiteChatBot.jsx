@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOptionalCookieConsent } from '../context/CookieConsentContext.jsx';
+import { SITE_CONTACT_EMAIL } from '../lib/siteLegal.js';
 import {
   DEFAULT_CHAT_SUGGESTIONS,
   fetchSiteChatMeta,
@@ -281,8 +282,8 @@ export default function SiteChatBot() {
             </div>
             <p className="mt-2 text-[11px] leading-4 text-slate-500">
               AI answers use site help info. For account or listing issues, email{' '}
-              <a href="mailto:kkumardadi@gmail.com" className="font-semibold text-cyan-700 hover:text-cyan-800">
-                kkumardadi@gmail.com
+              <a href={`mailto:${SITE_CONTACT_EMAIL}`} className="font-semibold text-cyan-700 hover:text-cyan-800">
+                {SITE_CONTACT_EMAIL}
               </a>
               .
             </p>

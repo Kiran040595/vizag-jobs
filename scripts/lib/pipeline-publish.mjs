@@ -191,7 +191,7 @@ export async function fetchExistingJobKeys() {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from(pipelineConfig.jobsTable)
-    .select('slug, apply_link, source_url');
+    .select('slug, apply_link, source_url, company, title');
 
   if (error) {
     throw new Error(`Could not load existing jobs: ${error.message}`);
@@ -199,18 +199,25 @@ export async function fetchExistingJobKeys() {
 
   const slugs = new Set();
   const applyLinks = new Set();
+  const companyTitleKeys = new Set();
 
   for (const row of data || []) {
     const slug = normalizeText(row.slug).toLowerCase();
     if (slug) slugs.add(slug);
 
-    const apply = normalizeText(row.apply_link).toLowerCase();
+    const apply = normalizeText(row.apply_link).toLowerCase().replace(/\/+$/, '');
     if (apply && !isInvalidApplyLink(apply)) {
       applyLinks.add(apply);
     }
+
+    const cleanComp = normalizeText(row.company).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const cleanTitle = normalizeText(row.title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (cleanComp && cleanTitle) {
+      companyTitleKeys.add(`${cleanComp}::${cleanTitle}`);
+    }
   }
 
-  return { slugs, applyLinks };
+  return { slugs, applyLinks, companyTitleKeys };
 }
 
 export function getJobDedupeKey(job) {

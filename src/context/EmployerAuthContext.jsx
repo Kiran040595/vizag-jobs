@@ -5,6 +5,7 @@ import { setPendingEmployerCompanyName, takePendingEmployerCompanyName } from '.
 import { getAuthRedirectUrl } from '../lib/site';
 import { upsertEmployerProfile } from '../services/employerJobs';
 import { deferAuthWork } from '../lib/deferAuthWork';
+import { hasStoredSupabaseSession } from '../lib/supabaseSessionHelper';
 
 const EMPLOYER_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const EMPLOYER_ACCESS_CACHE_KEY = 'vizagjobs:employer-access-cache';
@@ -108,7 +109,7 @@ export function EmployerAuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [isEmployer, setIsEmployer] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase));
+  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase) && hasStoredSupabaseSession());
   const [authError, setAuthError] = useState('');
 
   const refreshEmployerAccess = async (userId) => {
@@ -133,7 +134,7 @@ export function EmployerAuthProvider({ children }) {
         return;
       }
 
-      if (showLoader) {
+      if (showLoader && nextSession?.user) {
         setIsLoading(true);
       }
 
@@ -193,8 +194,12 @@ export function EmployerAuthProvider({ children }) {
           return;
         }
 
-        void syncSession(data.session, { showLoader: true });
+        void syncSession(data.session, { showLoader: Boolean(data.session?.user) });
       });
+    }).catch(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
 
     const {
@@ -206,9 +211,9 @@ export function EmployerAuthProvider({ children }) {
         }
 
         const shouldShowLoader =
-          event === 'SIGNED_OUT' ||
+          (event === 'SIGNED_OUT' ||
           event === 'USER_UPDATED' ||
-          event === 'PASSWORD_RECOVERY';
+          event === 'PASSWORD_RECOVERY') && Boolean(nextSession?.user);
 
         void syncSession(nextSession, { showLoader: shouldShowLoader });
       });

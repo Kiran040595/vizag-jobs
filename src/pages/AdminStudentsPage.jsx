@@ -74,6 +74,8 @@ export default function AdminStudentsPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [exportStudents, setExportStudents] = useState([]);
   const [exportLabel, setExportLabel] = useState('All students');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
   const loadStudents = useCallback(async () => {
@@ -93,6 +95,10 @@ export default function AdminStudentsPage() {
     loadStudents();
   }, [loadStudents]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [deferredSearch, categoryFilter, roleFilter, pageSize]);
+
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
       const matchesSearch = !deferredSearch || studentSearchBlob(student).includes(deferredSearch);
@@ -105,6 +111,14 @@ export default function AdminStudentsPage() {
       return matchesSearch && matchesCategory && matchesRole;
     });
   }, [students, deferredSearch, categoryFilter, roleFilter]);
+
+  const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(filteredStudents.length / (Number(pageSize) || 50)));
+  const paginatedStudents = useMemo(() => {
+    if (pageSize === 'all') return filteredStudents;
+    const size = Number(pageSize) || 50;
+    const start = (currentPage - 1) * size;
+    return filteredStudents.slice(start, start + size);
+  }, [filteredStudents, currentPage, pageSize]);
 
   const summary = useMemo(() => {
     const total = students.length;
@@ -378,6 +392,37 @@ export default function AdminStudentsPage() {
           </p>
         ) : null}
 
+        {!isLoading && filteredStudents.length > 0 ? (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+            <p>
+              Showing{' '}
+              <span className="font-semibold text-slate-900">
+                {pageSize === 'all' ? 1 : (currentPage - 1) * Number(pageSize) + 1}
+              </span>
+              {' - '}
+              <span className="font-semibold text-slate-900">
+                {pageSize === 'all'
+                  ? filteredStudents.length
+                  : Math.min(filteredStudents.length, currentPage * Number(pageSize))}
+              </span>{' '}
+              of <span className="font-semibold text-slate-900">{filteredStudents.length}</span> registered students
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Per page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-cyan-500"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={250}>250</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+        ) : null}
+
         {isLoading ? (
           <LoadingSpinner label="Loading student registrations…" />
         ) : filteredStudents.length === 0 ? (
@@ -391,7 +436,7 @@ export default function AdminStudentsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredStudents.map((student) => (
+            {paginatedStudents.map((student) => (
               <article
                 key={student.userId}
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
@@ -536,6 +581,39 @@ export default function AdminStudentsPage() {
             ))}
           </div>
         )}
+
+        {!isLoading && totalPages > 1 ? (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-slate-500">
+              Page <span className="font-bold text-slate-900">{currentPage}</span> of{' '}
+              <span className="font-bold text-slate-900">{totalPages}</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => {
+                  setCurrentPage((p) => Math.max(1, p - 1));
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => {
+                  setCurrentPage((p) => Math.min(totalPages, p + 1));
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {shareStudent ? (
           <ShareStudentDialog

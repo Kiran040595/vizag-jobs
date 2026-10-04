@@ -116,7 +116,7 @@ On `/admin/fetch`, see **Automation report** below the notice banner.
 
 **Two ways to keep the report:**
 
-1. **Email summary** — sent automatically to `kkumardadi@gmail.com` after each run (or click **Email summary** to resend)
+1. **Email summary** — sent automatically to `kiran@jobsinvizag.in` after each run (or click **Email summary** to resend)
 2. **Download** — **Download JSON** (full data) or **Download CSV** (spreadsheet-friendly)
 
 The report persists in browser storage until **Clear report**.
@@ -147,7 +147,7 @@ There is **no hard daily publish cap of 5**. Low publish counts mean filters + d
 
 ## Email summary
 
-After each automation run, a summary email is sent to **`kkumardadi@gmail.com`** (override with `AUTOMATION_SUMMARY_EMAIL`).
+After each automation run, a summary email is sent to **`kiran@jobsinvizag.in`** (override with `AUTOMATION_SUMMARY_EMAIL`).
 
 ### Setup (one-time)
 
@@ -159,7 +159,7 @@ After each automation run, a summary email is sent to **`kkumardadi@gmail.com`**
 |--------|--------|
 | `RESEND_API_KEY` | `re_...` from Resend dashboard |
 | `RESEND_FROM_EMAIL` | Optional. Default `Vizag Jobs <onboarding@resend.dev>` (Resend test sender — only works for verified/test use). For production, verify `jobsinvizag.in` in Resend and use e.g. `Vizag Jobs <noreply@jobsinvizag.in>` |
-| `AUTOMATION_SUMMARY_EMAIL` | Optional. Default `kkumardadi@gmail.com` |
+| `AUTOMATION_SUMMARY_EMAIL` | Optional. Default `kiran@jobsinvizag.in` |
 | `SITE_URL` | Optional. Default `https://jobsinvizag.in` (link in email) |
 
 4. Deploy the new function:

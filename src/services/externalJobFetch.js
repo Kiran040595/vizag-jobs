@@ -4,22 +4,28 @@
  * - mode `seo`: Gemini SEO rewrite for a single job (admin "Make SEO" button)
  */
 
-import { appendGeminiKeyToSeoErrorMessage } from '../lib/formatGeminiKeyUsage';
+import { appendGeminiKeyToSeoErrorMessage } from '../lib/formatGeminiKeyUsage.js';
 import {
   isSeoRetryableError,
   maxSeoAttemptsForKeyPool,
   nextGeminiKeyIndex,
   parseGeminiKeyIndexFromError,
   parseSeoRetryWaitMs,
-} from '../lib/seoRetry';
-import { SEO_PUBLISH_SAFE_INSTRUCTIONS } from '../lib/seoPublishSafeInstructions';
+} from '../lib/seoRetry.js';
+import { SEO_PUBLISH_SAFE_INSTRUCTIONS } from '../lib/seoPublishSafeInstructions.js';
+
+const getViteEnv = () =>
+  (typeof import.meta !== 'undefined' && import.meta.env) ||
+  (typeof globalThis !== 'undefined' && globalThis.process?.env) ||
+  {};
 
 export function getFetchExternalJobsUrl() {
-  const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
+  const env = getViteEnv();
+  const override = env.VITE_SUPABASE_FUNCTIONS_URL?.trim();
   if (override) {
     return override.replace(/\/$/, '');
   }
-  const base = import.meta.env.VITE_SUPABASE_URL?.trim()?.replace(/\/$/, '');
+  const base = env.VITE_SUPABASE_URL?.trim()?.replace(/\/$/, '');
   if (!base) {
     return '';
   }
@@ -82,7 +88,7 @@ function buildSeoJobPayload(job) {
 
 async function callFetchExternalJobsEdge(accessToken, body, options = {}) {
   const url = getFetchExternalJobsUrl();
-  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+  const anon = getViteEnv().VITE_SUPABASE_ANON_KEY?.trim();
   const timeoutMs =
     typeof options.timeoutMs === 'number' && options.timeoutMs > 0 ? options.timeoutMs : null;
 
@@ -419,3 +425,34 @@ export async function fetchSeoGeminiKeys(accessToken, options = {}) {
     total: Number(data?.gemini_keys_total) || keys.length,
   };
 }
+
+/**
+ * Scrape a single company's career page and extract Visakhapatnam/Vizag job openings via Gemini.
+ * @param {string} accessToken
+ * @param {{ name: string, careersUrl?: string, careers_url?: string, website?: string, category?: string, location?: string }} company
+ * @param {{ timeoutMs?: number }} [options]
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function fetchCompanyCareerJobs(accessToken, company, options = {}) {
+  const careersUrl = String(company?.careersUrl || company?.careers_url || '').trim();
+  const name = String(company?.name || '').trim();
+  if (!name || !careersUrl) {
+    throw new Error('Company name and Careers Page URL are required to fetch jobs.');
+  }
+
+  return callFetchExternalJobsEdge(
+    accessToken,
+    {
+      mode: 'company_careers',
+      company: {
+        name,
+        careers_url: careersUrl,
+        website: company?.website ? String(company.website).trim() : null,
+        category: company?.category ? String(company.category).trim() : 'General',
+        location: company?.location ? String(company.location).trim() : 'Visakhapatnam',
+      },
+    },
+    { timeoutMs: options.timeoutMs ?? 110_000 },
+  );
+}
+

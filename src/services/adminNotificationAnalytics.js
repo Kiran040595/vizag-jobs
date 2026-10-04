@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { mapStudentProfileRow } from '../lib/adminStudentProfile.js';
 
 export function parseUserAgentDetails(uaString) {
   const ua = String(uaString || '').toLowerCase();
@@ -156,17 +157,74 @@ export const fetchNotificationAnalyticsData = async () => {
       : { data: [] };
   const jobsById = Object.fromEntries((jobsRes.data || []).map((j) => [j.id, j]));
 
+  const subUserIds = [...new Set(subscriptions.map((s) => s.user_id).filter(Boolean))];
+  const openUserIds = [
+    ...new Set(
+      rawOpens
+        .map((o) => {
+          if (typeof o.visitor_key === 'string' && o.visitor_key.startsWith('user:')) {
+            return o.visitor_key.slice(5);
+          }
+          return null;
+        })
+        .filter(Boolean),
+    ),
+  ];
+  const replyUserIds = [
+    ...new Set(replyNotifications.map((r) => r.user_id).filter(Boolean)),
+  ];
+  const allCandidateUserIds = [
+    ...new Set([...subUserIds, ...openUserIds, ...replyUserIds]),
+  ];
+
+  const studentsRes =
+    allCandidateUserIds.length > 0
+      ? await safeQuery(
+          supabase
+            .from('student_profiles')
+            .select('*')
+            .in('user_id', allCandidateUserIds),
+        )
+      : { data: [] };
+  const studentsByUserId = Object.fromEntries(
+    (studentsRes.data || []).map((s) => [s.user_id, mapStudentProfileRow(s)]),
+  );
+
+  const adminsRes =
+    allCandidateUserIds.length > 0
+      ? await safeQuery(
+          supabase
+            .from('admin_users')
+            .select('user_id, email')
+            .in('user_id', allCandidateUserIds),
+        )
+      : { data: [] };
+  const adminsByUserId = Object.fromEntries(
+    (adminsRes.data || []).map((a) => [a.user_id, a]),
+  );
+
   const creatorIds = [...new Set((jobsRes.data || []).map((j) => j.created_by).filter(Boolean))];
+  const allEmployerLookupIds = [
+    ...new Set([...creatorIds, ...allCandidateUserIds]),
+  ];
   const employersRes =
-    creatorIds.length > 0
+    allEmployerLookupIds.length > 0
       ? await safeQuery(
           supabase
             .from('employer_profiles')
             .select('user_id, company_name, contact_name, contact_email')
-            .in('user_id', creatorIds),
+            .in('user_id', allEmployerLookupIds),
         )
       : { data: [] };
   const employersByUserId = Object.fromEntries((employersRes.data || []).map((e) => [e.user_id, e]));
+
+  // Device user_agent -> subscriber user_id lookup to correlate opens
+  const subByUa = {};
+  for (const s of subscriptions) {
+    if (s.user_id && s.user_agent) {
+      subByUa[s.user_agent] = s.user_id;
+    }
+  }
 
   let totalSubscribers = apiPayload?.stats?.totalSubscribers ?? subscriptions.length;
   let registeredCount = apiPayload?.stats?.registeredCount ?? 0;
@@ -183,6 +241,16 @@ export const fetchNotificationAnalyticsData = async () => {
           if (isRegistered) registeredCount += 1;
           else anonymousCount += 1;
 
+          const student = sub.user_id ? studentsByUserId[sub.user_id] : null;
+          const employer = sub.user_id ? employersByUserId[sub.user_id] : null;
+          const adminUser = sub.user_id ? adminsByUserId[sub.user_id] : null;
+          const candidateName = student?.fullName || employer?.contact_name || employer?.company_name || (adminUser ? 'VizagJobs Admin' : null);
+          const candidateEmail = student?.contactEmail || employer?.contact_email || adminUser?.email || null;
+          const candidatePhone = student?.phone || null;
+          const candidateCollege = student?.college || employer?.company_name || null;
+          const candidateProfile = student || (employer ? { fullName: employer.contact_name || employer.company_name, companyName: employer.company_name, contactEmail: employer.contact_email, userRole: 'Employer' } : null);
+          const userRole = student ? 'Student' : employer ? 'Employer' : adminUser ? 'Admin' : isRegistered ? 'Registered User' : 'Guest';
+
           const uaInfo = parseUserAgentDetails(sub.user_agent);
           deviceCounts[uaInfo.deviceType] = (deviceCounts[uaInfo.deviceType] || 0) + 1;
           osCounts[uaInfo.os] = (osCounts[uaInfo.os] || 0) + 1;
@@ -193,6 +261,12 @@ export const fetchNotificationAnalyticsData = async () => {
             key: `sub-${sub.id || index}`,
             isRegistered,
             userId: sub.user_id ? `${sub.user_id.slice(0, 8)}...` : null,
+            candidateName,
+            candidateEmail,
+            candidatePhone,
+            candidateCollege,
+            candidateProfile,
+            userRole,
             deviceType: uaInfo.deviceType,
             os: uaInfo.os,
             browser: uaInfo.browser,
@@ -377,6 +451,26 @@ export const fetchNotificationAnalyticsData = async () => {
     const linkedDispatch = open.dispatch_id ? dispatchesById[open.dispatch_id] : null;
     const jobId = open.job_id || linkedDispatch?.job_id || null;
     const job = jobId ? jobsById[jobId] : null;
+    let openUserId =
+      typeof open.visitor_key === 'string' && open.visitor_key.startsWith('user:')
+        ? open.visitor_key.slice(5)
+        : null;
+
+    if (!openUserId && open.user_agent && subByUa[open.user_agent]) {
+      openUserId = subByUa[open.user_agent];
+    }
+
+    const student = openUserId ? studentsByUserId[openUserId] : null;
+    const employer = openUserId ? employersByUserId[openUserId] : null;
+    const adminUser = openUserId ? adminsByUserId[openUserId] : null;
+    const candidateName = student?.fullName || employer?.contact_name || employer?.company_name || (adminUser ? 'VizagJobs Admin' : null);
+    const candidateEmail = student?.contactEmail || employer?.contact_email || adminUser?.email || null;
+    const candidatePhone = student?.phone || null;
+    const candidateCollege = student?.college || employer?.company_name || null;
+    const candidateProfile = student || (employer ? { fullName: employer.contact_name || employer.company_name, companyName: employer.company_name, contactEmail: employer.contact_email, userRole: 'Employer' } : null);
+    const userRole = student ? 'Student' : employer ? 'Employer' : adminUser ? 'Admin' : 'Guest';
+    const isGuest = !student && !employer && !adminUser;
+
     return {
       ...open,
       job_id: jobId,
@@ -385,6 +479,13 @@ export const fetchNotificationAnalyticsData = async () => {
         (linkedDispatch?.title ? linkedDispatch.title.replace(/^New job:\s*/i, '') : 'Broadcast Alert'),
       jobCompany: job?.company || null,
       jobSlug: job?.slug || null,
+      candidateName,
+      candidateEmail,
+      candidatePhone,
+      candidateCollege,
+      candidateProfile,
+      userRole,
+      isGuest,
       deviceType: uaInfo.deviceType,
       os: uaInfo.os,
       browser: uaInfo.browser,
@@ -440,6 +541,7 @@ export const fetchNotificationAnalyticsData = async () => {
         totalSent: 0,
         totalFailed: 0,
         totalOpens: 0,
+        subscriberReach: 0,
         lastSentAt: d.created_at,
         clicks: [],
       };
@@ -454,6 +556,10 @@ export const fetchNotificationAnalyticsData = async () => {
       existing.totalSent += d.sent_count || 0;
       existing.totalFailed += d.failed_count || 0;
       existing.totalOpens += resolvedOpenCount;
+      existing.subscriberReach = Math.max(
+        existing.subscriberReach || 0,
+        d.target_subscribers || d.sent_count || 0,
+      );
       if (new Date(d.created_at) > new Date(existing.lastSentAt)) {
         existing.lastSentAt = d.created_at;
       }

@@ -19,7 +19,7 @@ Your job is to answer common questions about using the website. Be concise (2–
 ## Site facts
 - Website: https://jobsinvizag.in
 - Focus: jobs in Visakhapatnam / Vizag, Andhra Pradesh, India
-- Contact email: kkumardadi@gmail.com (replies usually within 2–3 business days)
+- Contact email: kiran@jobsinvizag.in (replies usually within 2–3 business days)
 - Contact page: /contact
 - About: /about
 - Feedback: /feedback
@@ -48,9 +48,9 @@ Your job is to answer common questions about using the website. Be concise (2–
 ## Rules
 - Only answer questions about this website, applying/posting jobs here, account help, or general Vizag job-seeking tips related to using the portal.
 - Do NOT invent specific open job titles, salaries, companies, or application statuses. If asked for live openings, tell them to browse /jobs or the relevant category page, or use the site search.
-- Do NOT claim to change accounts, delete data, approve jobs, or process payments. Direct privacy/account requests to kkumardadi@gmail.com or /contact.
+- Do NOT claim to change accounts, delete data, approve jobs, or process payments. Direct privacy/account requests to kiran@jobsinvizag.in or /contact.
 - Do NOT provide medical, legal, or immigration advice.
-- If you are unsure, say so and suggest /contact or emailing kkumardadi@gmail.com.
+- If you are unsure, say so and suggest /contact or emailing kiran@jobsinvizag.in.
 - Keep answers helpful and friendly; no emojis unless the user uses them first.`;
 
 const CHAT_SUGGESTIONS = [
@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
     return jsonResponse(
       {
         error:
-          'Chat is temporarily unavailable. Please email kkumardadi@gmail.com or use the Contact page.',
+          'Chat is temporarily unavailable. Please email kiran@jobsinvizag.in or use the Contact page.',
       },
       503,
     );

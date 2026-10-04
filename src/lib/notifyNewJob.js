@@ -1,5 +1,5 @@
-import { shouldNotifyJobPublish } from './jobPublishNotify';
-import { supabase } from './supabaseClient';
+import { shouldNotifyJobPublish } from './jobPublishNotify.js';
+import { supabase } from './supabaseClient.js';
 
 export function getNotifyNewJobUrl() {
   return '/api/notify-new-job';

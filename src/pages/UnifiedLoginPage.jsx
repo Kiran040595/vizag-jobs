@@ -133,12 +133,12 @@ function StudentLoginPanel({ searchParams }) {
     return <p className="text-sm text-rose-700">Supabase is not configured.</p>;
   }
 
-  if (isLoading) {
-    return <LoadingSpinner message="Loading..." />;
-  }
-
   if (session && isStudent) {
     return <Navigate to={returnPath} replace />;
+  }
+
+  if (session && isLoading) {
+    return <LoadingSpinner message="Checking student account..." />;
   }
 
   const handleSubmit = async (event) => {
@@ -245,10 +245,6 @@ function EmployerLoginPanel({ searchParams }) {
     return <p className="text-sm text-rose-700">Supabase is not configured.</p>;
   }
 
-  if (isLoading) {
-    return <LoadingSpinner message="Loading..." />;
-  }
-
   const postLoginPath =
     redirectAfterLogin && redirectAfterLogin.startsWith('/') ? redirectAfterLogin : null;
 
@@ -256,8 +252,12 @@ function EmployerLoginPanel({ searchParams }) {
     return <Navigate to={postLoginPath || '/employer/jobs'} replace />;
   }
 
-  if (session && !isEmployer) {
+  if (session && !isEmployer && !isLoading) {
     return <Navigate to={postLoginPath || '/employer/profile'} replace />;
+  }
+
+  if (session && isLoading) {
+    return <LoadingSpinner message="Checking company access..." />;
   }
 
   const handleSubmit = async (event) => {
@@ -371,34 +371,12 @@ function AdminLoginPanel() {
     return <p className="text-sm text-rose-700">Supabase is not configured.</p>;
   }
 
-  if (isLoading) {
-    return <LoadingSpinner message="Preparing admin login..." />;
-  }
-
   if (session && isAdmin) {
     return <Navigate to="/admin/new" replace />;
   }
 
-  if (session && !isAdmin) {
-    return (
-      <div className="mt-4">
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <span className="font-semibold">{user?.email}</span> is signed in but is not an admin yet.
-        </p>
-        {authError ? (
-          <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {authError}
-          </p>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="mt-4 h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-slate-800"
-        >
-          Sign out
-        </button>
-      </div>
-    );
+  if (session && isLoading) {
+    return <LoadingSpinner message="Checking admin access..." />;
   }
 
   const handleSubmit = async (event) => {
@@ -416,30 +394,53 @@ function AdminLoginPanel() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-      <label className="block">
-        <span className="text-sm font-semibold text-slate-700">Email</span>
-        <input
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-          placeholder="admin@jobsinvizag.in"
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm font-semibold text-slate-700">Password</span>
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-        />
-      </label>
+    <>
+      {session && !isAdmin ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <p>
+            You are signed in as <span className="font-semibold text-slate-900">{user?.email}</span>, which is not an admin account.
+          </p>
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <span>Enter your admin credentials below, or</span>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="font-semibold text-rose-700 underline hover:text-rose-800"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <label className="block" htmlFor="admin-email">
+          <span className="text-sm font-semibold text-slate-700">Email</span>
+          <input
+            id="admin-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            placeholder="kiran@jobsinvizag.in"
+          />
+        </label>
+        <label className="block" htmlFor="admin-password">
+          <span className="text-sm font-semibold text-slate-700">Password</span>
+          <input
+            id="admin-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+          />
+        </label>
       {submitError ? (
         <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</p>
       ) : null}
@@ -454,6 +455,7 @@ function AdminLoginPanel() {
         {isSubmitting ? 'Signing in...' : 'Continue to admin'}
       </button>
     </form>
+    </>
   );
 }
 

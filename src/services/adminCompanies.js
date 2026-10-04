@@ -120,7 +120,14 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // Healthcare & Pharma
   'Pfizer': {
     website: 'https://www.pfizer.com',
-    careers_url: 'https://www.pfizer.com/about/careers',
+    careers_url:
+      'https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098',
+    category: 'Healthcare',
+  },
+  'Pfizer Healthcare India Private Limited - Vizag': {
+    website: 'https://www.pfizer.com',
+    careers_url:
+      'https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098',
     category: 'Healthcare',
   },
   "Dr. Reddy's Laboratories": {
@@ -638,18 +645,21 @@ export async function fetchAdminCompanies() {
     const knownDefault = KNOWN_COMPANY_DEFAULTS[comp.name] || {};
     const local = localOverrides[comp.name] || {};
 
+    const isAutoSeededDb =
+      !dbRecord ||
+      dbRecord.notes === 'Synthesized official company portal' ||
+      dbRecord.notes === 'Curated priority employer for Visakhapatnam';
+
     const website =
-      dbRecord?.website ||
       local.website ||
+      (isAutoSeededDb ? knownDefault.website || dbRecord?.website : dbRecord?.website || knownDefault.website) ||
       employerProfile?.website ||
-      knownDefault.website ||
       inferWebsiteFromUrl(comp.sampleUrl) ||
       '';
 
     const careersUrl =
-      dbRecord?.careers_url ||
       local.careers_url ||
-      knownDefault.careers_url ||
+      (isAutoSeededDb ? knownDefault.careers_url || dbRecord?.careers_url : dbRecord?.careers_url || knownDefault.careers_url) ||
       '';
 
     const category =

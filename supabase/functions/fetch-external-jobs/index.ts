@@ -57,6 +57,14 @@ import {
   MAX_SEO_CUSTOM_INSTRUCTIONS_CHARS,
   type SeoGeminiPayload,
 } from './gemini-seo-prompt.ts';
+import {
+  buildCompanyCareersExtractPrompt,
+  COMPANY_CAREERS_EXTRACT_SCHEMA,
+  type CompanyCareerTarget,
+  type ExtractedCompanyCareerJob,
+  resolveCompanyJobApplyLink,
+  scrapeCompanyCareerPage,
+} from './company-careers.ts';
 
 type RawHit = {
   url: string;
@@ -2548,7 +2556,9 @@ const DEFAULT_SEO_BATCH_SIZE = 4;
 const DEFAULT_MAX_SCRAPE_URLS = 12;
 
 type FetchRequestBody = {
-  mode?: 'fetch' | 'seo' | 'seo_keys';
+  mode?: 'fetch' | 'seo' | 'seo_keys' | 'company_careers';
+  /** Single-company career page scrape & Vizag job extraction (`mode: 'company_careers'`). */
+  company?: CompanyCareerTarget;
   /** Single-source fetch: naukri | linkedin_jobs | linkedin_posts | vizag_it | indeed */
   fetch_channel?: string;
   source?: string;
@@ -5747,7 +5757,13 @@ Deno.serve(async (req) => {
   }
   const modeRaw = requestBody.mode;
   const mode =
-    modeRaw === 'seo' ? 'seo' : modeRaw === 'seo_keys' ? 'seo_keys' : 'fetch';
+    modeRaw === 'seo'
+      ? 'seo'
+      : modeRaw === 'seo_keys'
+        ? 'seo_keys'
+        : modeRaw === 'company_careers'
+          ? 'company_careers'
+          : 'fetch';
   const debugTrace = requestBody.debug_trace === true;
 
   if (mode === 'seo_keys') {
@@ -5953,6 +5969,238 @@ Deno.serve(async (req) => {
       );
     } finally {
       endMakeSeoKeyTracking();
+    }
+  }
+
+  if (mode === 'company_careers') {
+    const startedAt = Date.now();
+    try {
+      const rawCompany = requestBody.company;
+      const companyName = typeof rawCompany?.name === 'string' ? rawCompany.name.trim() : '';
+      const careersUrl = typeof rawCompany?.careers_url === 'string' ? rawCompany.careers_url.trim() : '';
+
+      if (!companyName || !careersUrl) {
+        return jsonResponse(
+          { ok: false, error: 'Missing company name or careers_url for company_careers mode.' },
+          400,
+        );
+      }
+
+      try {
+        const parsedUrl = new URL(careersUrl);
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+          throw new Error('Invalid protocol');
+        }
+      } catch {
+        return jsonResponse(
+          { ok: false, error: `Invalid careers_url "${careersUrl}". Must be a valid http(s) URL.` },
+          400,
+        );
+      }
+
+      const resolvedTargetUrl = resolveCanonicalCareerPortalUrl(careersUrl, companyName);
+      const isWorkday = Boolean(parseWorkdayPortalUrl(resolvedTargetUrl));
+
+      if (!isWorkday && getGeminiApiKeysForMakeSeo(false).length === 0) {
+        return jsonResponse(
+          {
+            ok: false,
+            error:
+              'GEMINI_API_KEY_SEO or GEMINI_API_KEY is required in Edge Function secrets to extract unstructured company career jobs.',
+          },
+          502,
+        );
+      }
+
+      const companyTarget: CompanyCareerTarget = {
+        name: companyName,
+        careers_url: careersUrl,
+        website: typeof rawCompany?.website === 'string' ? rawCompany.website.trim() : null,
+        category: typeof rawCompany?.category === 'string' ? rawCompany.category.trim() : 'General',
+        location: typeof rawCompany?.location === 'string' ? rawCompany.location.trim() : 'Visakhapatnam',
+      };
+
+      const firecrawlKeys = getFirecrawlApiKeys('vizag_it');
+      const scraped = await scrapeCompanyCareerPage(careersUrl, {
+        companyName,
+        firecrawlScrape:
+          firecrawlKeys.length > 0
+            ? (targetUrl) => firecrawlScrapeUrl(targetUrl, firecrawlKeys)
+            : undefined,
+        scrapflyScrape: scrapflyKey
+          ? (targetUrl) => scrapflyScrapeUrl(targetUrl, scrapflyKey)
+          : undefined,
+      });
+      companyTarget.careers_url = scraped.resolvedUrl || careersUrl;
+
+      let extractedJobs: ExtractedCompanyCareerJob[] = [];
+      let model = 'gemini-2.5-flash';
+      let keyUsage = { index: 1, total: 1, label: 'default', hint: '' };
+
+      const hasGeminiKeys = getGeminiApiKeysForMakeSeo(false).length > 0;
+      if (hasGeminiKeys) {
+        try {
+          const prompt = buildCompanyCareersExtractPrompt(companyTarget, scraped.content);
+          const geminiBody = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 6144,
+              responseMimeType: 'application/json',
+              responseSchema: COMPANY_CAREERS_EXTRACT_SCHEMA,
+            },
+          };
+
+          const gemRes = await geminiGenerateContentForSeo(geminiBody, {
+            linkedInPost: false,
+            timeoutMs: 65_000,
+          });
+          model = gemRes.model;
+          keyUsage = gemRes.keyUsage;
+
+          const rawText = extractGeminiSeoResponseText(gemRes.payload);
+          let parsed = tryParseJson<{ jobs?: ExtractedCompanyCareerJob[] }>(rawText, 'company_careers_extract');
+          if (!parsed && rawText.trim()) {
+            const repaired = tryRepairTruncatedJson(rawText);
+            if (repaired) {
+              parsed = tryParseJson<{ jobs?: ExtractedCompanyCareerJob[] }>(repaired, 'company_careers_extract_repaired');
+            }
+          }
+          if (Array.isArray(parsed?.jobs) && parsed.jobs.length > 0) {
+            extractedJobs = parsed.jobs;
+          }
+        } catch (geminiErr) {
+          console.warn('Gemini extraction failed during company_careers mode, evaluating structured fallback:', geminiErr);
+        }
+      }
+
+      // High-reliability fallback:
+      // If Gemini returned 0 jobs or encountered an error, but the scraper provided structured jobs (e.g. Workday CXS API),
+      // use the verified structured jobs directly so open roles like Pfizer Team Leader are never dropped!
+      if (extractedJobs.length === 0 && Array.isArray(scraped.structuredJobs) && scraped.structuredJobs.length > 0) {
+        extractedJobs = scraped.structuredJobs;
+      }
+
+      const fetchInstant = new Date().toISOString();
+
+      const mappedJobs: Array<SiteJobRecord & { seo_source_context: string; seo_optimized: boolean }> = [];
+      for (const rawJob of extractedJobs) {
+        const title = typeof rawJob?.title === 'string' ? rawJob.title.trim() : '';
+        if (!title) continue;
+
+        const location =
+          (typeof rawJob.location === 'string' && rawJob.location.trim()) ||
+          companyTarget.location ||
+          'Visakhapatnam';
+        const category =
+          normalizeJobCategory(rawJob.category || companyTarget.category) ||
+          companyTarget.category ||
+          'General';
+        const jobType =
+          (typeof rawJob.job_type === 'string' && rawJob.job_type.trim()) || 'Full-Time';
+        const workMode =
+          (typeof rawJob.work_mode === 'string' && rawJob.work_mode.trim()) || 'On-site';
+        const experience =
+          (typeof rawJob.experience === 'string' && rawJob.experience.trim()) || 'Not specified';
+        const description =
+          (typeof rawJob.description === 'string' && rawJob.description.trim()) ||
+          (typeof rawJob.short_description === 'string' && rawJob.short_description.trim()) ||
+          `${title} opening at ${companyName} in ${location}.`;
+        const shortDescription =
+          (typeof rawJob.short_description === 'string' && rawJob.short_description.trim()) ||
+          buildShortDescription(description, title);
+        const responsibilities = normalizeSeoStringList(rawJob.responsibilities, 12);
+        const eligibility = normalizeSeoStringList(rawJob.eligibility, 10);
+        const skills = normalizeSeoStringList(rawJob.skills, 16);
+        const isFresher =
+          typeof rawJob.is_fresher === 'boolean'
+            ? rawJob.is_fresher
+            : inferIsFresher(experience === 'Not specified' ? '' : experience, title, description);
+        const applyLink = resolveCompanyJobApplyLink(rawJob.apply_link, companyTarget.careers_url);
+
+        const draft: SiteJobRecord = {
+          slug: createJobSlug(title, companyName, fetchInstant),
+          title,
+          company: companyName,
+          location,
+          category,
+          job_type: jobType,
+          work_mode: workMode,
+          experience,
+          is_fresher: isFresher,
+          salary: typeof rawJob.salary === 'string' && rawJob.salary.trim() ? rawJob.salary.trim() : null,
+          apply_link: applyLink,
+          short_description: shortDescription,
+          description,
+          responsibilities,
+          eligibility,
+          warning: DEFAULT_JOB_WARNING,
+          posted_at: fetchInstant,
+          expires_at: null,
+          source_name: 'Direct Company Website',
+          source_url: companyTarget.careers_url,
+          skills,
+          company_logo_url: null,
+          status: 'draft',
+          is_featured: false,
+        };
+
+        const classified = classifyJobRecord(draft);
+        const seoContext = [
+          `Company: ${companyName}`,
+          `Careers Page: ${companyTarget.careers_url}`,
+          `Role: ${title}`,
+          `Location: ${location}`,
+          `Experience: ${experience}`,
+          `Description: ${description}`,
+          responsibilities.length > 0 ? `Responsibilities:\n- ${responsibilities.join('\n- ')}` : '',
+          eligibility.length > 0 ? `Eligibility:\n- ${eligibility.join('\n- ')}` : '',
+          skills.length > 0 ? `Skills: ${skills.join(', ')}` : '',
+          `Career Page Excerpt:\n${scraped.content.slice(0, 900)}`,
+        ]
+          .filter(Boolean)
+          .join('\n')
+          .slice(0, MAX_SEO_SOURCE_FOR_SINGLE_JOB);
+
+        mappedJobs.push({
+          ...draft,
+          company: companyName,
+          category: classified.category,
+          is_fresher: classified.is_fresher,
+          experience: classified.experience,
+          seo_source_context: seoContext,
+          seo_optimized: false,
+        });
+      }
+
+      const dedupedWithSlugs = resolveSiteJobSlugCollisions(mappedJobs).map((job, idx) => ({
+        ...job,
+        seo_source_context: mappedJobs[idx]?.seo_source_context ?? '',
+        seo_optimized: false,
+      }));
+
+      return jsonResponse({
+        ok: true,
+        mode: 'company_careers',
+        company: companyName,
+        careers_url: companyTarget.careers_url,
+        scrape_source: scraped.source,
+        scraped_chars: scraped.content.length,
+        fetched_at: fetchInstant,
+        runtime_ms: Date.now() - startedAt,
+        gemini_model: model,
+        gemini_key_index: keyUsage.index,
+        gemini_keys_total: keyUsage.total,
+        gemini_key_label: keyUsage.label,
+        gemini_key_hint: keyUsage.hint,
+        jobs: dedupedWithSlugs,
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Company career fetch failed.';
+      return jsonResponse(
+        { ok: false, mode: 'company_careers', error: message, runtime_ms: Date.now() - startedAt },
+        502,
+      );
     }
   }
 

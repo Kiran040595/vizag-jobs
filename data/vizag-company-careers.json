@@ -47,5 +47,12 @@
     "category": "Pharma",
     "location_hint": "Visakhapatnam",
     "active": true
+  },
+  {
+    "name": "Pfizer",
+    "careers_url": "https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098",
+    "category": "Healthcare",
+    "location_hint": "Visakhapatnam, Jawaharlal Nehru Pharma City, Parawada",
+    "active": true
   }
 ]

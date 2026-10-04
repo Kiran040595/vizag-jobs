@@ -23,24 +23,57 @@ export const fetchAdminEmployerProfiles = async () => {
     throw new Error('Supabase is not configured.');
   }
 
-  const [profilesResult, jobsResult] = await Promise.all([
-    supabase
-      .from('employer_profiles')
-      .select('*')
-      .order('created_at', { ascending: false }),
-    supabase.from(JOBS_TABLE).select('created_by, status').not('created_by', 'is', null),
-  ]);
+  const PAGE_SIZE = 1000;
+  let allProfiles = [];
 
-  if (profilesResult.error) {
-    throw mapError(profilesResult.error, 'Could not load employer registrations.');
+  const [{ data: firstProfiles, error: profilesError, count: profileCount }, jobsResult] =
+    await Promise.all([
+      supabase
+        .from('employer_profiles')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(0, PAGE_SIZE - 1),
+      supabase.from(JOBS_TABLE).select('created_by, status').not('created_by', 'is', null),
+    ]);
+
+  if (profilesError) {
+    throw mapError(profilesError, 'Could not load employer registrations.');
   }
   if (jobsResult.error) {
     throw mapError(jobsResult.error, 'Could not load employer job counts.');
   }
 
+  if (firstProfiles && firstProfiles.length > 0) {
+    allProfiles = allProfiles.concat(firstProfiles);
+  }
+
+  const totalProfiles = typeof profileCount === 'number' ? profileCount : null;
+  if (totalProfiles !== null && totalProfiles > PAGE_SIZE) {
+    const pagePromises = [];
+    let from = PAGE_SIZE;
+    while (from < totalProfiles) {
+      const pageFrom = from;
+      const pageTo = Math.min(pageFrom + PAGE_SIZE - 1, totalProfiles - 1);
+      pagePromises.push(
+        supabase
+          .from('employer_profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(pageFrom, pageTo)
+      );
+      from += PAGE_SIZE;
+    }
+    const responses = await Promise.all(pagePromises);
+    for (const res of responses) {
+      if (res.data) {
+        allProfiles = allProfiles.concat(res.data);
+      }
+    }
+  }
+
   const statsByUser = buildJobStatsMap(jobsResult.data);
 
-  return (profilesResult.data || []).map((row) =>
+  return allProfiles.map((row) =>
     mapEmployerProfileRow(row, statsByUser[row.user_id] || null),
   );
 };

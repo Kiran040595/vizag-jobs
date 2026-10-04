@@ -1,5 +1,5 @@
-import { clearJobsCache } from './jobs';
-import { supabase } from '../lib/supabaseClient';
+import { clearJobsCache } from './jobs.js';
+import { supabase } from '../lib/supabaseClient.js';
 import { classifyJobRecord } from '../lib/jobCategoryTaxonomy.js';
 import { cleanJobRoleLabel } from '../lib/jobRoleLabel.js';
 import {
@@ -11,11 +11,15 @@ import {
   applySystemPostedAtToPayload,
   getSystemPostedAtIso,
   shouldUseSystemPostedAtOnPublish,
-} from '../lib/jobPostedAt';
+} from '../lib/jobPostedAt.js';
 import { getJobPublishBlockReason } from '../lib/jobPublishQuality.js';
-import { notifyNewJobPublishedSafe } from '../lib/notifyNewJob';
+import { notifyNewJobPublishedSafe } from '../lib/notifyNewJob.js';
 
-const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
+const viteEnv =
+  (typeof import.meta !== 'undefined' && import.meta.env) ||
+  (typeof globalThis !== 'undefined' && globalThis.process?.env) ||
+  {};
+const JOBS_TABLE = viteEnv.VITE_SUPABASE_JOBS_TABLE || 'jobs';
 
 const rememberPublishedJob = (job) => {
   void notifyNewJobPublishedSafe(job);

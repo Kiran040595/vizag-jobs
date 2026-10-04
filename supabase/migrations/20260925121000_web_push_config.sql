@@ -4,7 +4,7 @@ create table if not exists public.web_push_config (
   id integer primary key default 1 check (id = 1),
   public_key text not null,
   private_key text not null,
-  subject text not null default 'mailto:kkumardadi@gmail.com',
+  subject text not null default 'mailto:kiran@jobsinvizag.in',
   updated_at timestamptz not null default timezone('utc', now())
 );
 

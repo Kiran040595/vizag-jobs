@@ -2,7 +2,9 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import AdminShell from '../components/admin/AdminShell';
+import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import { buildPhoneDialUrl, buildWhatsAppContactUrl } from '../lib/whatsappContact';
 import {
   fetchNotificationAnalyticsData,
   sendTestPushNotification,
@@ -69,6 +71,360 @@ function TriggerBadge({ triggerType }) {
   );
 }
 
+function CandidateProfileModal({ candidate, onClose }) {
+  if (!candidate) return null;
+
+  const isGuest = Boolean(
+    candidate.isGuest ||
+      (!candidate.fullName && !candidate.userId && !candidate.contactEmail),
+  );
+
+  const whatsappUrl = candidate.phone ? buildWhatsAppContactUrl(candidate.phone) : null;
+  const dialUrl = candidate.phone ? buildPhoneDialUrl(candidate.phone) : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-sm ${
+                isGuest
+                  ? 'bg-slate-500'
+                  : candidate.userRole === 'Employer'
+                    ? 'bg-emerald-600'
+                    : candidate.userRole === 'Admin'
+                      ? 'bg-purple-600'
+                      : 'bg-gradient-to-tr from-cyan-600 to-indigo-600'
+              }`}
+            >
+              {isGuest
+                ? '🌐'
+                : candidate.fullName
+                  ? candidate.fullName.charAt(0).toUpperCase()
+                  : '👤'}
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xl font-bold text-slate-950">
+                  {isGuest
+                    ? 'Guest Push Subscriber'
+                    : candidate.fullName || 'Registered Candidate'}
+                </h3>
+                {isGuest ? (
+                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                    Not Registered Yet
+                  </span>
+                ) : (
+                  <>
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                        candidate.userRole === 'Employer'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : candidate.userRole === 'Admin'
+                            ? 'border-purple-200 bg-purple-50 text-purple-700'
+                            : 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                      }`}
+                    >
+                      {candidate.userRole || 'Student Candidate'}
+                    </span>
+                    {candidate.isFresher ? (
+                      <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700">
+                        Fresher
+                      </span>
+                    ) : null}
+                    {candidate.isActive !== undefined ? (
+                      <span
+                        className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                          candidate.isActive
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {candidate.isActive ? 'Active' : 'Deactivated'}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {isGuest
+                  ? 'Anonymous browser push subscriber · Clicked notification as guest'
+                  : candidate.college || candidate.contactEmail || 'Registered user on jobsinvizag.in'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close candidate modal"
+            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Guest View */}
+        {isGuest ? (
+          <div className="mt-5 space-y-4">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-xs text-amber-950">
+              <p className="flex items-center gap-1.5 font-bold">
+                <span>ℹ️</span> Why does this say Guest Visitor instead of a name?
+              </p>
+              <p className="mt-1.5 leading-relaxed text-amber-800">
+                This visitor clicked a push notification from an anonymous browser session. They allowed push notifications on <span className="font-semibold text-amber-950">jobsinvizag.in</span>, but have not signed up or logged in on this browser yet. Once they register or log in, their candidate name and profile will automatically appear here!
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Device Type</span>
+                <p className="mt-1 font-semibold text-slate-900">{candidate.deviceType || 'Desktop'}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Browser & Operating System</span>
+                <p className="mt-1 font-semibold text-slate-900">
+                  {candidate.browser || 'Browser'} on {candidate.os || 'OS'}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3.5 sm:col-span-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Visitor Tracking Key</span>
+                <p className="mt-1 font-mono text-xs text-slate-700 select-all break-all">
+                  {candidate.visitorKey || candidate.visitor_key || 'Anonymous session key'}
+                </p>
+              </div>
+              {candidate.openedAt || candidate.opened_at ? (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3.5 sm:col-span-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Notification Clicked At</span>
+                  <p className="mt-1 text-xs font-medium text-slate-800">
+                    {formatDate(candidate.openedAt || candidate.opened_at)}
+                  </p>
+                </div>
+              ) : null}
+              {candidate.userAgent || candidate.user_agent || candidate.userAgentSnippet ? (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3.5 sm:col-span-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Browser User Agent</span>
+                  <p className="mt-1 font-mono text-[11px] text-slate-600 break-all">
+                    {candidate.userAgent || candidate.user_agent || candidate.userAgentSnippet}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          /* Registered Candidate View */
+          <div className="mt-5 space-y-5">
+            {/* Quick Actions Bar */}
+            <div className="flex flex-wrap items-center gap-2">
+              {whatsappUrl ? (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100"
+                >
+                  <span>💬</span> Message on WhatsApp
+                </a>
+              ) : null}
+              {dialUrl ? (
+                <a
+                  href={dialUrl}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  <span>📞</span> Call ({candidate.phone})
+                </a>
+              ) : null}
+              {candidate.contactEmail ? (
+                <a
+                  href={`mailto:${candidate.contactEmail}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  <span>✉️</span> Email Candidate
+                </a>
+              ) : null}
+              {candidate.fullName ? (
+                <Link
+                  to={`/admin/students?search=${encodeURIComponent(candidate.fullName)}`}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
+                >
+                  <span>📋</span> View in Students Directory
+                </Link>
+              ) : null}
+            </div>
+
+            {/* Profile Grid */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Contact Card */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Contact Details</h4>
+                <dl className="mt-3 space-y-2.5 text-xs">
+                  <div>
+                    <dt className="font-medium text-slate-400">Full Name</dt>
+                    <dd className="font-bold text-slate-900">{candidate.fullName || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-400">Email Address</dt>
+                    <dd className="font-semibold text-slate-900 break-all">
+                      {candidate.contactEmail ? (
+                        <a href={`mailto:${candidate.contactEmail}`} className="text-cyan-700 hover:underline">
+                          {candidate.contactEmail}
+                        </a>
+                      ) : (
+                        'Not provided'
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-400">Phone</dt>
+                    <dd className="flex items-center gap-2 font-semibold text-slate-900">
+                      <span>{candidate.phone || 'Not provided'}</span>
+                      {candidate.phone ? <WhatsAppContactLink phone={candidate.phone} /> : null}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              {/* Education Card */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Education</h4>
+                <dl className="mt-3 space-y-2.5 text-xs">
+                  <div>
+                    <dt className="font-medium text-slate-400">College / Institution</dt>
+                    <dd className="font-semibold text-slate-900">{candidate.college || 'Not provided'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-400">Degree & Branch</dt>
+                    <dd className="font-semibold text-slate-900">
+                      {[candidate.degree, candidate.branch].filter(Boolean).join(' · ') || 'Not provided'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-400">Graduation Year</dt>
+                    <dd className="font-semibold text-slate-900">{candidate.graduationYear || 'Not provided'}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              {/* Career Preferences */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:col-span-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Career Preferences</h4>
+                <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                  <div>
+                    <dt className="font-medium text-slate-400">Primary Target Role</dt>
+                    <dd className="mt-0.5 font-bold text-slate-900">{candidate.primaryTargetRole || 'Not specified'}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-slate-400">Experience Level / Availability</dt>
+                    <dd className="mt-0.5 font-semibold text-slate-900">
+                      {[
+                        candidate.roleExperienceLabel || candidate.roleExperienceLevel,
+                        candidate.availabilityLabel || candidate.availability,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || (candidate.isFresher ? 'Fresher' : 'Not specified')}
+                    </dd>
+                  </div>
+                  {candidate.targetJobCategoryLabels?.length > 0 || candidate.targetJobCategories?.length > 0 ? (
+                    <div className="sm:col-span-2">
+                      <dt className="font-medium text-slate-400">Target Job Categories</dt>
+                      <dd className="mt-1 flex flex-wrap gap-1.5">
+                        {(candidate.targetJobCategoryLabels || candidate.targetJobCategories || []).map((cat) => (
+                          <span key={cat} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-800">
+                            {cat}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {candidate.preferredLocations?.length > 0 ? (
+                    <div className="sm:col-span-2">
+                      <dt className="font-medium text-slate-400">Preferred Job Locations</dt>
+                      <dd className="mt-1 flex flex-wrap gap-1.5">
+                        {candidate.preferredLocations.map((loc) => (
+                          <span key={loc} className="rounded-lg border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-xs font-medium text-cyan-800">
+                            📍 {loc}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </div>
+
+              {/* Skills */}
+              {candidate.skillLabels?.length > 0 || candidate.skills?.length > 0 ? (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:col-span-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Skills & Badges</h4>
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {(candidate.skillLabels || candidate.skills || []).map((skill) => (
+                      <span key={skill} className="rounded-lg border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Certifications if available */}
+              {candidate.certifications?.length > 0 || candidate.certificationsText ? (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:col-span-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Certifications</h4>
+                  <p className="mt-2 text-xs font-medium text-slate-700">
+                    {candidate.certificationsText || candidate.certifications.join(', ')}
+                  </p>
+                </div>
+              ) : null}
+
+              {/* Click & Device Telemetry */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:col-span-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Click & Device Telemetry</h4>
+                <div className="mt-2.5 grid gap-2 text-xs sm:grid-cols-3">
+                  <div>
+                    <span className="text-slate-400">Device</span>
+                    <p className="font-semibold text-slate-800">{candidate.deviceType || 'Desktop'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Browser & OS</span>
+                    <p className="font-semibold text-slate-800">
+                      {candidate.browser || 'Browser'} · {candidate.os || 'OS'}
+                    </p>
+                  </div>
+                  {candidate.openedAt || candidate.opened_at ? (
+                    <div>
+                      <span className="text-slate-400">Clicked At</span>
+                      <p className="font-semibold text-slate-800">
+                        {formatDate(candidate.openedAt || candidate.opened_at)}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminNotificationsPage() {
   useAdminAuth();
 
@@ -87,6 +443,9 @@ export default function AdminNotificationsPage() {
 
   // Selected job for click inspection modal
   const [selectedJobForClicks, setSelectedJobForClicks] = useState(null);
+
+  // Selected candidate / visitor for full profile modal
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   // Send Test Push Modal
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -216,6 +575,8 @@ export default function AdminNotificationsPage() {
     const term = searchTerm.toLowerCase();
     return recentOpens.filter(
       (o) =>
+        o.candidateName?.toLowerCase().includes(term) ||
+        o.candidateEmail?.toLowerCase().includes(term) ||
         o.jobTitle?.toLowerCase().includes(term) ||
         o.jobCompany?.toLowerCase().includes(term) ||
         o.browser?.toLowerCase().includes(term) ||
@@ -231,6 +592,11 @@ export default function AdminNotificationsPage() {
     const term = searchTerm.toLowerCase();
     return subscribers.filter(
       (s) =>
+        s.candidateName?.toLowerCase().includes(term) ||
+        s.candidateEmail?.toLowerCase().includes(term) ||
+        s.candidateCollege?.toLowerCase().includes(term) ||
+        s.candidatePhone?.toLowerCase().includes(term) ||
+        s.userRole?.toLowerCase().includes(term) ||
         s.browser?.toLowerCase().includes(term) ||
         s.os?.toLowerCase().includes(term) ||
         s.deviceType?.toLowerCase().includes(term) ||
@@ -498,7 +864,7 @@ export default function AdminNotificationsPage() {
               <div>
                 <h2 className="text-lg font-bold text-slate-950">Job-Wise Push & Click Analytics</h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  Complete performance breakdown for every job that received push notifications — showing whether it was sent automatically (upon company or admin post) or manually (via the admin bell icon), along with subscriber clicks and CTR.
+                  Complete performance breakdown for every job that received push notifications. Pushes Targeted reflects total notification attempts across all dispatches (for jobs sent multiple times, each dispatch reaches your active subscribers).
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -527,8 +893,14 @@ export default function AdminNotificationsPage() {
                       <th className="pb-3 font-semibold">Job & Company</th>
                       <th className="pb-3 font-semibold">Notification Mode (Auto / Manual)</th>
                       <th className="pb-3 font-semibold">Last Sent</th>
-                      <th className="pb-3 text-right font-semibold">Subscribers</th>
-                      <th className="pb-3 text-right font-semibold">Delivered</th>
+                      <th className="pb-3 text-right font-semibold">
+                        <span className="block">Pushes Targeted</span>
+                        <span className="block text-[10px] font-normal lowercase tracking-normal text-slate-400">total recipients</span>
+                      </th>
+                      <th className="pb-3 text-right font-semibold">
+                        <span className="block">Delivered</span>
+                        <span className="block text-[10px] font-normal lowercase tracking-normal text-slate-400">successful</span>
+                      </th>
                       <th className="pb-3 text-right font-semibold">People Clicked</th>
                       <th className="pb-3 text-right font-semibold">Click Rate (CTR)</th>
                       <th className="pb-3 text-right font-semibold">Details</th>
@@ -576,14 +948,30 @@ export default function AdminNotificationsPage() {
                             {formatDate(job.lastSentAt)}
                           </td>
 
-                          <td className="py-4 pr-4 text-right font-medium text-slate-700">
-                            {job.totalTarget.toLocaleString()}
+                          <td className="py-4 pr-4 text-right">
+                            <span className="font-bold text-slate-800">
+                              {job.totalTarget.toLocaleString()}
+                            </span>
+                            {job.dispatchesCount > 1 ? (
+                              <span className="block text-[11px] text-slate-400">
+                                ~{job.subscriberReach || Math.round(job.totalTarget / job.dispatchesCount)} reach · {job.dispatchesCount} sends
+                              </span>
+                            ) : (
+                              <span className="block text-[11px] text-slate-400">
+                                1 send
+                              </span>
+                            )}
                           </td>
 
                           <td className="py-4 pr-4 text-right">
                             <span className="font-semibold text-emerald-600">
                               {job.totalSent.toLocaleString()}
                             </span>
+                            {job.dispatchesCount > 1 ? (
+                              <span className="block text-[11px] text-slate-400">
+                                ~{Math.round(job.totalSent / job.dispatchesCount)} / send
+                              </span>
+                            ) : null}
                             {job.totalFailed > 0 ? (
                               <span className="block text-[11px] text-rose-500">
                                 {job.totalFailed} failed
@@ -752,7 +1140,7 @@ export default function AdminNotificationsPage() {
                       <th className="pb-3 font-semibold">Clicked Time</th>
                       <th className="pb-3 font-semibold">Job Clicked</th>
                       <th className="pb-3 font-semibold">Device & Browser</th>
-                      <th className="pb-3 font-semibold">Visitor Identifier</th>
+                      <th className="pb-3 font-semibold">Candidate / Visitor</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -782,8 +1170,64 @@ export default function AdminNotificationsPage() {
                           <span className="text-slate-700">{open.os || 'OS'}</span>
                           <span className="ml-1 text-slate-400">({open.deviceType || 'Device'})</span>
                         </td>
-                        <td className="py-3.5 text-xs font-mono text-slate-500">
-                          {open.visitor_key ? open.visitor_key.slice(0, 24) : 'anonymous'}
+                        <td className="py-3.5 text-xs text-slate-700">
+                          {open.candidateName ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCandidate(
+                                  open.candidateProfile || {
+                                    fullName: open.candidateName,
+                                    contactEmail: open.candidateEmail,
+                                    phone: open.candidatePhone,
+                                    college: open.candidateCollege,
+                                    userRole: open.userRole || 'Student Candidate',
+                                    deviceType: open.deviceType,
+                                    browser: open.browser,
+                                    os: open.os,
+                                    visitorKey: open.visitor_key,
+                                    openedAt: open.opened_at,
+                                  },
+                                )
+                              }
+                              className="group text-left transition hover:opacity-85"
+                              title="Click to view full candidate profile"
+                            >
+                              <span className="flex items-center gap-1 font-bold text-cyan-700 group-hover:text-cyan-800 group-hover:underline">
+                                <span>👤</span> {open.candidateName}
+                              </span>
+                              {open.candidateEmail ? (
+                                <span className="block text-[11px] text-slate-500">{open.candidateEmail}</span>
+                              ) : null}
+                              {open.candidateCollege ? (
+                                <span className="block text-[10px] text-slate-400">{open.candidateCollege}</span>
+                              ) : null}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCandidate({
+                                  isGuest: true,
+                                  visitorKey: open.visitor_key,
+                                  deviceType: open.deviceType,
+                                  browser: open.browser,
+                                  os: open.os,
+                                  userAgent: open.user_agent,
+                                  openedAt: open.opened_at,
+                                })
+                              }
+                              className="group text-left transition hover:opacity-85"
+                              title="Click to view visitor details"
+                            >
+                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 group-hover:bg-slate-200">
+                                <span>🌐</span> Guest Visitor
+                              </span>
+                              <span className="block font-mono text-[10px] text-slate-400">
+                                {open.visitor_key ? open.visitor_key.slice(0, 20) : 'Anonymous session'}
+                              </span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -887,8 +1331,9 @@ export default function AdminNotificationsPage() {
                   <table className="w-full text-left text-sm text-slate-700">
                     <thead>
                       <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
-                        <th className="pb-3 font-semibold">Device & Browser</th>
+                        <th className="pb-3 font-semibold">Subscriber / Candidate</th>
                         <th className="pb-3 font-semibold">User Type</th>
+                        <th className="pb-3 font-semibold">Device & Browser</th>
                         <th className="pb-3 font-semibold">Subscribed At</th>
                         <th className="pb-3 font-semibold">User Agent Snippet</th>
                       </tr>
@@ -897,17 +1342,91 @@ export default function AdminNotificationsPage() {
                       {filteredSubscribers.map((sub) => (
                         <tr key={sub.key} className="transition hover:bg-slate-50/80">
                           <td className="py-3.5 pr-4">
+                            {sub.candidateName ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedCandidate(
+                                    sub.candidateProfile || {
+                                      fullName: sub.candidateName,
+                                      contactEmail: sub.candidateEmail,
+                                      phone: sub.candidatePhone,
+                                      college: sub.candidateCollege,
+                                      userRole: sub.userRole || 'Student Candidate',
+                                      deviceType: sub.deviceType,
+                                      browser: sub.browser,
+                                      os: sub.os,
+                                      userAgentSnippet: sub.userAgentSnippet,
+                                    },
+                                  )
+                                }
+                                className="group text-left transition hover:opacity-85"
+                                title="Click to view full candidate profile"
+                              >
+                                <span className="flex items-center gap-1 font-bold text-cyan-700 group-hover:text-cyan-800 group-hover:underline">
+                                  <span>👤</span> {sub.candidateName}
+                                </span>
+                                {sub.candidateEmail ? (
+                                  <p className="text-xs text-slate-500">{sub.candidateEmail}</p>
+                                ) : null}
+                                {sub.candidatePhone ? (
+                                  <p className="text-[11px] text-slate-400">{sub.candidatePhone}</p>
+                                ) : sub.candidateCollege ? (
+                                  <p className="text-[11px] text-slate-400">{sub.candidateCollege}</p>
+                                ) : null}
+                              </button>
+                            ) : sub.isRegistered ? (
+                              <div>
+                                <span className="font-semibold text-slate-700">Registered Account</span>
+                                <p className="font-mono text-[11px] text-slate-400">{sub.userId || 'Signed-in user'}</p>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedCandidate({
+                                    isGuest: true,
+                                    visitorKey: sub.key,
+                                    deviceType: sub.deviceType,
+                                    browser: sub.browser,
+                                    os: sub.os,
+                                    userAgentSnippet: sub.userAgentSnippet,
+                                  })
+                                }
+                                className="group text-left transition hover:opacity-85"
+                                title="Click to view visitor details"
+                              >
+                                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 group-hover:bg-slate-200">
+                                  <span>🌐</span> Anonymous Visitor
+                                </span>
+                                <p className="text-[11px] text-slate-400">Guest browser subscription</p>
+                              </button>
+                            )}
+                          </td>
+                          <td className="py-3.5 pr-4 text-xs">
+                            {sub.userRole === 'Student' ? (
+                              <span className="inline-flex items-center rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
+                                Student Candidate
+                              </span>
+                            ) : sub.userRole === 'Employer' ? (
+                              <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                                Employer
+                              </span>
+                            ) : sub.isRegistered ? (
+                              <span className="inline-flex items-center rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                                Registered User
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                                Guest
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 pr-4">
                             <span className="font-semibold text-slate-900">{sub.browser}</span>
                             <span className="text-slate-400"> on </span>
                             <span className="text-slate-700">{sub.os}</span>
                             <span className="text-xs text-slate-400"> ({sub.deviceType})</span>
-                          </td>
-                          <td className="py-3.5 pr-4 text-xs">
-                            {sub.isRegistered ? (
-                              <span className="font-medium text-blue-700">Registered User</span>
-                            ) : (
-                              <span className="text-slate-500">Guest Visitor</span>
-                            )}
                           </td>
                           <td className="py-3.5 pr-4 text-xs whitespace-nowrap text-slate-500">
                             {formatDate(sub.createdAt)}
@@ -992,10 +1511,22 @@ export default function AdminNotificationsPage() {
               </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                <p className="text-[11px] font-semibold uppercase text-slate-400">Pushes Targeted</p>
+                <p className="mt-1 text-xl font-black text-slate-900">{selectedJobForClicks.totalTarget}</p>
+                {selectedJobForClicks.dispatchesCount > 1 ? (
+                  <p className="mt-0.5 text-[10px] text-slate-400">
+                    ~{selectedJobForClicks.subscriberReach || Math.round(selectedJobForClicks.totalTarget / selectedJobForClicks.dispatchesCount)} reach ({selectedJobForClicks.dispatchesCount} sends)
+                  </p>
+                ) : null}
+              </div>
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                 <p className="text-[11px] font-semibold uppercase text-slate-400">Delivered</p>
                 <p className="mt-1 text-xl font-black text-slate-900">{selectedJobForClicks.totalSent}</p>
+                {selectedJobForClicks.totalFailed > 0 ? (
+                  <p className="mt-0.5 text-[10px] text-rose-500">{selectedJobForClicks.totalFailed} failed</p>
+                ) : null}
               </div>
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                 <p className="text-[11px] font-semibold uppercase text-slate-400">People Clicked</p>
@@ -1008,6 +1539,11 @@ export default function AdminNotificationsPage() {
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                 <p className="text-[11px] font-semibold uppercase text-slate-400">Dispatches</p>
                 <p className="mt-1 text-xl font-black text-slate-900">{selectedJobForClicks.dispatchesCount}</p>
+                <p className="mt-0.5 text-[10px] text-slate-400">
+                  {selectedJobForClicks.autoCount > 0 ? `${selectedJobForClicks.autoCount} auto` : ''}
+                  {selectedJobForClicks.autoCount > 0 && selectedJobForClicks.manualCount > 0 ? ', ' : ''}
+                  {selectedJobForClicks.manualCount > 0 ? `${selectedJobForClicks.manualCount} manual` : ''}
+                </p>
               </div>
             </div>
 
@@ -1033,7 +1569,7 @@ export default function AdminNotificationsPage() {
                       <th className="pb-2 font-semibold">Clicked At</th>
                       <th className="pb-2 font-semibold">Device</th>
                       <th className="pb-2 font-semibold">Browser & OS</th>
-                      <th className="pb-2 font-semibold">Visitor</th>
+                      <th className="pb-2 font-semibold">Candidate / Visitor</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1046,8 +1582,64 @@ export default function AdminNotificationsPage() {
                         <td className="py-2.5 pr-3">
                           {click.browser || 'Browser'} · {click.os || 'OS'}
                         </td>
-                        <td className="py-2.5 font-mono text-slate-500">
-                          {click.visitor_key ? click.visitor_key.slice(0, 18) : 'anon'}
+                        <td className="py-2.5 text-slate-700">
+                          {click.candidateName ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCandidate(
+                                  click.candidateProfile || {
+                                    fullName: click.candidateName,
+                                    contactEmail: click.candidateEmail,
+                                    phone: click.candidatePhone,
+                                    college: click.candidateCollege,
+                                    userRole: click.userRole || 'Student Candidate',
+                                    deviceType: click.deviceType,
+                                    browser: click.browser,
+                                    os: click.os,
+                                    visitorKey: click.visitor_key,
+                                    openedAt: click.opened_at,
+                                  },
+                                )
+                              }
+                              className="group text-left transition hover:opacity-85"
+                              title="Click to view full candidate profile"
+                            >
+                              <span className="flex items-center gap-1 font-bold text-cyan-700 group-hover:text-cyan-800 group-hover:underline">
+                                <span>👤</span> {click.candidateName}
+                              </span>
+                              {click.candidateEmail ? (
+                                <span className="block text-[10px] text-slate-400">{click.candidateEmail}</span>
+                              ) : null}
+                              {click.candidateCollege ? (
+                                <span className="block text-[10px] text-slate-400">{click.candidateCollege}</span>
+                              ) : null}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedCandidate({
+                                  isGuest: true,
+                                  visitorKey: click.visitor_key,
+                                  deviceType: click.deviceType,
+                                  browser: click.browser,
+                                  os: click.os,
+                                  userAgent: click.user_agent,
+                                  openedAt: click.opened_at,
+                                })
+                              }
+                              className="group text-left transition hover:opacity-85"
+                              title="Click to view visitor details"
+                            >
+                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 group-hover:bg-slate-200">
+                                <span>🌐</span> Guest Visitor
+                              </span>
+                              <span className="block font-mono text-[10px] text-slate-400">
+                                {click.visitor_key ? click.visitor_key.slice(0, 20) : 'Anonymous session'}
+                              </span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -1158,6 +1750,14 @@ export default function AdminNotificationsPage() {
             </form>
           </div>
         </div>
+      ) : null}
+
+      {/* Candidate / Visitor Profile Modal */}
+      {selectedCandidate ? (
+        <CandidateProfileModal
+          candidate={selectedCandidate}
+          onClose={() => setSelectedCandidate(null)}
+        />
       ) : null}
     </AdminShell>
   );

@@ -8,6 +8,7 @@ import { recordStudentRegistrationConsents } from '../services/studentConsent';
 import { upsertStudentProfile } from '../services/studentJobs';
 import { resolveStudentLoginEmail } from '../lib/studentPhoneAuth';
 import { deferAuthWork } from '../lib/deferAuthWork';
+import { hasStoredSupabaseSession } from '../lib/supabaseSessionHelper';
 
 const STUDENT_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const STUDENT_ACCESS_CACHE_KEY = 'vizagjobs:student-access-cache';
@@ -87,7 +88,7 @@ export function StudentAuthProvider({ children }) {
   const [isStudent, setIsStudent] = useState(false);
   const [profileComplete, setProfileComplete] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase));
+  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase) && hasStoredSupabaseSession());
   const [authError, setAuthError] = useState('');
 
   const refreshStudentAccess = async (userId) => {
@@ -110,7 +111,7 @@ export function StudentAuthProvider({ children }) {
       const { showLoader = false } = options;
       if (!isMounted) return;
 
-      if (showLoader) {
+      if (showLoader && nextSession?.user) {
         setIsLoading(true);
       }
 
@@ -171,8 +172,12 @@ export function StudentAuthProvider({ children }) {
           setIsLoading(false);
           return;
         }
-        void syncSession(data.session, { showLoader: true });
+        void syncSession(data.session, { showLoader: Boolean(data.session?.user) });
       });
+    }).catch(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
 
     const {
@@ -181,11 +186,10 @@ export function StudentAuthProvider({ children }) {
       deferAuthWork(() => {
         if (!isMounted) return;
         const shouldShowLoader =
-          event === 'INITIAL_SESSION' ||
-          event === 'SIGNED_IN' ||
+          (event === 'SIGNED_IN' ||
           event === 'SIGNED_OUT' ||
           event === 'USER_UPDATED' ||
-          event === 'PASSWORD_RECOVERY';
+          event === 'PASSWORD_RECOVERY') && Boolean(nextSession?.user);
         void syncSession(nextSession, { showLoader: shouldShowLoader });
       });
     });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AdminAuthContext } from './adminAuthContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { deferAuthWork } from '../lib/deferAuthWork';
+import { getStoredSupabaseSession, hasStoredSupabaseSession } from '../lib/supabaseSessionHelper';
 
 const ADMIN_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const ADMIN_ACCESS_CACHE_KEY = 'vizagjobs:admin-access-cache';
@@ -53,28 +54,51 @@ const getCachedAdminAccess = (userId) => {
   return Boolean(cachedValue.isAdmin);
 };
 
+const withTimeout = (promise, ms = 5000) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Admin verification timed out')), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+};
+
 const getAdminMembership = async (userId) => {
   if (!supabase || !userId) {
     return false;
   }
 
-  const { data, error } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', userId)
-    .maybeSingle();
+  try {
+    const query = supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-  if (error) {
-    throw error;
+    const { data, error } = await withTimeout(query, 5000);
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data?.user_id);
+  } catch (err) {
+    console.warn('[AdminAuth] Admin check error or timeout:', err);
+    return false;
   }
-
-  return Boolean(data?.user_id);
 };
 
 export function AdminAuthProvider({ children }) {
-  const [session, setSession] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && Boolean(supabase));
+  const initialSession = isSupabaseConfigured && Boolean(supabase) ? getStoredSupabaseSession() : null;
+  const initialCachedAdmin = initialSession?.user ? getCachedAdminAccess(initialSession.user.id) : null;
+
+  const [session, setSession] = useState(() => initialSession);
+  const [isAdmin, setIsAdmin] = useState(() => Boolean(initialCachedAdmin));
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!isSupabaseConfigured || !supabase) return false;
+    if (!hasStoredSupabaseSession()) return false;
+    if (initialSession && initialCachedAdmin !== null) return false;
+    return true;
+  });
   const [authError, setAuthError] = useState('');
 
   const refreshAdminAccess = async (userId) => {
@@ -104,7 +128,7 @@ export function AdminAuthProvider({ children }) {
         return;
       }
 
-      if (showLoader) {
+      if (showLoader && nextSession?.user) {
         setIsLoading(true);
       }
 
@@ -159,8 +183,12 @@ export function AdminAuthProvider({ children }) {
           return;
         }
 
-        void syncSession(data.session, { showLoader: true });
+        void syncSession(data.session, { showLoader: Boolean(data.session?.user) });
       });
+    }).catch(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
 
     const {
@@ -172,9 +200,9 @@ export function AdminAuthProvider({ children }) {
         }
 
         const shouldShowLoader =
-          event === 'SIGNED_OUT' ||
+          (event === 'SIGNED_OUT' ||
           event === 'USER_UPDATED' ||
-          event === 'PASSWORD_RECOVERY';
+          event === 'PASSWORD_RECOVERY') && Boolean(nextSession?.user);
 
         void syncSession(nextSession, { showLoader: shouldShowLoader });
       });
