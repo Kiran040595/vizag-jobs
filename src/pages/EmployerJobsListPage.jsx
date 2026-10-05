@@ -176,12 +176,18 @@ function EmployerJobsListContent() {
                   {job.apply_mode === 'internal' ||
                   resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
                     <p className="mt-2 text-sm text-slate-600">
-                      {formatApplicationCountNoun(resolveOnPlatformApplicationCount(job, applicationCounts))}
+                      <Link
+                        to={`/employer/jobs/${job.id}/applications`}
+                        className="font-medium text-cyan-700 underline hover:text-cyan-800"
+                      >
+                        {formatApplicationCountNoun(resolveOnPlatformApplicationCount(job, applicationCounts))}
+                      </Link>
                     </p>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {job.apply_mode === 'internal' ? (
+                  {job.apply_mode === 'internal' ||
+                  resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
                     <Link
                       to={`/employer/jobs/${job.id}/applications`}
                       className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"

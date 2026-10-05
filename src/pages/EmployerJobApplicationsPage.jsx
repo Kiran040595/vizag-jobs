@@ -17,7 +17,7 @@ import {
   formatApplicationStatus,
   updateApplicationStatus,
 } from '../services/jobApplications';
-import { fetchMyJobs } from '../services/employerJobs';
+import { fetchMyJobById, fetchMyJobs } from '../services/employerJobs';
 
 function EmployerJobApplicationsContent() {
   const { jobId } = useParams();
@@ -34,8 +34,17 @@ function EmployerJobApplicationsContent() {
     const load = async () => {
       try {
         const [jobs, rows] = await Promise.all([fetchMyJobs(), fetchJobApplications(jobId)]);
+        let matchedJob = jobs.find((row) => row.id === jobId) || null;
+        if (!matchedJob && jobId) {
+          try {
+            matchedJob = await fetchMyJobById(jobId);
+          } catch {
+            // fallback if not found
+          }
+        }
+
         if (!ignore) {
-          setJob(jobs.find((row) => row.id === jobId) || null);
+          setJob(matchedJob);
           setApplications(rows);
           setError('');
         }
