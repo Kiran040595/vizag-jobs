@@ -32,6 +32,10 @@ assert.match(modalSrc, /assignJobsToEmployer/i, 'Modal must call assignJobsToEmp
 assert.match(modalSrc, /moveJobsToAdmin/i, 'Modal must support unlinking via moveJobsToAdmin');
 assert.match(modalSrc, /Unlink \(Move to Admin\)/i, 'Modal must offer unlink button for already linked jobs');
 
+// Escape stacking contexts & backdrop-blur via createPortal
+assert.match(modalSrc, /createPortal\(modalNode,\s*document\.body\)/, 'Modal must be portaled into document.body to avoid parent CSS clipping');
+assert.match(modalSrc, /document\.body\.style\.overflow\s*=\s*'hidden'/, 'Modal must lock body scroll when open');
+
 // 2. Verify AdminJobsPage.jsx integration
 const adminJobsPageSrc = readFileSync(path.join(repoRoot, 'src/pages/AdminJobsPage.jsx'), 'utf8');
 assert.match(adminJobsPageSrc, /import LinkCompanyModal from '\.\.\/components\/admin\/LinkCompanyModal';/, 'AdminJobsPage must import LinkCompanyModal');

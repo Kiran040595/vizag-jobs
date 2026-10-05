@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   fetchJobApplications,
@@ -303,7 +304,18 @@ export default function JobApplicantsModal({
     }
   };
 
-  return (
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
+  if (typeof document === 'undefined') return null;
+
+  const modalNode = (
     <>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs sm:p-4"
@@ -630,4 +642,6 @@ export default function JobApplicantsModal({
       />
     </>
   );
+
+  return createPortal(modalNode, document.body);
 }

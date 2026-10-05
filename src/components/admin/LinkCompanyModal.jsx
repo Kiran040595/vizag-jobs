@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { assignJobsToEmployer, moveJobsToAdmin } from '../../services/adminJobs';
 import { fetchAdminEmployerProfiles } from '../../services/adminEmployers';
 
@@ -109,9 +110,12 @@ export default function LinkCompanyModal({
     }
   }, [job, isOpen]);
 
-  // Handle ESC key to close modal
+  // Handle ESC key to close modal & lock body scroll
   useEffect(() => {
     if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -120,7 +124,10 @@ export default function LinkCompanyModal({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   const filteredEmployers = useMemo(() => {
@@ -228,7 +235,11 @@ export default function LinkCompanyModal({
 
   const isCurrentSelection = job.created_by && job.created_by === selectedEmployerId;
 
-  return (
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const modalNode = (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200"
       role="dialog"
@@ -488,4 +499,6 @@ export default function LinkCompanyModal({
       </div>
     </div>
   );
+
+  return createPortal(modalNode, document.body);
 }
