@@ -9,6 +9,7 @@ import {
   hasUserVotedHelpful,
   voteQuestionHelpful,
   submitJobQuestion,
+  requestJobAiAnswer,
   formatQuestionTime,
 } from '../services/jobQuestions';
 import { getJobDetailPath } from '../lib/jobRoutes';
@@ -70,7 +71,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
   const [category, setCategory] = useState(defaultCategory);
   const [body, setBody] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -90,7 +91,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
     setError('');
     setIsSubmitting(true);
     try {
-      await submitJobQuestion({
+      const res = await requestJobAiAnswer({
         jobId: null,
         category,
         askerName,
@@ -98,7 +99,12 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
         body,
         askerUserId: session?.user?.id || null,
       });
-      setSuccess(true);
+
+      setResult({
+        question: body.trim(),
+        answer: res?.answer || null,
+        isAiAnswer: Boolean(res?.isAiAnswer),
+      });
       onSubmitted?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit your question.');
@@ -129,25 +135,54 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
           </svg>
         </button>
 
-        {success ? (
-          <div className="py-6 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+        {result ? (
+          <div className="py-4 text-left">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 sm:mx-0">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="mt-4 text-xl font-bold text-slate-900">Doubt Submitted!</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Our moderation team reviews and answers candidate questions. Once approved, your answer will be
-              published here for other job seekers to learn from.
-            </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-6 inline-flex rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
-            >
-              Done
-            </button>
+            <div className="mt-3">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                ✓ Auto-Published &amp; Students Notified
+              </div>
+              <h3 className="mt-2 text-lg font-bold text-slate-950 sm:text-xl">
+                {result.isAiAnswer ? 'Answered by Gemini AI' : 'Doubt Submitted'}
+              </h3>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 sm:p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Your Question</p>
+              <p className="mt-1 text-xs font-semibold text-slate-900 sm:text-sm">&ldquo;{result.question}&rdquo;</p>
+            </div>
+
+            {result.answer ? (
+              <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white">
+                    ✓
+                  </span>
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
+                    🤖 Gemini AI Career Assistant
+                  </p>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-800 sm:text-sm">{result.answer}</p>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-slate-600">
+                Your question has been published and sent to our team and students. Check back shortly!
+              </p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl bg-cyan-500 px-5 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-cyan-400"
+              >
+                View in Community Feed
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>

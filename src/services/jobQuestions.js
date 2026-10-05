@@ -1,6 +1,6 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
-import { getJobDetailPath } from '../lib/jobRoutes';
-import { notifyReplyByEmailSafe } from '../lib/replyNotification';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+import { getJobDetailPath } from '../lib/jobRoutes.js';
+import { notifyReplyByEmailSafe } from '../lib/replyNotification.js';
 
 const QUESTION_COLUMNS = `
   id,
@@ -104,7 +104,7 @@ const mapQuestion = (row) => {
     isAiAnswer,
     answeredByRole: row.answered_by
       ? 'VizagJobs Admin'
-      : (row.answer_body ? '🤖 AI Assistant (Verified from Job Post)' : null),
+      : (row.answer_body ? (row.job_id ? '🤖 Gemini AI (Verified from Job Post)' : '🤖 Gemini AI Career Assistant') : null),
     job: row.job
       ? {
           id: row.job.id,
@@ -175,14 +175,46 @@ export function getAnswerJobQuestionUrl() {
 
   const projectUrl = import.meta.env.VITE_SUPABASE_URL?.trim()?.replace(/\/$/, '');
   if (!projectUrl) {
-    return '';
+    return '/api/answer-job-question';
   }
   return `${projectUrl}/functions/v1/answer-job-question`;
 }
 
+export const insertPendingJobQuestion = async ({
+  jobId = null,
+  category = 'general',
+  askerName,
+  askerEmail,
+  body,
+  askerUserId = null,
+}) => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { error } = await supabase
+    .from('job_questions')
+    .insert({
+      job_id: jobId || null,
+      category: category || 'general',
+      asker_name: (askerName || '').trim() || null,
+      asker_email: (askerEmail || '').trim() || null,
+      asker_user_id: askerUserId || null,
+      body: body.trim(),
+      status: 'pending',
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { submitted: true };
+};
+
 export const requestJobAiAnswer = async ({
   jobId = null,
   job = null,
+  category = 'general',
   body,
   askerName = '',
   askerEmail = '',
@@ -193,7 +225,7 @@ export const requestJobAiAnswer = async ({
     throw new Error(validationError);
   }
 
-  const url = getAnswerJobQuestionUrl();
+  const edgeUrl = getAnswerJobQuestionUrl();
   const anon = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
 
   let resolvedUserId = askerUserId || null;
@@ -206,23 +238,28 @@ export const requestJobAiAnswer = async ({
     }
   }
 
-  if (url && anon) {
+  const payload = {
+    jobId,
+    job,
+    category,
+    question: body.trim(),
+    askerName: (askerName || '').trim() || null,
+    askerEmail: (askerEmail || '').trim() || null,
+    askerUserId: resolvedUserId,
+  };
+
+  // 1. Try Supabase Edge Function
+  if (edgeUrl) {
     try {
-      const res = await fetch(url, {
+      const headers = { 'Content-Type': 'application/json' };
+      if (anon) {
+        headers.Authorization = `Bearer ${anon}`;
+        headers.apikey = anon;
+      }
+      const res = await fetch(edgeUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${anon}`,
-          apikey: anon,
-        },
-        body: JSON.stringify({
-          jobId,
-          job,
-          question: body.trim(),
-          askerName: (askerName || '').trim() || null,
-          askerEmail: (askerEmail || '').trim() || null,
-          askerUserId: resolvedUserId,
-        }),
+        headers,
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -236,13 +273,38 @@ export const requestJobAiAnswer = async ({
         };
       }
     } catch (err) {
-      console.warn('Edge function answer-job-question call failed, falling back:', err);
+      console.warn('Edge function answer-job-question call failed, trying local/api fallback:', err);
     }
   }
 
-  // Graceful fallback: submit pending question to db
-  await submitJobQuestion({
+  // 2. Try Vercel Serverless API fallback (/api/answer-job-question)
+  if (edgeUrl !== '/api/answer-job-question') {
+    try {
+      const apiRes = await fetch('/api/answer-job-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const apiData = await apiRes.json().catch(() => ({}));
+      if (apiRes.ok && apiData?.answer) {
+        return {
+          answer: apiData.answer,
+          question: apiData.question ? mapQuestion(apiData.question) : null,
+          model: apiData.model || 'gemini-2.5-flash',
+          source: 'gemini-ai',
+          isAiAnswer: true,
+        };
+      }
+    } catch (apiErr) {
+      console.warn('API fallback /api/answer-job-question also failed:', apiErr);
+    }
+  }
+
+  // 3. Graceful fallback: submit pending question to db
+  await insertPendingJobQuestion({
     jobId,
+    category,
     askerName,
     askerEmail,
     body,
@@ -259,42 +321,38 @@ export const requestJobAiAnswer = async ({
 
 export const submitJobQuestion = async ({
   jobId = null,
+  category = 'general',
   askerName,
   askerEmail,
   body,
   askerUserId = null,
 }) => {
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const validationError = validateQuestionInput({ askerName, askerEmail, body });
-  if (validationError) {
-    throw new Error(validationError);
-  }
-
-  let resolvedUserId = askerUserId || null;
-  if (!resolvedUserId) {
-    const { data: sessionData } = await supabase.auth.getSession();
-    resolvedUserId = sessionData?.session?.user?.id || null;
-  }
-
-  const { error } = await supabase
-    .from('job_questions')
-    .insert({
-      job_id: jobId || null,
-      asker_name: (askerName || '').trim() || null,
-      asker_email: (askerEmail || '').trim() || null,
-      asker_user_id: resolvedUserId,
-      body: body.trim(),
-      status: 'pending',
+  // Try AI answering and auto-publishing first
+  try {
+    const aiResult = await requestJobAiAnswer({
+      jobId,
+      category,
+      body,
+      askerName,
+      askerEmail,
+      askerUserId,
     });
-
-  if (error) {
-    throw new Error(error.message);
+    if (aiResult?.isAiAnswer && aiResult?.answer) {
+      return { submitted: true, isAiAnswer: true, answer: aiResult.answer, question: aiResult.question };
+    }
+  } catch (aiErr) {
+    console.warn('AI answer attempt in submitJobQuestion failed, falling back:', aiErr);
   }
 
-  return { submitted: true };
+  // Fallback to inserting pending question directly
+  return insertPendingJobQuestion({
+    jobId,
+    category,
+    askerName,
+    askerEmail,
+    body,
+    askerUserId,
+  });
 };
 
 const VOTED_QUESTIONS_STORAGE_KEY = 'vizagjobs_voted_questions';

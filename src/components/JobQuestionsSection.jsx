@@ -27,22 +27,28 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [answeredResult, setAnsweredResult] = useState(null);
 
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+
   const isAuthenticated = Boolean((isStudent && studentSession) || (isAdmin && (adminSession || adminUser)));
   const activeSession = (isStudent && studentSession) ? studentSession : adminSession;
   const activeUserId = studentSession?.user?.id || adminUser?.id || adminSession?.user?.id || null;
 
-  // Auto-fill name/email from profile, admin session, or student session
-  const askerName =
+  // Auto-fill name/email from profile, admin session, student session, or guest inputs
+  const resolvedAskerName =
     profile?.full_name ||
     profile?.fullName ||
     (isAdmin ? (adminUser?.user_metadata?.full_name || adminUser?.email?.split('@')[0] || 'Admin') : '') ||
     activeSession?.user?.email?.split('@')[0] ||
-    '';
-  const askerEmail =
+    guestName.trim() ||
+    'Candidate';
+
+  const resolvedAskerEmail =
     activeSession?.user?.email ||
     adminUser?.email ||
     profile?.contact_email ||
     profile?.contactEmail ||
+    guestEmail.trim() ||
     '';
 
   const handleSubmit = async (event) => {
@@ -61,8 +67,8 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         jobId,
         job,
         body,
-        askerName,
-        askerEmail,
+        askerName: resolvedAskerName,
+        askerEmail: resolvedAskerEmail,
         askerUserId: activeUserId,
       });
 
@@ -71,6 +77,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
           question: body.trim(),
           answer: res.answer,
           questionId: res.question.id,
+          isAiAnswer: true,
         });
         setBody('');
 
@@ -101,24 +108,6 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
     }
   };
 
-  // Guest: show sign-in prompt instead of form
-  if (!isAuthenticated) {
-    return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-center sm:p-5">
-        <p className="text-xs sm:text-sm font-semibold text-slate-900">Have a doubt about this job?</p>
-        <p className="mt-1 text-xs text-slate-600">
-          Sign in to ask a question and get an instant verified answer.
-        </p>
-        <Link
-          to="/student/login"
-          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-cyan-500"
-        >
-          Sign in to ask a question
-        </Link>
-      </div>
-    );
-  }
-
   // Show the answer card after submission
   if (answeredResult) {
     return (
@@ -130,7 +119,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
                 ✓
               </span>
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
-                Answer received
+                Answer received &amp; Auto-Published
               </p>
             </div>
             <button
@@ -149,6 +138,11 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
 
           {answeredResult.answer ? (
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-sm">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[10px] font-bold text-cyan-800">
+                  🤖 Gemini AI (Verified from Job Post)
+                </span>
+              </div>
               <p className="text-xs sm:text-sm leading-relaxed text-slate-800">{answeredResult.answer}</p>
             </div>
           ) : (
@@ -159,7 +153,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
 
           {answeredResult.answer ? (
             <p className="mt-2.5 text-[11px] text-slate-500">
-              🔔 A notification has been sent to your account. Check the bell icon in the navbar.
+              🔔 Auto-published to this job&apos;s Q&amp;A. Students and applicants have been notified!
             </p>
           ) : null}
 
@@ -182,14 +176,27 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
   if (!isOpen) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-3.5 text-center sm:p-4">
-        <p className="text-xs text-slate-600">Have a specific question about this opening?</p>
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-cyan-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-cyan-50"
-        >
-          <span>💬 Ask a Question</span>
-        </button>
+        <p className="text-xs sm:text-sm font-semibold text-slate-900">Have a doubt about this job?</p>
+        <p className="mt-1 text-xs text-slate-600">
+          Ask our Gemini AI Assistant for an instant verified answer and notify students.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400"
+          >
+            <span>💬 Ask Gemini AI</span>
+          </button>
+          {!isAuthenticated ? (
+            <Link
+              to="/student/login"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+            >
+              Sign In
+            </Link>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -206,9 +213,35 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
           ✕ Cancel
         </button>
       </div>
-      <p className="mt-1 text-xs text-slate-600">
-        Asking as <span className="font-semibold text-slate-800">{askerName || askerEmail}</span>{isAdmin && !isStudent ? ' (Admin)' : ''}. Your answer will appear in your notification bell.
-      </p>
+
+      {isAuthenticated ? (
+        <p className="mt-1 text-xs text-slate-600">
+          Asking as <span className="font-semibold text-slate-800">{resolvedAskerName || resolvedAskerEmail}</span>{isAdmin && !isStudent ? ' (Admin)' : ''}. Gemini will auto-publish the answer and notify students.
+        </p>
+      ) : (
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700">Your Name (optional)</label>
+            <input
+              type="text"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              placeholder="e.g. Rahul (Student)"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-700">Your Email (for notification)</label>
+            <input
+              type="email"
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+              placeholder="your.email@example.com"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            />
+          </div>
+        </div>
+      )}
 
       <label className="mt-3 block text-xs">
         <span className="font-medium text-slate-700">Your question</span>
@@ -216,6 +249,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
           value={body}
           onChange={(event) => setBody(event.target.value)}
           rows={3}
+          required
           placeholder="e.g. Is this role open for 2026 batch freshers? Is work from home available?"
           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
         />
@@ -235,10 +269,10 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
-              <span>Reviewing your question…</span>
+              <span>Gemini is answering…</span>
             </>
           ) : (
-            <span>Submit Question</span>
+            <span>Ask Gemini AI</span>
           )}
         </button>
         <button
@@ -331,7 +365,7 @@ function PublishedQuestionItem({ question, highlighted = false }) {
               ✓
             </span>
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
-              VizagJobs Team
+              {question.answeredByRole || (question.isAiAnswer ? '🤖 Gemini AI (Verified from Job Post)' : 'VizagJobs Team')}
             </p>
           </div>
           <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-700">{question.answerBody}</p>

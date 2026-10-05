@@ -1,12 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { buildJobQuestionReplyEmail } from '../_shared/reply-email.ts';
-
-const corsHeaders: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Max-Age': '86400',
-};
+import { readJsonBody, sendJson, setCors } from './_lib/http.js';
+import { createServiceClient } from './_lib/supabaseAuth.js';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
@@ -30,31 +23,19 @@ Guidelines:
 3. Zero Scam Tolerance: Genuine employers NEVER charge registration fees, training fees, or security deposits. Always remind students to stay safe.
 4. Tone & Format: Helpful, professional, and concise (2 to 4 sentences). Do NOT use markdown headers (# or ##). Keep it readable on mobile.`;
 
-function jsonResponse(body: Record<string, unknown>, status = 200, extraHeaders: Record<string, string> = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
-      ...extraHeaders,
-    },
-  });
-}
-
-function getGeminiApiKeys(): string[] {
-  const keys: string[] = [];
-  const seen = new Set<string>();
-  const push = (val: string | undefined | null) => {
+function getGeminiApiKeys() {
+  const keys = [];
+  const seen = new Set();
+  const push = (val) => {
     const k = String(val || '').trim();
     if (!k || seen.has(k)) return;
     seen.add(k);
     keys.push(k);
   };
 
-  push(Deno.env.get('GEMINI_API_KEY_CHAT'));
-  push(Deno.env.get('GEMINI_API_KEY'));
-  const extra = Deno.env.get('GEMINI_API_KEYS')?.trim();
+  push(process.env.GEMINI_API_KEY_CHAT);
+  push(process.env.GEMINI_API_KEY);
+  const extra = (process.env.GEMINI_API_KEYS || '').trim();
   if (extra) {
     for (const part of extra.split(/[\n,]+/)) {
       push(part);
@@ -63,9 +44,9 @@ function getGeminiApiKeys(): string[] {
   return keys;
 }
 
-function extractGeminiText(payload: Record<string, unknown>): string {
-  const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
-  const first = candidates[0] as { content?: { parts?: Array<{ text?: string }> } } | undefined;
+function extractGeminiText(payload) {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  const first = candidates[0];
   const parts = first?.content?.parts;
   if (!Array.isArray(parts)) return '';
   return parts
@@ -74,13 +55,13 @@ function extractGeminiText(payload: Record<string, unknown>): string {
     .trim();
 }
 
-async function callGemini(prompt: string, systemPrompt = JOB_SYSTEM_PROMPT): Promise<{ text: string; model: string }> {
+async function callGemini(prompt, systemPrompt = JOB_SYSTEM_PROMPT) {
   const keys = getGeminiApiKeys();
   if (keys.length === 0) {
-    throw new Error('GEMINI_API_KEY is not configured in Supabase secrets.');
+    throw new Error('GEMINI_API_KEY is not configured in server environment.');
   }
 
-  const preferred = Deno.env.get('GEMINI_MODEL')?.trim() || DEFAULT_GEMINI_MODEL;
+  const preferred = (process.env.GEMINI_MODEL || '').trim() || DEFAULT_GEMINI_MODEL;
   const models = [preferred];
   for (const m of FALLBACK_MODELS) {
     if (!models.includes(m)) models.push(m);
@@ -92,7 +73,7 @@ async function callGemini(prompt: string, systemPrompt = JOB_SYSTEM_PROMPT): Pro
     for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25_000);
+      const timeout = setTimeout(() => controller.abort(), 25000);
 
       try {
         const res = await fetch(url, {
@@ -116,12 +97,9 @@ async function callGemini(prompt: string, systemPrompt = JOB_SYSTEM_PROMPT): Pro
           signal: controller.signal,
         });
 
-        const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        const payload = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const msg =
-            (payload.error as { message?: string } | undefined)?.message ||
-            res.statusText ||
-            `HTTP ${res.status}`;
+          const msg = payload?.error?.message || res.statusText || `HTTP ${res.status}`;
           lastError = `Gemini API error (${res.status}): ${msg}`;
           if (res.status === 429 || res.status === 503 || res.status === 500) {
             continue;
@@ -137,7 +115,7 @@ async function callGemini(prompt: string, systemPrompt = JOB_SYSTEM_PROMPT): Pro
 
         return { text, model };
       } catch (err) {
-        lastError = (err as Error)?.message || String(err);
+        lastError = err instanceof Error ? err.message : String(err);
       } finally {
         clearTimeout(timeout);
       }
@@ -147,156 +125,106 @@ async function callGemini(prompt: string, systemPrompt = JOB_SYSTEM_PROMPT): Pro
   throw new Error(lastError);
 }
 
-async function sendViaResend({
-  to,
-  subject,
-  html,
-  text,
-}: {
-  to: string;
-  subject: string;
-  html: string;
-  text: string;
-}) {
-  const apiKey = Deno.env.get('RESEND_API_KEY')?.trim();
-  if (!apiKey) {
-    return { ok: false as const, error: 'RESEND_API_KEY is not set.' };
-  }
-
-  const from =
-    Deno.env.get('RESEND_FROM_EMAIL')?.trim() || 'Vizag Jobs <onboarding@resend.dev>';
-
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from, to: [to], subject, html, text }),
-    });
-
-    const payload = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const msg =
-        (payload as { message?: string })?.message ||
-        (payload as { error?: string })?.error ||
-        `Resend API failed (${res.status})`;
-      return { ok: false as const, error: msg };
-    }
-    return { ok: true as const, id: (payload as { id?: string })?.id || null };
-  } catch (err) {
-    return { ok: false as const, error: (err as Error)?.message || String(err) };
-  }
-}
-
-Deno.serve(async (req) => {
+export default async function handler(req, res) {
+  setCors(res);
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    res.statusCode = 204;
+    res.end();
+    return;
   }
 
   if (req.method === 'GET') {
-    return jsonResponse({
+    sendJson(res, 200, {
       ok: true,
       service: 'answer-job-question',
       configured: getGeminiApiKeys().length > 0,
     });
+    return;
   }
 
   if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed.' }, 405);
+    sendJson(res, 405, { ok: false, error: 'Method not allowed.' });
+    return;
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-
-  const supabaseAdmin =
-    supabaseUrl && serviceRoleKey
-      ? createClient(supabaseUrl, serviceRoleKey)
-      : null;
-
-  let body: Record<string, unknown>;
   try {
-    body = await req.json();
-  } catch {
-    return jsonResponse({ error: 'Invalid JSON body.' }, 400);
-  }
+    const body = await readJsonBody(req);
+    const question = String(body?.question || '').trim();
+    const jobId = body?.jobId ? String(body.jobId).trim() : null;
+    const category = body?.category ? String(body.category).trim() : 'general';
+    const askerName = body?.askerName ? String(body.askerName).trim() : null;
+    const askerEmail = body?.askerEmail ? String(body.askerEmail).trim() : null;
+    const askerUserId = body?.askerUserId ? String(body.askerUserId).trim() : null;
+    let jobContext = body?.job && typeof body.job === 'object' ? body.job : null;
 
-  const question = String(body?.question || '').trim();
-  const jobId = body?.jobId ? String(body.jobId).trim() : null;
-  const category = body?.category ? String(body.category).trim() : 'general';
-  const askerName = body?.askerName ? String(body.askerName).trim() : null;
-  const askerEmail = body?.askerEmail ? String(body.askerEmail).trim() : null;
-  const askerUserId = body?.askerUserId ? String(body.askerUserId).trim() : null;
-  let jobContext = (body?.job as Record<string, unknown>) || null;
-
-  if (!question || question.length < 3) {
-    return jsonResponse({ error: 'Please provide a question with at least 3 characters.' }, 400);
-  }
-
-  // If job context is not provided or incomplete, fetch job from Supabase
-  if ((!jobContext || !jobContext.description) && jobId && supabaseAdmin) {
-    try {
-      const { data: fetchedJob } = await supabaseAdmin
-        .from('jobs')
-        .select('*')
-        .eq('id', jobId)
-        .maybeSingle();
-
-      if (fetchedJob) {
-        jobContext = fetchedJob;
-      }
-    } catch {
-      // Continue with whatever context is available
+    if (!question || question.length < 3) {
+      sendJson(res, 400, { ok: false, error: 'Please enter a question with at least 3 characters.' });
+      return;
     }
-  }
 
-  // Build the prompt for Gemini
-  let fullPrompt = '';
-  let activeSystemPrompt = JOB_SYSTEM_PROMPT;
+    const admin = createServiceClient();
 
-  if (jobContext || jobId) {
-    activeSystemPrompt = JOB_SYSTEM_PROMPT;
-    const promptLines: string[] = [
-      'JOB POSTING DETAILS:',
-      `Title: ${jobContext?.title || 'Not specified'}`,
-      `Company: ${jobContext?.company || 'Not specified'}`,
-      `Location: ${jobContext?.location || 'Visakhapatnam, Andhra Pradesh'}`,
-      `Work Mode: ${jobContext?.work_mode || jobContext?.workMode || 'Not specified'}`,
-      `Job Type: ${jobContext?.job_type || jobContext?.jobType || 'Not specified'}`,
-      `Fresher Eligible: ${jobContext?.is_fresher ? 'Yes (Freshers welcome)' : 'See requirements'}`,
-      `Salary / Compensation: ${jobContext?.salary || 'As per industry standards'}`,
-      `Experience Required: ${jobContext?.experience || jobContext?.experience_level || 'Not specified'}`,
-      `Education / Qualifications: ${jobContext?.education || 'Not specified'}`,
-      `Skills: ${Array.isArray(jobContext?.skills) ? jobContext?.skills.join(', ') : jobContext?.skills || 'Not specified'}`,
-      `Description / Key Responsibilities: ${String(jobContext?.description || 'Not provided').slice(0, 3000)}`,
-      '',
-      'CANDIDATE QUESTION:',
-      `"${question}"`,
-      '',
-      'Please review the job details above and provide a clear, factual, and helpful answer for the candidate.'
-    ];
-    fullPrompt = promptLines.join('\n');
-  } else {
-    activeSystemPrompt = GENERAL_SYSTEM_PROMPT;
-    fullPrompt = [
-      `CANDIDATE QUESTION ABOUT VIZAG JOBS / CAREER:`,
-      `Category: ${category}`,
-      `"${question}"`,
-      '',
-      'Please provide a clear, factual, and actionable answer for the candidate about Visakhapatnam job market and career guidance.',
-    ].join('\n');
-  }
+    // Fetch job details if not provided
+    if ((!jobContext || !jobContext.description) && jobId && admin) {
+      try {
+        const { data: fetchedJob } = await admin
+          .from('jobs')
+          .select('*')
+          .eq('id', jobId)
+          .maybeSingle();
 
-  try {
+        if (fetchedJob) {
+          jobContext = fetchedJob;
+        }
+      } catch {
+        // Continue with whatever context is available
+      }
+    }
+
+    // Build Gemini prompt
+    let fullPrompt = '';
+    let activeSystemPrompt = JOB_SYSTEM_PROMPT;
+
+    if (jobContext || jobId) {
+      activeSystemPrompt = JOB_SYSTEM_PROMPT;
+      const promptLines = [
+        'JOB POSTING DETAILS:',
+        `Title: ${jobContext?.title || 'Not specified'}`,
+        `Company: ${jobContext?.company || 'Not specified'}`,
+        `Location: ${jobContext?.location || 'Visakhapatnam, Andhra Pradesh'}`,
+        `Work Mode: ${jobContext?.work_mode || jobContext?.workMode || 'Not specified'}`,
+        `Job Type: ${jobContext?.job_type || jobContext?.jobType || 'Not specified'}`,
+        `Fresher Eligible: ${jobContext?.is_fresher ? 'Yes (Freshers welcome)' : 'See requirements'}`,
+        `Salary / Compensation: ${jobContext?.salary || 'As per industry standards'}`,
+        `Experience Required: ${jobContext?.experience || jobContext?.experience_level || 'Not specified'}`,
+        `Education / Qualifications: ${jobContext?.education || 'Not specified'}`,
+        `Skills: ${Array.isArray(jobContext?.skills) ? jobContext?.skills.join(', ') : jobContext?.skills || 'Not specified'}`,
+        `Description / Key Responsibilities: ${String(jobContext?.description || 'Not provided').slice(0, 3000)}`,
+        '',
+        'CANDIDATE QUESTION:',
+        `"${question}"`,
+        '',
+        'Please review the job details above and provide a clear, factual, and helpful answer for the candidate.',
+      ];
+      fullPrompt = promptLines.join('\n');
+    } else {
+      activeSystemPrompt = GENERAL_SYSTEM_PROMPT;
+      fullPrompt = [
+        'CANDIDATE QUESTION ABOUT VIZAG JOBS / CAREER:',
+        `Category: ${category}`,
+        `"${question}"`,
+        '',
+        'Please provide a clear, factual, and actionable answer for the candidate about Visakhapatnam job market and career guidance.',
+      ].join('\n');
+    }
+
     const { text: answerText, model } = await callGemini(fullPrompt, activeSystemPrompt);
 
-    let savedQuestion: Record<string, unknown> | null = null;
+    let savedQuestion = null;
 
-    // Persist to job_questions table using service role client so it publishes immediately
-    if (supabaseAdmin) {
+    if (admin) {
       try {
-        const { data: inserted, error: insertError } = await supabaseAdmin
+        const { data: inserted, error: insertError } = await admin
           .from('job_questions')
           .insert({
             job_id: jobId || null,
@@ -316,16 +244,14 @@ Deno.serve(async (req) => {
 
         if (!insertError && inserted) {
           savedQuestion = inserted;
-
           const jobTitle = jobContext?.title ? String(jobContext.title) : 'Vizag Job';
           const jobSlug = jobContext?.slug || (jobId ? String(jobId) : null);
           const link = jobSlug ? `/job/${jobSlug}?question=${inserted.id}` : `/community-qa?question=${inserted.id}`;
-          const siteUrl = (Deno.env.get('SITE_URL') || 'https://jobsinvizag.in').replace(/\/+$/, '');
 
           // 1. Notify the asking student in reply_notifications
           if (askerUserId) {
             try {
-              await supabaseAdmin
+              await admin
                 .from('reply_notifications')
                 .upsert({
                   user_id: askerUserId,
@@ -343,29 +269,10 @@ Deno.serve(async (req) => {
             }
           }
 
-          // 2. Notify asker via email if email is provided
-          if (askerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(askerEmail)) {
-            try {
-              const emailPayload = buildJobQuestionReplyEmail({
-                siteName: 'Vizag Jobs',
-                siteUrl,
-                askerName: askerName || 'Candidate',
-                jobTitle: jobContext?.title ? String(jobContext.title) : 'Vizag Career Guidance',
-                jobPath: link,
-                company: (jobContext?.company as string) || null,
-                originalBody: question,
-                answerBody: answerText,
-              });
-              await sendViaResend({ to: askerEmail, ...emailPayload });
-            } catch (emailErr) {
-              console.warn('Failed to send question answer email:', emailErr);
-            }
-          }
-
-          // 3. Notify students who applied to this specific job
+          // 2. Notify students who applied to this specific job
           if (jobId) {
             try {
-              const { data: applicants } = await supabaseAdmin
+              const { data: applicants } = await admin
                 .from('job_applications')
                 .select('student_user_id')
                 .eq('job_id', jobId);
@@ -385,7 +292,7 @@ Deno.serve(async (req) => {
                   }));
 
                 if (notifications.length > 0) {
-                  await supabaseAdmin
+                  await admin
                     .from('reply_notifications')
                     .upsert(notifications, { onConflict: 'user_id,kind,ref_id' });
                 }
@@ -395,9 +302,9 @@ Deno.serve(async (req) => {
             }
           }
 
-          // 4. Notify registered students in student_profiles
+          // 3. Notify registered students in student_profiles
           try {
-            const { data: profiles } = await supabaseAdmin
+            const { data: profiles } = await admin
               .from('student_profiles')
               .select('user_id')
               .not('user_id', 'is', null)
@@ -418,7 +325,7 @@ Deno.serve(async (req) => {
                 }));
 
               if (studentNotifs.length > 0) {
-                await supabaseAdmin
+                await admin
                   .from('reply_notifications')
                   .upsert(studentNotifs, { onConflict: 'user_id,kind,ref_id' });
               }
@@ -432,7 +339,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return jsonResponse({
+    sendJson(res, 200, {
       ok: true,
       answer: answerText,
       question: savedQuestion,
@@ -440,11 +347,10 @@ Deno.serve(async (req) => {
       source: 'gemini-ai',
       isAiAnswer: true,
     });
-  } catch (error) {
-    console.error('Failed to answer job question:', error);
-    return jsonResponse(
-      { error: (error as Error)?.message || 'Failed to review question with AI.' },
-      500,
-    );
+  } catch (err) {
+    sendJson(res, 500, {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Failed to review question with AI.',
+    });
   }
-});
+}
