@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { assignJobsToEmployer, moveJobsToAdmin } from '../../services/adminJobs';
+import { fetchAdminEmployerProfiles } from '../../services/adminEmployers';
 
 const CloseIcon = () => (
   <svg
@@ -79,11 +80,23 @@ export default function LinkCompanyModal({
   onClose,
   onLinked,
 }) {
+  const [internalEmployers, setInternalEmployers] = useState(employers);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployerId, setSelectedEmployerId] = useState('');
   const [syncCompanyName, setSyncCompanyName] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Sync or fetch employers
+  useEffect(() => {
+    if (employers && employers.length > 0) {
+      setInternalEmployers(employers);
+    } else if (isOpen) {
+      fetchAdminEmployerProfiles()
+        .then((rows) => setInternalEmployers(rows.filter((r) => r.isActive)))
+        .catch((err) => console.warn('Could not load employers in LinkCompanyModal:', err));
+    }
+  }, [employers, isOpen]);
 
   // Pre-select current employer if job is already linked
   useEffect(() => {
@@ -112,9 +125,9 @@ export default function LinkCompanyModal({
 
   const filteredEmployers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return employers;
+    if (!term) return internalEmployers;
 
-    return employers.filter((employer) => {
+    return internalEmployers.filter((employer) => {
       const companyName = (employer.companyName || employer.company_name || '').toLowerCase();
       const email = (employer.contactEmail || employer.contact_email || employer.email || '').toLowerCase();
       const contactName = (employer.contactName || employer.contact_name || '').toLowerCase();
@@ -129,17 +142,17 @@ export default function LinkCompanyModal({
         location.includes(term)
       );
     });
-  }, [employers, searchTerm]);
+  }, [internalEmployers, searchTerm]);
 
   const currentEmployer = useMemo(() => {
     if (!job?.created_by) return null;
-    return employers.find((emp) => (emp.userId || emp.user_id) === job.created_by) || null;
-  }, [employers, job?.created_by]);
+    return internalEmployers.find((emp) => (emp.userId || emp.user_id) === job.created_by) || null;
+  }, [internalEmployers, job?.created_by]);
 
   const selectedEmployer = useMemo(() => {
     if (!selectedEmployerId) return null;
-    return employers.find((emp) => (emp.userId || emp.user_id) === selectedEmployerId) || null;
-  }, [employers, selectedEmployerId]);
+    return internalEmployers.find((emp) => (emp.userId || emp.user_id) === selectedEmployerId) || null;
+  }, [internalEmployers, selectedEmployerId]);
 
   if (!isOpen || !job) {
     return null;

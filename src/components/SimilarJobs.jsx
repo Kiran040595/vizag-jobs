@@ -112,6 +112,7 @@ export default function SimilarJobs({ job }) {
             <JobCard
               key={similar.id}
               jobId={similar.id}
+              job={similar}
               jobSnapshot={{
                 id: similar.id,
                 slug: similar.slug,

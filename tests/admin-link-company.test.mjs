@@ -45,6 +45,25 @@ assert.match(adminEditJobPageSrc, /import LinkCompanyModal from '\.\.\/component
 assert.match(adminEditJobPageSrc, /const \[isLinking, setIsLinking\] = useState\(false\);/, 'AdminEditJobPage must manage isLinking state');
 assert.match(adminEditJobPageSrc, /<LinkCompanyModal[\s\S]*?isOpen={isLinking}/, 'AdminEditJobPage must render LinkCompanyModal when isLinking is true');
 
+// 2c. Verify JobCard.jsx integration (Home page and general listings)
+const jobCardSrc = readFileSync(path.join(repoRoot, 'src/components/JobCard.jsx'), 'utf8');
+assert.match(jobCardSrc, /import LinkCompanyModal from '\.\/admin\/LinkCompanyModal';/, 'JobCard must import LinkCompanyModal');
+assert.match(jobCardSrc, /const \{ isAdmin \} = useAdminAuth\(\);/, 'JobCard must check admin auth');
+assert.match(jobCardSrc, /const \[isLinkCompanyOpen, setIsLinkCompanyOpen\] = useState\(false\);/, 'JobCard must manage isLinkCompanyOpen state');
+assert.match(jobCardSrc, /🔗[\s\S]*?Link Company/, 'JobCard must render Link Company button for admins');
+assert.match(jobCardSrc, /<LinkCompanyModal[\s\S]*?isOpen={isLinkCompanyOpen}/, 'JobCard must render LinkCompanyModal when isLinkCompanyOpen is true');
+
+// 2d. Verify JobList.jsx passes job prop to JobCard
+const jobListSrc = readFileSync(path.join(repoRoot, 'src/components/JobList.jsx'), 'utf8');
+assert.match(jobListSrc, /<JobCard[\s\S]*?job={job}/, 'JobList must pass job object to JobCard');
+
+// 2e. Verify AdminJobActionsBar.jsx integration
+const adminActionsBarSrc = readFileSync(path.join(repoRoot, 'src/components/admin/AdminJobActionsBar.jsx'), 'utf8');
+assert.match(adminActionsBarSrc, /import LinkCompanyModal from '\.\/LinkCompanyModal';/, 'AdminJobActionsBar must import LinkCompanyModal');
+assert.match(adminActionsBarSrc, /const \[isLinkCompanyOpen, setIsLinkCompanyOpen\] = useState\(false\);/, 'AdminJobActionsBar must manage isLinkCompanyOpen state');
+assert.match(adminActionsBarSrc, /🔗 Link Company/, 'AdminJobActionsBar must render Link Company button');
+assert.match(adminActionsBarSrc, /<LinkCompanyModal[\s\S]*?isOpen={isLinkCompanyOpen}/, 'AdminJobActionsBar must render LinkCompanyModal');
+
 // 3. Verify adminJobs service supports syncCompanyName
 const adminJobsSrc = readFileSync(path.join(repoRoot, 'src/services/adminJobs.js'), 'utf8');
 assert.match(adminJobsSrc, /export const assignJobsToEmployer = async \(\{\s*jobIds,\s*employerUserId,\s*syncCompanyName = true\s*\}\)/, 'assignJobsToEmployer must accept syncCompanyName parameter');

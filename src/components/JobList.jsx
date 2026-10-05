@@ -87,6 +87,7 @@ const JobList = ({ jobs, total, onResetFilters, headerRef, isLoading = false }) 
           <JobCard
             key={job.id}
             jobId={job.id}
+            job={job}
             jobSnapshot={{
               id: job.id,
               slug: job.slug,

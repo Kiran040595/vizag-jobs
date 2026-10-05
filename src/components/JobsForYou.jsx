@@ -75,7 +75,9 @@ export default function JobsForYou({ jobs = [] }) {
                 </div>
               ) : null}
               <JobCard
+                key={job.id}
                 jobId={job.id}
+                job={job}
                 jobSnapshot={{
                   id: job.id,
                   slug: job.slug,

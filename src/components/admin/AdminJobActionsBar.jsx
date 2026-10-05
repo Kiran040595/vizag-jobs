@@ -16,6 +16,7 @@ import { formatGeminiKeyUsage } from '../../lib/formatGeminiKeyUsage';
 import { buildGeminiSeoKeySelectOptions, parseGeminiSeoKeySelectValue } from '../../lib/geminiSeoKeyOptions';
 import CopyInstagramCaptionButton from '../CopyInstagramCaptionButton';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../../lib/instagramBioJobsPath';
+import LinkCompanyModal from './LinkCompanyModal';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -63,6 +64,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
   const [seoPreview, setSeoPreview] = useState(null); // { rawJob, seoJob } | null
   const [seoGeminiKeyIndex, setSeoGeminiKeyIndex] = useState(0);
   const [seoGeminiKeys, setSeoGeminiKeys] = useState([]);
+  const [isLinkCompanyOpen, setIsLinkCompanyOpen] = useState(false);
 
   const isLinkedInPostJob =
     job?.sourceKind === 'linkedin_post' || job?.source_kind === 'linkedin_post';
@@ -309,6 +311,15 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
           >
             Edit
           </a>
+          <button
+            type="button"
+            className={`${baseBtn} border-violet-200 bg-violet-50 text-violet-800 hover:bg-violet-100 focus:ring-violet-300`}
+            onClick={() => setIsLinkCompanyOpen(true)}
+            disabled={Boolean(busyAction)}
+            title="Link this job with a registered employer company"
+          >
+            🔗 Link Company
+          </button>
           {isPublished ? (
             <CopyInstagramCaptionButton
               job={job}
@@ -416,6 +427,24 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
           isApplying={busyAction === 'seo-apply'}
           onApply={handleApplySeo}
           onCancel={handleCancelSeo}
+        />
+      ) : null}
+
+      {isLinkCompanyOpen ? (
+        <LinkCompanyModal
+          job={job}
+          applicationCount={job?.applicationCount || 0}
+          isOpen={isLinkCompanyOpen}
+          onClose={() => setIsLinkCompanyOpen(false)}
+          onLinked={(updatedJob, message) => {
+            if (updatedJob?.company) {
+              onPatch?.({ company: updatedJob.company });
+            }
+            if (message) {
+              setNotice(message);
+            }
+            onRefetch?.();
+          }}
         />
       ) : null}
     </section>

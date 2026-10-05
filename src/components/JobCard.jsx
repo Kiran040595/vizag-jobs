@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   formatRelativePostedAt,
@@ -12,6 +12,8 @@ import {
   normalizeApplicationCount,
 } from '../lib/jobApplicationCount';
 import JobApplicantsModal from './admin/JobApplicantsModal';
+import LinkCompanyModal from './admin/LinkCompanyModal';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
 const BookmarkIcon = ({ filled = false }) => (
   <svg
@@ -41,13 +43,21 @@ const JobCard = ({
   directBadge = null,
   applicationCount = 0,
   showApplicantCount = false,
+  job = null,
 }) => {
   const navigate = useNavigate();
+  const { isAdmin } = useAdminAuth();
   const relativePostedAt = formatRelativePostedAt(postedAt);
   const highlightPostedTime = shouldHighlightPostedTime(postedAt);
   const { saved, toggle } = useSavedJob(jobId, jobSnapshot);
   const applicants = normalizeApplicationCount(applicationCount);
   const [isApplicantsOpen, setIsApplicantsOpen] = useState(false);
+  const [isLinkCompanyOpen, setIsLinkCompanyOpen] = useState(false);
+  const [displayCompany, setDisplayCompany] = useState(companyName);
+
+  useEffect(() => {
+    setDisplayCompany(companyName);
+  }, [companyName]);
 
   const handleToggleSaved = (event) => {
     event?.preventDefault?.();
@@ -122,8 +132,8 @@ const JobCard = ({
         <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900 sm:text-base">
           {jobTitle}
         </h3>
-        {companyName ? (
-          <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-600 sm:text-sm">{companyName}</p>
+        {displayCompany ? (
+          <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-600 sm:text-sm">{displayCompany}</p>
         ) : null}
       </div>
 
@@ -147,7 +157,39 @@ const JobCard = ({
         </p>
       ) : null}
 
-      {showApplicantCount ? (
+      {isAdmin ? (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          {showApplicantCount ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsApplicantsOpen(true);
+              }}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
+              title="View applicants (Admin)"
+            >
+              <span aria-hidden="true">👥</span>
+              <span>{formatApplicantCountLabel(applicants)}</span>
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsLinkCompanyOpen(true);
+            }}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 hover:text-violet-900 focus:outline-none focus:ring-2 focus:ring-violet-400 sm:text-sm"
+            title="Link this job with an employer company (Admin)"
+          >
+            <span aria-hidden="true">🔗</span>
+            <span>Link Company</span>
+          </button>
+        </div>
+      ) : showApplicantCount ? (
         <div className="mb-2">
           <button
             type="button"
@@ -157,7 +199,7 @@ const JobCard = ({
               setIsApplicantsOpen(true);
             }}
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 hover:text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
-            title="View applicants (Admin)"
+            title="View applicants"
           >
             <span aria-hidden="true">👥</span>
             <span>{formatApplicantCountLabel(applicants)}</span>
@@ -177,9 +219,32 @@ const JobCard = ({
         <JobApplicantsModal
           jobId={jobId}
           jobTitle={jobTitle}
-          companyName={companyName}
+          companyName={displayCompany || companyName}
           isOpen={isApplicantsOpen}
           onClose={() => setIsApplicantsOpen(false)}
+        />
+      ) : null}
+
+      {isLinkCompanyOpen ? (
+        <LinkCompanyModal
+          job={job || {
+            id: jobId,
+            title: jobTitle,
+            company: displayCompany || companyName,
+            status: job?.status || 'published',
+            created_by: job?.created_by || job?.createdBy || null,
+          }}
+          applicationCount={applicants}
+          isOpen={isLinkCompanyOpen}
+          onClose={() => setIsLinkCompanyOpen(false)}
+          onLinked={(updatedJob, message) => {
+            if (updatedJob?.company) {
+              setDisplayCompany(updatedJob.company);
+            }
+            if (message) {
+              pushToast({ message, type: 'success' });
+            }
+          }}
         />
       ) : null}
     </article>
