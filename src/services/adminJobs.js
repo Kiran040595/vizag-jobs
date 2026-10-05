@@ -878,10 +878,10 @@ export const getAdminJobsListPath = (job) => (job?.created_by ? '/admin/jobs' : 
 
 /**
  * Assign one or more jobs to an employer account (sets jobs.created_by).
- * Syncs jobs.company to the employer company name when available.
- * @param {{ jobIds: string[], employerUserId: string }} params
+ * Optionally syncs jobs.company to the employer company name when available (default true).
+ * @param {{ jobIds: string[], employerUserId: string, syncCompanyName?: boolean }} params
  */
-export const assignJobsToEmployer = async ({ jobIds, employerUserId }) => {
+export const assignJobsToEmployer = async ({ jobIds, employerUserId, syncCompanyName = true }) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
   }
@@ -917,7 +917,7 @@ export const assignJobsToEmployer = async ({ jobIds, employerUserId }) => {
     created_by: ownerId,
     updated_at: new Date().toISOString(),
   };
-  if (companyName) {
+  if (syncCompanyName && companyName) {
     updates.company = companyName;
   }
 

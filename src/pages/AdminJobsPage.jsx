@@ -28,6 +28,7 @@ import {
 import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
 import JobApplicantsModal from '../components/admin/JobApplicantsModal';
+import LinkCompanyModal from '../components/admin/LinkCompanyModal';
 
 const STATUS_STYLES = {
   published: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -108,6 +109,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [rejectingJob, setRejectingJob] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [modalJob, setModalJob] = useState(null);
+  const [linkingJob, setLinkingJob] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -718,6 +720,15 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                       >
                         Edit
                       </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => setLinkingJob(job)}
+                        className="rounded-2xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 hover:border-violet-300 disabled:cursor-not-allowed disabled:opacity-60"
+                        title="Link this job with a registered company employer"
+                      >
+                        🔗 Link Company
+                      </button>
                       {isPending && !isAdminScope ? (
                         <>
                           <button
@@ -849,6 +860,22 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           companyName={modalJob.company}
           isOpen={Boolean(modalJob)}
           onClose={() => setModalJob(null)}
+        />
+      ) : null}
+
+      {linkingJob ? (
+        <LinkCompanyModal
+          job={linkingJob}
+          employers={employers}
+          applicationCount={resolveOnPlatformApplicationCount(linkingJob, applicationCounts)}
+          isOpen={Boolean(linkingJob)}
+          onClose={() => setLinkingJob(null)}
+          onLinked={(updatedJob, message) => {
+            setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+            if (message) {
+              setNotice(message);
+            }
+          }}
         />
       ) : null}
     </AdminShell>
