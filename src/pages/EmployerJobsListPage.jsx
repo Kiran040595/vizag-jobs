@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
@@ -35,6 +35,8 @@ const statusLabel = (job) => {
 
 function EmployerJobsListContent() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewMode = searchParams.get('view');
   const { user } = useEmployerAuth();
   const [jobs, setJobs] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
@@ -59,6 +61,11 @@ function EmployerJobsListContent() {
           setJobs(data);
           setLoadError('');
           setIsLoading(false);
+
+          if (data.length === 0 && viewMode !== 'list') {
+            navigate('/employer/jobs/new?empty=1', { replace: true });
+            return;
+          }
         }
 
         const jobIds = data.map((job) => job.id);
@@ -90,7 +97,7 @@ function EmployerJobsListContent() {
     return () => {
       ignore = true;
     };
-  }, [user?.id]);
+  }, [user?.id, viewMode, navigate]);
 
   const summaryStatuses = useMemo(
     () =>
