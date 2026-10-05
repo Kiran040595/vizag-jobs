@@ -39,6 +39,12 @@ assert.match(adminJobsPageSrc, /const \[linkingJob, setLinkingJob\] = useState\(
 assert.match(adminJobsPageSrc, /🔗 Link Company/, 'AdminJobsPage must render Link Company button on job card');
 assert.match(adminJobsPageSrc, /<LinkCompanyModal[\s\S]*?job={linkingJob}/, 'AdminJobsPage must render LinkCompanyModal when linkingJob is present');
 
+// 2b. Verify AdminEditJobPage.jsx integration
+const adminEditJobPageSrc = readFileSync(path.join(repoRoot, 'src/pages/AdminEditJobPage.jsx'), 'utf8');
+assert.match(adminEditJobPageSrc, /import LinkCompanyModal from '\.\.\/components\/admin\/LinkCompanyModal';/, 'AdminEditJobPage must import LinkCompanyModal');
+assert.match(adminEditJobPageSrc, /const \[isLinking, setIsLinking\] = useState\(false\);/, 'AdminEditJobPage must manage isLinking state');
+assert.match(adminEditJobPageSrc, /<LinkCompanyModal[\s\S]*?isOpen={isLinking}/, 'AdminEditJobPage must render LinkCompanyModal when isLinking is true');
+
 // 3. Verify adminJobs service supports syncCompanyName
 const adminJobsSrc = readFileSync(path.join(repoRoot, 'src/services/adminJobs.js'), 'utf8');
 assert.match(adminJobsSrc, /export const assignJobsToEmployer = async \(\{\s*jobIds,\s*employerUserId,\s*syncCompanyName = true\s*\}\)/, 'assignJobsToEmployer must accept syncCompanyName parameter');
