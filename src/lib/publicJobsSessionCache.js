@@ -118,7 +118,7 @@ export const clearCachedInstagramJobs = () => {
  * Reduces database calls while keeping company profiles snappy.
  */
 export const COMPANY_DIRECTORY_CACHE_TTL_MS = 10 * 60 * 1000;
-export const PUBLIC_COMPANIES_CACHE_KEY = 'vizagJobs_companies_v1';
+export const PUBLIC_COMPANIES_CACHE_KEY = 'vizagJobs_companies_v2';
 
 export const readCachedPublicCompanies = () => {
   const getRaw = () => {

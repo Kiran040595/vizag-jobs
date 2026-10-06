@@ -7,6 +7,7 @@ import {
   fetchAdminCompanies,
   saveCompanyDetails,
   toggleCompanyDirectoryApproval,
+  detectCareerPortalFromWebsite,
 } from '../services/adminCompanies';
 import { fetchAdminPlatformJobs } from '../services/adminJobs';
 import {
@@ -63,6 +64,9 @@ export default function AdminCompaniesPage() {
   const [editIsDirectoryApproved, setEditIsDirectoryApproved] = useState(false);
   const [editNotes, setEditNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDetectingPortalInModal, setIsDetectingPortalInModal] = useState(false);
+  const [detectingPortalCompanyName, setDetectingPortalCompanyName] = useState('');
+  const [batchDetectProgress, setBatchDetectProgress] = useState(null);
 
   // Single-Company Manual Fetch + Gemini SEO + Auto-Publish State
   const [fetchingCompanyName, setFetchingCompanyName] = useState('');
@@ -276,6 +280,143 @@ export default function AdminCompaniesPage() {
     }
   };
 
+  // Auto-detect career portal inside the Edit Modal
+  const handleDetectPortalInModal = async () => {
+    if (!editWebsite?.trim()) {
+      pushToast({
+        message: 'Enter a website URL first.',
+        type: 'error',
+      });
+      return;
+    }
+    setIsDetectingPortalInModal(true);
+    try {
+      const res = await detectCareerPortalFromWebsite(editWebsite, editingCompany?.name);
+      if (res?.careersUrl) {
+        setEditCareersUrl(res.careersUrl);
+        pushToast({
+          message: `✨ Found career portal: ${res.careersUrl}`,
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      pushToast({
+        message: err instanceof Error ? err.message : 'Could not detect career portal.',
+        type: 'error',
+      });
+    } finally {
+      setIsDetectingPortalInModal(false);
+    }
+  };
+
+  // Quick single-company auto-detect & save career portal directly from card
+  const handleQuickDetectCareerPortal = async (comp) => {
+    if (!comp.website) {
+      handleOpenEdit(comp);
+      pushToast({
+        message: `Add a website for ${comp.name} first.`,
+        type: 'info',
+      });
+      return;
+    }
+
+    setDetectingPortalCompanyName(comp.name);
+    try {
+      const res = await detectCareerPortalFromWebsite(comp.website, comp.name);
+      if (res?.careersUrl) {
+        await saveCompanyDetails({
+          name: comp.name,
+          website: comp.website,
+          careersUrl: res.careersUrl,
+          category: comp.category,
+          location: comp.location,
+          isActiveForScrape: comp.isActiveForScrape,
+          isDirectoryApproved: comp.isDirectoryApproved,
+          notes: comp.notes,
+        });
+
+        setCompanies((prev) =>
+          prev.map((item) =>
+            item.name === comp.name ? { ...item, careersUrl: res.careersUrl } : item,
+          ),
+        );
+
+        pushToast({
+          message: `✨ Updated ${comp.name} careers portal: ${res.careersUrl}`,
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      pushToast({
+        message: err instanceof Error ? err.message : `Could not detect career portal for ${comp.name}.`,
+        type: 'error',
+      });
+    } finally {
+      setDetectingPortalCompanyName('');
+    }
+  };
+
+  // Batch auto-detect career portals for all matching companies with a website
+  const handleBatchDetectCareerPortals = async () => {
+    const candidates = filteredCompanies.filter((c) => Boolean(c.website));
+    if (candidates.length === 0) {
+      pushToast({
+        message: 'No companies with websites found in the current view.',
+        type: 'info',
+      });
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Visit websites and auto-detect career portals for ${candidates.length} companies?`,
+      )
+    ) {
+      return;
+    }
+
+    setBatchDetectProgress({ current: 0, total: candidates.length, updated: 0 });
+
+    let updated = 0;
+    for (let i = 0; i < candidates.length; i++) {
+      const comp = candidates[i];
+      setBatchDetectProgress({ current: i + 1, total: candidates.length, updated });
+
+      try {
+        const res = await detectCareerPortalFromWebsite(comp.website, comp.name);
+        if (res?.careersUrl && res.careersUrl !== comp.careersUrl) {
+          await saveCompanyDetails({
+            name: comp.name,
+            website: comp.website,
+            careersUrl: res.careersUrl,
+            category: comp.category,
+            location: comp.location,
+            isActiveForScrape: comp.isActiveForScrape,
+            isDirectoryApproved: comp.isDirectoryApproved,
+            notes: comp.notes,
+          });
+
+          setCompanies((prev) =>
+            prev.map((item) =>
+              item.name === comp.name ? { ...item, careersUrl: res.careersUrl } : item,
+            ),
+          );
+          updated++;
+        }
+      } catch {
+        // Continue to next company
+      }
+
+      await new Promise((r) => setTimeout(r, 400));
+    }
+
+    setBatchDetectProgress(null);
+    pushToast({
+      message: `Finished! Successfully updated ${updated} company career portal(s) from website.`,
+      type: 'success',
+    });
+  };
+
   const handleCancelCompanyFetch = () => {
     fetchAbortRef.current?.abort();
   };
@@ -450,6 +591,25 @@ export default function AdminCompaniesPage() {
               title="Refresh company data from database"
             >
               🔄 Refresh
+            </button>
+
+            <button
+              type="button"
+              disabled={Boolean(batchDetectProgress)}
+              onClick={handleBatchDetectCareerPortals}
+              className="rounded-2xl border border-cyan-300 bg-cyan-50 px-4 py-3 text-sm font-bold text-cyan-900 shadow-2xs transition hover:bg-cyan-100 disabled:opacity-50"
+              title="Visit websites of companies and auto-discover their live career portals"
+            >
+              {batchDetectProgress ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-900 border-t-transparent" />
+                  <span>
+                    Detecting ({batchDetectProgress.current}/{batchDetectProgress.total})…
+                  </span>
+                </span>
+              ) : (
+                <span>🌐 Auto-Detect Career Portals</span>
+              )}
             </button>
           </div>
         </div>
@@ -641,6 +801,25 @@ export default function AdminCompaniesPage() {
                             </button>
                           )}
 
+                          {comp.website ? (
+                            <button
+                              type="button"
+                              disabled={detectingPortalCompanyName === comp.name}
+                              onClick={() => handleQuickDetectCareerPortal(comp)}
+                              className="inline-flex items-center gap-1 rounded-xl border border-cyan-200 bg-cyan-50/70 px-2.5 py-1 text-xs font-bold text-cyan-800 transition hover:bg-cyan-100 disabled:opacity-50"
+                              title={`Visit ${comp.website} and auto-detect live career portal`}
+                            >
+                              {detectingPortalCompanyName === comp.name ? (
+                                <>
+                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-cyan-800 border-t-transparent" />
+                                  <span>Detecting…</span>
+                                </>
+                              ) : (
+                                <span>✨ Fetch Portal</span>
+                              )}
+                            </button>
+                          ) : null}
+
                           {comp.notes ? (
                             <span className="text-[11px] text-slate-400 italic">
                               Note: {comp.notes}
@@ -824,7 +1003,27 @@ export default function AdminCompaniesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700">Careers / Jobs Page URL</label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">Careers / Jobs Page URL</label>
+                  {editWebsite ? (
+                    <button
+                      type="button"
+                      disabled={isDetectingPortalInModal}
+                      onClick={handleDetectPortalInModal}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-700 hover:text-cyan-900 disabled:opacity-50"
+                      title="Visit company website and auto-detect career portal"
+                    >
+                      {isDetectingPortalInModal ? (
+                        <>
+                          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-cyan-700 border-t-transparent" />
+                          <span>Visiting website…</span>
+                        </>
+                      ) : (
+                        <span>✨ Fetch from Website</span>
+                      )}
+                    </button>
+                  ) : null}
+                </div>
                 <input
                   type="url"
                   value={editCareersUrl}

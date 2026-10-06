@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   ADMIN_STATUS_OPTIONS,
   formatApplicationStatus,
-  getApplicationStatusStyle,
 } from '../../lib/applicationStatus';
 import {
   formatApplicationTime,
@@ -134,7 +133,6 @@ export default function JobApplicationTable({
               const name = snapshot.fullName || 'Candidate';
               const initials = getInitials(name);
               const gradient = getAvatarGradient(name);
-              const statusStyle = getApplicationStatusStyle(app.status);
               const isResumeLoading = openingResumeId === app.id;
 
               const jobTitle = job?.title || app.job?.title || 'Open Position';

@@ -1,0 +1,129 @@
+{
+  "system": "VizagJobs Daily Function Audit Ledger",
+  "version": "1.0.0",
+  "schedule": {
+    "frequency": "daily",
+    "functionsPerDay": 1,
+    "lastAuditDate": "2026-10-06",
+    "nextAuditDate": "2026-10-07"
+  },
+  "history": [
+    {
+      "auditId": "AUDIT-20261006-001",
+      "date": "2026-10-06",
+      "dayNumber": 1,
+      "functionName": "JobApplicantsModal",
+      "filePath": "src/components/admin/JobApplicantsModal.jsx",
+      "status": "PASSED_WITH_FIXES",
+      "severity": "CRITICAL",
+      "issuesIdentified": [
+        "React Hook 'useEffect' called conditionally after early return (Rules of Hooks violation causing component crash on modal toggle).",
+        "Unused dead imports and variables across applicant modal and associated files."
+      ],
+      "fixesApplied": [
+        "Moved body-overflow lock useEffect before early return conditional in JobApplicantsModal.jsx.",
+        "Cleaned unused imports in JobApplicationCard.jsx, JobApplicationTable.jsx, CommunityQaPage.jsx, EmployerJobApplicationsPage.jsx, EmployerJobsListPage.jsx, and adminJobs.js.",
+        "Wrapped loadData in useCallback with proper dependencies in EmployerJobApplicationsPage.jsx."
+      ],
+      "verification": {
+        "eslint": "PASSED (0 errors, 0 warnings)",
+        "build": "PASSED (vite build succeeded)",
+        "tests": [
+          "tests/employer-linked-job-applications.test.mjs",
+          "tests/application-status.test.mjs",
+          "tests/job-application-count.test.mjs"
+        ]
+      }
+    }
+  ],
+  "queue": [
+    {
+      "dayNumber": 2,
+      "scheduledDate": "2026-10-07",
+      "functionName": "updateCandidatePipelineStage",
+      "filePath": "src/services/jobApplications.js",
+      "description": "Updates applicant status, recruiter notes, and interview details with RPC & table fallback.",
+      "testFile": "tests/employer-linked-job-applications.test.mjs"
+    },
+    {
+      "dayNumber": 3,
+      "scheduledDate": "2026-10-08",
+      "functionName": "fetchJobCandidates",
+      "filePath": "src/services/jobApplications.js",
+      "description": "Retrieves internal and external applicants via RPC and student profile mappings.",
+      "testFile": "tests/employer-linked-job-applications.test.mjs"
+    },
+    {
+      "dayNumber": 4,
+      "scheduledDate": "2026-10-09",
+      "functionName": "submitJobApplication",
+      "filePath": "src/services/jobApplications.js",
+      "description": "Uploads candidate resume and creates application record with idempotency and auth checks.",
+      "testFile": "tests/student-job-match.test.mjs"
+    },
+    {
+      "dayNumber": 5,
+      "scheduledDate": "2026-10-10",
+      "functionName": "parseSqlInsertToRecords",
+      "filePath": "src/services/adminJobs.js",
+      "description": "Parses batch SQL INSERT statements for bulk job creation with schema validation.",
+      "testFile": "tests/admin-sql-multiple-jobs.test.mjs"
+    },
+    {
+      "dayNumber": 6,
+      "scheduledDate": "2026-10-11",
+      "functionName": "createAdminJob",
+      "filePath": "src/services/adminJobs.js",
+      "description": "Validates and creates admin job record with slug generation, company linking, and metadata normalization.",
+      "testFile": "tests/admin-new-job-page.test.mjs"
+    },
+    {
+      "dayNumber": 7,
+      "scheduledDate": "2026-10-12",
+      "functionName": "resolveJobApplicationCount",
+      "filePath": "src/lib/jobApplicationCount.js",
+      "description": "Calculates normalized application and apply-click counts for public and recruiter views.",
+      "testFile": "tests/job-application-count.test.mjs"
+    },
+    {
+      "dayNumber": 8,
+      "scheduledDate": "2026-10-13",
+      "functionName": "normalizeApplicationStatus",
+      "filePath": "src/lib/applicationStatus.js",
+      "description": "Sanitizes application statuses across legacy and updated pipeline state machines.",
+      "testFile": "tests/application-status.test.mjs"
+    },
+    {
+      "dayNumber": 9,
+      "scheduledDate": "2026-10-14",
+      "functionName": "fetchMyJobs",
+      "filePath": "src/services/employerJobs.js",
+      "description": "Fetches authenticated employer jobs with company scopes and metrics.",
+      "testFile": "tests/employer-registration.test.mjs"
+    },
+    {
+      "dayNumber": 10,
+      "scheduledDate": "2026-10-15",
+      "functionName": "fetchAllCommunityQuestions",
+      "filePath": "src/services/jobQuestions.js",
+      "description": "Loads public community Q&A records with category filters and upvote counts.",
+      "testFile": "tests/job-question-gemini-notify.test.mjs"
+    },
+    {
+      "dayNumber": 11,
+      "scheduledDate": "2026-10-16",
+      "functionName": "applyJobFilters",
+      "filePath": "src/lib/jobFilters.js",
+      "description": "Client-side filtering for search, category, role, location, and fresher eligibility.",
+      "testFile": "tests/job-filters.test.mjs"
+    },
+    {
+      "dayNumber": 12,
+      "scheduledDate": "2026-10-17",
+      "functionName": "buildWhatsAppContactUrl",
+      "filePath": "src/lib/whatsappContact.js",
+      "description": "Formats international phone numbers and generates sanitized wa.me chat links.",
+      "testFile": "tests/employer-linked-job-applications.test.mjs"
+    }
+  ]
+}

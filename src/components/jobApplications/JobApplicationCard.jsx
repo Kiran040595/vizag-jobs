@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import PhoneDialLink from '../PhoneDialLink';
-import WhatsAppContactLink from '../WhatsAppContactLink';
 import {
   ADMIN_STATUS_OPTIONS,
   formatApplicationStatus,

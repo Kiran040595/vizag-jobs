@@ -304,15 +304,6 @@ export default function JobApplicantsModal({
     }
   };
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
-
   if (typeof document === 'undefined') return null;
 
   const modalNode = (

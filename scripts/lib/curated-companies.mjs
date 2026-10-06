@@ -348,32 +348,32 @@ export const CURATED_COMPANIES = {
     is_active_for_scrape: true,
   },
   'MGM Healthcare': {
-    website: 'https://mgmhealthcare.in',
-    careers_url: 'https://mgmhealthcare.in/careers/',
+    website: 'https://mgmsevenhills.in',
+    careers_url: 'https://mgmsevenhills.in/careers/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
   'Transasia Bio-Medicals Ltd.': {
     website: 'https://transasia.co.in',
-    careers_url: 'https://transasia.co.in/careers',
+    careers_url: 'https://erbamannheim.com/careers',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
   'Aspiro Pharma': {
     website: 'https://aspiropharma.com',
-    careers_url: 'https://aspiropharma.com/careers/',
+    careers_url: 'https://aspiropharma.com/careers.php',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
   'Deccan Fine Chemicals': {
     website: 'https://deccanfinechemicals.com',
-    careers_url: 'https://deccanfinechemicals.com/careers',
+    careers_url: 'https://deccanfinechemicals.com/career',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
   'Biocon': {
     website: 'https://www.biocon.com',
-    careers_url: 'https://www.biocon.com/careers/',
+    careers_url: 'https://careers.biocon.com/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
@@ -397,7 +397,7 @@ export const CURATED_COMPANIES = {
   },
   'Medicover Hospitals': {
     website: 'https://www.medicoverhospitals.in',
-    careers_url: 'https://www.medicoverhospitals.in/careers',
+    careers_url: 'https://www.medicoverhospitals.in/careers/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
@@ -423,13 +423,13 @@ export const CURATED_COMPANIES = {
   },
   'Axis Max Life Insurance': {
     website: 'https://www.maxlifeinsurance.com',
-    careers_url: 'https://www.maxlifeinsurance.com/careers',
+    careers_url: 'https://www.axismaxlife.com/careers',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
   'Kotak Mahindra Bank': {
     website: 'https://www.kotak.com',
-    careers_url: 'https://www.kotak.com/en/careers.html',
+    careers_url: 'https://www.kotak.bank.in/en/about-us/careers.html',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
@@ -453,7 +453,7 @@ export const CURATED_COMPANIES = {
   },
   'IDFC FIRST Bank': {
     website: 'https://www.idfcfirstbank.com',
-    careers_url: 'https://www.idfcfirstbank.com/careers',
+    careers_url: 'https://careers.idfcfirst.bank.in/in/en/home?utm_source=website&utm_medium=L1TheBankCareers&utm_campaign=Careers',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
@@ -471,7 +471,7 @@ export const CURATED_COMPANIES = {
   },
   'Ujjivan Small Finance Bank': {
     website: 'https://www.ujjivansfb.in',
-    careers_url: 'https://www.ujjivansfb.in/careers',
+    careers_url: 'https://www.ujjivansfb.bank.in/careers-home',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
@@ -483,7 +483,7 @@ export const CURATED_COMPANIES = {
   },
   'Indusind Bank': {
     website: 'https://www.indusind.com',
-    careers_url: 'https://www.indusind.com/in/en/personal/careers.html',
+    careers_url: 'https://app1100.workline.hr/careers/',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
@@ -527,13 +527,13 @@ export const CURATED_COMPANIES = {
   // Manufacturing, Industrial, Engineering, Infrastructure
   'Asian Paints': {
     website: 'https://www.asianpaints.com',
-    careers_url: 'https://careers.asianpaints.com',
+    careers_url: 'https://careers.asianpaints.com/',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },
   'Indus Towers': {
     website: 'https://www.industowers.com',
-    careers_url: 'https://www.industowers.com/careers',
+    careers_url: 'https://www.industowers.com/careers/',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },
@@ -551,7 +551,7 @@ export const CURATED_COMPANIES = {
   },
   'JLL': {
     website: 'https://www.jll.co.in',
-    careers_url: 'https://careers.jll.com',
+    careers_url: 'https://jll.wd1.myworkdayjobs.com/jllcareers',
     category: 'General',
     is_active_for_scrape: true,
   },
@@ -563,19 +563,19 @@ export const CURATED_COMPANIES = {
   },
   'KONE': {
     website: 'https://www.kone.in',
-    careers_url: 'https://www.kone.in/careers/',
+    careers_url: 'https://www.kone.in/about-kone/careers.html',
     category: 'Mechanical Engineering',
     is_active_for_scrape: true,
   },
   'PBL Transport Corporation Private Limited': {
-    website: 'https://pbltransport.com',
-    careers_url: 'https://pbltransport.com/careers',
+    website: 'https://www.pbltransport.co.in/',
+    careers_url: 'https://jobs.pbltransport.co.in/jobs/Careers',
     category: 'Logistics & Supply Chain',
     is_active_for_scrape: true,
   },
   'PBL Transport Corporation': {
-    website: 'https://pbltransport.com',
-    careers_url: 'https://pbltransport.com/careers',
+    website: 'https://www.pbltransport.co.in/',
+    careers_url: 'https://jobs.pbltransport.co.in/jobs/Careers',
     category: 'Logistics & Supply Chain',
     is_active_for_scrape: true,
   },
@@ -611,7 +611,7 @@ export const CURATED_COMPANIES = {
   },
   'Foxconn': {
     website: 'https://www.foxconn.com',
-    careers_url: 'https://www.foxconn.com/en-us/career',
+    careers_url: 'https://recruit.foxconn.com/isite-web-tw/',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },
@@ -631,13 +631,13 @@ export const CURATED_COMPANIES = {
   // Hospitality & Lifestyle
   'Accor': {
     website: 'https://all.accor.com',
-    careers_url: 'https://careers.accor.com',
+    careers_url: 'https://careers.accor.com/',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
   'Marriott': {
     website: 'https://www.marriott.com',
-    careers_url: 'https://careers.marriott.com',
+    careers_url: 'https://careers.marriott.com/',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
@@ -655,13 +655,13 @@ export const CURATED_COMPANIES = {
   },
   'HomeLane': {
     website: 'https://www.homelane.com',
-    careers_url: 'https://www.homelane.com/careers',
+    careers_url: 'https://homelane.darwinbox.in/ms/candidatev2/a6817a5ec3524e/careers/allJobs',
     category: 'Sales & Marketing',
     is_active_for_scrape: true,
   },
   'Lenskart': {
     website: 'https://www.lenskart.com',
-    careers_url: 'https://lenskart.darwinbox.in/ms/candidatev2/main/careers',
+    careers_url: 'https://www.lenskart.com/careers-at-lenskart?tabId=allCountries',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
@@ -673,13 +673,13 @@ export const CURATED_COMPANIES = {
   },
   'cult fit': {
     website: 'https://www.cult.fit',
-    careers_url: 'https://www.cult.fit/careers',
+    careers_url: 'https://careers.cult.fit/cult/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
   'Sodexo': {
     website: 'https://in.sodexo.com',
-    careers_url: 'https://in.sodexo.com/careers',
+    careers_url: 'https://www.sodexo.in/careers',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
@@ -691,19 +691,19 @@ export const CURATED_COMPANIES = {
   },
   'brandix': {
     website: 'https://brandix.com',
-    careers_url: 'https://brandix.com/careers',
+    careers_url: 'https://careers.brandix.com/',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },
   'Swiggy': {
     website: 'https://www.swiggy.com',
-    careers_url: 'https://careers.swiggy.com',
+    careers_url: 'https://careers.swiggy.com/',
     category: 'Sales & Marketing',
     is_active_for_scrape: true,
   },
   'Armani Exchange': {
     website: 'https://www.armaniexchange.com',
-    careers_url: 'https://www.armaniexchange.com',
+    careers_url: 'https://career5.successfactors.eu/career?company=3397177P',
     category: 'Hospitality & Retail',
     is_active_for_scrape: false,
   },
@@ -711,7 +711,7 @@ export const CURATED_COMPANIES = {
   // Education
   'GITAM Deemed University': {
     website: 'https://www.gitam.edu',
-    careers_url: 'https://www.gitam.edu/careers',
+    careers_url: 'https://careers.gitam.edu/',
     category: 'Education',
     is_active_for_scrape: true,
   },

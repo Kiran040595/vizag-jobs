@@ -8,7 +8,6 @@ import {
   fetchAllCommunityQuestions,
   hasUserVotedHelpful,
   voteQuestionHelpful,
-  submitJobQuestion,
   requestJobAiAnswer,
   formatQuestionTime,
 } from '../services/jobQuestions';

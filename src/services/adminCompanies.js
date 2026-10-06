@@ -38,52 +38,52 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Infosys': {
     website: 'https://www.infosys.com',
-    careers_url: 'https://www.infosys.com/careers.html',
+    careers_url: 'https://www.infosys.com/careers/',
     category: 'IT & Software',
   },
   'Cognizant': {
     website: 'https://www.cognizant.com',
-    careers_url: 'https://careers.cognizant.com/global/en',
+    careers_url: 'https://careers.cognizant.com/india-en/',
     category: 'IT & Software',
   },
   'Tech Mahindra': {
     website: 'https://www.techmahindra.com',
-    careers_url: 'https://careers.techmahindra.com',
+    careers_url: 'https://careers.techmahindra.com/',
     category: 'IT & Software',
   },
   'Conduent': {
     website: 'https://www.conduent.com',
-    careers_url: 'https://jobs.conduent.com',
+    careers_url: 'https://careers.conduent.com/us/en',
     category: 'IT & Software',
   },
   'WNS': {
     website: 'https://www.wns.com',
-    careers_url: 'https://www.wns.com/careers',
+    careers_url: 'https://www.wns.com/about-us/careers',
     category: 'IT & Software',
   },
   'Miracle Software Systems': {
     website: 'https://www.miraclesoft.com',
-    careers_url: 'https://www.miraclesoft.com/careers/openings',
+    careers_url: 'https://careers.miraclesoft.com/',
     category: 'IT & Software',
   },
   'Miraclesoft': {
     website: 'https://www.miraclesoft.com',
-    careers_url: 'https://www.miraclesoft.com/careers/openings',
+    careers_url: 'https://careers.miraclesoft.com/',
     category: 'IT & Software',
   },
   'Fluentgrid Limited': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/join-us/',
     category: 'IT & Software',
   },
   'Fluentgrid': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/join-us/',
     category: 'IT & Software',
   },
   'Symbiosis Technologies': {
-    website: 'https://symbiosistechnologies.com',
-    careers_url: 'https://symbiosistechnologies.com/careers/',
+    website: 'http://symbiosistechnologies.com',
+    careers_url: 'http://symbiosistechnologies.com/careers/',
     category: 'IT & Software',
   },
   'Mouri Tech': {
@@ -93,7 +93,17 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Patra India': {
     website: 'https://patracorp.com',
-    careers_url: 'https://patracorp.com/careers/',
+    careers_url: 'https://careers.patracorp.com/jobs',
+    category: 'IT & Software',
+  },
+  'Patra Corporation': {
+    website: 'https://patracorp.com',
+    careers_url: 'https://careers.patracorp.com/jobs',
+    category: 'IT & Software',
+  },
+  'Turing': {
+    website: 'https://www.turing.com',
+    careers_url: 'https://work.turing.com/jobs?interest=software-engineer',
     category: 'IT & Software',
   },
   'Innocito': {
@@ -113,7 +123,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'XTGlobal': {
     website: 'https://www.xtglobal.com',
-    careers_url: 'https://www.xtglobal.com/careers',
+    careers_url: 'https://xtglobal.com/careers/',
     category: 'IT & Software',
   },
 
@@ -147,7 +157,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Biocon': {
     website: 'https://www.biocon.com',
-    careers_url: 'https://www.biocon.com/careers/',
+    careers_url: 'https://careers.biocon.com/',
     category: 'Healthcare',
   },
   'Granules India': {
@@ -157,7 +167,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Eisai Pharmaceuticals India': {
     website: 'https://www.eisai.co.in',
-    careers_url: 'https://www.eisai.co.in/contactus.html',
+    careers_url: 'https://www.eisai.co.in/careers',
     category: 'Healthcare',
   },
   'Pulsus Healthtech': {
@@ -182,22 +192,22 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Medicover Hospitals': {
     website: 'https://www.medicoverhospitals.in',
-    careers_url: 'https://www.medicoverhospitals.in/careers',
+    careers_url: 'https://www.medicoverhospitals.in/careers/',
     category: 'Healthcare',
   },
   'MGM Healthcare': {
     website: 'https://mgmsevenhills.in',
-    careers_url: 'https://mgmhealthcare.in/careers/',
+    careers_url: 'https://mgmsevenhills.in/careers/',
     category: 'Healthcare',
   },
   'Aspiro Pharma': {
     website: 'https://aspiropharma.com',
-    careers_url: 'https://aspiropharma.com/careers/',
+    careers_url: 'https://aspiropharma.com/careers.php',
     category: 'Healthcare',
   },
   'Deccan Fine Chemicals': {
     website: 'https://deccanfinechemicals.com',
-    careers_url: 'https://deccanfinechemicals.com/careers',
+    careers_url: 'https://deccanfinechemicals.com/career',
     category: 'Healthcare',
   },
   'Transasia Bio-Medicals Ltd.': {
@@ -207,7 +217,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Benovymed Healthcare': {
     website: 'https://benovymed.com',
-    careers_url: 'https://benovymed.com/contact-us',
+    careers_url: 'https://benovymed.com/career-opportunity/',
     category: 'Healthcare',
   },
 
@@ -219,17 +229,17 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Asian Paints': {
     website: 'https://www.asianpaints.com',
-    careers_url: 'https://careers.asianpaints.com',
+    careers_url: 'https://careers.asianpaints.com/',
     category: 'Manufacturing',
   },
   'brandix': {
     website: 'https://brandix.com',
-    careers_url: 'https://brandix.com/careers',
+    careers_url: 'https://careers.brandix.com/',
     category: 'Manufacturing',
   },
   'Foxconn': {
     website: 'https://www.foxconn.com',
-    careers_url: 'https://recruit.foxconn.com',
+    careers_url: 'https://recruit.foxconn.com/isite-web-tw/',
     category: 'Manufacturing',
   },
   'GMR Group': {
@@ -239,12 +249,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Indus Towers': {
     website: 'https://www.industowers.com',
-    careers_url: 'https://www.industowers.com/careers',
+    careers_url: 'https://www.industowers.com/careers/',
     category: 'Manufacturing',
   },
   'JLL': {
     website: 'https://www.jll.co.in',
-    careers_url: 'https://www.jll.co.in/en/careers',
+    careers_url: 'https://jll.wd1.myworkdayjobs.com/jllcareers',
     category: 'Manufacturing',
   },
   'JSE Engineering': {
@@ -254,12 +264,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'KONE': {
     website: 'https://www.kone.in',
-    careers_url: 'https://www.kone.in/careers/',
+    careers_url: 'https://www.kone.in/about-kone/careers.html',
     category: 'Manufacturing',
   },
   'PBL Transport Corporation': {
     website: 'https://www.pbltransport.co.in/',
-    careers_url: 'https://www.pbltransport.co.in/',
+    careers_url: 'https://jobs.pbltransport.co.in/jobs/Careers',
     category: 'Manufacturing',
   },
   'Stantec': {
@@ -276,7 +286,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // Education & Academics
   'GITAM Deemed University': {
     website: 'https://www.gitam.edu',
-    careers_url: 'https://careers.gitam.edu',
+    careers_url: 'https://careers.gitam.edu/',
     category: 'Education',
   },
   'DA VINCI INTERNATIONAL SCHOOL': {
@@ -306,12 +316,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Edify Education': {
     website: 'https://edifyschools.com',
-    careers_url: 'https://edifyschools.com/careers/',
+    careers_url: 'https://edifyschools.com/career/',
     category: 'Education',
   },
   'Mdn Edify Education': {
     website: 'https://edifyschools.com',
-    careers_url: 'https://edifyschools.com/careers/',
+    careers_url: 'https://edifyschools.com/career/',
     category: 'Education',
   },
   'SIMS College': {
@@ -333,12 +343,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Kotak Mahindra Bank': {
     website: 'https://www.kotak.com',
-    careers_url: 'https://www.kotak.com/en/careers.html',
+    careers_url: 'https://www.kotak.bank.in/en/about-us/careers.html',
     category: 'Banking & Finance',
   },
   'IDFC FIRST Bank': {
     website: 'https://www.idfcfirstbank.com',
-    careers_url: 'https://www.idfcfirstbank.com/careers',
+    careers_url: 'https://careers.idfcfirst.bank.in/in/en/home?utm_source=website&utm_medium=L1TheBankCareers&utm_campaign=Careers',
     category: 'Banking & Finance',
   },
   'AU SMALL FINANCE BANK': {
@@ -358,7 +368,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Indusind Bank': {
     website: 'https://www.indusind.com',
-    careers_url: 'https://www.indusind.com/in/en/personal/careers.html',
+    careers_url: 'https://app1100.workline.hr/careers/',
     category: 'Banking & Finance',
   },
   'Karur Vysya Bank': {
@@ -373,7 +383,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Ujjivan Small Finance Bank': {
     website: 'https://www.ujjivansfb.in',
-    careers_url: 'https://www.ujjivansfb.in/careers',
+    careers_url: 'https://www.ujjivansfb.bank.in/careers-home',
     category: 'Banking & Finance',
   },
   'Tata Capital': {
@@ -403,7 +413,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Axis Max Life Insurance': {
     website: 'https://www.maxlifeinsurance.com',
-    careers_url: 'https://www.maxlifeinsurance.com/careers',
+    careers_url: 'https://www.axismaxlife.com/careers',
     category: 'Banking & Finance',
   },
   'Phonepe': {
@@ -415,17 +425,17 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // Hospitality & Retail
   'Accor': {
     website: 'https://all.accor.com',
-    careers_url: 'https://careers.accor.com',
+    careers_url: 'https://careers.accor.com/',
     category: 'Hospitality & Retail',
   },
   'Marriott': {
     website: 'https://www.marriott.com',
-    careers_url: 'https://careers.marriott.com',
+    careers_url: 'https://careers.marriott.com/',
     category: 'Hospitality & Retail',
   },
   'Pema Wellness Retreat': {
     website: 'https://www.pemawellness.com',
-    careers_url: 'https://www.pemawellness.com',
+    careers_url: 'https://pemawellness.com',
     category: 'Hospitality & Retail',
   },
   'SITARAM MOTORS': {
@@ -440,7 +450,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'HomeLane': {
     website: 'https://www.homelane.com',
-    careers_url: 'https://www.homelane.com/careers',
+    careers_url: 'https://homelane.darwinbox.in/ms/candidatev2/a6817a5ec3524e/careers/allJobs',
     category: 'Hospitality & Retail',
   },
   'Livspace': {
@@ -450,12 +460,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Lenskart': {
     website: 'https://www.lenskart.com',
-    careers_url: 'https://lenskart.darwinbox.in/ms/candidatev2/main/careers',
+    careers_url: 'https://www.lenskart.com/careers-at-lenskart?tabId=allCountries',
     category: 'Hospitality & Retail',
   },
   'cult fit': {
     website: 'https://www.cult.fit',
-    careers_url: 'https://www.cult.fit/careers',
+    careers_url: 'https://careers.cult.fit/cult/',
     category: 'Hospitality & Retail',
   },
   'H&M': {
@@ -465,12 +475,17 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Sodexo': {
     website: 'https://in.sodexo.com',
-    careers_url: 'https://in.sodexo.com/careers',
+    careers_url: 'https://www.sodexo.in/careers',
     category: 'Hospitality & Retail',
   },
   'Swiggy': {
     website: 'https://www.swiggy.com',
-    careers_url: 'https://careers.swiggy.com',
+    careers_url: 'https://careers.swiggy.com/',
+    category: 'Hospitality & Retail',
+  },
+  'Armani Exchange': {
+    website: 'https://www.armaniexchange.com',
+    careers_url: 'https://career5.successfactors.eu/career?company=3397177P',
     category: 'Hospitality & Retail',
   },
 };
@@ -645,21 +660,18 @@ export async function fetchAdminCompanies() {
     const knownDefault = KNOWN_COMPANY_DEFAULTS[comp.name] || {};
     const local = localOverrides[comp.name] || {};
 
-    const isAutoSeededDb =
-      !dbRecord ||
-      dbRecord.notes === 'Synthesized official company portal' ||
-      dbRecord.notes === 'Curated priority employer for Visakhapatnam';
-
     const website =
       local.website ||
-      (isAutoSeededDb ? knownDefault.website || dbRecord?.website : dbRecord?.website || knownDefault.website) ||
+      dbRecord?.website ||
+      knownDefault.website ||
       employerProfile?.website ||
       inferWebsiteFromUrl(comp.sampleUrl) ||
       '';
 
     const careersUrl =
       local.careers_url ||
-      (isAutoSeededDb ? knownDefault.careers_url || dbRecord?.careers_url : dbRecord?.careers_url || knownDefault.careers_url) ||
+      dbRecord?.careers_url ||
+      knownDefault.careers_url ||
       '';
 
     const category =
@@ -944,8 +956,8 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       const known = KNOWN_COMPANY_DEFAULTS[c.name] || {};
       const sector = mapCategoryToSector(local.category || c.category || known.category);
       const activeJobsCount = exactJobCounts.get(key) || 0;
-      const website = local.website || known.website || c.website || '';
-      const careersUrl = local.careers_url || known.careers_url || c.careers_url || '';
+      const website = local.website || c.website || known.website || '';
+      const careersUrl = local.careers_url || c.careers_url || known.careers_url || '';
 
       return {
         id: c.id,
@@ -982,3 +994,32 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
 
   return result;
 }
+
+/**
+ * Automatically visits a company website and discovers the live career portal URL.
+ * Calls /api/fetch-career-portal.
+ */
+export async function detectCareerPortalFromWebsite(websiteUrl, companyName = '') {
+  if (!websiteUrl || !websiteUrl.trim()) {
+    throw new Error('Company website URL is required.');
+  }
+
+  const res = await fetch('/api/fetch-career-portal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      website: websiteUrl.trim(),
+      companyName: companyName?.trim() || '',
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'Could not detect an active career portal from this website.');
+  }
+
+  return data;
+}
+

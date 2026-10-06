@@ -17,7 +17,9 @@
     "youtube:oauth-setup": "node scripts/youtube-oauth-setup.mjs",
     "drive:oauth-setup": "node scripts/drive-oauth-setup.mjs",
     "auto:company-careers": "node scripts/auto-company-careers.mjs",
-    "prune:jobs": "node scripts/prune-stale-jobs.mjs"
+    "auto:fetch-career-portals": "node scripts/fetch-company-career-portals.mjs",
+    "prune:jobs": "node scripts/prune-stale-jobs.mjs",
+    "audit:daily-function": "node scripts/daily-code-audit.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1097.0",

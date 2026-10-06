@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -7,14 +7,7 @@ import EmployerShell from '../components/employer/EmployerShell';
 import ApplicationExportDialog from '../components/jobApplications/ApplicationExportDialog';
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
 import JobApplicationTable from '../components/jobApplications/JobApplicationTable';
-import {
-  ALL_APPLICATION_STATUSES,
-  filterApplicationsByStatus,
-} from '../lib/applicationFilters';
-import {
-  formatApplicationStatus,
-  normalizeApplicationStatus,
-} from '../lib/applicationStatus';
+import { normalizeApplicationStatus } from '../lib/applicationStatus';
 import {
   fetchJobCandidates,
   updateApplicationStatus,
@@ -104,7 +97,7 @@ function EmployerJobApplicationsContent() {
   const [error, setError] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
 
-  const loadData = async (ignoreFlag = false) => {
+  const loadData = useCallback(async (ignoreFlag = false) => {
     try {
       const [jobs, rows] = await Promise.all([fetchMyJobs(), fetchJobCandidates(jobId)]);
       let matchedJob = jobs.find((row) => row.id === jobId) || null;
@@ -131,7 +124,7 @@ function EmployerJobApplicationsContent() {
         setIsRefreshing(false);
       }
     }
-  };
+  }, [jobId]);
 
   useEffect(() => {
     let ignore = false;
@@ -139,7 +132,7 @@ function EmployerJobApplicationsContent() {
     return () => {
       ignore = true;
     };
-  }, [jobId]);
+  }, [loadData]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

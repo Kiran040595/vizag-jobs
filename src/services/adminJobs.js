@@ -46,7 +46,6 @@ const REQUIRED_DEFAULTS = {
   experience: '',
 };
 
-const SUPPORTED_SQL_TABLE_PATTERN = /^insert\s+into\s+(?:public\.)?jobs\s*\(([\s\S]*?)\)\s*values\s*\(([\s\S]*?)\)\s*;?\s*$/i;
 const SUPPORTED_JOB_COLUMNS = new Set([
   'slug',
   'title',
@@ -370,7 +369,7 @@ export const parseSqlInsertToRecords = (sqlQuery) => {
       throw new Error('No VALUES found in SQL query.');
     }
 
-    tuples.forEach((tuple, tupleIdx) => {
+    tuples.forEach((tuple) => {
       const values = splitTopLevelCommaValues(tuple);
       if (columns.length !== values.length) {
         throw new Error(

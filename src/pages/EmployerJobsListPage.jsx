@@ -14,7 +14,6 @@ import { fetchJobApplicationStats } from '../services/jobApplications';
 import {
   formatApplicationCountNoun,
   resolveJobApplicationCount,
-  resolveOnPlatformApplicationCount,
 } from '../lib/jobApplicationCount';
 
 const STATUS_STYLES = {
