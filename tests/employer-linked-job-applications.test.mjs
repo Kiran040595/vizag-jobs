@@ -110,7 +110,7 @@ assert.match(
   'EmployerJobApplicationsPage must provide Excel export dialog for applicants',
 );
 
-// 7. Verify fetchJobCandidates in jobApplications.js
+// 7. Verify fetchJobCandidates and updateCandidatePipelineStage in jobApplications.js
 const jobApplicationsServicePath = path.join(repoRoot, 'src/services/jobApplications.js');
 assert.ok(existsSync(jobApplicationsServicePath), 'jobApplications.js must exist');
 const jobApplicationsServiceSrc = readFileSync(jobApplicationsServicePath, 'utf8');
@@ -125,5 +125,47 @@ assert.match(
   /get_job_applicant_records/,
   'fetchJobCandidates must invoke get_job_applicant_records RPC',
 );
+assert.match(
+  jobApplicationsServiceSrc,
+  /export const updateCandidatePipelineStage = async/,
+  'jobApplications.js must export updateCandidatePipelineStage',
+);
+assert.match(
+  jobApplicationsServiceSrc,
+  /update_job_applicant_stage/,
+  'updateCandidatePipelineStage must invoke update_job_applicant_stage RPC',
+);
 
-console.log('✓ All employer linked job applications verification tests passed successfully!');
+// 8. Verify update_job_applicant_stage migration
+const stageMigrationPath = path.join(repoRoot, 'supabase/migrations/20261006_update_job_applicant_stage.sql');
+assert.ok(existsSync(stageMigrationPath), '20261006_update_job_applicant_stage.sql must exist');
+const stageMigrationSrc = readFileSync(stageMigrationPath, 'utf8');
+assert.match(
+  stageMigrationSrc,
+  /create or replace function public\.update_job_applicant_stage/,
+  'Migration must create update_job_applicant_stage function',
+);
+
+// 9. Verify EmployerJobApplicationsPage renders ATS pipeline funnel and table view
+assert.match(
+  applicationsPageSrc,
+  /JobApplicationTable/,
+  'EmployerJobApplicationsPage must import and support JobApplicationTable',
+);
+assert.match(
+  applicationsPageSrc,
+  /FUNNEL_STAGES/,
+  'EmployerJobApplicationsPage must define and display FUNNEL_STAGES',
+);
+
+// 10. Verify JobApplicationCard and JobApplicationTable exist and provide WhatsApp/Resume access
+const cardPath = path.join(repoRoot, 'src/components/jobApplications/JobApplicationCard.jsx');
+assert.ok(existsSync(cardPath), 'JobApplicationCard.jsx must exist');
+const cardSrc = readFileSync(cardPath, 'utf8');
+assert.match(cardSrc, /buildWhatsAppContactUrl/, 'JobApplicationCard must support direct WhatsApp contact');
+assert.match(cardSrc, /getApplicationResumeUrl/, 'JobApplicationCard must support viewing resumes');
+
+const tablePath = path.join(repoRoot, 'src/components/jobApplications/JobApplicationTable.jsx');
+assert.ok(existsSync(tablePath), 'JobApplicationTable.jsx must exist');
+
+console.log('✓ All employer linked job applications and pipeline stage verification tests passed successfully!');

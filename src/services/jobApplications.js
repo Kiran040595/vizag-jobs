@@ -299,49 +299,111 @@ export const submitJobApplication = async ({ jobId, coverNote, resumeFile, exist
   return mapApplication(data);
 };
 
-export const updateApplicationStatus = async ({ applicationId, status }) => {
+export const updateCandidatePipelineStage = async ({
+  applicationId,
+  jobId,
+  studentUserId,
+  status,
+  recruiterNotes = null,
+  interviewScheduledAt = null,
+  interviewMode = null,
+  interviewLocation = null,
+  interviewInstructions = null,
+  clearInterview = false,
+}) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured.');
   }
 
-  const normalizedStatus = normalizeApplicationStatus(status);
-  if (!APPLICATION_STATUSES_SET.has(normalizedStatus)) {
+  const normalizedStatus = status ? normalizeApplicationStatus(status) : null;
+  if (normalizedStatus && !APPLICATION_STATUSES_SET.has(normalizedStatus)) {
     throw new Error('Invalid application status.');
   }
 
-  const { data, error } = await supabase
-    .from('job_applications')
-    .update({ status: normalizedStatus })
-    .eq('id', applicationId)
-    .select(APPLICATION_COLUMNS)
-    .single();
+  if (jobId) {
+    try {
+      const { data, error } = await supabase.rpc('update_job_applicant_stage', {
+        p_job_id: jobId,
+        p_candidate_id: applicationId || null,
+        p_student_user_id: studentUserId || null,
+        p_status: normalizedStatus || null,
+        p_recruiter_notes: recruiterNotes,
+        p_interview_scheduled_at: interviewScheduledAt ? new Date(interviewScheduledAt).toISOString() : null,
+        p_interview_mode: interviewMode || null,
+        p_interview_location: interviewLocation || null,
+        p_interview_instructions: interviewInstructions || null,
+        p_clear_interview: Boolean(clearInterview),
+      });
 
-  if (error) {
-    throw new Error(error.message);
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return mapApplication(data[0]);
+      }
+      if (error) {
+        console.warn('update_job_applicant_stage RPC returned error, attempting fallback:', error);
+      }
+    } catch (rpcErr) {
+      console.warn('update_job_applicant_stage exception, falling back:', rpcErr);
+    }
   }
 
-  return mapApplication(data);
+  const updates = {};
+  if (normalizedStatus) updates.status = normalizedStatus;
+  if (recruiterNotes !== null) updates.recruiter_notes = recruiterNotes;
+  if (clearInterview) {
+    updates.interview_scheduled_at = null;
+    updates.interview_location = null;
+    updates.interview_instructions = null;
+  } else if (interviewScheduledAt !== null) {
+    updates.interview_scheduled_at = new Date(interviewScheduledAt).toISOString();
+    if (interviewMode) updates.interview_mode = interviewMode;
+    if (interviewLocation !== null) updates.interview_location = interviewLocation;
+    if (interviewInstructions !== null) updates.interview_instructions = interviewInstructions;
+  }
+
+  if (applicationId && Object.keys(updates).length > 0) {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .update(updates)
+      .eq('id', applicationId)
+      .select(APPLICATION_COLUMNS)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return mapApplication(data);
+  }
+
+  throw new Error('Could not update application stage.');
 };
 
-export const updateApplicationRecruiterNotes = async ({ applicationId, recruiterNotes }) => {
-  if (!isSupabaseConfigured || !supabase || !applicationId) {
-    throw new Error('Supabase is not configured.');
-  }
+export const updateApplicationStatus = async ({
+  applicationId,
+  status,
+  jobId,
+  studentUserId,
+}) => {
+  return updateCandidatePipelineStage({
+    applicationId,
+    status,
+    jobId,
+    studentUserId,
+  });
+};
 
+export const updateApplicationRecruiterNotes = async ({
+  applicationId,
+  recruiterNotes,
+  jobId,
+  studentUserId,
+}) => {
   const trimmed = typeof recruiterNotes === 'string' ? recruiterNotes.trim() : '';
-
-  const { data, error } = await supabase
-    .from('job_applications')
-    .update({ recruiter_notes: trimmed || null })
-    .eq('id', applicationId)
-    .select(APPLICATION_COLUMNS)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return mapApplication(data);
+  return updateCandidatePipelineStage({
+    applicationId,
+    recruiterNotes: trimmed || null,
+    jobId,
+    studentUserId,
+  });
 };
 
 export const scheduleApplicationInterview = async ({
@@ -351,60 +413,32 @@ export const scheduleApplicationInterview = async ({
   interviewLocation = '',
   interviewInstructions = '',
   status = 'interview_scheduled',
+  jobId,
+  studentUserId,
 }) => {
-  if (!isSupabaseConfigured || !supabase || !applicationId) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const updates = {
-    interview_scheduled_at: interviewScheduledAt ? new Date(interviewScheduledAt).toISOString() : null,
-    interview_mode: interviewMode || 'in_person',
-    interview_location: interviewLocation ? interviewLocation.trim() : null,
-    interview_instructions: interviewInstructions ? interviewInstructions.trim() : null,
-  };
-
-  if (status) {
-    const normalizedStatus = normalizeApplicationStatus(status);
-    if (APPLICATION_STATUSES_SET.has(normalizedStatus)) {
-      updates.status = normalizedStatus;
-    }
-  }
-
-  const { data, error } = await supabase
-    .from('job_applications')
-    .update(updates)
-    .eq('id', applicationId)
-    .select(APPLICATION_COLUMNS)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return mapApplication(data);
+  return updateCandidatePipelineStage({
+    applicationId,
+    interviewScheduledAt,
+    interviewMode,
+    interviewLocation: interviewLocation ? interviewLocation.trim() : null,
+    interviewInstructions: interviewInstructions ? interviewInstructions.trim() : null,
+    status,
+    jobId,
+    studentUserId,
+  });
 };
 
-export const cancelApplicationInterview = async ({ applicationId }) => {
-  if (!isSupabaseConfigured || !supabase || !applicationId) {
-    throw new Error('Supabase is not configured.');
-  }
-
-  const { data, error } = await supabase
-    .from('job_applications')
-    .update({
-      interview_scheduled_at: null,
-      interview_location: null,
-      interview_instructions: null,
-    })
-    .eq('id', applicationId)
-    .select(APPLICATION_COLUMNS)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return mapApplication(data);
+export const cancelApplicationInterview = async ({
+  applicationId,
+  jobId,
+  studentUserId,
+}) => {
+  return updateCandidatePipelineStage({
+    applicationId,
+    clearInterview: true,
+    jobId,
+    studentUserId,
+  });
 };
 
 export const getApplicationResumeUrl = async (application) =>
