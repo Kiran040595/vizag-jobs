@@ -167,6 +167,52 @@ export const fetchJobApplications = async (jobId) => {
   return (data || []).map(mapApplication);
 };
 
+export const fetchJobCandidates = async (jobId) => {
+  if (!isSupabaseConfigured || !supabase || !jobId) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_job_applicant_records', {
+      p_job_id: jobId,
+    });
+
+    if (!error && Array.isArray(data)) {
+      return data.map((row) => ({
+        id: row.id,
+        jobId: row.job_id,
+        studentUserId: row.user_id,
+        status: normalizeApplicationStatus(row.status),
+        source: row.source,
+        coverNote: row.cover_note || '',
+        resumePath: row.resume_path || '',
+        resumeShareToken: row.resume_share_token || '',
+        profileSnapshot: {
+          fullName: row.full_name || '',
+          phone: row.phone || '',
+          contactEmail: row.email || '',
+          college: row.college || '',
+          degree: row.degree || '',
+          branch: row.branch || '',
+          graduationYear: row.graduation_year ?? null,
+          skills: Array.isArray(row.skills) ? row.skills : [],
+          isFresher: row.is_fresher !== false,
+        },
+        recruiterNotes: row.recruiter_notes || '',
+        interviewScheduledAt: row.interview_scheduled_at || null,
+        interviewMode: row.interview_mode || 'in_person',
+        interviewLocation: row.interview_location || '',
+        interviewInstructions: row.interview_instructions || '',
+        submittedAt: row.created_at,
+      }));
+    }
+  } catch (rpcError) {
+    console.warn('get_job_applicant_records RPC failed, falling back to fetchJobApplications:', rpcError);
+  }
+
+  return fetchJobApplications(jobId);
+};
+
 export const fetchJobApplicationCounts = async (jobIds = []) => {
   const stats = await fetchJobApplicationStats(jobIds);
   return stats.byJobId;

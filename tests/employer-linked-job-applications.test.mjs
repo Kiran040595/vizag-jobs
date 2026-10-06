@@ -77,8 +77,8 @@ const jobsListPageSrc = readFileSync(jobsListPagePath, 'utf8');
 
 assert.match(
   jobsListPageSrc,
-  /resolveOnPlatformApplicationCount\(job, applicationCounts\)\s*>\s*0/,
-  'EmployerJobsListPage must check for on-platform application count',
+  /resolveJobApplicationCount\(job,\s*applicationCounts\)/,
+  'EmployerJobsListPage must compute total candidate count including apply clicks',
 );
 
 assert.match(
@@ -87,15 +87,15 @@ assert.match(
   'EmployerJobsListPage must link to the job applications page',
 );
 
-// 6. Verify EmployerJobApplicationsPage loads applications and handles status & fallback
+// 6. Verify EmployerJobApplicationsPage loads candidates via fetchJobCandidates
 const applicationsPagePath = path.join(repoRoot, 'src/pages/EmployerJobApplicationsPage.jsx');
 assert.ok(existsSync(applicationsPagePath), 'EmployerJobApplicationsPage.jsx must exist');
 const applicationsPageSrc = readFileSync(applicationsPagePath, 'utf8');
 
 assert.match(
   applicationsPageSrc,
-  /fetchJobApplications\(jobId\)/,
-  'EmployerJobApplicationsPage must call fetchJobApplications(jobId)',
+  /fetchJobCandidates\(jobId\)/,
+  'EmployerJobApplicationsPage must call fetchJobCandidates(jobId) to include both applications and apply clicks',
 );
 
 assert.match(
@@ -108,6 +108,22 @@ assert.match(
   applicationsPageSrc,
   /ApplicationExportDialog/,
   'EmployerJobApplicationsPage must provide Excel export dialog for applicants',
+);
+
+// 7. Verify fetchJobCandidates in jobApplications.js
+const jobApplicationsServicePath = path.join(repoRoot, 'src/services/jobApplications.js');
+assert.ok(existsSync(jobApplicationsServicePath), 'jobApplications.js must exist');
+const jobApplicationsServiceSrc = readFileSync(jobApplicationsServicePath, 'utf8');
+
+assert.match(
+  jobApplicationsServiceSrc,
+  /export const fetchJobCandidates = async/,
+  'jobApplications.js must export fetchJobCandidates',
+);
+assert.match(
+  jobApplicationsServiceSrc,
+  /get_job_applicant_records/,
+  'fetchJobCandidates must invoke get_job_applicant_records RPC',
 );
 
 console.log('✓ All employer linked job applications verification tests passed successfully!');

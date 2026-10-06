@@ -13,6 +13,7 @@ import { fetchMyJobs } from '../services/employerJobs';
 import { fetchJobApplicationStats } from '../services/jobApplications';
 import {
   formatApplicationCountNoun,
+  resolveJobApplicationCount,
   resolveOnPlatformApplicationCount,
 } from '../lib/jobApplicationCount';
 
@@ -41,7 +42,6 @@ function EmployerJobsListContent() {
   const [jobs, setJobs] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
   const [statusCounts, setStatusCounts] = useState({});
-  const [totalApplications, setTotalApplications] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -75,7 +75,6 @@ function EmployerJobsListContent() {
             if (!ignore) {
               setApplicationCounts(stats.byJobId);
               setStatusCounts(stats.byStatus);
-              setTotalApplications(stats.total);
             }
           } catch (error) {
             console.warn('Could not load employer application stats:', error);
@@ -107,6 +106,13 @@ function EmployerJobsListContent() {
       })),
     [statusCounts],
   );
+
+  const totalApplications = useMemo(() => {
+    return jobs.reduce(
+      (sum, job) => sum + resolveJobApplicationCount(job, applicationCounts),
+      0,
+    );
+  }, [jobs, applicationCounts]);
 
   return (
     <EmployerShell title="My job submissions" description="Track pending, live, and rejected listings.">
@@ -150,64 +156,65 @@ function EmployerJobsListContent() {
         </div>
       ) : (
         <div className="space-y-4">
-          {jobs.map((job) => (
-            <article key={job.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${
-                        STATUS_STYLES[job.status] || STATUS_STYLES.draft
-                      }`}
-                    >
-                      {statusLabel(job)}
-                    </span>
-                    {job.apply_mode === 'internal' ? (
-                      <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
-                        On-platform apply
+          {jobs.map((job) => {
+            const candidateCount = resolveJobApplicationCount(job, applicationCounts);
+            return (
+              <article key={job.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${
+                          STATUS_STYLES[job.status] || STATUS_STYLES.draft
+                        }`}
+                      >
+                        {statusLabel(job)}
                       </span>
+                      {job.apply_mode === 'internal' ? (
+                        <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase text-indigo-700">
+                          On-platform apply
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600">{job.company}</p>
+                    {job.rejection_reason ? (
+                      <p className="mt-2 text-sm text-rose-700">Reason: {job.rejection_reason}</p>
+                    ) : null}
+                    {job.apply_mode === 'internal' || candidateCount > 0 ? (
+                      <p className="mt-2 text-sm text-slate-600">
+                        <Link
+                          to={`/employer/jobs/${job.id}/applications`}
+                          className="font-medium text-cyan-700 underline hover:text-cyan-800"
+                        >
+                          {formatApplicationCountNoun(candidateCount)}
+                        </Link>
+                      </p>
                     ) : null}
                   </div>
-                  <p className="mt-1 text-sm text-slate-600">{job.company}</p>
-                  {job.rejection_reason ? (
-                    <p className="mt-2 text-sm text-rose-700">Reason: {job.rejection_reason}</p>
-                  ) : null}
-                  {job.apply_mode === 'internal' ||
-                  resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
-                    <p className="mt-2 text-sm text-slate-600">
+                  <div className="flex flex-wrap gap-2">
+                    {job.apply_mode === 'internal' || candidateCount > 0 ? (
                       <Link
                         to={`/employer/jobs/${job.id}/applications`}
-                        className="font-medium text-cyan-700 underline hover:text-cyan-800"
+                        className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
                       >
-                        {formatApplicationCountNoun(resolveOnPlatformApplicationCount(job, applicationCounts))}
+                        View applications ({candidateCount})
                       </Link>
-                    </p>
-                  ) : null}
+                    ) : null}
+                    {['pending', 'draft'].includes(job.status) ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
+                        className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {job.apply_mode === 'internal' ||
-                  resolveOnPlatformApplicationCount(job, applicationCounts) > 0 ? (
-                    <Link
-                      to={`/employer/jobs/${job.id}/applications`}
-                      className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
-                    >
-                      View applications ({resolveOnPlatformApplicationCount(job, applicationCounts)})
-                    </Link>
-                  ) : null}
-                  {['pending', 'draft'].includes(job.status) ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
-                      className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Edit
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </EmployerShell>

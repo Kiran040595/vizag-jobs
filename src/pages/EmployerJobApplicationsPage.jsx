@@ -13,7 +13,7 @@ import {
 } from '../lib/applicationFilters';
 import { summarizeApplicationStatuses } from '../lib/applicationExport';
 import {
-  fetchJobApplications,
+  fetchJobCandidates,
   formatApplicationStatus,
   updateApplicationStatus,
 } from '../services/jobApplications';
@@ -33,7 +33,7 @@ function EmployerJobApplicationsContent() {
 
     const load = async () => {
       try {
-        const [jobs, rows] = await Promise.all([fetchMyJobs(), fetchJobApplications(jobId)]);
+        const [jobs, rows] = await Promise.all([fetchMyJobs(), fetchJobCandidates(jobId)]);
         let matchedJob = jobs.find((row) => row.id === jobId) || null;
         if (!matchedJob && jobId) {
           try {
