@@ -2,7 +2,7 @@
   {
     "name": "Pfizer",
     "website": "https://www.pfizer.com",
-    "careers_url": "https://www.pfizer.com/about/careers",
+    "careers_url": "https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098",
     "category": "Healthcare",
     "location": "Visakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -20,7 +20,7 @@
   {
     "name": "Conduent",
     "website": "https://www.conduent.com",
-    "careers_url": "https://jobs.conduent.com",
+    "careers_url": "https://careers.conduent.com/us/en",
     "category": "BPO / Customer Support",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -29,7 +29,7 @@
   {
     "name": "Axis Max Life Insurance",
     "website": "https://www.maxlifeinsurance.com",
-    "careers_url": "https://www.maxlifeinsurance.com/careers",
+    "careers_url": "https://www.axismaxlife.com/careers",
     "category": "Banking & Finance",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -37,8 +37,8 @@
   },
   {
     "name": "Bajaj Finance",
-    "website": "https://www.bajajfinserv.in/finance",
-    "careers_url": "https://www.bajajfinserv.in/careers",
+    "website": "https://www.bajajfinserv.in",
+    "careers_url": "https://www.bajajfinserv.in/insights/careers",
     "category": "Banking & Finance",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -47,7 +47,7 @@
   {
     "name": "Bajaj Finserv",
     "website": "https://www.bajajfinserv.in",
-    "careers_url": "https://www.bajajfinserv.in/careers",
+    "careers_url": "https://www.bajajfinserv.in/insights/careers",
     "category": "Banking & Finance",
     "location": "Kasimkota, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -56,7 +56,7 @@
   {
     "name": "Benovymed Healthcare",
     "website": "https://benovymed.com",
-    "careers_url": "https://benovymed.com/careers",
+    "careers_url": "https://benovymed.com/career-opportunity/",
     "category": "Healthcare",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -65,7 +65,7 @@
   {
     "name": "WNS",
     "website": "https://www.wns.com",
-    "careers_url": "https://www.wns.com/careers",
+    "careers_url": "https://www.wns.com/about-us/careers",
     "category": "BPO / Customer Support",
     "location": "Pendurthi, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -83,7 +83,7 @@
   {
     "name": "Kotak Mahindra Bank",
     "website": "https://www.kotak.com",
-    "careers_url": "https://www.kotak.com/en/careers.html",
+    "careers_url": "https://www.kotak.bank.in/en/about-us/careers.html",
     "category": "Banking & Finance",
     "location": "Visakhapatnam Rural mandal, India",
     "is_active_for_scrape": true,
@@ -92,7 +92,7 @@
   {
     "name": "Accor",
     "website": "https://all.accor.com",
-    "careers_url": "https://careers.accor.com",
+    "careers_url": "https://careers.accor.com/",
     "category": "Hospitality & Retail",
     "location": "Greater Visakhapatnam Area",
     "is_active_for_scrape": true,
@@ -110,7 +110,7 @@
   {
     "name": "GITAM Deemed University",
     "website": "https://www.gitam.edu",
-    "careers_url": "https://www.gitam.edu/careers",
+    "careers_url": "https://careers.gitam.edu/",
     "category": "Education",
     "location": "Visakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -137,7 +137,7 @@
   {
     "name": "DBS Bank",
     "website": "https://www.dbs.com",
-    "careers_url": "https://www.dbs.com/careers",
+    "careers_url": "https://www.dbs.com/careers/default.page",
     "category": "Banking & Finance",
     "location": "MVP Colony, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -155,7 +155,7 @@
   {
     "name": "Asian Paints",
     "website": "https://www.asianpaints.com",
-    "careers_url": "https://careers.asianpaints.com",
+    "careers_url": "https://careers.asianpaints.com/",
     "category": "Manufacturing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -182,7 +182,7 @@
   {
     "name": "Miracle Software Systems Inc.",
     "website": "https://www.miraclesoft.com",
-    "careers_url": "https://www.miraclesoft.com/careers/openings",
+    "careers_url": "https://careers.miraclesoft.com/",
     "category": "IT & Software",
     "location": "Visakhapatnam (Vizag)",
     "is_active_for_scrape": true,
@@ -209,7 +209,7 @@
   {
     "name": "Hetero",
     "website": "https://www.hetero.com",
-    "careers_url": "https://www.hetero.com/careers",
+    "careers_url": "https://www.heterohealthcare.com/careers",
     "category": "Healthcare",
     "location": "Andhra University, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -218,7 +218,7 @@
   {
     "name": "Turing",
     "website": "https://www.turing.com",
-    "careers_url": "https://www.turing.com/jobs",
+    "careers_url": "https://work.turing.com/jobs?interest=software-engineer",
     "category": "IT & Software",
     "location": "Vishakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -227,7 +227,7 @@
   {
     "name": "Miracle Software Systems",
     "website": "https://www.miraclesoft.com",
-    "careers_url": "https://www.miraclesoft.com/careers/openings",
+    "careers_url": "https://careers.miraclesoft.com/",
     "category": "IT & Software",
     "location": "Visakhapatnam (Vizag)",
     "is_active_for_scrape": true,
@@ -236,7 +236,7 @@
   {
     "name": "XTGlobal",
     "website": "https://www.xtglobal.com",
-    "careers_url": "https://www.xtglobal.com/careers",
+    "careers_url": "https://xtglobal.com/careers/",
     "category": "IT & Software",
     "location": "Vizag, Hyderabad",
     "is_active_for_scrape": true,
@@ -245,7 +245,7 @@
   {
     "name": "Infosys",
     "website": "https://www.infosys.com",
-    "careers_url": "https://www.infosys.com/careers.html",
+    "careers_url": "https://www.infosys.com/careers/",
     "category": "IT & Software",
     "location": "Visakhapatnam (Vizag)",
     "is_active_for_scrape": true,
@@ -281,7 +281,7 @@
   {
     "name": "Indus Towers",
     "website": "https://www.industowers.com",
-    "careers_url": "https://www.industowers.com/careers",
+    "careers_url": "https://www.industowers.com/careers/",
     "category": "Manufacturing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -316,8 +316,8 @@
   },
   {
     "name": "SITARAM MOTORS",
-    "website": "https://sitarammotors.com",
-    "careers_url": "https://sitarammotors.com/careers",
+    "website": "https://sitarammotors.royalenfield.com",
+    "careers_url": "https://sitarammotors.royalenfield.com",
     "category": "Sales & Marketing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -326,7 +326,7 @@
   {
     "name": "Tech Mahindra",
     "website": "https://www.techmahindra.com",
-    "careers_url": "https://careers.techmahindra.com",
+    "careers_url": "https://careers.techmahindra.com/",
     "category": "IT & Software",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -334,8 +334,8 @@
   },
   {
     "name": "Pema Wellness Retreat",
-    "website": "https://pemawellness.co",
-    "careers_url": "https://pemawellness.co/careers",
+    "website": "https://www.pemawellness.com",
+    "careers_url": "https://pemawellness.com",
     "category": "Hospitality & Retail",
     "location": "Greater Visakhapatnam Area",
     "is_active_for_scrape": true,
@@ -353,7 +353,7 @@
   {
     "name": "Marriott",
     "website": "https://www.marriott.com",
-    "careers_url": "https://careers.marriott.com",
+    "careers_url": "https://careers.marriott.com/",
     "category": "Hospitality & Retail",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -362,7 +362,7 @@
   {
     "name": "JLL",
     "website": "https://www.jll.co.in",
-    "careers_url": "https://careers.jll.com",
+    "careers_url": "https://www.jll.co.in/en/careers",
     "category": "General",
     "location": "Visakhapatnam Rural mandal, India",
     "is_active_for_scrape": true,
@@ -406,8 +406,8 @@
   },
   {
     "name": "PBL Transport Corporation Private Limited",
-    "website": "https://pbltransport.com",
-    "careers_url": "https://pbltransport.com/careers",
+    "website": "https://www.pbltransport.co.in/",
+    "careers_url": "https://jobs.pbltransport.co.in/jobs/Careers",
     "category": "Logistics & Supply Chain",
     "location": "Greater Visakhapatnam Area",
     "is_active_for_scrape": true,
@@ -488,7 +488,7 @@
   {
     "name": "GMR Group",
     "website": "https://www.gmrgroup.in",
-    "careers_url": "https://www.gmrgroup.in/careers/",
+    "careers_url": "https://careers.gmrgroup.in/",
     "category": "Manufacturing",
     "location": "Greater Visakhapatnam Area",
     "is_active_for_scrape": true,
@@ -506,7 +506,7 @@
   {
     "name": "IDFC FIRST Bank",
     "website": "https://www.idfcfirstbank.com",
-    "careers_url": "https://www.idfcfirstbank.com/careers",
+    "careers_url": "https://careers.idfcfirst.bank.in/in/en/home?utm_source=website&utm_medium=L1TheBankCareers&utm_campaign=Careers",
     "category": "Banking & Finance",
     "location": "Visakhapatnam Rural mandal, India",
     "is_active_for_scrape": true,
@@ -532,8 +532,8 @@
   },
   {
     "name": "PBL Transport Corporation",
-    "website": "https://pbltransport.com",
-    "careers_url": "https://pbltransport.com/careers",
+    "website": "https://www.pbltransport.co.in/",
+    "careers_url": "https://jobs.pbltransport.co.in/jobs/Careers",
     "category": "Logistics & Supply Chain",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -542,7 +542,7 @@
   {
     "name": "Adani Group",
     "website": "https://www.adani.com",
-    "careers_url": "https://www.adani.com/careers",
+    "careers_url": "https://careers.adani.com",
     "category": "Manufacturing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -551,7 +551,7 @@
   {
     "name": "AU SMALL FINANCE BANK",
     "website": "https://www.aubank.in",
-    "careers_url": "https://www.aubank.in/careers",
+    "careers_url": "https://www.au.bank.in/careers",
     "category": "Banking & Finance",
     "location": "Anakapalle, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -560,7 +560,7 @@
   {
     "name": "Miraclesoft",
     "website": "https://www.miraclesoft.com",
-    "careers_url": "https://www.miraclesoft.com/careers/openings",
+    "careers_url": "https://careers.miraclesoft.com/",
     "category": "IT & Software",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -587,7 +587,7 @@
   {
     "name": "brandix",
     "website": "https://brandix.com",
-    "careers_url": "https://brandix.com/careers",
+    "careers_url": "https://careers.brandix.com/",
     "category": "Manufacturing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -605,7 +605,7 @@
   {
     "name": "JSE Engineering",
     "website": "https://www.jseengineering.com",
-    "careers_url": "https://www.jseengineering.com/careers",
+    "careers_url": "https://jseacademy.com/contact-us/",
     "category": "Civil Engineering",
     "location": "Visakhapatnam (Vizag)",
     "is_active_for_scrape": true,
@@ -677,7 +677,7 @@
   {
     "name": "HomeLane",
     "website": "https://www.homelane.com",
-    "careers_url": "https://www.homelane.com/careers",
+    "careers_url": "https://homelane.darwinbox.in/ms/candidatev2/a6817a5ec3524e/careers/allJobs",
     "category": "Sales & Marketing",
     "location": "Vishakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -713,7 +713,7 @@
   {
     "name": "Cognizant",
     "website": "https://www.cognizant.com",
-    "careers_url": "https://careers.cognizant.com/global/en",
+    "careers_url": "https://careers.cognizant.com/india-en/",
     "category": "IT & Software",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -721,8 +721,8 @@
   },
   {
     "name": "iMerit",
-    "website": "https://imerit.net",
-    "careers_url": "https://imerit.net/careers/",
+    "website": "https://imerit.ai",
+    "careers_url": "https://imerit.ai/careers/",
     "category": "IT & Software",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -758,7 +758,7 @@
   {
     "name": "Ujjivan Small Finance Bank",
     "website": "https://www.ujjivansfb.in",
-    "careers_url": "https://www.ujjivansfb.in/careers",
+    "careers_url": "https://www.ujjivansfb.bank.in/careers-home",
     "category": "Banking & Finance",
     "location": "Visakhapatnam Rural mandal, India",
     "is_active_for_scrape": true,
@@ -776,7 +776,7 @@
   {
     "name": "Benovymed Healthcare Private Ltd",
     "website": "https://benovymed.com",
-    "careers_url": "https://benovymed.com/careers",
+    "careers_url": "https://benovymed.com/career-opportunity/",
     "category": "Healthcare",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -803,7 +803,7 @@
   {
     "name": "XTGLOBAL",
     "website": "https://www.xtglobal.com",
-    "careers_url": "https://www.xtglobal.com/careers",
+    "careers_url": "https://xtglobal.com/careers/",
     "category": "IT & Software",
     "location": "Vizag (Hyderabad also available)",
     "is_active_for_scrape": true,
@@ -812,7 +812,7 @@
   {
     "name": "Miracle Software Systems Inc",
     "website": "https://www.miraclesoft.com",
-    "careers_url": "https://www.miraclesoft.com/careers/openings",
+    "careers_url": "https://careers.miraclesoft.com/",
     "category": "IT & Software",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -830,7 +830,7 @@
   {
     "name": "Teks Academy",
     "website": "https://teksacademy.com",
-    "careers_url": "https://teksacademy.com/careers",
+    "careers_url": "https://teksacademy.com/contact-us/",
     "category": "Education",
     "location": "Visakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -838,8 +838,8 @@
   },
   {
     "name": "MGM Healthcare",
-    "website": "https://mgmhealthcare.in",
-    "careers_url": "https://mgmhealthcare.in/careers/",
+    "website": "https://mgmsevenhills.in",
+    "careers_url": "https://mgmsevenhills.in/careers/",
     "category": "Healthcare",
     "location": "Vishakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -893,7 +893,7 @@
   {
     "name": "cult fit",
     "website": "https://www.cult.fit",
-    "careers_url": "https://www.cult.fit/careers",
+    "careers_url": "https://careers.cult.fit/cult/",
     "category": "Healthcare",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -929,7 +929,7 @@
   {
     "name": "Transasia Bio-Medicals Ltd.",
     "website": "https://transasia.co.in",
-    "careers_url": "https://transasia.co.in/careers",
+    "careers_url": "https://erbamannheim.com/careers",
     "category": "Healthcare",
     "location": "Vishakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -938,7 +938,7 @@
   {
     "name": "Lenskart",
     "website": "https://www.lenskart.com",
-    "careers_url": "https://lenskart.darwinbox.in/ms/candidatev2/main/careers",
+    "careers_url": "https://www.lenskart.com/careers-at-lenskart?tabId=allCountries",
     "category": "Hospitality & Retail",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1046,7 +1046,7 @@
   {
     "name": "Decorpot",
     "website": "https://www.decorpot.com",
-    "careers_url": "https://www.decorpot.com/careers",
+    "careers_url": "https://www.decorpot.com/contact-us",
     "category": "Sales & Marketing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1063,8 +1063,8 @@
   },
   {
     "name": "CSB Bank",
-    "website": "https://www.csb.co.in",
-    "careers_url": "https://www.csb.co.in/careers",
+    "website": "https://www.csb.bank.in",
+    "careers_url": "https://www.csb.bank.in/careers",
     "category": "Banking & Finance",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1117,8 +1117,8 @@
   },
   {
     "name": "Mdn Edify Education",
-    "website": "https://www.mdnedifyeducation.com",
-    "careers_url": "https://www.mdnedifyeducation.com/careers",
+    "website": "https://edifyschools.com",
+    "careers_url": "https://edifyschools.com/career/",
     "category": "Sales & Marketing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1154,7 +1154,7 @@
   {
     "name": "Deccan Fine Chemicals",
     "website": "https://deccanfinechemicals.com",
-    "careers_url": "https://deccanfinechemicals.com/careers",
+    "careers_url": "https://deccanfinechemicals.com/career",
     "category": "Healthcare",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -1171,8 +1171,8 @@
   },
   {
     "name": "Kiya World School",
-    "website": "https://www.kiyaworldschool.com",
-    "careers_url": "https://www.kiyaworldschool.com/careers",
+    "website": "https://kiyaworldschool.com",
+    "careers_url": "https://kiyaworldschool.com",
     "category": "Sales & Marketing",
     "location": "Gambhiram, Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1181,7 +1181,7 @@
   {
     "name": "Aspiro Pharma",
     "website": "https://aspiropharma.com",
-    "careers_url": "https://aspiropharma.com/careers/",
+    "careers_url": "https://aspiropharma.com/careers.php",
     "category": "Healthcare",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -1190,7 +1190,7 @@
   {
     "name": "KONE",
     "website": "https://www.kone.in",
-    "careers_url": "https://www.kone.in/careers/",
+    "careers_url": "https://www.kone.in/about-kone/careers.html",
     "category": "Mechanical Engineering",
     "location": "Pendurthi, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -1199,7 +1199,7 @@
   {
     "name": "Indusind Bank",
     "website": "https://www.indusind.com",
-    "careers_url": "https://www.indusind.com/in/en/personal/careers.html",
+    "careers_url": "https://app1100.workline.hr/careers/",
     "category": "Banking & Finance",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1225,8 +1225,8 @@
   },
   {
     "name": "Sodexo",
-    "website": "https://in.sodexo.com",
-    "careers_url": "https://in.sodexo.com/careers",
+    "website": "https://www.sodexo.in",
+    "careers_url": "https://www.sodexo.in/careers",
     "category": "Hospitality & Retail",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -1234,8 +1234,8 @@
   },
   {
     "name": "DA VINCI INTERNATIONAL SCHOOL",
-    "website": "https://www.davinciinternationalschool.com",
-    "careers_url": "https://www.davinciinternationalschool.com/careers",
+    "website": "https://davincischool.in",
+    "careers_url": "https://davincischool.in/contact.html",
     "category": "Education",
     "location": "Anakapalle, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -1333,8 +1333,8 @@
   },
   {
     "name": "Kone",
-    "website": "https://www.kone.com",
-    "careers_url": "https://www.kone.com/careers",
+    "website": "https://www.kone.in",
+    "careers_url": "https://www.kone.in/about-kone/careers.html",
     "category": "Mechanical Engineering",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1460,7 +1460,7 @@
   {
     "name": "Patra Corporation",
     "website": "https://patracorp.com",
-    "careers_url": "https://patracorp.com/careers/",
+    "careers_url": "https://careers.patracorp.com/jobs",
     "category": "BPO / Customer Support",
     "location": "Vishakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -1577,7 +1577,7 @@
   {
     "name": "Eisai Pharmaceuticals India",
     "website": "https://www.eisai.co.in",
-    "careers_url": "https://www.eisai.co.in/careers/",
+    "careers_url": "https://www.eisai.co.in/",
     "category": "Healthcare",
     "location": "Visakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,
@@ -1594,8 +1594,8 @@
   },
   {
     "name": "Miracle software systems",
-    "website": "https://www.miraclesoftwaresystems.com",
-    "careers_url": "https://www.miraclesoftwaresystems.com/careers",
+    "website": "https://www.miraclesoft.com",
+    "careers_url": "https://careers.miraclesoft.com/",
     "category": "ECE / Electronics",
     "location": "Vizag, Hyderabad",
     "is_active_for_scrape": true,
@@ -1720,8 +1720,8 @@
   },
   {
     "name": "AU Small Finance Bank",
-    "website": "https://www.ausmallfinancebank.com",
-    "careers_url": "https://www.ausmallfinancebank.com/careers",
+    "website": "https://www.aubank.in",
+    "careers_url": "https://www.au.bank.in/careers",
     "category": "Banking & Finance",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1829,7 +1829,7 @@
   {
     "name": "Swiggy",
     "website": "https://www.swiggy.com",
-    "careers_url": "https://careers.swiggy.com",
+    "careers_url": "https://careers.swiggy.in/",
     "category": "Sales & Marketing",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -1883,7 +1883,7 @@
   {
     "name": "JSE Engineering Pvt. Ltd.",
     "website": "https://www.jseengineering.com",
-    "careers_url": "https://www.jseengineering.com/careers",
+    "careers_url": "https://jseacademy.com/contact-us/",
     "category": "Civil Engineering",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -1928,7 +1928,7 @@
   {
     "name": "Karur Vysya Bank",
     "website": "https://www.kvb.co.in",
-    "careers_url": "https://www.kvb.co.in/careers/",
+    "careers_url": "https://careers.karurvysya.bank.in",
     "category": "Banking & Finance",
     "location": "Chennai (Walk-in Interview), Vizag mentioned in hashtags",
     "is_active_for_scrape": true,
@@ -1982,7 +1982,7 @@
   {
     "name": "Armani Exchange",
     "website": "https://www.armaniexchange.com",
-    "careers_url": "https://www.armaniexchange.com",
+    "careers_url": "https://career5.successfactors.eu/career?company=3397177P",
     "category": "Hospitality & Retail",
     "location": "Vizag Inorbit Mall store",
     "is_active_for_scrape": false,
@@ -2260,8 +2260,8 @@
   },
   {
     "name": "airtel",
-    "website": "https://www.airtel.com",
-    "careers_url": "https://www.airtel.com/careers",
+    "website": "https://www.airtel.in",
+    "careers_url": "https://www.airtel.in/careers/",
     "category": "Sales & Marketing",
     "location": "Greater Visakhapatnam Area",
     "is_active_for_scrape": true,
@@ -2711,7 +2711,7 @@
   {
     "name": "Biocon",
     "website": "https://www.biocon.com",
-    "careers_url": "https://www.biocon.com/careers/",
+    "careers_url": "https://careers.biocon.com/",
     "category": "Healthcare",
     "location": "Vizag, Bangalore, Hyderabad",
     "is_active_for_scrape": true,
@@ -2800,8 +2800,8 @@
   },
   {
     "name": "Pfizer Healthcare India Private Limited - Vizag",
-    "website": "https://www.pfizerhealthcareindiavizag.in",
-    "careers_url": "https://www.pfizerhealthcareindiavizag.in/careers",
+    "website": "https://www.pfizer.com",
+    "careers_url": "https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098",
     "category": "Healthcare",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -3790,8 +3790,8 @@
   },
   {
     "name": "Imerit",
-    "website": "https://www.imerit.com",
-    "careers_url": "https://www.imerit.com/careers",
+    "website": "https://imerit.ai",
+    "careers_url": "https://imerit.ai/careers/",
     "category": "HR & Admin",
     "location": "Visakhapatnam",
     "is_active_for_scrape": false,
@@ -6248,7 +6248,7 @@
   {
     "name": "TATA CAPITAL",
     "website": "https://www.tatacapital.com",
-    "careers_url": "https://www.tatacapital.com/careers",
+    "careers_url": "https://www.tatacapital.com/careers.html",
     "category": "Sales & Marketing",
     "location": "Vizag",
     "is_active_for_scrape": true,
@@ -7454,7 +7454,7 @@
   {
     "name": "xtglobal",
     "website": "https://www.xtglobal.com",
-    "careers_url": "https://www.xtglobal.com/careers",
+    "careers_url": "https://xtglobal.com/careers/",
     "category": "IT & Software",
     "location": "Hyderabad",
     "is_active_for_scrape": true,
@@ -7679,7 +7679,7 @@
   {
     "name": "Foxconn",
     "website": "https://www.foxconn.com",
-    "careers_url": "https://www.foxconn.com/en-us/career",
+    "careers_url": "https://recruit.foxconn.com/isite-web-tw/",
     "category": "Manufacturing",
     "location": "Chennai",
     "is_active_for_scrape": true,
@@ -7993,8 +7993,8 @@
   },
   {
     "name": "SIMS College",
-    "website": "https://www.simsvizag.com",
-    "careers_url": "https://www.simsvizag.com",
+    "website": "http://www.simsvizag.com",
+    "careers_url": "http://www.simsvizag.com/contact-us.html",
     "category": "Education",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -8165,7 +8165,7 @@
   {
     "name": "Medicover Hospitals",
     "website": "https://www.medicoverhospitals.in",
-    "careers_url": "https://www.medicoverhospitals.in/careers",
+    "careers_url": "https://www.medicoverhospitals.in/careers/",
     "category": "Healthcare",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -10324,8 +10324,8 @@
   },
   {
     "name": "Brandix",
-    "website": "https://www.brandix.com",
-    "careers_url": "https://www.brandix.com/careers",
+    "website": "https://brandix.com",
+    "careers_url": "https://careers.brandix.com/",
     "category": "Mechanical Engineering",
     "location": "Vishakhapatnam, Andhra Pradesh, India",
     "is_active_for_scrape": true,

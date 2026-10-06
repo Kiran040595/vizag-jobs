@@ -82,8 +82,13 @@ export const KNOWN_COMPANY_DEFAULTS = {
     category: 'IT & Software',
   },
   'Symbiosis Technologies': {
-    website: 'http://symbiosistechnologies.com',
-    careers_url: 'http://symbiosistechnologies.com/careers/',
+    website: 'https://symbiosystech.com',
+    careers_url: 'https://symbiosystech.com/',
+    category: 'IT & Software',
+  },
+  'Symbiosys Technologies': {
+    website: 'https://symbiosystech.com',
+    careers_url: 'https://symbiosystech.com/',
     category: 'IT & Software',
   },
   'Mouri Tech': {
@@ -161,13 +166,13 @@ export const KNOWN_COMPANY_DEFAULTS = {
     category: 'Healthcare',
   },
   'Granules India': {
-    website: 'https://granulesindia.com',
-    careers_url: 'https://granulesindia.com/careers/',
+    website: 'https://www.granulesindia.com',
+    careers_url: 'https://www.granulesindia.com/careers/',
     category: 'Healthcare',
   },
   'Eisai Pharmaceuticals India': {
     website: 'https://www.eisai.co.in',
-    careers_url: 'https://www.eisai.co.in/careers',
+    careers_url: 'https://www.eisai.co.in/',
     category: 'Healthcare',
   },
   'Pulsus Healthtech': {
@@ -182,7 +187,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Apollo Hospitals': {
     website: 'https://www.apollohospitals.com',
-    careers_url: 'https://www.apollohospitals.com/careers/',
+    careers_url: 'https://www.apollohospitals.com/about-us/careers',
     category: 'Healthcare',
   },
   'Care Hospitals': {
@@ -224,7 +229,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // Manufacturing, Engineering & Infrastructure
   'Adani Group': {
     website: 'https://www.adani.com',
-    careers_url: 'https://www.adani.com/careers',
+    careers_url: 'https://careers.adani.com',
     category: 'Manufacturing',
   },
   'Asian Paints': {
@@ -237,6 +242,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://careers.brandix.com/',
     category: 'Manufacturing',
   },
+  'Brandix': {
+    website: 'https://brandix.com',
+    careers_url: 'https://careers.brandix.com/',
+    category: 'Manufacturing',
+  },
   'Foxconn': {
     website: 'https://www.foxconn.com',
     careers_url: 'https://recruit.foxconn.com/isite-web-tw/',
@@ -244,7 +254,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'GMR Group': {
     website: 'https://www.gmrgroup.in',
-    careers_url: 'https://www.gmrgroup.in/careers/',
+    careers_url: 'https://careers.gmrgroup.in/',
     category: 'Manufacturing',
   },
   'Indus Towers': {
@@ -254,7 +264,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'JLL': {
     website: 'https://www.jll.co.in',
-    careers_url: 'https://jll.wd1.myworkdayjobs.com/jllcareers',
+    careers_url: 'https://www.jll.co.in/en/careers',
     category: 'Manufacturing',
   },
   'JSE Engineering': {
@@ -332,13 +342,13 @@ export const KNOWN_COMPANY_DEFAULTS = {
 
   // Banking & Financial Services
   'Bajaj Finance': {
-    website: 'https://www.bajajfinserv.in/finance',
-    careers_url: 'https://www.bajajfinserv.in/careers',
+    website: 'https://www.bajajfinserv.in',
+    careers_url: 'https://www.bajajfinserv.in/insights/careers',
     category: 'Banking & Finance',
   },
   'Bajaj Finserv': {
     website: 'https://www.bajajfinserv.in',
-    careers_url: 'https://www.bajajfinserv.in/careers',
+    careers_url: 'https://www.bajajfinserv.in/insights/careers',
     category: 'Banking & Finance',
   },
   'Kotak Mahindra Bank': {
@@ -353,17 +363,17 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'AU SMALL FINANCE BANK': {
     website: 'https://www.aubank.in',
-    careers_url: 'https://www.aubank.in/careers',
+    careers_url: 'https://www.au.bank.in/careers',
     category: 'Banking & Finance',
   },
   'CSB Bank': {
-    website: 'https://www.csb.co.in',
-    careers_url: 'https://www.csb.co.in/careers',
+    website: 'https://www.csb.bank.in',
+    careers_url: 'https://www.csb.bank.in/careers',
     category: 'Banking & Finance',
   },
   'DBS Bank': {
     website: 'https://www.dbs.com',
-    careers_url: 'https://www.dbs.com/careers',
+    careers_url: 'https://www.dbs.com/careers/default.page',
     category: 'Banking & Finance',
   },
   'Indusind Bank': {
@@ -474,13 +484,13 @@ export const KNOWN_COMPANY_DEFAULTS = {
     category: 'Hospitality & Retail',
   },
   'Sodexo': {
-    website: 'https://in.sodexo.com',
+    website: 'https://www.sodexo.in',
     careers_url: 'https://www.sodexo.in/careers',
     category: 'Hospitality & Retail',
   },
   'Swiggy': {
     website: 'https://www.swiggy.com',
-    careers_url: 'https://careers.swiggy.com/',
+    careers_url: 'https://careers.swiggy.in/',
     category: 'Hospitality & Retail',
   },
   'Armani Exchange': {

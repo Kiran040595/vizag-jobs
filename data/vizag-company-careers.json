@@ -1,7 +1,42 @@
 [
   {
+    "name": "Conduent",
+    "careers_url": "https://careers.conduent.com/us/en",
+    "category": "BPO",
+    "location_hint": "Visakhapatnam, IT SEZ Hill No. 2 Rushikonda",
+    "active": true
+  },
+  {
+    "name": "Tata Consultancy Services",
+    "careers_url": "https://www.tcs.com/careers",
+    "category": "IT",
+    "location_hint": "Visakhapatnam",
+    "active": true
+  },
+  {
+    "name": "Infosys",
+    "careers_url": "https://www.infosys.com/careers.html",
+    "category": "IT",
+    "location_hint": "Visakhapatnam, Rushikonda IT Park",
+    "active": true
+  },
+  {
+    "name": "Tech Mahindra",
+    "careers_url": "https://careers.techmahindra.com",
+    "category": "IT",
+    "location_hint": "Visakhapatnam, Tech Mahindra SEZ Rushikonda",
+    "active": true
+  },
+  {
+    "name": "WNS",
+    "careers_url": "https://www.wns.com/about-us/careers",
+    "category": "BPO",
+    "location_hint": "Visakhapatnam, IT SEZ Rushikonda",
+    "active": true
+  },
+  {
     "name": "Miracle Software Systems",
-    "careers_url": "https://www.miraclesoft.com/careers/openings",
+    "careers_url": "https://careers.miraclesoft.com/",
     "category": "IT",
     "location_hint": "Visakhapatnam, Miracle City, Bhogapuram",
     "active": true
@@ -14,10 +49,17 @@
     "active": true
   },
   {
-    "name": "Symbiosis Technologies",
-    "careers_url": "https://symbiosistechnologies.com/careers/",
+    "name": "Symbiosys Technologies",
+    "careers_url": "https://symbiosystech.com/",
     "category": "IT",
     "location_hint": "Visakhapatnam, IT Park Rushikonda",
+    "active": true
+  },
+  {
+    "name": "Patra India",
+    "careers_url": "https://careers.patracorp.com/jobs",
+    "category": "BPO",
+    "location_hint": "Visakhapatnam",
     "active": true
   },
   {
@@ -29,21 +71,14 @@
   },
   {
     "name": "Eisai Pharmaceuticals India",
-    "careers_url": "https://www.eisai.co.in/careers/",
+    "careers_url": "https://www.eisai.co.in/",
     "category": "Pharma",
     "location_hint": "Visakhapatnam, Ramky Pharma City, Parawada",
     "active": true
   },
   {
-    "name": "Patra India",
-    "careers_url": "https://patracorp.com/careers/",
-    "category": "BPO",
-    "location_hint": "Visakhapatnam",
-    "active": true
-  },
-  {
     "name": "Granules India",
-    "careers_url": "https://granulesindia.com/careers/",
+    "careers_url": "https://www.granulesindia.com/careers/",
     "category": "Pharma",
     "location_hint": "Visakhapatnam",
     "active": true
@@ -53,6 +88,27 @@
     "careers_url": "https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098",
     "category": "Healthcare",
     "location_hint": "Visakhapatnam, Jawaharlal Nehru Pharma City, Parawada",
+    "active": true
+  },
+  {
+    "name": "Hetero",
+    "careers_url": "https://www.heterohealthcare.com/careers",
+    "category": "Pharma",
+    "location_hint": "Visakhapatnam",
+    "active": true
+  },
+  {
+    "name": "Adani Group",
+    "careers_url": "https://careers.adani.com",
+    "category": "Manufacturing",
+    "location_hint": "Visakhapatnam",
+    "active": true
+  },
+  {
+    "name": "Brandix",
+    "careers_url": "https://careers.brandix.com/",
+    "category": "Manufacturing",
+    "location_hint": "Visakhapatnam, Brandix India Apparel City, Atchutapuram",
     "active": true
   }
 ]
