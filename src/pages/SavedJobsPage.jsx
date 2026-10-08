@@ -40,14 +40,14 @@ export default function SavedJobsPage() {
         </div>
 
         {savedJobs.length === 0 ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 text-center sm:p-8 shadow-sm">
             <p className="text-base font-semibold text-slate-900">No saved jobs yet</p>
             <p className="mt-2 text-sm text-slate-600">
               Tap the bookmark icon on any job card to save it here for quick access.
             </p>
             <Link
               to="/jobs"
-              className="mt-5 inline-flex rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+              className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
             >
               Browse jobs
             </Link>
@@ -63,9 +63,9 @@ export default function SavedJobsPage() {
                 key={job.id}
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 sm:p-5"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-bold text-slate-900">{job.title}</h2>
+                    <h2 className="break-words text-lg font-bold text-slate-900">{job.title}</h2>
                     {company || location ? (
                       <p className="mt-1 text-sm text-slate-600">
                         {[company, location].filter(Boolean).join(' · ')}
@@ -76,20 +76,20 @@ export default function SavedJobsPage() {
                     ) : null}
                   </div>
 
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                     <button
                       type="button"
                       onClick={() => {
                         removeSavedJob(job.id);
                         pushToast({ message: 'Job removed from saved jobs.', type: 'success' });
                       }}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 sm:text-sm"
+                      className="min-h-11 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm sm:flex-none font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 sm:text-sm"
                     >
                       Remove
                     </button>
                     <FullJobDetailsLink
                       jobPath={job.jobPath || `/job/${job.slug || job.id}`}
-                      className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 sm:text-sm"
+                      className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm sm:flex-none font-semibold text-white transition hover:bg-blue-700 sm:text-sm"
                     >
                       View details
                     </FullJobDetailsLink>
