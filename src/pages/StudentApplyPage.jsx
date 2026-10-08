@@ -21,7 +21,7 @@ import { getJobGroupLink } from '../lib/jobGroupLink';
 import ApplySuccessGroupModal from '../components/ApplySuccessGroupModal';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
+  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
 
 function StudentApplyContent() {
   const { jobId } = useParams();
@@ -117,10 +117,6 @@ function StudentApplyContent() {
       const groupLink = getJobGroupLink(job);
       if (groupLink) {
         setShowGroupModal(true);
-      } else {
-        setTimeout(() => {
-          navigate(returnPath, { replace: true });
-        }, 1200);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not submit your application.');
@@ -150,9 +146,9 @@ function StudentApplyContent() {
 
       {!isLoading && job ? (
         <div className="space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Applying for</p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">{job.title}</h2>
+            <h2 className="mt-2 break-words text-xl font-black sm:text-2xl text-slate-950">{job.title}</h2>
             <p className="mt-1 text-sm text-slate-600">
               {displayCompanyName(job.company)} · {displayLocation(job.location)}
             </p>
@@ -175,7 +171,7 @@ function StudentApplyContent() {
               </Link>
             </section>
           ) : (
-            <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               {staffApplicant ? (
                 <p className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   You are signed in as {isAdmin ? 'an admin' : 'a company account'}. On-platform applications
@@ -196,19 +192,19 @@ function StudentApplyContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</p>
-                  <p className="mt-1 text-sm text-slate-800">{profile?.full_name || '—'}</p>
+                  <p className="mt-1 break-words text-base text-slate-800">{profile?.full_name || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</p>
-                  <p className="mt-1 text-sm text-slate-800">{profile?.phone || '—'}</p>
+                  <p className="mt-1 break-words text-base text-slate-800">{profile?.phone || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</p>
-                  <p className="mt-1 text-sm text-slate-800">{profile?.contact_email || '—'}</p>
+                  <p className="mt-1 break-words text-base text-slate-800">{profile?.contact_email || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Education</p>
-                  <p className="mt-1 text-sm text-slate-800">
+                  <p className="mt-1 break-words text-base text-slate-800">
                     {[profile?.degree, profile?.branch, profile?.graduation_year].filter(Boolean).join(' · ') || '—'}
                   </p>
                 </div>
@@ -245,9 +241,10 @@ function StudentApplyContent() {
                 {!useSavedResume ? (
                   <input
                     type="file"
+                    aria-label="Upload resume (optional)"
                     accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     onChange={(event) => setResumeFile(event.target.files?.[0] || null)}
-                    className="mt-3 block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700"
+                    className="mt-3 block min-h-12 w-full min-w-0 text-base text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-indigo-700"
                   />
                 ) : null}
                 <p className="mt-2 text-xs text-slate-500">
@@ -256,23 +253,24 @@ function StudentApplyContent() {
               </div>
 
               {error ? (
-                <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <p role="alert" className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {error}
                 </p>
               ) : null}
               {notice ? (
-                <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <p role="status" className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                   {notice}
                 </p>
               ) : null}
 
               <button
                 type="submit"
-                disabled={isSubmitting || !profileComplete || staffApplicant}
-                className="mt-6 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isSubmitting || Boolean(notice) || !profileComplete || staffApplicant}
+                className="mt-6 min-h-12 w-full rounded-2xl bg-indigo-600 px-5 py-3 text-base sm:w-auto font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit application'}
+                {isSubmitting ? 'Submitting...' : notice ? 'Application submitted' : 'Submit application'}
               </button>
+              {notice ? <Link to="/student/applied-jobs" className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-indigo-200 px-4 text-sm font-semibold text-indigo-700">Track my application</Link> : null}
             </form>
           )}
         </div>
