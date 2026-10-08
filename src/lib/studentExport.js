@@ -36,6 +36,11 @@ const formatSalaryRange = (student) => {
 
 /** Columns admins can include when downloading student registrations. */
 export const STUDENT_EXPORT_COLUMNS = /** @type {StudentExportColumn[]} */ ([
+  { id: 'currentCity', label: 'Current city', group: 'Career preference', defaultSelected: false, getValue: student => student.currentCity || '' },
+  { id: 'currentArea', label: 'Current area', group: 'Career preference', defaultSelected: false, getValue: student => student.currentArea || '' },
+  { id: 'educationStatus', label: 'Education status', group: 'Education', defaultSelected: false, getValue: student => student.educationStatus || '' },
+  { id: 'willingToRelocate', label: 'Willing to relocate', group: 'Career preference', defaultSelected: false, getValue: student => student.willingToRelocate == null ? '' : student.willingToRelocate ? 'Yes' : 'No' },
+  { id: 'interestedRoles', label: 'Interested roles', group: 'Career preference', defaultSelected: false, getValue: student => (student.interestedRoles || []).join(', ') },
   {
     id: 'fullName',
     label: 'Name',

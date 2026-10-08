@@ -1,3 +1,5 @@
+import { fetchCandidateMatchingJobs } from '../services/adminJobs';
+import { evaluateJobEligibility, matchesCandidateFilters } from '../lib/candidateEligibility';
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
@@ -78,6 +80,11 @@ export default function AdminStudentsPage() {
   const [branchFilter, setBranchFilter] = useState(() => searchParams.get('branch') || '');
   const [fresherFilter, setFresherFilter] = useState(() => searchParams.get('fresher') || searchParams.get('exp') || '');
   const [skillFilter, setSkillFilter] = useState(() => searchParams.get('skill') || '');
+  const [candidateFilters, setCandidateFilters] = useState({ currentCity: '', currentArea: '', educationStatus: '', willingToRelocate: '', gender: '' });
+  const [matchingJobId, setMatchingJobId] = useState(() => searchParams.get('job') || '');
+  const [matchingJobs, setMatchingJobs] = useState([]);
+  const [matchingJobsError, setMatchingJobsError] = useState('');
+  useEffect(() => { let active = true; fetchCandidateMatchingJobs().then(rows => { if (active) setMatchingJobs(rows); }).catch(error => { if (active) setMatchingJobsError(error.message); }); return () => { active = false; }; }, []);
   const [shareStudent, setShareStudent] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportStudents, setExportStudents] = useState([]);
@@ -106,6 +113,7 @@ export default function AdminStudentsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [
+    candidateFilters, matchingJobId, matchingJobs,
     deferredSearch,
     categoryFilter,
     roleFilter,
@@ -118,7 +126,10 @@ export default function AdminStudentsPage() {
   ]);
 
   const filteredStudents = useMemo(() => {
+    const matchingJob = matchingJobs.find(job => job.id === matchingJobId);
     return students.filter((student) => {
+      const matchesCandidateDetails = matchesCandidateFilters(student, candidateFilters);
+      const matchesJob = !matchingJobId || (matchingJob && evaluateJobEligibility(matchingJob, student).status === 'eligible');
       const matchesSearch = !deferredSearch || studentSearchBlob(student).includes(deferredSearch);
 
       const matchesCategory =
@@ -127,7 +138,8 @@ export default function AdminStudentsPage() {
       const matchesRole =
         !roleFilter ||
         String(student.primaryTargetRole || '').trim().toLowerCase() ===
-          String(roleFilter).trim().toLowerCase();
+          String(roleFilter).trim().toLowerCase() ||
+        student.interestedRoles?.some(role => role.toLowerCase() === String(roleFilter).trim().toLowerCase());
 
       const matchesYear =
         !graduationYearFilter ||
@@ -161,6 +173,7 @@ export default function AdminStudentsPage() {
           ));
 
       return (
+        matchesCandidateDetails && matchesJob &&
         matchesSearch &&
         matchesCategory &&
         matchesRole &&
@@ -173,6 +186,7 @@ export default function AdminStudentsPage() {
     });
   }, [
     students,
+    candidateFilters, matchingJobId, matchingJobs,
     deferredSearch,
     categoryFilter,
     roleFilter,
@@ -262,6 +276,7 @@ export default function AdminStudentsPage() {
   };
 
   const hasActiveFilters = Boolean(
+    matchingJobId || Object.values(candidateFilters).some(Boolean) ||
     searchTerm ||
     categoryFilter ||
     roleFilter ||
@@ -281,6 +296,8 @@ export default function AdminStudentsPage() {
     setBranchFilter('');
     setFresherFilter('');
     setSkillFilter('');
+    setCandidateFilters({ currentCity: '', currentArea: '', educationStatus: '', willingToRelocate: '', gender: '' });
+    setMatchingJobId('');
   };
 
   const downloadScopeLabel = useMemo(() => {
@@ -312,6 +329,9 @@ export default function AdminStudentsPage() {
     if (roleFilter) {
       parts.push(roleFilter);
     }
+    Object.entries(candidateFilters).forEach(([field, value]) => { if (value) parts.push(`${field}: ${value}`); });
+    const selectedJob = matchingJobs.find(job => job.id === matchingJobId);
+    if (selectedJob) parts.push(`Matches: ${selectedJob.title}`);
     if (deferredSearch) {
       parts.push(`Search "${deferredSearch}"`);
     }
@@ -327,6 +347,7 @@ export default function AdminStudentsPage() {
     skillFilter,
     categoryFilter,
     roleFilter,
+    candidateFilters, matchingJobId, matchingJobs,
     deferredSearch,
   ]);
 
@@ -651,6 +672,14 @@ export default function AdminStudentsPage() {
           </div>
 
           {/* Active Filter Badges */}
+          <section className="my-4 grid gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-2">
+            <label>Current area<input className="mt-1 w-full rounded-lg border p-2" value={candidateFilters.currentArea} onChange={e => setCandidateFilters(v => ({ ...v, currentArea: e.target.value }))} /></label>
+            <label>Current city<input className="mt-1 w-full rounded-lg border p-2" value={candidateFilters.currentCity} onChange={e => setCandidateFilters(v => ({ ...v, currentCity: e.target.value }))} /></label>
+            {[['educationStatus', 'Education status', [['studying', 'Studying'], ['completed', 'Completed']]], ['willingToRelocate', 'Willing to relocate', [['true', 'Yes'], ['false', 'No']]], ['gender', 'Gender (admin only)', [['female', 'Female'], ['male', 'Male'], ['other', 'Other']]]].map(([field, label, options]) => <label key={field}>{label}<select className="mt-1 w-full rounded-lg border p-2" value={candidateFilters[field]} onChange={e => setCandidateFilters(v => ({ ...v, [field]: e.target.value }))}><option value="">Any</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>)}
+            <label>Find matching candidates for a job<select className="mt-1 w-full rounded-lg border p-2" value={matchingJobId} onChange={e => setMatchingJobId(e.target.value)}><option value="">All candidates</option>{matchingJobs.filter(job => job.requirements_verified).map(job => <option key={job.id} value={job.id}>{job.title} — {job.company}</option>)}</select></label>
+            {matchingJobId && <p className="text-xs text-slate-600">Shows candidates meeting all reviewed mandatory requirements. Missing information requires a profile update.</p>}
+            {matchingJobsError && <p className="text-sm text-rose-700">Could not load matching jobs: {matchingJobsError}</p>}
+          </section>
           {hasActiveFilters ? (
             <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
               <span className="font-bold text-slate-700">
@@ -989,7 +1018,7 @@ export default function AdminStudentsPage() {
                         <dd className="mt-0.5 text-slate-800">{formatSalaryRange(student)}</dd>
                       </div>
                       <div className="sm:col-span-2">
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred locations</dt>
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current location / Education status</dt><dd>{[student.currentCity, student.currentArea, student.educationStatus].filter(Boolean).join(" · ") || "Not provided"}</dd><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred locations</dt>
                         <dd className="mt-0.5 text-slate-800">
                           {student.preferredLocations?.length > 0
                             ? student.preferredLocations.join(', ')

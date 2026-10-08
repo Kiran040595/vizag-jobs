@@ -45,7 +45,8 @@ export default function StudentRegistrationConsent({ values, onChange, idPrefix 
         />
         <span>
           I agree that {SITE_LEGAL_NAME} may share my profile information (name, college, degree, branch,
-          skills, certifications, graduation year, phone, and email) with employers and recruiters in
+          skills, certifications, graduation year, education status, current city/area, interested roles,
+          relocation preference, phone, and email) with employers and recruiters in
           Visakhapatnam when my profile matches their job requirements.
         </span>
       </label>

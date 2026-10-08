@@ -49,7 +49,7 @@ export default function JobsForYou({ jobs = [] }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {ranked.map(({ job, reasons }) => {
+        {ranked.map(({ job, reasons, eligibility }) => {
           const company = cardCompanyName(job.company);
           const highlightItems = buildCardHighlightItems({
             category: job.category,
@@ -62,6 +62,9 @@ export default function JobsForYou({ jobs = [] }) {
 
           return (
             <div key={job.id} className="flex h-full flex-col gap-2">
+              {eligibility.status === 'needs_information' && <Link to="/student/profile" className="text-xs text-amber-800">Complete profile to check: {eligibility.missing.join(', ')}</Link>}
+              {eligibility.status === 'unverified' && <p className="text-xs text-slate-500">Eligibility not verified</p>}
+              {eligibility.status === 'eligible' && <p className="text-xs text-emerald-700">Meets listed requirements</p>}
               {reasons.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {reasons.slice(0, 3).map((reason) => (

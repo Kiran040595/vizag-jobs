@@ -19,6 +19,9 @@ export default function StudentProfileForm({ onSaved }) {
   useEffect(() => {
     if (profile) {
       setForm({
+        current_city: profile.current_city || '', current_area: profile.current_area || '',
+        education_status: profile.education_status || '', gender: profile.gender || '',
+        willing_to_relocate: profile.willing_to_relocate ?? null, interested_roles: profile.interested_roles || [],
         full_name: profile.full_name || '',
         college: profile.college || '',
         degree: profile.degree || '',
@@ -56,6 +59,7 @@ export default function StudentProfileForm({ onSaved }) {
     setForm((current) => ({
       ...current,
       [name]: value,
+      ...(name === 'degree' && ['10th Pass', '12th Pass'].includes(value) ? { branch: 'Not Applicable' } : {}),
     }));
   };
 
@@ -93,6 +97,7 @@ export default function StudentProfileForm({ onSaved }) {
       if (selected.has(categoryValue)) {
         selected.delete(categoryValue);
       } else {
+        if (selected.size >= 3) return current;
         selected.add(categoryValue);
       }
       return { ...current, target_job_categories: [...selected] };
@@ -101,7 +106,7 @@ export default function StudentProfileForm({ onSaved }) {
 
   const addTargetCategory = (categoryValue) => {
     setForm((current) => {
-      if (current.target_job_categories.includes(categoryValue)) {
+      if (current.target_job_categories.includes(categoryValue) || current.target_job_categories.length >= 3) {
         return current;
       }
       return {

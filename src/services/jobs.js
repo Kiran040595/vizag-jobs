@@ -45,6 +45,8 @@ const JOB_LIST_PAGE_SIZE = 1000;
  */
 const LIST_COLUMNS = [
   'id',
+  'accepted_degrees', 'accepted_branches', 'required_education_status', 'required_experience',
+  'required_skills', 'preferred_skills', 'required_candidate_locations', 'accepts_relocation', 'requirements_verified',
   'slug',
   'title',
   'company',
@@ -137,6 +139,11 @@ const processJobData = (job, index) => {
   const fresherTag = isFresher === 'Yes' ? 'Fresher' : 'Experienced';
 
   const base = {
+    accepted_degrees: job.accepted_degrees || [], accepted_branches: job.accepted_branches || [],
+    required_education_status: job.required_education_status, required_experience: job.required_experience,
+    required_skills: job.required_skills || [], preferred_skills: job.preferred_skills || [],
+    required_candidate_locations: job.required_candidate_locations || [],
+    accepts_relocation: job.accepts_relocation === true, requirements_verified: job.requirements_verified === true,
     id: job.id || `supabase-job-${index + 1}`,
     slug: normalizeText(job.slug),
     title: normalizeText(job.title),

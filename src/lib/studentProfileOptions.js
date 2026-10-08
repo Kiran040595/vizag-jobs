@@ -51,6 +51,8 @@ export const STUDENT_GRADUATION_YEAR_OPTIONS = buildGraduationYearOptions();
  * @type {{ value: string, label: string, group: string }[]}
  */
 export const STUDENT_SKILL_OPTIONS = [
+  { value: 'c', label: 'C', group: 'IT & Software' },
+  { value: 'r', label: 'R', group: 'IT & Software' },
   { value: 'java', label: 'Java', group: 'IT & Software' },
   { value: 'python', label: 'Python', group: 'IT & Software' },
   { value: 'javascript', label: 'JavaScript', group: 'IT & Software' },

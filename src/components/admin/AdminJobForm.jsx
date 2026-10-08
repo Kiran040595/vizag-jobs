@@ -1,3 +1,4 @@
+import JobRequirementsFields from '../JobRequirementsFields';
 import { useEffect, useState } from 'react';
 import {
   createAdminJob,
@@ -394,6 +395,7 @@ export default function AdminJobForm({
             placeholder={'B.Tech (CSE/IT)\nGood communication skills'}
           />
         </Field>
+        <div className="sm:col-span-2"><JobRequirementsFields values={formValues} onChange={handleFieldChange} /></div>
         <Field label="Skills" hint="Enter one skill per line.">
           <TextArea
             name="skills"

@@ -1,3 +1,4 @@
+import CandidateDetailsFields from './CandidateDetailsFields';
 import { useEffect, useMemo, useState } from 'react';
 import {
   buildLiveRoleOptions,
@@ -28,6 +29,7 @@ const CHIP_INPUT_CLASS =
   'h-10 min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
 
 export const EMPTY_STUDENT_PROFILE_FORM = {
+  current_city: '', current_area: '', education_status: '', gender: '', willing_to_relocate: null, interested_roles: [],
   full_name: '',
   college: '',
   degree: '',
@@ -82,7 +84,7 @@ export default function StudentProfileFields({
     ),
   ];
 
-  const baseRoleOptions = liveRoleOptions.length > 0 ? liveRoleOptions : STUDENT_JOB_CATEGORY_OPTIONS;
+  const baseRoleOptions = STUDENT_JOB_CATEGORY_OPTIONS;
 
   const categoryOptions = useMemo(() => {
     const presetValues = new Set(baseRoleOptions.map((option) => option.value));
@@ -127,6 +129,7 @@ export default function StudentProfileFields({
 
   return (
     <div className="grid gap-5 sm:grid-cols-2">
+      <CandidateDetailsFields form={form} onChange={onChange} roles={liveRoleOptions} />
       <label className="block sm:col-span-2">
         <span className="text-sm font-semibold text-slate-700">Full name *</span>
         <input
@@ -141,7 +144,7 @@ export default function StudentProfileFields({
       </label>
 
       <label className="block sm:col-span-2">
-        <span className="text-sm font-semibold text-slate-700">College / university *</span>
+        <span className="text-sm font-semibold text-slate-700">School / college / institution *</span>
         <input
           id={`${idPrefix}-college`}
           name="college"
@@ -177,6 +180,7 @@ export default function StudentProfileFields({
         <select
           id={`${idPrefix}-branch`}
           name="branch"
+                disabled={['10th Pass', '12th Pass'].includes(form.degree)}
           value={form.branch}
           onChange={onChange}
           required
@@ -192,7 +196,7 @@ export default function StudentProfileFields({
       </label>
 
       <label className="block">
-        <span className="text-sm font-semibold text-slate-700">Graduation year *</span>
+        <span className="text-sm font-semibold text-slate-700">Completion / expected completion year *</span>
         <select
           id={`${idPrefix}-graduation-year`}
           name="graduation_year"
@@ -269,11 +273,11 @@ export default function StudentProfileFields({
 
       <fieldset className="block sm:col-span-2">
         <legend className="text-sm font-semibold text-slate-700">
-          Which roles are you targeting? *
+          Which sectors are you targeting? (up to 3) *
         </legend>
         <p className="mt-1 text-xs text-slate-500">
-          Roles come from jobs currently posted on Vizag Jobs. Pick from the list or type another
-          role — it is added as a selected chip.
+          Choose up to three sectors. Pick from the list or type another
+          sector — it is added as a selected chip.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {categoryOptions.map((option) => {
@@ -307,7 +311,7 @@ export default function StudentProfileFields({
               }
             }}
             className={CHIP_INPUT_CLASS}
-            placeholder="Type another role, e.g. Hotel Management"
+            placeholder="Type another sector, e.g. Hotel Management"
             maxLength={64}
             list={`${idPrefix}-live-role-suggestions`}
           />
@@ -321,7 +325,7 @@ export default function StudentProfileFields({
             onClick={addCustomCategory}
             className="h-10 shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100"
           >
-            Add role
+            Add sector
           </button>
         </div>
       </fieldset>
@@ -339,7 +343,7 @@ export default function StudentProfileFields({
           placeholder="Backend Developer, Telecaller, Mechanical Technician, Nurse, Accountant..."
         />
         <datalist id={`${idPrefix}-primary-role-suggestions`}>
-          {baseRoleOptions.map((option) => (
+          {liveRoleOptions.map((option) => (
             <option key={option.value} value={option.label} />
           ))}
         </datalist>
@@ -515,13 +519,12 @@ export default function StudentProfileFields({
       </fieldset>
 
       <label className="block sm:col-span-2">
-        <span className="text-sm font-semibold text-slate-700">Certifications / courses completed *</span>
+        <span className="text-sm font-semibold text-slate-700">Certifications / courses completed (optional)</span>
         <textarea
           id={`${idPrefix}-certifications`}
           name="certifications"
           value={form.certifications}
           onChange={onChange}
-          required
           rows={3}
           className={INPUT_CLASS}
           placeholder="Java Full Stack (Udemy), AWS Cloud Practitioner, NPTEL Python — or type None"

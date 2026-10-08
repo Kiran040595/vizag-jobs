@@ -1,3 +1,4 @@
+import JobRequirementsFields from '../JobRequirementsFields';
 import { useEffect, useState } from 'react';
 import {
   createEmployerJob,
@@ -233,6 +234,7 @@ export default function EmployerJobForm({
         <Field label="Eligibility" hint="One per line.">
           <textarea name="eligibility" value={formValues.eligibility} onChange={handleFieldChange} className={`${INPUT_CLASS} min-h-[100px] resize-y`} />
         </Field>
+        <div className="sm:col-span-2"><JobRequirementsFields values={formValues} onChange={handleFieldChange} /></div>
         <Field label="Skills" hint="One per line.">
           <textarea name="skills" value={formValues.skills} onChange={handleFieldChange} className={`${INPUT_CLASS} min-h-[100px] resize-y`} />
         </Field>

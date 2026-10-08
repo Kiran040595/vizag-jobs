@@ -1,3 +1,4 @@
+import CandidateDetailsFields from './CandidateDetailsFields';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -144,10 +145,6 @@ export default function StudentRegisterWizard({
     }
   };
 
-  const handleBackToStep1 = () => {
-    setCurrentStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const handleCollegePillClick = (collegeName) => {
     onFormChange({ target: { name: 'college', value: collegeName } });
@@ -309,6 +306,12 @@ export default function StudentRegisterWizard({
   }, []);
 
   const handleFinalSubmit = (e) => {
+    if (currentStep === 2) {
+      e.preventDefault();
+      setCurrentStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (form.primary_target_role) {
       saveCustomRole(form.primary_target_role);
     }
@@ -320,78 +323,27 @@ export default function StudentRegisterWizard({
 
   return (
     <div>
-      {/* Visual Stepper Bar */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 flex gap-3" aria-label="Registration progress">
+        {['Personal & Account', 'Education', 'Career Preferences'].map((label, index) => (
           <button
+            key={label}
             type="button"
-            onClick={currentStep === 2 ? handleBackToStep1 : undefined}
-            className={`flex items-center gap-2 text-left transition ${
-              currentStep === 1
-                ? 'text-indigo-600'
-                : 'text-emerald-600 hover:text-emerald-700'
+            disabled={index + 1 > currentStep}
+            onClick={() => setCurrentStep(index + 1)}
+            aria-current={currentStep === index + 1 ? 'step' : undefined}
+            className={`flex-1 rounded-xl border px-3 py-3 text-sm ${
+              currentStep === index + 1 ? 'border-indigo-500 bg-indigo-50 font-bold' : ''
             }`}
           >
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-sm ${
-                currentStep === 1
-                  ? 'bg-indigo-600 text-white ring-4 ring-indigo-100'
-                  : 'bg-emerald-600 text-white'
-              }`}
-            >
-              {currentStep > 1 ? '✓' : '1'}
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Step 1</p>
-              <p className="text-sm font-bold text-slate-900">Account Credentials</p>
-            </div>
+            {index + 1}. {label}
           </button>
-
-          <div className="mx-4 h-1 flex-1 rounded-full bg-slate-100">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                currentStep === 1 ? 'w-1/2 bg-indigo-500' : 'w-full bg-emerald-500'
-              }`}
-            />
-          </div>
-
-          <div
-            className={`flex items-center gap-2 text-left ${
-              currentStep === 2 ? 'text-indigo-600' : 'text-slate-400'
-            }`}
-          >
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-sm ${
-                currentStep === 2
-                  ? 'bg-indigo-600 text-white ring-4 ring-indigo-100'
-                  : 'border border-slate-200 bg-white text-slate-400'
-              }`}
-            >
-              2
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Step 2</p>
-              <p
-                className={`text-sm font-bold ${
-                  currentStep === 2 ? 'text-slate-900' : 'text-slate-400'
-                }`}
-              >
-                Education & Skills
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-3 text-center text-xs font-medium text-slate-500">
-          {currentStep === 1
-            ? 'Step 1 of 2 · Basic credentials (takes ~20 seconds)'
-            : 'Step 2 of 2 · Education & career preferences (almost done!)'}
-        </p>
+        ))}
       </div>
-
+      <p className="mb-4 text-sm text-slate-500">Step {currentStep} of 3</p>
       {/* STEP 1: ACCOUNT CREDENTIALS */}
       {currentStep === 1 ? (
         <form onSubmit={handleStep1Continue} className="space-y-5">
+          <CandidateDetailsFields form={form} onChange={onFormChange} section="personal" />
           <div>
             <label className="block text-sm font-semibold text-slate-700">
               Full Name *
@@ -551,7 +503,7 @@ export default function StudentRegisterWizard({
             type="submit"
             className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-sm font-bold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
           >
-            <span>Continue to Step 2: Education & Skills</span>
+            <span>Continue to Step 2: Education</span>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
@@ -564,23 +516,25 @@ export default function StudentRegisterWizard({
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <button
               type="button"
-              onClick={handleBackToStep1}
+              onClick={() => setCurrentStep(currentStep === 3 ? 2 : 1)}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
               </svg>
-              Back to Account Info
+              {currentStep === 3 ? "Back to Education" : "Back to Account Info"}
             </button>
             <span className="text-xs font-semibold text-slate-500">
               Registered for: <strong className="text-slate-800">{form.contact_email}</strong>
             </span>
           </div>
 
+          <fieldset disabled={currentStep !== 2} className={currentStep === 2 ? "space-y-6" : "hidden"}>
+          <CandidateDetailsFields form={form} onChange={onFormChange} section="education" />
           {/* College with Quick Vizag Badges */}
           <div>
             <label className="block text-sm font-semibold text-slate-700">
-              College / University *
+              School / College / Institution *
             </label>
             <p className="mt-0.5 text-xs text-slate-500">
               Click a Vizag college badge to auto-fill, or type your college name below:
@@ -643,6 +597,7 @@ export default function StudentRegisterWizard({
               </label>
               <select
                 name="branch"
+                disabled={['10th Pass', '12th Pass'].includes(form.degree)}
                 value={form.branch}
                 onChange={onFormChange}
                 required
@@ -662,7 +617,7 @@ export default function StudentRegisterWizard({
           <div>
             <div className="flex items-center justify-between">
               <label className="block text-sm font-semibold text-slate-700">
-                Graduation Year *
+                Completion / Expected Completion Year *
               </label>
               <span className="text-xs font-medium text-slate-400">
                 Class of 2010 to 2030
@@ -707,6 +662,8 @@ export default function StudentRegisterWizard({
             </div>
           </div>
 
+          </fieldset>
+          <fieldset disabled={currentStep !== 3} className={currentStep === 3 ? "space-y-6" : "hidden"}>
           {/* Target Job Categories (Max 3, saved for future students) */}
           <div>
             <div className="flex items-center justify-between">
@@ -776,6 +733,7 @@ export default function StudentRegisterWizard({
             </div>
           </div>
 
+          <CandidateDetailsFields form={form} onChange={onFormChange} section="career" roles={liveRoles} />
           {/* Primary Target Role with Live Suggestions */}
           <div className="relative">
             <label className="block text-sm font-semibold text-slate-700">
@@ -1073,6 +1031,7 @@ export default function StudentRegisterWizard({
             <StudentRegistrationConsent values={consents} onChange={onConsentsChange} />
           </div>
 
+          </fieldset>
           {submitError ? (
             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
               <p className="font-semibold">Unable to register:</p>
@@ -1083,7 +1042,7 @@ export default function StudentRegisterWizard({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="button"
-              onClick={handleBackToStep1}
+              onClick={() => setCurrentStep(currentStep === 3 ? 2 : 1)}
               className="h-12 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
             >
               ← Back
@@ -1102,7 +1061,7 @@ export default function StudentRegisterWizard({
                   <span>Creating Account...</span>
                 </>
               ) : (
-                <span>Complete Registration & Apply →</span>
+                <span>{currentStep === 2 ? "Continue to Career Preferences →" : "Complete Registration & Apply →"}</span>
               )}
             </button>
           </div>

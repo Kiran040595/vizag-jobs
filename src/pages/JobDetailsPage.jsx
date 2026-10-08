@@ -1,3 +1,4 @@
+import JobEligibilityNotice from '../components/student/JobEligibilityNotice';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -289,6 +290,8 @@ export default function JobDetailsPage() {
           </p>
         ) : null}
 
+        <JobEligibilityNotice job={job} />
+        {isAdmin && job?.requirements_verified && <Link className="my-3 inline-block rounded-lg border border-indigo-300 px-4 py-2 text-sm text-indigo-700" to={`/admin/students?job=${encodeURIComponent(job.id)}`}>Find matching candidates</Link>}
         {isAdmin && job ? (
           <AdminJobActionsBar
             job={job}

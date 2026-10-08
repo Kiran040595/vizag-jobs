@@ -45,7 +45,7 @@ export const mapStudentProfileRow = (row) => {
   const availability = String(row.availability || '').trim();
   const expectedSalaryMin = parseExpectedSalary(row.expected_salary_min);
   const expectedSalaryMax = parseExpectedSalary(row.expected_salary_max);
-  const isFresher = row.is_fresher !== false;
+  const isFresher = typeof row.is_fresher === 'boolean' ? row.is_fresher : null;
   const hasRegistrationConsents =
     Boolean(row.consent_terms_at) &&
     Boolean(row.consent_share_with_employers_at) &&
@@ -61,7 +61,6 @@ export const mapStudentProfileRow = (row) => {
     isAllowedGraduationYear(graduationYear ? String(graduationYear) : '') &&
     isValidStudentPhone(phone) &&
     skills.length > 0 &&
-    certifications.length > 0 &&
     typeof row.is_fresher === 'boolean' &&
     targetJobCategories.length > 0 &&
     Boolean(primaryTargetRole) &&
@@ -71,6 +70,12 @@ export const mapStudentProfileRow = (row) => {
     hasRegistrationConsents;
 
   return {
+    currentCity: row.current_city || '',
+    currentArea: row.current_area || '',
+    educationStatus: row.education_status || '',
+    gender: row.gender || '',
+    willingToRelocate: row.willing_to_relocate ?? null,
+    interestedRoles: Array.isArray(row.interested_roles) ? row.interested_roles : [],
     userId: row.user_id,
     fullName,
     college,
@@ -106,6 +111,7 @@ export const mapStudentProfileRow = (row) => {
 
 export const studentSearchBlob = (student) =>
   [
+    student.currentCity, student.currentArea, student.educationStatus, student.interestedRoles?.join(' '),
     student.fullName,
     student.college,
     student.degree,

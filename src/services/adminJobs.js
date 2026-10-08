@@ -1,3 +1,4 @@
+import { normalizeJobRequirements } from '../lib/candidateEligibility.js';
 import { clearJobsCache } from './jobs.js';
 import { supabase } from '../lib/supabaseClient.js';
 import { classifyJobRecord } from '../lib/jobCategoryTaxonomy.js';
@@ -47,6 +48,8 @@ const REQUIRED_DEFAULTS = {
 };
 
 const SUPPORTED_JOB_COLUMNS = new Set([
+  'accepted_degrees', 'accepted_branches', 'required_education_status', 'required_experience',
+  'required_skills', 'preferred_skills', 'required_candidate_locations', 'accepts_relocation', 'requirements_verified',
   'slug',
   'title',
   'company',
@@ -417,7 +420,9 @@ export const formatJobsToSqlInsert = (jobs) => {
   if (list.length === 0) return '';
 
   const columns = [
-    'slug',
+    'accepted_degrees', 'accepted_branches', 'required_education_status', 'required_experience',
+  'required_skills', 'preferred_skills', 'required_candidate_locations', 'accepts_relocation', 'requirements_verified',
+  'slug',
     'title',
     'company',
     'location',
@@ -453,10 +458,10 @@ export const formatJobsToSqlInsert = (jobs) => {
       if (['expires_at', 'source_url', 'company_logo_url'].includes(col)) {
         return 'NULL';
       }
-      if (['responsibilities', 'eligibility', 'skills'].includes(col)) {
+      if (['responsibilities', 'eligibility', 'skills', 'accepted_degrees', 'accepted_branches', 'required_skills', 'preferred_skills', 'required_candidate_locations'].includes(col)) {
         return "'{}'";
       }
-      if (['is_fresher', 'is_featured'].includes(col)) {
+      if (['is_fresher', 'is_featured', 'accepts_relocation', 'requirements_verified'].includes(col)) {
         return 'false';
       }
       if (col === 'status') return "'published'";
@@ -664,6 +669,7 @@ export const getEmptyJobForm = () => {
     .slice(0, 16);
 
   return {
+    ...normalizeJobRequirements(),
     slug: '',
     title: '',
     company: '',
@@ -697,6 +703,7 @@ export const getEmptyJobForm = () => {
 
 export const serializeJobForm = (values, statusOverride) => {
   const payload = {
+    ...normalizeJobRequirements(values),
     slug: normalizeText(values.slug),
     title: normalizeText(values.title),
     company: normalizeText(values.company),
@@ -860,6 +867,18 @@ export const fetchAdminJobs = async (options = {}) => {
     throw mapError(error, 'Could not load admin jobs.');
   }
 
+  return data || [];
+};
+
+/** Lightweight reviewed-job requirements for the candidate browser. */
+export const fetchCandidateMatchingJobs = async () => {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const { data, error } = await supabase.from(JOBS_TABLE)
+    .select('id,title,company,accepted_degrees,accepted_branches,required_education_status,required_experience,required_skills,preferred_skills,required_candidate_locations,accepts_relocation,requirements_verified')
+    .eq('requirements_verified', true)
+    .neq('status', 'archived')
+    .order('posted_at', { ascending: false });
+  if (error) throw mapError(error, 'Could not load reviewed job requirements.');
   return data || [];
 };
 

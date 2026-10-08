@@ -1,3 +1,4 @@
+import { evaluateJobEligibility, listValues } from './candidateEligibility.js';
 import { normalizeSkillValue } from './studentProfileOptions.js';
 import {
   parsePreferredLocations,
@@ -125,6 +126,12 @@ export const normalizeStudentMatchProfile = (profile) => {
         : null;
 
   return {
+    degree: profile.degree, branch: profile.branch,
+    education_status: profile.education_status ?? profile.educationStatus,
+    current_city: profile.current_city ?? profile.currentCity,
+    current_area: profile.current_area ?? profile.currentArea,
+    willing_to_relocate: profile.willing_to_relocate ?? profile.willingToRelocate,
+    interestedRoles: listValues(profile.interested_roles ?? profile.interestedRoles),
     skills,
     targetJobCategories,
     preferredLocations,
@@ -165,7 +172,7 @@ export const scoreJobForStudent = (job, profileInput) => {
 
   let targetExactPoints = 0;
   let targetRelatedPoints = 0;
-  for (const target of profile.targetJobCategories) {
+  for (const target of [...profile.targetJobCategories, ...profile.interestedRoles]) {
     const targetSlug = slugifyRoleText(target);
     if (!targetSlug) continue;
 
@@ -193,6 +200,7 @@ export const scoreJobForStudent = (job, profileInput) => {
 
   const studentSkills = new Set(profile.skills);
   const jobSkills = toJobSkillTokens(job);
+  listValues(job.preferred_skills).map(normalizeSkillValue).forEach(v => jobSkills.add(v));
   const skillHaystack = normalizeText(titleHaystack);
   let skillHits = 0;
   for (const skill of studentSkills) {
@@ -243,9 +251,10 @@ export const rankJobsForStudent = (jobs = [], profileInput, limit = JOBS_FOR_YOU
   return jobs
     .map((job) => {
       const { score, reasons } = scoreJobForStudent(job, profile);
-      return { job, score, reasons };
+      const eligibility = evaluateJobEligibility(job, profile);
+      return { job, score, reasons, eligibility };
     })
-    .filter((entry) => entry.score > 0)
+    .filter((entry) => entry.score > 0 && entry.eligibility.status !== 'ineligible')
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       const aPosted = Date.parse(a.job?.postedAt || a.job?.posted_at || 0) || 0;

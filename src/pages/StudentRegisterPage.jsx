@@ -25,7 +25,7 @@ const INITIAL_STUDENT_REGISTER_FORM = {
   availability: 'immediate',
   role_experience_level: 'fresher',
   is_fresher: true,
-  certifications: 'None',
+  certifications: '',
   preferred_locations: ['Visakhapatnam'],
 };
 
@@ -119,6 +119,7 @@ export default function StudentRegisterPage() {
     setForm((current) => ({
       ...current,
       [name]: value,
+      ...(name === 'degree' && ['10th Pass', '12th Pass'].includes(value) ? { branch: 'Not Applicable' } : {}),
     }));
   };
 
@@ -207,7 +208,7 @@ export default function StudentRegisterPage() {
       validateStudentConsents(consents);
       const profilePayload = {
         ...form,
-        certifications: form.certifications?.trim() ? form.certifications : 'None',
+        certifications: form.certifications || '',
         contact_email: form.contact_email || undefined,
       };
       validateStudentProfilePayload(profilePayload);

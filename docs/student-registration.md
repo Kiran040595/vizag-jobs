@@ -4,15 +4,15 @@ Lean student accounts for job seekers in Vizag. Designed to stay within Supabase
 
 ## Student features
 
-- Register at `/student/register` with a **complete profile** in one step:
+- Register at `/student/register` with a **complete profile** across three steps (personal/account, education, career preferences):
   - Full name, college, degree, branch, graduation year
   - Email, mobile, password
   - Fresher yes/no
-  - **Target roles** (multi-select chips live from currently published `jobs.role` values via `distinct_job_roles()`; students can still type a custom role)
+  - **Target sectors** (up to three), plus separate **interested roles** (multiple selections)
   - **Primary target role** (autocomplete from the same live role list), **role experience level**, **availability**
   - **Preferred work locations** (Vizag-first chips: Visakhapatnam, Gajuwaka, Remote, …)
   - Skills (multi-select, stored lowercase for matching)
-  - Certifications / courses completed
+  - Optional certifications / courses completed
   - Optional expected salary min/max
   - Registration consents
 - Sign in at `/student/login` with **email + password**
@@ -89,3 +89,22 @@ Published jobs older than **90 days** are archived (heavy SEO fields cleared). A
 | 6,000 jobs + 20,000 students | ~300 MB |
 
 Monitor **Database size** in Supabase → Project Settings → Usage.
+
+
+## Structured candidate eligibility (October 2026)
+
+Student profiles now store `current_city`, `current_area`, `education_status` (`studying`/`completed`), optional `gender`, nullable `willing_to_relocate`, and `interested_roles` (text array). New fields are optional for existing accounts and do not change their completion state. School qualifications automatically use `Not Applicable` for branch. Certifications can be empty. Registration and profile editing use sectors separately from specific roles; existing mixed category values are retained because their original intent cannot safely be inferred.
+
+Jobs now store `accepted_degrees`, `accepted_branches`, `required_education_status`, `required_experience`, `required_skills`, `preferred_skills`, `required_candidate_locations`, `accepts_relocation`, and `requirements_verified`. Both admin and employer forms use the same controls and serialization. Empty restrictions mean any; employers/admins must explicitly mark requirements reviewed before they are evaluated. Imported and old jobs default to unverified.
+
+`candidateEligibility.js` evaluates mandatory requirements independently of recommendation scoring. Alternatives within a qualification/branch/location list use OR; separate requirements use AND. It returns eligible, ineligible, needs_information, or unverified. Residence uses exact normalized city/locality matching (Vizag/Visakhapatnam aliases); preferred work locations never establish residence. Relocation is accepted only when both job and candidate explicitly allow it. Required skills are mandatory; preferred skills affect ranking. Gender is excluded from eligibility, ranking, and export fields; only owner/admin profile access applies under existing RLS.
+
+Recommendations omit known ineligible jobs, retain unknown results with a profile-completion link, and label legacy eligibility as unverified. The job details page displays eligibility without blocking applications. The admin student list supports current city, education status, relocation, and optional gender filters, plus a reviewed-job selector. The job detail page links admins to matching candidates. Exports include the new non-demographic fields as optional columns.
+
+### Database rollout
+
+Apply `supabase/migrations/20261008090000_candidate_eligibility.sql` **before deploying the frontend**. It adds columns, defaults, constraints, indexes, and refreshes the PostgREST schema cache, without rewriting old records or changing RLS. The frontend selects the new job columns explicitly, so deploying before migration will cause job queries to fail. Inspect pending migrations with `npx supabase db push --linked --dry-run` before running the normal migration deployment. Do not assume a migration file has been applied to the linked database.
+
+### Verification
+
+Run `node --test tests/*.test.mjs`, `npm run lint`, and `npx vite build`. The eligibility regression tests cover mandatory/alternative education, diploma-only jobs, studying/completed status, required skills, experience, current residence versus preferences, relocation, missing facts, legacy jobs, admin profile mapping, secondary roles, and optional demographics.

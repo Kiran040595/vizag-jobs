@@ -1,3 +1,4 @@
+import { normalizeCandidateDetails } from './candidateEligibility.js';
 import {
   isAllowedAvailability,
   isAllowedRoleExperienceLevel,
@@ -71,9 +72,6 @@ export const validateStudentProfilePayload = (profile) => {
   if (skills.length === 0) {
     throw new Error('Select at least one skill.');
   }
-  if (certifications.length === 0) {
-    throw new Error('List certifications or courses completed (type None if not applicable).');
-  }
   if (typeof profile.is_fresher !== 'boolean') {
     throw new Error('Select whether you are a fresher.');
   }
@@ -101,6 +99,7 @@ export const validateStudentProfilePayload = (profile) => {
   }
 
   return {
+    ...normalizeCandidateDetails(profile),
     full_name: fullName,
     college,
     degree,
