@@ -17,6 +17,7 @@ export default function StudentAuthRequiredAlert({
   onDismiss,
 }) {
   const signInRef = useRef(null);
+  const dialogRef = useRef(null);
   const authQuery = buildStudentAuthPath({ pathname: returnPath, apply });
   const signInPath = `/student/login${authQuery}`;
   const registerPath = `/student/register${authQuery}`;
@@ -36,9 +37,23 @@ export default function StudentAuthRequiredAlert({
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement;
     document.body.style.overflow = 'hidden';
 
     const handleEscape = (event) => {
+      if (event.key === 'Tab') {
+        const controls = Array.from(dialogRef.current?.querySelectorAll('a[href], button:not([disabled])') || []);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+          event.preventDefault();
+          first?.focus();
+        }
+        return;
+      }
       if (event.key !== 'Escape') {
         return;
       }
@@ -58,6 +73,7 @@ export default function StudentAuthRequiredAlert({
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, [onDismiss]);
 
@@ -85,6 +101,7 @@ export default function StudentAuthRequiredAlert({
           <button
             type="button"
             aria-label="Close sign in dialog"
+            tabIndex={-1}
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={handleDismiss}
           />
@@ -93,6 +110,7 @@ export default function StudentAuthRequiredAlert({
         )}
 
         <div
+          ref={dialogRef}
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="student-auth-alert-title"
@@ -104,7 +122,7 @@ export default function StudentAuthRequiredAlert({
               type="button"
               aria-label="Close"
               onClick={handleDismiss}
-              className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-100 sm:right-4 sm:top-4"
+              className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-100 sm:right-4 sm:top-4"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
@@ -120,46 +138,37 @@ export default function StudentAuthRequiredAlert({
           </div>
 
           <h2 id="student-auth-alert-title" className="mt-4 text-center text-lg font-black text-slate-950 sm:mt-5 sm:text-xl">
-            Sign in to continue
+            {intent === 'apply' ? 'Ready to apply?' : 'Continue with your account'}
           </h2>
           <p
             id="student-auth-alert-description"
-            className="mt-2 text-center text-sm leading-6 text-slate-600 sm:mt-3"
+            className="mt-2 text-center text-base leading-6 text-slate-600 sm:mt-3"
           >
-            {jobLabel ? (
-              <>
-                Sign in to view <span className="font-semibold text-slate-900">{jobLabel}</span>
-                {intent === 'apply' ? ' and apply.' : ' and apply for this job.'}
-              </>
-            ) : (
-              <>
-                You are not signed in yet. Sign in with your account or register to{' '}
-                {intent === 'apply' ? 'apply for this job' : 'view and apply for this job'}.
-              </>
-            )}
+            Sign in or create a free student account to {intent === 'apply' ? 'apply for this job' : 'continue'}. We’ll bring you back here.
           </p>
+          {jobLabel ? <p className="mt-4 break-words rounded-xl bg-slate-50 p-3 text-sm font-medium leading-6 text-slate-700">{jobLabel}</p> : null}
 
           <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:gap-3">
             <Link
               ref={signInRef}
               to={signInPath}
               onClick={() => trackAction('sign_in')}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100 sm:h-12"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-5 text-base font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100"
             >
               Sign In
             </Link>
             <Link
               to={registerPath}
               onClick={() => trackAction('register')}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 sm:h-12"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-base font-semibold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100"
             >
-              Create account
+              Create free account
             </Link>
             {onDismiss ? (
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="inline-flex h-10 w-full items-center justify-center rounded-xl px-5 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-100 sm:h-11"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl px-5 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-100"
               >
                 Not now
               </button>
