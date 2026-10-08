@@ -34,12 +34,12 @@ function PublishedFeedbackCard({ feedback, highlighted = false }) {
       </div>
 
       <p className="mt-3 text-sm font-semibold text-slate-900">{formatFeedbackAuthor(feedback)}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-700 whitespace-pre-wrap">{feedback.body}</p>
+      <p className="mt-2 break-words text-base leading-7 text-slate-700 whitespace-pre-wrap">{feedback.body}</p>
 
       {feedback.adminReply ? (
         <div className="mt-3 rounded-xl border border-cyan-100 bg-cyan-50/70 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">Team reply</p>
-          <p className="mt-1 text-sm leading-6 text-slate-700 whitespace-pre-wrap">{feedback.adminReply}</p>
+          <p className="mt-1 break-words text-base leading-7 text-slate-700 whitespace-pre-wrap">{feedback.adminReply}</p>
         </div>
       ) : null}
     </article>

@@ -137,7 +137,7 @@ export default function SiteFeedbackForm({
         <select
           value={feedbackType}
           onChange={(event) => setFeedbackType(event.target.value)}
-          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
         >
           {FEEDBACK_TYPE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -155,7 +155,7 @@ export default function SiteFeedbackForm({
             value={authorName}
             onChange={(event) => setAuthorName(event.target.value)}
             placeholder="Optional if email is provided"
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>
 
@@ -166,7 +166,7 @@ export default function SiteFeedbackForm({
             value={authorEmail}
             onChange={(event) => setAuthorEmail(event.target.value)}
             placeholder="Optional"
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>
       </div>
@@ -178,17 +178,17 @@ export default function SiteFeedbackForm({
           onChange={(event) => setBody(event.target.value)}
           rows={compact ? 4 : 5}
           placeholder={messagePlaceholder}
-          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
         />
       </label>
 
-      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-      {success ? <p className="mt-3 text-sm text-emerald-700">{success}</p> : null}
+      {error ? <p role="alert" className="mt-3 text-sm text-red-600">{error}</p> : null}
+      {success ? <p role="status" className="mt-3 text-sm text-emerald-700">{success}</p> : null}
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-4 rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 min-h-12 w-full rounded-xl bg-cyan-500 sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? 'Sending…' : 'Send feedback'}
       </button>
