@@ -239,7 +239,7 @@ export default function StudentRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 sm:px-4 sm:py-12">
       <SEO
         title="Student register | Vizag Jobs"
         description={
@@ -251,9 +251,9 @@ export default function StudentRegisterPage() {
         }
         canonical={`/student/register${registerQuery}`}
       />
-      <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
-        <h1 className="text-3xl font-black text-slate-950">Create student account</h1>
-        <p className="mt-3 text-sm text-slate-600">
+      <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-10">
+        <h1 className="text-2xl font-black sm:text-3xl text-slate-950">Create student account</h1>
+        <p className="mt-3 text-base leading-6 text-slate-600">
           {isApplyReturn
             ? 'Fill in your full profile below — after sign-in you will return to the job so you can apply.'
             : shouldAutoApplyAfterAuth(searchParams)

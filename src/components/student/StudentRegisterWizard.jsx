@@ -322,16 +322,16 @@ export default function StudentRegisterWizard({
   };
 
   return (
-    <div>
-      <div className="mb-6 flex gap-3" aria-label="Registration progress">
-        {['Personal & Account', 'Education', 'Career Preferences'].map((label, index) => (
+    <div className="[&_fieldset]:min-w-0 [&_button]:max-w-full [&_input]:min-w-0 [&_input]:text-base [&_select]:max-w-full [&_select]:min-h-12 [&_select]:text-base [&_textarea]:text-base [&_button]:min-h-11">
+      <div className="mb-6 grid grid-cols-3 gap-2" aria-label="Registration progress">
+        {['Account', 'Education', 'Career'].map((label, index) => (
           <button
             key={label}
             type="button"
             disabled={index + 1 > currentStep}
             onClick={() => setCurrentStep(index + 1)}
             aria-current={currentStep === index + 1 ? 'step' : undefined}
-            className={`flex-1 rounded-xl border px-3 py-3 text-sm ${
+            className={`min-w-0 rounded-xl border px-2 py-3 text-sm ${
               currentStep === index + 1 ? 'border-indigo-500 bg-indigo-50 font-bold' : ''
             }`}
           >
@@ -350,7 +350,7 @@ export default function StudentRegisterWizard({
             </label>
             <input
               type="text"
-              name="full_name"
+              aria-label="Full Name *" name="full_name"
               value={form.full_name}
               onChange={(e) => {
                 onFormChange(e);
@@ -379,7 +379,7 @@ export default function StudentRegisterWizard({
               </div>
               <input
                 type="tel"
-                name="phone"
+                aria-label="Mobile Number *" name="phone"
                 value={form.phone}
                 onChange={(e) => {
                   onFormChange(e);
@@ -411,7 +411,7 @@ export default function StudentRegisterWizard({
             </label>
             <input
               type="email"
-              name="contact_email"
+              aria-label="Email Address *" name="contact_email"
               value={form.contact_email}
               onChange={(e) => {
                 onFormChange(e);
@@ -438,7 +438,7 @@ export default function StudentRegisterWizard({
             </label>
             <div className="relative mt-2">
               <input
-                type={showPassword ? 'text' : 'password'}
+                aria-label="Password *" type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => {
                   onPasswordChange(e.target.value);
@@ -454,6 +454,8 @@ export default function StudentRegisterWizard({
               />
               <button
                 type="button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-semibold text-slate-400 hover:text-slate-600"
               >
@@ -525,7 +527,7 @@ export default function StudentRegisterWizard({
               {currentStep === 3 ? "Back to Education" : "Back to Account Info"}
             </button>
             <span className="text-xs font-semibold text-slate-500">
-              Registered for: <strong className="text-slate-800">{form.contact_email}</strong>
+              Account email: <strong className="text-slate-800">{form.contact_email}</strong>
             </span>
           </div>
 
@@ -547,7 +549,7 @@ export default function StudentRegisterWizard({
                     key={college}
                     type="button"
                     onClick={() => handleCollegePillClick(college)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                    className={`min-h-11 rounded-full border px-3 py-2 text-sm font-medium transition ${
                       isSelected
                         ? 'border-indigo-500 bg-indigo-500 text-white'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'
@@ -560,7 +562,7 @@ export default function StudentRegisterWizard({
             </div>
             <input
               type="text"
-              name="college"
+              aria-label="College / Institute *" name="college"
               value={form.college}
               onChange={onFormChange}
               required
@@ -576,7 +578,7 @@ export default function StudentRegisterWizard({
                 Degree / Qualification *
               </label>
               <select
-                name="degree"
+                aria-label="Degree / Qualification *" name="degree"
                 value={form.degree}
                 onChange={onFormChange}
                 required
@@ -596,7 +598,7 @@ export default function StudentRegisterWizard({
                 Branch / Stream / Trade *
               </label>
               <select
-                name="branch"
+                aria-label="Branch / Stream / Trade *" name="branch"
                 disabled={['10th Pass', '12th Pass'].includes(form.degree)}
                 value={form.branch}
                 onChange={onFormChange}
@@ -615,7 +617,7 @@ export default function StudentRegisterWizard({
 
           {/* Graduation Year (2010 to 2030) */}
           <div>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <label className="block text-sm font-semibold text-slate-700">
                 Completion / Expected Completion Year *
               </label>
@@ -646,7 +648,7 @@ export default function StudentRegisterWizard({
 
               {/* Full range dropdown for 2010–2030 */}
               <select
-                name="graduation_year"
+                aria-label="Completion / Expected Completion Year *" name="graduation_year"
                 value={form.graduation_year}
                 onChange={onFormChange}
                 required
@@ -666,7 +668,7 @@ export default function StudentRegisterWizard({
           <fieldset disabled={currentStep !== 3} className={currentStep === 3 ? "space-y-6" : "hidden"}>
           {/* Target Job Categories (Max 3, saved for future students) */}
           <div>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <label className="block text-sm font-semibold text-slate-700">
                 Which sectors are you targeting? *
               </label>
@@ -697,8 +699,9 @@ export default function StudentRegisterWizard({
                   <button
                     key={cat.value}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => handleToggleSector(cat.value)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`min-h-11 rounded-full border px-3 py-2 text-sm font-semibold transition ${
                       isSelected
                         ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
                         : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
@@ -712,6 +715,7 @@ export default function StudentRegisterWizard({
             <div className="mt-2.5 flex gap-2">
               <input
                 type="text"
+                aria-label="Add a custom sector"
                 value={customCategoryDraft}
                 onChange={(e) => setCustomCategoryDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -721,7 +725,7 @@ export default function StudentRegisterWizard({
                   }
                 }}
                 placeholder="Or type custom sector (e.g. Hotel Management, Marine Engineering)"
-                className="h-10 flex-1 rounded-2xl border border-slate-200 px-3.5 text-xs text-slate-900 outline-none transition focus:border-indigo-500"
+                className="h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 px-3.5 text-xs text-slate-900 outline-none transition focus:border-indigo-500"
               />
               <button
                 type="button"
@@ -741,7 +745,7 @@ export default function StudentRegisterWizard({
             </label>
             <input
               type="text"
-              name="primary_target_role"
+              aria-label="Primary Target Role *" name="primary_target_role"
               value={form.primary_target_role}
               onChange={(e) => {
                 onFormChange(e);
@@ -802,8 +806,9 @@ export default function StudentRegisterWizard({
                   <button
                     key={skillKey}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => onToggleSkill(skillKey)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`min-h-11 rounded-full border px-3 py-2 text-sm font-semibold transition ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm'
                         : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200'
@@ -818,6 +823,7 @@ export default function StudentRegisterWizard({
             <div className="relative mt-2.5 flex gap-2">
               <input
                 type="text"
+                aria-label="Add a custom skill"
                 value={customSkillDraft}
                 onChange={(e) => {
                   setCustomSkillDraft(e.target.value);
@@ -834,7 +840,7 @@ export default function StudentRegisterWizard({
                   }
                 }}
                 placeholder="Type skill to see suggestions or add custom (e.g. Docker, AutoCAD, Photoshop)"
-                className="h-10 flex-1 rounded-2xl border border-slate-200 px-3.5 text-xs text-slate-900 outline-none transition focus:border-emerald-500"
+                className="h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 px-3.5 text-xs text-slate-900 outline-none transition focus:border-emerald-500"
               />
               <button
                 type="button"
@@ -887,8 +893,9 @@ export default function StudentRegisterWizard({
                   <button
                     key={loc}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => onTogglePreferredLocation(loc)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    className={`min-h-11 rounded-full border px-3 py-2 text-sm font-medium transition ${
                       isSelected
                         ? 'border-cyan-600 bg-cyan-600 text-white shadow-sm'
                         : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200'
@@ -908,7 +915,7 @@ export default function StudentRegisterWizard({
                 Experience in this role *
               </label>
               <select
-                name="role_experience_level"
+                aria-label="Experience in this role *" name="role_experience_level"
                 value={form.role_experience_level}
                 onChange={onFormChange}
                 required
@@ -929,7 +936,7 @@ export default function StudentRegisterWizard({
               Joining Availability *
             </label>
             <select
-              name="availability"
+              aria-label="Joining Availability *" name="availability"
               value={form.availability}
               onChange={onFormChange}
               required
@@ -945,7 +952,7 @@ export default function StudentRegisterWizard({
 
           {/* Certifications or Courses with Chips & Suggestions */}
           <div className="relative">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <label className="block text-sm font-semibold text-slate-700">
                 Certifications or Courses
               </label>
@@ -965,7 +972,7 @@ export default function StudentRegisterWizard({
                     key={certName}
                     type="button"
                     onClick={() => handleToggleCertChip(certName)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                    className={`min-h-11 rounded-full border px-3 py-2 text-sm font-medium transition ${
                       isSelected
                         ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-white'
@@ -980,7 +987,7 @@ export default function StudentRegisterWizard({
             <div className="relative mt-2">
               <input
                 type="text"
-                name="certifications"
+                aria-label="Certifications or Courses" name="certifications"
                 value={form.certifications === 'None' ? '' : form.certifications}
                 onChange={(e) => {
                   onFormChange(e);
@@ -1061,7 +1068,7 @@ export default function StudentRegisterWizard({
                   <span>Creating Account...</span>
                 </>
               ) : (
-                <span>{currentStep === 2 ? "Continue to Career Preferences →" : "Complete Registration & Apply →"}</span>
+                <span>{currentStep === 2 ? "Continue to Career Preferences →" : "Create free account →"}</span>
               )}
             </button>
           </div>
