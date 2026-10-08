@@ -153,14 +153,14 @@ export default function StudentProfileForm({ onSaved }) {
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60">
       <h2 className="text-2xl font-black text-slate-950">
         {profileComplete ? 'Update student profile' : 'Student profile'}
       </h2>
       <p className="mt-2 text-sm text-slate-600">
         {profileComplete
           ? 'Keep your education, target roles, experience, skills, and certifications up to date so we can match you with employers in Vizag.'
-          : 'Complete every field below before applying to jobs. Target roles, experience, skills, and certifications help admins match you with employers in Vizag.'}
+          : 'Complete the fields marked * before applying to jobs. Target roles, experience, skills, and certifications help admins match you with employers in Vizag.'}
       </p>
 
       {notice ? (
@@ -172,7 +172,7 @@ export default function StudentProfileForm({ onSaved }) {
         <p className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+      <form onSubmit={handleSubmit} className="mt-6 space-y-5 [&_fieldset]:min-w-0 [&_button]:min-h-11 [&_button]:max-w-full [&_input]:min-w-0 [&_input]:text-base [&_select]:min-w-0 [&_select]:max-w-full [&_select]:text-base [&_textarea]:text-base">
         <StudentProfileFields
           form={form}
           onChange={handleChange}
@@ -198,7 +198,7 @@ export default function StudentProfileForm({ onSaved }) {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-2xl bg-indigo-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-70"
+            className="min-h-12 w-full rounded-2xl bg-indigo-600 px-6 py-3 text-base sm:w-auto font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSaving ? 'Saving...' : profileComplete ? 'Update profile' : 'Save profile'}
           </button>

@@ -21,12 +21,12 @@ import {
 import { fetchLiveJobRoles } from '../../services/jobRoles';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
+  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
 
 const SELECT_CLASS = `${INPUT_CLASS} h-12`;
 
 const CHIP_INPUT_CLASS =
-  'h-10 min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
+  'h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 px-3 text-base text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
 
 export const EMPTY_STUDENT_PROFILE_FORM = {
   current_city: '', current_area: '', education_status: '', gender: '', willing_to_relocate: null, interested_roles: [],
@@ -287,7 +287,7 @@ export default function StudentProfileFields({
                 key={option.value}
                 type="button"
                 onClick={() => onToggleTargetCategory(option.value)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                className={`min-h-11 max-w-full rounded-full border px-3 py-2 text-sm font-semibold transition ${
                   selected
                     ? 'border-cyan-500 bg-cyan-500 text-white'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200'
@@ -400,7 +400,7 @@ export default function StudentProfileFields({
                 key={option}
                 type="button"
                 onClick={() => onTogglePreferredLocation(option)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                className={`min-h-11 max-w-full rounded-full border px-3 py-2 text-sm font-semibold transition ${
                   selected
                     ? 'border-cyan-500 bg-cyan-500 text-white'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200'
@@ -461,7 +461,7 @@ export default function StudentProfileFields({
                       key={option.value}
                       type="button"
                       onClick={() => onToggleSkill(option.value)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                      className={`min-h-11 max-w-full rounded-full border px-3 py-2 text-sm font-semibold transition ${
                         selected
                           ? 'border-indigo-500 bg-indigo-500 text-white'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
