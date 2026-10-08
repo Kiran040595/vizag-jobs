@@ -22,7 +22,7 @@ const markdownComponents = {
   h3: ({ children }) => <h3 className="mt-6 text-xl font-bold text-slate-900">{children}</h3>,
   p: ({ children }) => <p className="mt-4 text-base leading-relaxed text-slate-700">{children}</p>,
   a: ({ href, children }) => (
-    <a href={href} className="font-semibold text-cyan-700 underline decoration-cyan-300 underline-offset-2 hover:text-cyan-600" target="_blank" rel="noopener noreferrer">
+    <a href={href} className="[overflow-wrap:anywhere] font-semibold text-cyan-700 underline decoration-cyan-300 underline-offset-2 hover:text-cyan-600" target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   ),
@@ -113,7 +113,7 @@ export default function BlogPostPage() {
       <Navbar />
 
       <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <Link to="/blog" className="text-sm font-semibold text-cyan-700 hover:text-cyan-600">
+        <Link to="/blog" className="inline-flex min-h-11 items-center text-sm font-semibold text-cyan-700 hover:text-cyan-600">
           Back to blog
         </Link>
 
@@ -130,11 +130,11 @@ export default function BlogPostPage() {
         {post ? (
           <article className="mt-8">
             <header>
-              <h1 className="text-3xl font-black text-slate-950 sm:text-4xl">{post.title}</h1>
+              <h1 className="break-words text-2xl font-black text-slate-950 sm:text-4xl">{post.title}</h1>
               <p className="mt-2 text-sm text-slate-500">{formatDate(post.publishedAt)}</p>
               {post.excerpt ? <p className="mt-4 text-lg text-slate-600">{post.excerpt}</p> : null}
             </header>
-            <div className="blog-post-body mt-8">
+            <div className="blog-post-body mt-6 min-w-0 break-words sm:mt-8">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                 {post.body}
               </ReactMarkdown>
