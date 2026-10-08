@@ -1,8 +1,8 @@
 import { STUDENT_DEGREE_OPTIONS, STUDENT_BRANCH_OPTIONS } from '../lib/studentProfileOptions';
 import { listValues } from '../lib/candidateEligibility';
-const cls = 'mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm';
+const cls = 'mt-1 min-w-0 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base';
 export default function JobRequirementsFields({ values, onChange }) {
-  const multi = (name, options, label) => <fieldset><legend>{label} (leave empty for any)</legend><div className="mt-2 flex flex-wrap gap-2">{options.map(v => <label key={v} className="flex gap-1 rounded-lg border px-2 py-1 text-xs"><input type="checkbox" checked={listValues(values[name]).includes(v)} onChange={e => onChange({ target: { name, value: e.target.checked ? [...listValues(values[name]), v] : listValues(values[name]).filter(x => x !== v) } })} />{v}</label>)}</div></fieldset>;
+  const multi = (name, options, label) => <fieldset className="min-w-0"><legend>{label} (leave empty for any)</legend><div className="mt-2 flex flex-wrap gap-2">{options.map(v => <label key={v} className="flex min-h-11 max-w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm"><input className="size-5 shrink-0" type="checkbox" checked={listValues(values[name]).includes(v)} onChange={e => onChange({ target: { name, value: e.target.checked ? [...listValues(values[name]), v] : listValues(values[name]).filter(x => x !== v) } })} />{v}</label>)}</div></fieldset>;
   const text = (name, label) => <label>{label}<textarea className={cls} name={name} value={Array.isArray(values[name]) ? values[name].join('\n') : values[name] || ''} onChange={onChange} placeholder="One per line" /></label>;
   return <section className="my-5 space-y-4 rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4">
     <h2 className="font-bold">Candidate requirements</h2>
@@ -15,7 +15,7 @@ export default function JobRequirementsFields({ values, onChange }) {
       {text('required_skills', 'Required skills')}{text('preferred_skills', 'Preferred skills')}
       {text('required_candidate_locations', 'Required candidate cities / areas (empty means any)')}
     </div>
-    <label className="flex gap-2"><input type="checkbox" name="accepts_relocation" checked={Boolean(values.accepts_relocation)} onChange={onChange} />Accept candidates willing to relocate instead of current residents</label>
-    <label className="flex gap-2"><input type="checkbox" name="requirements_verified" checked={Boolean(values.requirements_verified)} onChange={onChange} />I have reviewed these structured requirements (empty selections mean any)</label>
+    <label className="flex min-h-11 items-start gap-3"><input className="size-5 shrink-0" type="checkbox" name="accepts_relocation" checked={Boolean(values.accepts_relocation)} onChange={onChange} />Accept candidates willing to relocate instead of current residents</label>
+    <label className="flex min-h-11 items-start gap-3"><input className="size-5 shrink-0" type="checkbox" name="requirements_verified" checked={Boolean(values.requirements_verified)} onChange={onChange} />I have reviewed these structured requirements (empty selections mean any)</label>
   </section>;
 }

@@ -11,7 +11,7 @@ import { cleanJobRoleLabel } from '../../lib/jobRoleLabel';
 import { useEmployerAuth } from '../../hooks/useEmployerAuth';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
+  'mt-2 min-w-0 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
 const REQUIRED_FIELDS = ['title', 'company', 'role', 'category', 'job_type'];
 
@@ -134,7 +134,7 @@ export default function EmployerJobForm({
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60">
       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
         {mode === 'edit' ? 'Edit submission' : 'New job'}
       </p>
@@ -245,7 +245,7 @@ export default function EmployerJobForm({
         <span className="text-sm font-medium text-slate-700">This is a fresher job</span>
       </label>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {onCancel ? (
           <button
             type="button"
@@ -259,7 +259,7 @@ export default function EmployerJobForm({
           type="button"
           disabled={isSaving}
           onClick={handleSubmit}
-          className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+          className="min-h-12 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSaving ? 'Submitting...' : mode === 'edit' ? 'Resubmit for review' : 'Submit for review'}
         </button>
