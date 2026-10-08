@@ -13,7 +13,7 @@ export default function EmployerForgotPasswordPage() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-slate-950 px-4 py-12 text-white">
+      <div className="min-h-screen bg-slate-950 px-3 py-6 sm:px-4 sm:py-12 text-white">
         <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8">
           <h1 className="text-2xl font-black">Supabase is not configured.</h1>
         </div>
@@ -23,7 +23,7 @@ export default function EmployerForgotPasswordPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-12">
+      <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-4 sm:py-12">
         <div className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white p-8">
           <LoadingSpinner message="Loading..." />
         </div>
@@ -57,14 +57,14 @@ export default function EmployerForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.2),_transparent_35%),linear-gradient(180deg,_#eff6ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.2),_transparent_35%),linear-gradient(180deg,_#eff6ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 sm:px-4 sm:py-12">
       <SEO
         title="Forgot password | Employer | Vizag Jobs"
         description="Reset your Vizag Jobs employer account password."
         canonical="/employer/forgot-password"
       />
-      <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl sm:p-10">
-        <h1 className="text-3xl font-black text-slate-950">Forgot password</h1>
+      <div className="mx-auto max-w-lg rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-10">
+        <h1 className="text-2xl font-black sm:text-3xl text-slate-950">Forgot password</h1>
         <p className="mt-3 text-sm text-slate-600">
           Enter the email for your employer account. We will send a reset link if it matches.
         </p>
@@ -78,7 +78,7 @@ export default function EmployerForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
             />
           </label>
 
