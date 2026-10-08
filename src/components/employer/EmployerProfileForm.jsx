@@ -7,7 +7,7 @@ import {
 } from '../../lib/employerProfileOptions';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
+  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
 export default function EmployerProfileForm({ onSaved }) {
   const { profile, refreshEmployerAccess, user } = useEmployerAuth();
@@ -71,7 +71,7 @@ export default function EmployerProfileForm({ onSaved }) {
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60">
       <h2 className="text-2xl font-black text-slate-950">Company profile</h2>
       <p className="mt-2 text-sm text-slate-600">
         This information is shown on your job posts and used when you submit listings for admin review.
