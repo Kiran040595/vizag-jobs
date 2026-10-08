@@ -48,39 +48,12 @@ const getStoredAdminDraft = () => {
   }
 };
 
-const RoleToggle = ({ label, active, onChange, accent }) => {
-  const activeClasses =
-    accent === 'admin'
-      ? 'border-slate-800 bg-slate-900 text-white'
-      : 'border-cyan-500 bg-cyan-500 text-slate-950';
-  const idleClasses = 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50';
-
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={active}
-      onClick={() => onChange(!active)}
-      className={`inline-flex flex-1 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-        active ? activeClasses : idleClasses
-      }`}
-    >
-      <span>{label}</span>
-      <span
-        className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-          active ? 'bg-white/30' : 'bg-slate-200'
-        }`}
-        aria-hidden="true"
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-            active ? 'left-5' : 'left-0.5'
-          }`}
-        />
-      </span>
-    </button>
-  );
-};
+const RoleToggle = ({ label, active, onChange }) => (
+  <button type="button" aria-pressed={active} onClick={onChange}
+    className={`min-h-11 min-w-0 rounded-xl border px-2 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-100 ${active ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+    {label}
+  </button>
+);
 
 function StudentLoginPanel({ searchParams }) {
   const navigate = useNavigate();
@@ -190,9 +163,10 @@ function StudentLoginPanel({ searchParams }) {
             onChange={(e) => setIdentifier(e.target.value)}
             required
             autoComplete="username"
-            inputMode="email"
+            autoCapitalize="none"
+            spellCheck={false}
             placeholder="you@college.edu or 9876543210"
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
           />
         </label>
         <label className="block">
@@ -203,7 +177,7 @@ function StudentLoginPanel({ searchParams }) {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
           />
         </label>
         <p className="-mt-2 text-right text-sm">
@@ -217,7 +191,7 @@ function StudentLoginPanel({ searchParams }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="h-12 w-full rounded-2xl bg-indigo-500 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-70"
+          className="h-12 w-full rounded-2xl bg-indigo-600 text-base font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-70"
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>
@@ -226,7 +200,7 @@ function StudentLoginPanel({ searchParams }) {
       <p className="mt-6 text-center text-sm text-slate-600">
         New here?{' '}
         <Link to={registerPath} className="font-semibold text-indigo-600 hover:text-indigo-700">
-          Create student account
+          Create free student account
         </Link>
       </p>
     </>
@@ -305,7 +279,7 @@ function EmployerLoginPanel({ searchParams }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
           />
         </label>
         <label className="block">
@@ -315,7 +289,7 @@ function EmployerLoginPanel({ searchParams }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
           />
         </label>
         <p className="-mt-2 text-right text-sm">
@@ -424,7 +398,7 @@ function AdminLoginPanel() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
             placeholder="kiran@jobsinvizag.in"
           />
         </label>
@@ -438,7 +412,7 @@ function AdminLoginPanel() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+            className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
           />
         </label>
       {submitError ? (
@@ -477,7 +451,7 @@ export default function UnifiedLoginPage() {
       description: 'Sign in to Vizag Jobs to apply for jobs in Vizag.',
       canonical: '/student/login',
       heading: 'Sign in',
-      hint: 'For students by default. Use the toggles only if you have a company or admin account.',
+      hint: 'Welcome back. Sign in to apply and track your applications.',
     },
     employer: {
       title: 'Company login | Vizag Jobs',
@@ -496,26 +470,17 @@ export default function UnifiedLoginPage() {
   }[role];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_55%,_#f1f5f9_100%)] px-4 py-10 sm:py-14">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_55%,_#f1f5f9_100%)] px-3 py-6 sm:px-4 sm:py-14">
       <SEO title={seo.title} description={seo.description} canonical={seo.canonical} />
 
-      <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+      <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/60 sm:p-8">
         <h1 className="text-2xl font-black text-slate-950 sm:text-3xl">{seo.heading}</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">{seo.hint}</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <RoleToggle
-            label="Admin"
-            accent="admin"
-            active={role === 'admin'}
-            onChange={(on) => setRole(on ? 'admin' : 'student')}
-          />
-          <RoleToggle
-            label="Company"
-            accent="employer"
-            active={role === 'employer'}
-            onChange={(on) => setRole(on ? 'employer' : 'student')}
-          />
+        <div className="mt-5 grid grid-cols-3 gap-2" role="group" aria-label="Account type">
+          <RoleToggle label="Student" active={role === 'student'} onChange={() => setRole('student')} />
+          <RoleToggle label="Company" active={role === 'employer'} onChange={() => setRole('employer')} />
+          <RoleToggle label="Admin" active={role === 'admin'} onChange={() => setRole('admin')} />
         </div>
 
         {role === 'student' ? <StudentLoginPanel searchParams={searchParams} /> : null}
