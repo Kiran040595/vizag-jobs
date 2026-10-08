@@ -38,7 +38,7 @@ export default function CookieConsentBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_40px_rgba(15,23,42,0.12)] backdrop-blur sm:p-5 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      className="fixed inset-x-0 bottom-0 z-[60] max-h-[80dvh] overflow-y-auto border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_40px_rgba(15,23,42,0.12)] backdrop-blur sm:p-5 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-modal={showDetails && hasDecision ? 'true' : 'false'}
       aria-labelledby="cookie-consent-title"
@@ -51,9 +51,7 @@ export default function CookieConsentBanner() {
               Cookie preferences
             </h2>
             <p id="cookie-consent-description" className="mt-1.5 text-sm leading-6 text-slate-600 sm:mt-2">
-              We use essential cookies to run the site (for example, saved jobs in your browser). With your
-              permission, we also use analytics cookies and advertising cookies for services such as Vercel
-              Analytics and Google AdSense. Read our{' '}
+              Essential cookies keep this site working. Analytics and advertising cookies are optional. Read our{' '}
               <Link to="/privacy-policy" className="font-semibold text-cyan-700 hover:text-cyan-800">
                 Privacy Policy
               </Link>{' '}
@@ -62,7 +60,7 @@ export default function CookieConsentBanner() {
           </div>
 
           {!showDetails ? (
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:shrink-0 sm:flex-wrap">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:flex-wrap">
               <button
                 type="button"
                 onClick={acceptAll}
@@ -80,9 +78,9 @@ export default function CookieConsentBanner() {
               <button
                 type="button"
                 onClick={() => setShowDetails(true)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 sm:py-2.5"
+                className="col-span-2 min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 underline transition hover:bg-slate-50 sm:py-2.5"
               >
-                Manage
+                Manage preferences
               </button>
             </div>
           ) : null}

@@ -317,8 +317,6 @@ export default function HomePage() {
         {!isLoading || allJobs.length > 0 ? (
           <>
             <JobsForYou jobs={allJobs} />
-            <JobCategoryBrowse />
-            <BlogTeaserSection />
             <JobSourceTabs
               activeTab={filters.tab}
               onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
@@ -352,6 +350,8 @@ export default function HomePage() {
           />
         ) : null}
 
+        <JobCategoryBrowse />
+        <BlogTeaserSection />
         <CommunityQaSection />
 
         <StatsSection stats={siteStats} isLoading={isLoading && allJobs.length === 0} />

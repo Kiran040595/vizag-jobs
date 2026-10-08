@@ -21,7 +21,7 @@ function FilterPill({ id, label, current, onSelect, color = 'blue' }) {
       type="button"
       onClick={() => onSelect(id)}
       aria-pressed={isOn}
-      className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition sm:px-3 sm:py-1.5 sm:text-xs ${
+      className={`min-h-11 rounded-full border px-3.5 py-2 text-sm font-semibold transition sm:px-3 sm:py-1.5 sm:text-xs ${
         isOn ? PILL_ON_COLOR[color] : PILL_OFF
       }`}
     >
@@ -38,7 +38,7 @@ function ActiveFilterChip({ label, onRemove }) {
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${label} filter`}
-        className="rounded-full p-1 text-blue-700 transition hover:bg-blue-200 hover:text-blue-900"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-blue-700 transition hover:bg-blue-200 hover:text-blue-900"
       >
         <svg
           className="h-3 w-3"

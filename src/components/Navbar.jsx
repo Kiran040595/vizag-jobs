@@ -228,6 +228,8 @@ export default function Navbar() {
 
       <div
         id="mobile-nav-drawer"
+        inert={!isOpen}
+        aria-hidden={!isOpen}
         className={`relative z-50 border-t border-slate-200 bg-white transition-[max-height] duration-300 lg:hidden ${
           isOpen ? 'max-h-[min(85dvh,720px)] overflow-y-auto overscroll-contain' : 'max-h-0 overflow-hidden'
         }`}

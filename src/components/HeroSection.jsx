@@ -63,7 +63,7 @@ export default function HeroSection({
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-blue-100/90 sm:mt-4 sm:text-base">
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-blue-100/90 sm:mt-4 sm:text-base">
             {subtitle}
           </p>
         ) : null}
@@ -73,13 +73,14 @@ export default function HeroSection({
         >
           <div className="grid gap-2 md:grid-cols-[1.7fr_1.2fr_1.2fr_auto] md:gap-3">
             <input
+              aria-label="Search by job title, skill or company"
               id="job-title"
               type="search"
               enterKeyHint="search"
               autoComplete="off"
               value={searchTerm}
               onChange={(event) => onSearch(event.target.value)}
-              placeholder="Job title, keywords, or company"
+              placeholder="Job title, skill or company"
               className="h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4 md:text-sm"
             />
 
@@ -124,17 +125,18 @@ export default function HeroSection({
         <div className="mt-3 flex w-full max-w-5xl items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none sm:hidden">
           <span className="shrink-0 text-[11px] font-semibold text-blue-200">Quick:</span>
           {[
-            { label: 'IT / Software', icon: '💻' },
-            { label: 'Fresher', icon: '🎓' },
-            { label: 'Banking / Finance', icon: '🏦' },
-            { label: 'Civil', icon: '🏗️' },
-            { label: 'Mechanical', icon: '⚙️' },
+            { label: 'IT & Software', icon: '💻' },
+            { label: 'Fresher Jobs', icon: '🎓' },
+            { label: 'Banking & Finance', icon: '🏦' },
+            { label: 'Civil Engineering', icon: '🏗️' },
+            { label: 'Mechanical Engineering', icon: '⚙️' },
           ].map((item) => (
             <button
               key={item.label}
               type="button"
+              aria-pressed={category === item.label}
               onClick={() => handleSelectQuickCategory(item.label)}
-              className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-medium backdrop-blur transition active:scale-95 ${
+              className={`min-h-11 shrink-0 rounded-xl border px-3 py-2 text-sm font-medium backdrop-blur transition active:scale-95 ${
                 category === item.label
                   ? 'border-cyan-300 bg-cyan-500/30 text-white font-bold'
                   : 'border-white/20 bg-white/10 text-blue-100 hover:bg-white/20'
