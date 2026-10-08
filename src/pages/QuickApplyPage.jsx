@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import QuickFormFields from "../components/QuickFormFields";
 import {
@@ -11,6 +11,7 @@ import { supabase } from "../lib/supabaseClient";
 export default function QuickApplyPage() {
   const { slug } = useParams();
   const [params] = useSearchParams();
+  const successRef = useRef(null);
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState({});
@@ -43,6 +44,12 @@ export default function QuickApplyPage() {
       live = false;
     };
   }, [slug]);
+  useEffect(() => {
+    if (done) {
+      successRef.current?.focus();
+      successRef.current?.scrollIntoView({ block: 'center' });
+    }
+  }, [done]);
   async function submit(e) {
     e.preventDefault();
     setError("");
@@ -107,18 +114,18 @@ export default function QuickApplyPage() {
           <>
             <section className="mb-5 rounded-2xl bg-white p-5 shadow-sm">
               <h1 className="break-words text-2xl font-bold">{job.title}</h1>
-              <p className="mt-2 text-slate-600">{job.company}</p>
-              <p className="mt-3 font-semibold">
+              <p className="mt-2 break-words text-slate-600">{job.company}</p>
+              <p className="mt-3 break-words font-semibold">
                 {job.location}
                 {job.salary ? ` · ${job.salary}` : ""}
               </p>
-              <p className="mt-4 whitespace-pre-wrap break-words text-slate-700">
+              <p className="mt-4 whitespace-pre-wrap break-words leading-7 text-slate-700">
                 {job.description}
               </p>
             </section>
             {done ? (
               <section className="rounded-2xl bg-white p-5" role="status">
-                <h2 className="text-2xl font-bold">Application received</h2>
+                <h2 ref={successRef} tabIndex={-1} className="text-2xl font-bold outline-none">Application received</h2>
                 <p className="mt-3">
                   Thank you! If you already applied with this number, your
                   existing application is kept.
@@ -134,7 +141,7 @@ export default function QuickApplyPage() {
                   Register free
                 </Link>
                 <Link
-                  className="mt-3 flex min-h-12 items-center justify-center rounded-xl border px-4"
+                  className="mt-3 flex min-h-12 items-center justify-center rounded-xl border px-4 py-3 text-center"
                   to="/student/login?next=%2Fquick-applications%2Fclaim"
                 >
                   Already registered? Sign in and link my application

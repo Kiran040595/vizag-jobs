@@ -1,5 +1,5 @@
 export const quickInputClass =
-  "min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 focus:outline-2 focus:outline-blue-600";
+  "min-h-12 min-w-0 max-w-full w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 focus:outline-2 focus:outline-blue-600";
 export default function QuickFormFields({
   fields,
   answers,
@@ -22,14 +22,15 @@ export default function QuickFormFields({
             <fieldset
               disabled={disabled}
               aria-label={field.label}
-              className="flex flex-wrap gap-2"
+              className="flex min-w-0 flex-wrap gap-2"
             >
               {field.options.map((option) => (
                 <label
                   key={option}
-                  className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-300 px-4 py-3"
+                  className="flex min-h-12 max-w-full items-center gap-3 break-words [overflow-wrap:anywhere] rounded-xl border border-slate-300 px-4 py-3"
                 >
                   <input
+                    className="size-5 shrink-0"
                     type={field.type}
                     name={field.id}
                     value={option}
