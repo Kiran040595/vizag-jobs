@@ -116,13 +116,14 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+      aria-label="Ask a career or hiring question"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm [&_button]:min-h-11"
     >
-      <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8">
+      <div className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-8">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-5 top-5 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
           aria-label="Close"
         >
           <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -173,7 +174,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
               </p>
             )}
 
-            <div className="mt-5 flex justify-end gap-2.5">
+            <div className="mt-5 flex flex-wrap justify-end gap-2.5">
               <button
                 type="button"
                 onClick={onClose}
@@ -188,7 +189,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
             <div className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-bold text-cyan-800">
               Ask VizagJobs Community
             </div>
-            <h3 className="mt-2 text-xl font-black text-slate-950">Ask a Career or Hiring Doubt</h3>
+            <h3 className="mt-2 pr-9 text-xl font-black text-slate-950">Ask a Career or Hiring Doubt</h3>
             <p className="mt-1 text-xs text-slate-600">
               Free and open to all students, freshers, and professionals in Visakhapatnam.
             </p>
@@ -197,9 +198,10 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
               <div>
                 <label className="block text-xs font-semibold text-slate-700">Category</label>
                 <select
+                  aria-label="Question category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 >
                   <option value="general">General Hiring Doubt</option>
                   <option value="fresher">Freshers &amp; Walk-ins</option>
@@ -215,20 +217,22 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
                   <label className="block text-xs font-semibold text-slate-700">Your Name</label>
                   <input
                     type="text"
+                    aria-label="Your name"
                     value={askerName}
                     onChange={(e) => setAskerName(e.target.value)}
                     placeholder="e.g. Rahul (Madhurawada)"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700">Your Email (for notification)</label>
                   <input
                     type="email"
+                    aria-label="Your email for notification"
                     value={askerEmail}
                     onChange={(e) => setAskerEmail(e.target.value)}
                     placeholder="your.email@example.com"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                   />
                 </div>
               </div>
@@ -236,19 +240,20 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
               <div>
                 <label className="block text-xs font-semibold text-slate-700">Your Question</label>
                 <textarea
+                  aria-label="Your question"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={4}
                   required
                   placeholder="e.g. Do IT SEZ companies in Rushikonda hire 2026 passouts through direct walk-in or only campus placements?"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </div>
             </div>
 
             {error ? <p className="mt-3 text-xs font-medium text-red-600">{error}</p> : null}
 
-            <div className="mt-5 flex justify-end gap-2.5">
+            <div className="mt-5 flex flex-wrap justify-end gap-2.5">
               <button
                 type="button"
                 onClick={onClose}
@@ -399,7 +404,7 @@ export default function CommunityQaPage() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 placeholder="Search doubts (e.g. freshers walk-in, salary bond, Fluentgrid, training fees)..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 py-3 pl-10 pr-4 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100"
               />
             </div>
           </div>
@@ -410,8 +415,9 @@ export default function CommunityQaPage() {
               <button
                 key={cat.id}
                 type="button"
+                aria-pressed={activeCategory === cat.id}
                 onClick={() => handleCategorySelect(cat.id)}
-                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+                className={`min-h-11 rounded-xl px-3.5 py-2 text-sm font-bold transition ${
                   activeCategory === cat.id
                     ? 'bg-cyan-500 text-slate-950 shadow-sm'
                     : 'border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -488,7 +494,7 @@ export default function CommunityQaPage() {
                     <div className="mt-2.5">
                       <Link
                         to={getJobDetailPath(item.job)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-cyan-50 hover:text-cyan-800"
+                        className="inline-flex min-h-11 flex-wrap items-center gap-1.5 break-words rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-cyan-50 hover:text-cyan-800"
                       >
                         <span>📌 Regarding Job:</span>
                         <strong className="text-slate-900">{item.job.title}</strong>
@@ -512,7 +518,7 @@ export default function CommunityQaPage() {
                         {item.answeredByRole || 'Verified VizagJobs Response'}
                       </span>
                     </div>
-                    <p className="mt-2.5 text-sm leading-relaxed text-slate-700 sm:text-base">
+                    <p className="mt-2.5 break-words text-base leading-relaxed text-slate-700 sm:text-base">
                       {item.answerBody}
                     </p>
                   </div>
