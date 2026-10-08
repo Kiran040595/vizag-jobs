@@ -160,7 +160,7 @@ function EmployerJobsListContent() {
             return (
               <article key={job.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0 break-words">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
                       <span
@@ -195,7 +195,7 @@ function EmployerJobsListContent() {
                     {job.apply_mode === 'internal' || candidateCount > 0 ? (
                       <Link
                         to={`/employer/jobs/${job.id}/applications`}
-                        className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
+                        className="inline-flex min-h-11 items-center rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
                       >
                         View applications ({candidateCount})
                       </Link>
@@ -204,7 +204,7 @@ function EmployerJobsListContent() {
                       <button
                         type="button"
                         onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
-                        className="rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        className="min-h-11 rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         Edit
                       </button>
