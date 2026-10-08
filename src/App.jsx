@@ -1,4 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import QuickRegisterPage from './pages/QuickRegisterPage';
+import AdminQuickJobPage from './pages/AdminQuickJobPage';
+import AdminQuickCandidatesPage from './pages/AdminQuickCandidatesPage';
+import QuickApplyPage, { ClaimQuickApplicationsPage } from './pages/QuickApplyPage';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import JobDetailsPage from './pages/JobDetailsPage';
 import JobsInVizagPage from './pages/JobsInVizagPage';
@@ -64,10 +68,18 @@ import MobileBottomNav from './components/MobileBottomNav';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
+  const { pathname } = useLocation();
+  const quickFlow = pathname.startsWith('/apply/') || pathname.startsWith('/quick-applications/') || pathname === '/quick-register';
   return (
     <>
     <ScrollToTop />
     <Routes>
+      <Route path="/quick-register" element={<QuickRegisterPage />} />
+      <Route path="/apply/:slug" element={<QuickApplyPage />} />
+      <Route path="/quick-applications/claim" element={<ClaimQuickApplicationsPage />} />
+      <Route path="/admin/quick-jobs/new" element={<AdminRoute><AdminQuickJobPage /></AdminRoute>} />
+      <Route path="/admin/quick-jobs/:jobId/edit" element={<AdminRoute><AdminQuickJobPage /></AdminRoute>} />
+      <Route path="/admin/candidates" element={<AdminRoute><AdminQuickCandidatesPage /></AdminRoute>} />
       <Route path="/" element={<HomePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/oauth/consent" element={<OAuthConsentPage />} />
@@ -279,11 +291,13 @@ function App() {
         <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}
     </Routes>
+    {!quickFlow && <>
     <CookieConsentBanner />
     <JobAlertNotifications />
     <FeedbackFloatingButton />
     <SiteChatBot />
     <MobileBottomNav />
+    </>}
     </>
   );
 }

@@ -44,6 +44,7 @@ const JOB_LIST_PAGE_SIZE = 1000;
  * are typically 80-90% of a row's bytes.
  */
 const LIST_COLUMNS = [
+  'is_quick_job',
   'id',
   'accepted_degrees', 'accepted_branches', 'required_education_status', 'required_experience',
   'required_skills', 'preferred_skills', 'required_candidate_locations', 'accepts_relocation', 'requirements_verified',
@@ -164,6 +165,7 @@ const processJobData = (job, index) => {
     groupLink: normalizeText(job.group_link),
     salary: normalizeText(job.salary),
     applyLink: normalizeText(job.apply_link),
+    isQuickJob: Boolean(job.is_quick_job),
     applyMode: job.apply_mode === 'internal' ? 'internal' : 'external',
     applicationCount: Number(job.application_count) > 0 ? Math.floor(Number(job.application_count)) : 0,
     applyClickCount: Number(job.apply_click_count) > 0 ? Math.floor(Number(job.apply_click_count)) : 0,

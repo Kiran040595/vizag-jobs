@@ -339,6 +339,7 @@ export default function JobDetailsPage() {
                   <StudentApplyButton
                     applyLink={job.applyLink}
                     applyMode={job.applyMode}
+                    isQuickJob={job.isQuickJob}
                     jobId={job.id}
                     jobPath={jobDetailPath}
                     jobTitle={job.title}
@@ -486,6 +487,7 @@ export default function JobDetailsPage() {
           <StudentApplyButton
             applyLink={job.applyLink}
             applyMode={job.applyMode}
+                    isQuickJob={job.isQuickJob}
             jobId={job.id}
             jobPath={jobDetailPath}
             jobTitle={job.title}

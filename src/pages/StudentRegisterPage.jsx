@@ -34,7 +34,12 @@ export default function StudentRegisterPage() {
   const [searchParams] = useSearchParams();
   const { isLoading, isStudent, isSupabaseConfigured, profileComplete, session, signUp } =
     useStudentAuth();
-  const [form, setForm] = useState(INITIAL_STUDENT_REGISTER_FORM);
+  const [form, setForm] = useState(() => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem('vizagjobs.quick.registration') || '{}');
+      return { ...INITIAL_STUDENT_REGISTER_FORM, full_name: draft.full_name || '', phone: draft.phone || '', contact_email: draft.email || '' };
+    } catch { return INITIAL_STUDENT_REGISTER_FORM; }
+  });
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

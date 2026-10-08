@@ -1,3 +1,4 @@
+import { enrichQuickCandidate } from '../lib/quickApply';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { getJobDetailPath } from '../lib/jobRoutes';
 import {
@@ -42,7 +43,7 @@ const mapApplication = (row) => {
       }
     : null;
 
-  return {
+  const application = {
     id: row.id,
     jobId: row.job_id,
     studentUserId: row.student_user_id,
@@ -61,6 +62,7 @@ const mapApplication = (row) => {
     job,
     jobPath: job ? getJobDetailPath(job) : null,
   };
+  return enrichQuickCandidate(application, row.profile_snapshot);
 };
 
 const buildProfileSnapshot = (profile) => ({
@@ -178,6 +180,9 @@ export const fetchJobCandidates = async (jobId) => {
     });
 
     if (!error && Array.isArray(data)) {
+      const { data: quickDetails } = await supabase.from('job_applications')
+        .select('id,profile_snapshot').eq('job_id', jobId).not('quick_form_id', 'is', null);
+      const quickSnapshots = new Map((quickDetails || []).map(row => [row.id, row.profile_snapshot]));
       return data.map((row) => ({
         id: row.id,
         jobId: row.job_id,
@@ -204,7 +209,7 @@ export const fetchJobCandidates = async (jobId) => {
         interviewLocation: row.interview_location || '',
         interviewInstructions: row.interview_instructions || '',
         submittedAt: row.created_at,
-      }));
+      })).map(candidate => enrichQuickCandidate(candidate, quickSnapshots.get(candidate.id)));
     }
   } catch (rpcError) {
     console.warn('get_job_applicant_records RPC failed, falling back to fetchJobApplications:', rpcError);

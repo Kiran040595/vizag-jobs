@@ -365,7 +365,7 @@ export default function JobApplicationCard({
               >
                 {formatApplicationStatus(application.status)}
               </span>
-              {snapshot.isFresher !== undefined ? (
+              {typeof snapshot.isFresher === 'boolean' ? (
                 <span className="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
                   {snapshot.isFresher ? 'Fresher' : 'Experienced'}
                 </span>
@@ -483,8 +483,8 @@ export default function JobApplicationCard({
           ) : null}
 
           {application.coverNote ? (
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-3 text-xs text-slate-700">
-              <span className="font-bold text-slate-800">Candidate Note: </span>
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-3 text-sm whitespace-pre-wrap break-words text-slate-700">
+              <span className="font-bold text-slate-800">Application details: </span>
               {application.coverNote}
             </div>
           ) : null}

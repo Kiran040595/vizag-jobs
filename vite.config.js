@@ -1,4 +1,5 @@
 import process from 'node:process'
+import quickApplyHandler from './api/quick-apply.js'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -25,6 +26,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      { name: 'quick-apply-dev-api', configureServer(server) {
+        for (const key of ['SUPABASE_URL', 'VITE_SUPABASE_URL', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY']) {
+          if (env[key] && !process.env[key]) process.env[key] = env[key];
+        }
+        server.middlewares.use('/api/quick-apply', (req, res) => { quickApplyHandler(req, res).catch(() => { res.statusCode = 500; res.end('{"error":"Applications temporarily unavailable."}'); }); });
+      } },
       adsenseHeadPlugin(adsenseClientId),
       react(),
     tailwindcss(),

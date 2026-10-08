@@ -109,7 +109,7 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     label: 'Fresher',
     group: 'Education',
     defaultSelected: false,
-    getValue: (app) => (snapshot(app).isFresher ? 'Yes' : 'No'),
+    getValue: (app) => (typeof snapshot(app).isFresher === 'boolean' ? snapshot(app).isFresher ? 'Yes' : 'No' : 'Not provided'),
   },
   {
     id: 'targetJobCategories',
@@ -188,7 +188,7 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
   },
   {
     id: 'coverNote',
-    label: 'Cover note',
+    label: 'Cover note / quick form answers',
     group: 'Application',
     defaultSelected: false,
     getValue: (app) => app.coverNote || '',

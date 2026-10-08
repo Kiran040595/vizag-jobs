@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 
 const navItems = [
+  { label: 'Quick Job', to: '/admin/quick-jobs/new' },
+  { label: 'Quick candidates', to: '/admin/candidates' },
   { label: 'New Job', to: '/admin/new' },
   { label: 'Admin Jobs', to: '/admin/admin-jobs' },
   { label: 'Employer submissions', to: '/admin/jobs' },
@@ -44,6 +46,9 @@ export default function AdminShell({ children, title, description }) {
         </div>
 
         <div className="mx-auto flex w-full max-w-7xl flex-wrap gap-3 px-4 pb-5 sm:px-6 lg:px-8">
+          <details className="w-full sm:hidden">
+            <summary className="min-h-12 cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold">Admin menu</summary>
+            <nav className="mt-3 flex flex-wrap gap-2" aria-label="Mobile admin navigation">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -59,6 +64,25 @@ export default function AdminShell({ children, title, description }) {
               {item.label}
             </NavLink>
           ))}
+            </nav>
+          </details>
+          <nav className="hidden flex-wrap gap-3 sm:flex" aria-label="Admin navigation">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                  isActive
+                    ? 'bg-cyan-500 text-slate-950'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+          </nav>
         </div>
       </header>
 

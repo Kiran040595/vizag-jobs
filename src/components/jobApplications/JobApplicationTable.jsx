@@ -157,7 +157,7 @@ export default function JobApplicationTable({
                       <div>
                         <div className="font-bold text-slate-900">{name}</div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-                          {snapshot.isFresher !== undefined ? (
+                          {typeof snapshot.isFresher === 'boolean' ? (
                             <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-600">
                               {snapshot.isFresher ? 'Fresher' : 'Exp'}
                             </span>

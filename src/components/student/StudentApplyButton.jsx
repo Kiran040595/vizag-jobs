@@ -17,6 +17,7 @@ import StudentAuthRequiredAlert from './StudentAuthRequiredAlert.jsx';
 
 export default function StudentApplyButton({
   applyLink,
+  isQuickJob = false,
   applyMode,
   jobId,
   jobPath,
@@ -48,6 +49,7 @@ export default function StudentApplyButton({
     label || (alreadyApplied ? 'Applied' : applyButtonLabel({ applyMode }));
 
   const handleClick = () => {
+    if (isQuickJob) { navigate(`/apply/${jobId}`); return; }
     if (isLoading || alreadyApplied) {
       return;
     }
