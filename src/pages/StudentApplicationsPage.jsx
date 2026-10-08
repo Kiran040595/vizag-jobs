@@ -99,10 +99,11 @@ function StudentApplicationsContent() {
               <button
                 key={filter.id}
                 type="button"
+                aria-pressed={statusFilter === filter.id}
                 onClick={() => setStatusFilter(filter.id)}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
                   statusFilter === filter.id
-                    ? 'bg-indigo-500 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
@@ -116,7 +117,7 @@ function StudentApplicationsContent() {
 
       {isLoading ? <LoadingSpinner message="Loading your applied jobs..." /> : null}
 
-      {!isLoading && applications.length === 0 ? (
+      {!isLoading && !error && applications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No applied jobs yet</h3>
           <p className="mt-2 text-sm text-slate-600">
@@ -151,14 +152,14 @@ function StudentApplicationsContent() {
               <article
                 key={application.id}
                 id={`application-${application.id}`}
-                className={`rounded-3xl border bg-white p-5 shadow-sm ${
+                className={`rounded-3xl border bg-white p-4 shadow-sm sm:p-5 ${
                   highlightApplicationId === application.id
                     ? 'border-indigo-300 ring-2 ring-indigo-100'
                     : 'border-slate-200'
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0 break-words">
                     <h3 className="text-lg font-bold text-slate-950">
                       {application.job?.title || 'Job'}
                     </h3>
@@ -173,7 +174,7 @@ function StudentApplicationsContent() {
                     ) : null}
                   </div>
                   <span
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${getApplicationStatusStyle(
+                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase ${getApplicationStatusStyle(
                       normalizedStatus,
                     )}`}
                   >
@@ -188,7 +189,7 @@ function StudentApplicationsContent() {
                 {application.jobPath ? (
                   <Link
                     to={application.jobPath}
-                    className="mt-4 inline-flex text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700"
                   >
                     View job posting
                   </Link>
