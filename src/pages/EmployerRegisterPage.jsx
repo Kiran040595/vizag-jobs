@@ -109,7 +109,7 @@ export default function EmployerRegisterPage() {
         description="Register your company on VizagJobs to post job openings, receive screened candidate profiles, and schedule interviews."
         canonical="/employer/register"
       />
-      <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-10">
+      <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-xl sm:p-10">
         <div className="border-b border-slate-100 pb-5">
           <span className="inline-flex items-center rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
             For Employers & Hiring Teams
@@ -138,7 +138,7 @@ export default function EmployerRegisterPage() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
                 placeholder="e.g. Acme Tech Solutions Pvt Ltd"
-                className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
               />
             </label>
 
@@ -151,7 +151,7 @@ export default function EmployerRegisterPage() {
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
                   required
-                  className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 >
                   <option value="">Select industry…</option>
                   {EMPLOYER_INDUSTRY_OPTIONS.map((opt) => (
@@ -170,7 +170,7 @@ export default function EmployerRegisterPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   required
-                  className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 >
                   <option value="">Select office area…</option>
                   {EMPLOYER_LOCATION_OPTIONS.map((opt) => (
@@ -199,7 +199,7 @@ export default function EmployerRegisterPage() {
                   onChange={(e) => setContactName(e.target.value)}
                   required
                   placeholder="e.g. Ramesh Varma"
-                  className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 />
               </label>
 
@@ -213,7 +213,7 @@ export default function EmployerRegisterPage() {
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   placeholder="10-digit number e.g. 9876543210"
-                  className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 />
               </label>
             </div>
@@ -253,11 +253,12 @@ export default function EmployerRegisterPage() {
               </span>
               <input
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="hr@company.com"
-                className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
               />
             </label>
 
@@ -267,12 +268,13 @@ export default function EmployerRegisterPage() {
               </span>
               <input
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
                 placeholder="Minimum 6 characters"
-                className="mt-1.5 h-11 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
               />
             </label>
           </div>
