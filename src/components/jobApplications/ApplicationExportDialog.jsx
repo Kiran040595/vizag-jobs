@@ -81,7 +81,7 @@ export default function ApplicationExportDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="application-export-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl"
+        className="max-h-[calc(100dvh-2rem)] min-w-0 w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6 [&_button]:min-h-11"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -131,7 +131,7 @@ export default function ApplicationExportDialog({
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           {groupedColumns.map(({ group, columns }) => (
-            <fieldset key={group} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <fieldset key={group} className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <legend className="px-1 text-xs font-bold uppercase tracking-wide text-slate-500">
                 {group}
               </legend>
@@ -141,13 +141,13 @@ export default function ApplicationExportDialog({
                   return (
                     <label
                       key={column.id}
-                      className="flex cursor-pointer items-center gap-2 text-sm text-slate-800"
+                      className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-slate-800"
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleColumn(column.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        className="h-5 w-5 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                       />
                       <span>{column.label}</span>
                     </label>
