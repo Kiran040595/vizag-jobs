@@ -347,7 +347,7 @@ export default function JobApplicationCard({
   const avatarGradient = getAvatarGradient(snapshot.fullName);
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
+    <article className="min-w-0 break-words [&_button]:min-h-11 [&_a]:min-h-11 [&_input]:min-w-0 [&_input]:text-base [&_select]:min-h-11 [&_select]:min-w-0 [&_select]:max-w-full [&_select]:text-base [&_textarea]:text-base overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
       {/* Top Header Card Bar */}
       <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
         {/* Candidate Avatar & Identity */}
@@ -372,7 +372,7 @@ export default function JobApplicationCard({
               ) : null}
             </div>
 
-            <p className="mt-1 text-xs text-slate-600 sm:text-sm">
+            <p className="mt-1 break-words text-sm text-slate-600">
               {[snapshot.degree, snapshot.branch, snapshot.graduationYear ? `Class of ${snapshot.graduationYear}` : null]
                 .filter(Boolean)
                 .join(' · ')}
@@ -739,7 +739,7 @@ export default function JobApplicationCard({
 
           {/* Full Pipeline Stage Selector Dropdown */}
           {canUpdateStatus ? (
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <label htmlFor={`stage-select-${application.id}`} className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Pipeline Stage:
               </label>

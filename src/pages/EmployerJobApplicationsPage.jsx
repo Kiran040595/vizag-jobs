@@ -361,7 +361,7 @@ function EmployerJobApplicationsContent() {
 
       {/* Job Hero & Pipeline Stat Badges */}
       {job ? (
-        <div className="mb-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/70 p-6 shadow-sm">
+        <div className="mb-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/70 p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -430,7 +430,7 @@ function EmployerJobApplicationsContent() {
                   key={stage.id}
                   type="button"
                   onClick={() => setStatusFilter(stage.id)}
-                  className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                  className={`flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                     isActive
                       ? 'bg-slate-900 text-white shadow-xs'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -466,7 +466,7 @@ function EmployerJobApplicationsContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by candidate name, phone, email, college, branch, or skills..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-8 text-xs text-slate-900 placeholder-slate-400 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100 sm:text-sm"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-8 text-base text-slate-900 placeholder-slate-400 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100 sm:text-sm"
             />
             {searchQuery ? (
               <button
@@ -511,7 +511,7 @@ function EmployerJobApplicationsContent() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400"
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
