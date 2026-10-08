@@ -20,9 +20,9 @@ export default function LegalPageLayout({
       <SEO title={seoTitle || title} description={description} canonical={canonical} />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-10 sm:px-6 lg:px-8">
         <nav className="text-sm text-slate-500" aria-label="Breadcrumb">
-          <Link to="/" className="font-medium text-cyan-700 hover:text-cyan-800">
+          <Link to="/" className="inline-flex min-h-11 items-center font-medium text-cyan-700 hover:text-cyan-800">
             Home
           </Link>
           <span className="mx-2">/</span>
@@ -30,13 +30,13 @@ export default function LegalPageLayout({
         </nav>
 
         <header className="mt-4 border-b border-slate-200 pb-6">
-          <h1 className="text-3xl font-black text-slate-950 sm:text-4xl">{title}</h1>
+          <h1 className="break-words text-2xl font-black text-slate-950 sm:text-4xl">{title}</h1>
           {showLastUpdated ? (
             <p className="mt-2 text-sm text-slate-500">Last updated: {SITE_LEGAL_LAST_UPDATED}</p>
           ) : null}
         </header>
 
-        <article className="legal-prose mt-8 space-y-5 text-base leading-7 text-slate-700">{children}</article>
+        <article className="legal-prose mt-6 break-words [overflow-wrap:anywhere] sm:mt-8 space-y-5 text-base leading-7 text-slate-700">{children}</article>
       </main>
 
       <Footer />

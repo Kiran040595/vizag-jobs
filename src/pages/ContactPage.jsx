@@ -22,7 +22,7 @@ export default function ContactPage() {
         removed, or need account help, please reach out.
       </p>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-bold text-slate-900">Publisher details</h2>
         <dl className="mt-4 space-y-3 text-sm sm:text-base">
           <div>
@@ -40,12 +40,12 @@ export default function ContactPage() {
         </dl>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-bold text-slate-900">Email</h2>
         <p className="mt-2">
           <a
             href={`mailto:${SITE_CONTACT_EMAIL}`}
-            className="text-lg font-semibold text-cyan-700 hover:text-cyan-800"
+            className="inline-flex min-h-11 items-center break-all text-base font-semibold text-cyan-700 sm:text-lg hover:text-cyan-800"
           >
             {SITE_CONTACT_EMAIL}
           </a>
