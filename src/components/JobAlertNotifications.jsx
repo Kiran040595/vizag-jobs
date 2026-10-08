@@ -196,9 +196,7 @@ export default function JobAlertNotifications() {
   }
 
   return (
-    <div className={location.pathname === '/'
-      ? 'mx-auto flex max-w-6xl justify-center px-3 py-5 pb-mobile-chrome sm:justify-end sm:px-6'
-      : 'pointer-events-none fixed inset-x-0 bottom-[4.75rem] z-40 flex justify-center px-3 sm:bottom-6 sm:justify-end sm:px-6'}>
+    <div className="mx-auto flex max-w-6xl justify-center px-3 py-5 pb-mobile-chrome sm:justify-end sm:px-6">
       <div className="pointer-events-auto w-full max-w-sm rounded-2xl border border-cyan-200 bg-white p-4 shadow-xl">
         <p className="text-sm font-bold text-slate-900">Get new job alerts</p>
         <p className="mt-1 text-xs leading-5 text-slate-600">

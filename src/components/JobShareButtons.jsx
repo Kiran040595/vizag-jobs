@@ -29,7 +29,7 @@ const ShareButton = ({ children, label, href, onClick, accent = 'default', disab
     default: 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700',
   };
 
-  const className = `inline-flex h-10 w-10 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${accentClasses[accent]}`;
+  const className = `inline-flex h-11 w-11 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${accentClasses[accent]}`;
 
   if (href) {
     return (

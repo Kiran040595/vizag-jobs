@@ -23,7 +23,7 @@ export default function JobSourceAttribution({ job }) {
       ) : (
         <span className="font-semibold text-slate-800">{attribution.label}</span>
       )}
-      . {job?.applyLink ? 'Use Apply Now above to visit the employer or original listing.' : null}
+      . {job?.applyLink ? 'Select Apply Now to continue to the employer or original listing.' : null}
     </p>
   );
 }
