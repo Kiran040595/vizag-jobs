@@ -110,13 +110,15 @@ export default function QuickRegisterPage() {
                 ["password", "Password", "password"],
               ].map(([key, label, type]) => (
                 <label key={key} className="block font-semibold">
-                  {label}
+                  {label} *
                   <input
                     className={`${quickInputClass} mt-2`}
                     type={type}
                     required
                     minLength={key === "password" ? 8 : undefined}
-                    maxLength={key === "full_name" ? 120 : 200}
+                    maxLength={key === "full_name" ? 120 : key === "phone" ? 16 : 200}
+                    inputMode={key === "phone" ? "tel" : key === "email" ? "email" : undefined}
+                    placeholder={key === "phone" ? "10-digit mobile number" : key === "password" ? "At least 8 characters" : undefined}
                     autoComplete={
                       key === "password"
                         ? "new-password"
@@ -133,6 +135,7 @@ export default function QuickRegisterPage() {
                   />
                 </label>
               ))}
+              <p className="text-sm leading-6 text-slate-600">Use an email you can access. Your mobile number helps us match your application; no SMS code is needed.</p>
               <StudentRegistrationConsent
                 values={consents}
                 onChange={setConsents}
