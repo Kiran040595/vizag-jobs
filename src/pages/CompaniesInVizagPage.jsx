@@ -45,7 +45,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h3 className="truncate font-semibold text-slate-900 text-sm sm:text-base group-hover:text-cyan-700 transition-colors">
+              <h3 className="break-words font-semibold text-slate-900 text-base sm:text-base group-hover:text-cyan-700 transition-colors">
                 {company.name}
               </h3>
               <span className="shrink-0 text-cyan-600" title="Verified Vizag Employer">
@@ -75,7 +75,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
         {company.activeJobsCount > 0 ? (
           <Link
             to={`/jobs?company=${encodeURIComponent(company.name)}`}
-            className="group/jobs mt-3 flex min-h-[42px] items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90 active:scale-[0.99] sm:mt-3.5 sm:px-3.5"
+            className="group/jobs mt-3 flex min-h-11 items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90 active:scale-[0.99] sm:mt-3.5 sm:px-3.5"
             title={`View all ${company.activeJobsCount} live openings at ${company.name}`}
           >
             <span className="flex items-center gap-2">
@@ -99,7 +99,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
             href={company.website}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[36px] items-center gap-1 py-1 font-medium text-slate-600 hover:text-slate-900 hover:underline"
+            className="inline-flex min-h-11 items-center gap-1 py-1 font-medium text-slate-600 hover:text-slate-900 hover:underline"
           >
             <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
@@ -115,7 +115,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
             href={company.careersUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg bg-cyan-50 px-2.5 py-1.5 font-semibold text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800 active:scale-95"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-cyan-50 px-2.5 py-1.5 font-semibold text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800 active:scale-95"
           >
             <span>Careers Portal</span>
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -308,17 +308,19 @@ export default function CompaniesInVizagPage() {
                   </svg>
                 </div>
                 <input
-                  type="text"
+                  type="search"
+                  aria-label="Search companies"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by company name, sector, or keyword..."
-                  className="w-full rounded-2xl border-0 bg-white/95 py-3 pl-10 pr-10 text-sm text-slate-900 shadow-xl ring-1 ring-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:py-3.5 sm:pl-11 sm:text-base"
+                  className="w-full rounded-2xl border-0 bg-white/95 py-3 pl-10 pr-10 text-base text-slate-900 shadow-xl ring-1 ring-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:py-3.5 sm:pl-11 sm:text-base"
                 />
                 {searchQuery ? (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600"
+                    aria-label="Clear company search"
+                    className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 hover:text-slate-600"
                   >
                     <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -352,8 +354,9 @@ export default function CompaniesInVizagPage() {
                   <button
                     key={sector.id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setSelectedSector(sector.id)}
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all sm:text-sm ${
+                    className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all sm:text-sm ${
                       isSelected
                         ? 'bg-cyan-600 text-white shadow-sm'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
@@ -383,7 +386,7 @@ export default function CompaniesInVizagPage() {
               <p className="mt-3 text-sm text-slate-500">Loading verified Vizag employers...</p>
             </div>
           ) : filteredCompanies.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center sm:p-12 shadow-sm">
               <span className="text-4xl">🔍</span>
               <h3 className="mt-3 text-base font-semibold text-slate-900">No companies found</h3>
               <p className="mt-1 text-sm text-slate-500">
@@ -405,7 +408,7 @@ export default function CompaniesInVizagPage() {
             <div className="space-y-12">
               {groupedBySector.map((group) => (
                 <section key={group.id} className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">{group.icon}</span>
                       <h2 className="text-xl font-bold text-slate-900">{group.label}</h2>
@@ -417,7 +420,7 @@ export default function CompaniesInVizagPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedSector(group.id)}
-                      className="text-xs font-semibold text-cyan-700 hover:text-cyan-900 hover:underline"
+                      className="min-h-11 text-sm font-semibold text-cyan-700 hover:text-cyan-900 hover:underline"
                     >
                       View all in {group.label} →
                     </button>
