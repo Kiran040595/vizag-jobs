@@ -49,11 +49,11 @@ export default function OAuthConsentPage() {
 
   if (!authorizationId) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-12">
-        <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="min-h-screen bg-slate-50 px-4 py-6 sm:py-12">
+        <div className="mx-auto max-w-lg break-words [overflow-wrap:anywhere] rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 text-center shadow-sm">
           <h1 className="text-xl font-bold text-slate-900">Invalid request</h1>
-          <p className="mt-2 text-sm text-slate-600">Missing authorization_id.</p>
-          <Link to="/" className="mt-4 inline-block text-sm font-semibold text-cyan-600">
+          <p className="mt-2 text-sm text-slate-600">This authorization link is incomplete. Please open a fresh link from the application requesting access.</p>
+          <Link to="/" className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-cyan-700">
             Back to home
           </Link>
         </div>
@@ -63,8 +63,8 @@ export default function OAuthConsentPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-12">
-        <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-8">
+      <div className="min-h-screen bg-slate-50 px-4 py-6 sm:py-12">
+        <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-4 sm:p-8">
           <LoadingSpinner message="Loading..." />
         </div>
       </div>
@@ -115,18 +115,17 @@ export default function OAuthConsentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-12">
+    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:py-12">
       <SEO title="Authorize application | Vizag Jobs" canonical="/oauth/consent" />
-      <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+      <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 shadow-xl">
         <h1 className="text-2xl font-black text-slate-950">Authorize application</h1>
         <p className="mt-2 text-sm text-slate-600">
-          A third-party app is requesting access through your Vizag Jobs account (Supabase OAuth Server).
+          An application is requesting access to your Vizag Jobs account. Review its permissions before continuing.
         </p>
 
         {!hasOAuthApi ? (
           <p className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            OAuth consent API is not available in this build yet. Update <code className="text-xs">@supabase/supabase-js</code>{' '}
-            when your project supports <code className="text-xs">auth.oauth.*</code> helpers, then redeploy.
+            Authorization is currently unavailable. Please try again later.
           </p>
         ) : loadError ? (
           <p className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -171,7 +170,7 @@ export default function OAuthConsentPage() {
               type="button"
               disabled={isBusy}
               onClick={() => handleDecision('approve')}
-              className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
+              className="min-h-12 flex-1 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
             >
               Approve
             </button>
@@ -179,7 +178,7 @@ export default function OAuthConsentPage() {
               type="button"
               disabled={isBusy}
               onClick={() => handleDecision('deny')}
-              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
+              className="min-h-12 flex-1 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
             >
               Deny
             </button>
@@ -187,7 +186,7 @@ export default function OAuthConsentPage() {
         ) : null}
 
         <p className="mt-6 text-sm text-slate-500">
-          <Link to="/employer/jobs" className="font-semibold text-cyan-600">
+          <Link to="/employer/jobs" className="inline-flex min-h-11 items-center font-semibold text-cyan-700">
             Employer dashboard
           </Link>
         </p>
