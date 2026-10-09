@@ -84,11 +84,11 @@ function CandidateProfileModal({ candidate, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
       onClick={onClose}
     >
       <div
-        className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -113,7 +113,7 @@ function CandidateProfileModal({ candidate, onClose }) {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-xl font-bold text-slate-950">
+                <h3 className="break-words text-xl font-bold text-slate-950">
                   {isGuest
                     ? 'Guest Push Subscriber'
                     : candidate.fullName || 'Registered Candidate'}
@@ -165,7 +165,7 @@ function CandidateProfileModal({ candidate, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Close candidate modal"
-            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            className="min-h-11 min-w-11 shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
           >
             ✕
           </button>
@@ -653,12 +653,12 @@ export default function AdminNotificationsPage() {
             <span>Updated live from Supabase</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => void loadData(true)}
               disabled={isRefreshing || isLoading}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
             >
               <svg
                 className={`h-4 w-4 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`}
@@ -682,7 +682,7 @@ export default function AdminNotificationsPage() {
                 setTestError('');
                 setIsTestModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
             >
               <svg className="h-4 w-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -699,7 +699,7 @@ export default function AdminNotificationsPage() {
 
         {/* Primary Metrics Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Push Subscribers</p>
             <p className="mt-2 text-3xl font-black text-slate-950">
               {isLoading ? '…' : (stats.totalSubscribers ?? 0).toLocaleString()}
@@ -711,7 +711,7 @@ export default function AdminNotificationsPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Dispatches (Auto vs Manual)</p>
             <p className="mt-2 text-3xl font-black text-slate-950">
               {isLoading ? '…' : (stats.totalDispatches ?? 0).toLocaleString()}
@@ -725,7 +725,7 @@ export default function AdminNotificationsPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Clicks / Opens</p>
             <p className="mt-2 text-3xl font-black text-slate-950">
               {isLoading ? '…' : (stats.totalOpens ?? 0).toLocaleString()}
@@ -735,7 +735,7 @@ export default function AdminNotificationsPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Average Click Rate (CTR)</p>
             <p className="mt-2 text-3xl font-black text-cyan-600">
               {isLoading ? '…' : `${stats.overallCtr ?? '0.0'}%`}
@@ -831,7 +831,7 @@ export default function AdminNotificationsPage() {
                 value={triggerFilter}
                 onChange={(e) => setTriggerFilter(e.target.value)}
                 aria-label="Filter by notification trigger type"
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                className="min-h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-semibold text-slate-700 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
               >
                 <option value="all">All Trigger Types</option>
                 <option value="auto">All Automatic (Company + Admin)</option>
@@ -850,7 +850,7 @@ export default function AdminNotificationsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search jobs, companies, devices..."
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-800 placeholder-slate-400 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
                 />
               </div>
             ) : null}
@@ -859,7 +859,7 @@ export default function AdminNotificationsPage() {
 
         {/* Tab 1: Job-Wise Analytics */}
         {activeTab === 'jobs' ? (
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-950">Job-Wise Push & Click Analytics</h2>
@@ -1020,7 +1020,7 @@ export default function AdminNotificationsPage() {
 
         {/* Tab 2: All Push Dispatches */}
         {activeTab === 'dispatches' ? (
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-950">All Push Notification Dispatches</h2>
@@ -1117,7 +1117,7 @@ export default function AdminNotificationsPage() {
 
         {/* Tab 3: Click Stream (Recent Opens) */}
         {activeTab === 'opens' ? (
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="mb-4">
               <h2 className="text-lg font-bold text-slate-950">Subscriber Click Stream</h2>
               <p className="mt-1 text-xs text-slate-500">
@@ -1312,7 +1312,7 @@ export default function AdminNotificationsPage() {
               </div>
             </div>
 
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-slate-950">Subscribed Endpoints</h2>
@@ -1446,7 +1446,7 @@ export default function AdminNotificationsPage() {
 
         {/* Tab 5: In-App Alerts */}
         {activeTab === 'inapp' ? (
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
             <div className="mb-4">
               <h2 className="text-lg font-bold text-slate-950">Recent Job Alerts (In-App)</h2>
               <p className="mt-1 text-xs text-slate-500">
@@ -1488,14 +1488,14 @@ export default function AdminNotificationsPage() {
 
       {/* Job Clicks Inspector Modal */}
       {selectedJobForClicks ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
-          <div className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-cyan-600">
                   Job Click Analytics
                 </span>
-                <h3 className="mt-0.5 text-lg font-bold text-slate-950">
+                <h3 className="mt-0.5 break-words text-lg font-bold text-slate-950">
                   {selectedJobForClicks.title}
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -1504,8 +1504,9 @@ export default function AdminNotificationsPage() {
               </div>
               <button
                 type="button"
+                aria-label="Close job click analytics"
                 onClick={() => setSelectedJobForClicks(null)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="min-h-11 min-w-11 shrink-0 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
                 ✕
               </button>
@@ -1554,7 +1555,7 @@ export default function AdminNotificationsPage() {
               ))}
             </div>
 
-            <div className="mt-4 flex-1 overflow-y-auto">
+            <div className="mt-4 overflow-x-auto">
               <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                 Individual Click Log ({selectedJobForClicks.clicks?.length || 0})
               </h4>
@@ -1563,7 +1564,7 @@ export default function AdminNotificationsPage() {
                   No individual click records found for this job yet.
                 </div>
               ) : (
-                <table className="w-full text-left text-xs text-slate-700">
+                <table className="min-w-[32rem] w-full text-left text-xs text-slate-700">
                   <thead>
                     <tr className="border-b border-slate-200 text-[11px] uppercase text-slate-400">
                       <th className="pb-2 font-semibold">Clicked At</th>
@@ -1663,14 +1664,15 @@ export default function AdminNotificationsPage() {
 
       {/* Send Test Push Modal */}
       {isTestModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-950">Send Test Push Alert</h3>
               <button
                 type="button"
+                aria-label="Close test push dialog"
                 onClick={() => setIsTestModalOpen(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="min-h-11 min-w-11 shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
                 ✕
               </button>
@@ -1692,7 +1694,7 @@ export default function AdminNotificationsPage() {
                   type="text"
                   value={testForm.title}
                   onChange={(e) => setTestForm({ ...testForm, title: e.target.value })}
-                  className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-base text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
                   required
                 />
               </div>
@@ -1706,7 +1708,7 @@ export default function AdminNotificationsPage() {
                   rows={3}
                   value={testForm.body}
                   onChange={(e) => setTestForm({ ...testForm, body: e.target.value })}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-base text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
                 />
               </div>
 
@@ -1720,7 +1722,7 @@ export default function AdminNotificationsPage() {
                   value={testForm.url}
                   onChange={(e) => setTestForm({ ...testForm, url: e.target.value })}
                   placeholder="/jobs or https://jobsinvizag.in/jobs"
-                  className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-base text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
                 />
               </div>
 
@@ -1730,19 +1732,19 @@ export default function AdminNotificationsPage() {
                 <p className="mt-0.5 text-slate-600">{testForm.body || 'Notification message description...'}</p>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-wrap justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsTestModalOpen(false)}
                   disabled={isSendingTest}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                  className="min-h-11 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSendingTest}
-                  className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:opacity-50"
+                  className="min-h-11 rounded-xl bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:opacity-50"
                 >
                   {isSendingTest ? 'Sending…' : 'Send Push to All'}
                 </button>
