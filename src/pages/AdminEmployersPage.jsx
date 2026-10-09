@@ -191,7 +191,7 @@ export default function AdminEmployersPage() {
                 required
                 value={form.companyName}
                 onChange={(event) => setForm((current) => ({ ...current, companyName: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="Acme Technologies"
               />
             </label>
@@ -200,7 +200,7 @@ export default function AdminEmployersPage() {
               <select
                 value={form.industry}
                 onChange={(event) => setForm((current) => ({ ...current, industry: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
               >
                 <option value="">Select industry…</option>
                 {EMPLOYER_INDUSTRY_OPTIONS.map((opt) => (
@@ -215,7 +215,7 @@ export default function AdminEmployersPage() {
               <select
                 value={form.location}
                 onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
               >
                 <option value="">Select office area…</option>
                 {EMPLOYER_LOCATION_OPTIONS.map((opt) => (
@@ -230,7 +230,7 @@ export default function AdminEmployersPage() {
               <input
                 value={form.contactName}
                 onChange={(event) => setForm((current) => ({ ...current, contactName: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="Hiring manager"
               />
             </label>
@@ -238,9 +238,9 @@ export default function AdminEmployersPage() {
               <span className="text-sm font-semibold text-slate-700">Phone</span>
               <input
                 required
-                value={form.phone}
+                type="tel" autoComplete="tel" value={form.phone}
                 onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="9876543210"
               />
             </label>
@@ -252,7 +252,7 @@ export default function AdminEmployersPage() {
                 autoComplete="off"
                 value={form.email}
                 onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="hr@company.com"
               />
             </label>
@@ -265,7 +265,7 @@ export default function AdminEmployersPage() {
                 minLength={8}
                 value={form.password}
                 onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="At least 8 characters"
               />
             </label>
@@ -273,7 +273,7 @@ export default function AdminEmployersPage() {
               <button
                 type="submit"
                 disabled={isCreating}
-                className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+                className="min-h-12 w-full sm:w-auto rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
               >
                 {isCreating ? 'Creating…' : 'Create employer account'}
               </button>
@@ -290,10 +290,11 @@ export default function AdminEmployersPage() {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <input
             type="search"
+            aria-label="Search employer accounts"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder="Search company, contact, email, phone…"
-            className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
           <button
             type="button"
@@ -338,7 +339,7 @@ export default function AdminEmployersPage() {
                     <EmployerLogo url={employer.companyLogoUrl} companyName={employer.companyName} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-bold text-slate-950">{employer.companyName}</h2>
+                        <h2 className="break-words text-lg font-bold text-slate-950">{employer.companyName}</h2>
                         {employer.industry ? (
                           <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
                             {employer.industry}
@@ -368,7 +369,7 @@ export default function AdminEmployersPage() {
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Contact person
                           </dt>
-                          <dd className="mt-0.5 text-slate-800">
+                          <dd className="mt-0.5 break-words text-slate-800">
                             {employer.contactName || 'Not provided'}
                           </dd>
                         </div>
@@ -376,7 +377,7 @@ export default function AdminEmployersPage() {
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Office Location (Vizag)
                           </dt>
-                          <dd className="mt-0.5 text-slate-800">
+                          <dd className="mt-0.5 break-words text-slate-800">
                             {employer.location || 'Not provided'}
                           </dd>
                         </div>
@@ -492,3 +493,4 @@ export default function AdminEmployersPage() {
     </>
   );
 }
+
