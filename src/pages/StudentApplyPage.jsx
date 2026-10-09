@@ -114,10 +114,7 @@ function StudentApplyContent() {
       clearPendingApplyJobMeta();
       trackStudentFunnel('student_apply_submitted', { jobId });
 
-      const groupLink = getJobGroupLink(job);
-      if (groupLink) {
-        setShowGroupModal(true);
-      }
+      setShowGroupModal(true);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not submit your application.');
     } finally {
@@ -276,7 +273,7 @@ function StudentApplyContent() {
         </div>
       ) : null}
 
-      {showGroupModal && getJobGroupLink(job) ? (
+      {showGroupModal ? (
         <ApplySuccessGroupModal
           jobTitle={job?.title || ''}
           jobCompany={displayCompanyName(job?.company)}

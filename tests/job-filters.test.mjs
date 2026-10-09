@@ -37,6 +37,8 @@ const ok = (cond, label) => {
 const eq = (a, b, label) => ok(JSON.stringify(a) === JSON.stringify(b), `${label}  (got ${JSON.stringify(a)}, want ${JSON.stringify(b)})`);
 const section = (name) => trail.push(`\n${name}\n${'-'.repeat(name.length)}`);
 
+// Use one fixture time so equal-date jobs do not reorder across milliseconds.
+const fixtureNow = Date.now();
 const fakeJob = (overrides = {}) => ({
   id: 'j1',
   title: 'Software Engineer',
@@ -48,7 +50,7 @@ const fakeJob = (overrides = {}) => ({
   experience: '2-4 years',
   isFresher: 'No',
   jobType: 'Full-Time',
-  postedAt: new Date(Date.now() - 5 * 3_600_000).toISOString(), // 5h ago
+  postedAt: new Date(fixtureNow - 5 * 3_600_000).toISOString(), // 5h ago
   category: 'IT & Software',
   ...overrides,
 });
@@ -230,7 +232,7 @@ section('applyJobFilters — search text matches title/company/skills/location')
 section('applyJobFilters — freshness window');
 {
   const jobs = [
-    fakeJob({ id: '5h', postedAt: new Date(Date.now() - 5 * 3_600_000).toISOString() }),
+    fakeJob({ id: '5h', postedAt: new Date(fixtureNow - 5 * 3_600_000).toISOString() }),
     fakeJob({ id: '2d', postedAt: new Date(Date.now() - 48 * 3_600_000).toISOString() }),
     fakeJob({ id: '40d', postedAt: new Date(Date.now() - 40 * 24 * 3_600_000).toISOString() }),
   ];

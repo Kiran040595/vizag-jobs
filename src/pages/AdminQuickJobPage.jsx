@@ -11,6 +11,7 @@ import {
   validateFields,
 } from "../lib/quickApply";
 import { supabase } from "../lib/supabaseClient";
+import { normalizeCommunicationLink } from "../lib/applicationCommunication";
 import { saveQuickJob } from "../services/quickJobs";
 const blankJob = {
   title: "",
@@ -19,6 +20,7 @@ const blankJob = {
   salary: "",
   description: "",
   company: "",
+  group_link: "",
   owner_id: "",
   status: "internal",
   is_open: true,
@@ -106,7 +108,7 @@ export default function AdminQuickJobPage() {
     setBusy(true);
     setError("");
     try {
-      const id = await saveQuickJob(job, fields, jobId || savedId || null);
+      const id = await saveQuickJob({ ...job, group_link: normalizeCommunicationLink(job.group_link) }, fields, jobId || savedId || null);
       setSavedId(id);
       const { data, error: readError } = await supabase
         .from("jobs")
@@ -197,6 +199,13 @@ export default function AdminQuickJobPage() {
                 }
               />
             </label>
+            <label className="block font-semibold">
+              Communication group / channel link (optional)
+              <input className={`${quickInputClass} mt-2`} type="text" inputMode="url" autoCapitalize="none" spellCheck={false} maxLength={2000} placeholder="https://chat.whatsapp.com/... or https://www.instagram.com/..." value={job.group_link || ""} onChange={(e) => setJob((j) => ({ ...j, group_link: e.target.value }))} aria-describedby="quick-group-link-help" />
+            </label>
+            <p id="quick-group-link-help" className="text-sm leading-6 text-slate-600">
+              After applying, candidates will be asked to join this WhatsApp group or Instagram group/channel for further communication. Leave blank to show the Jobs in Vizag Instagram channel.
+            </p>
             <label className="block font-semibold">
               Assign to company account
               <select

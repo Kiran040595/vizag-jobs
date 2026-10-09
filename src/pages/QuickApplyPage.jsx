@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import SEO from "../components/SEO";
+import ApplicationCommunicationPrompt from "../components/ApplicationCommunicationPrompt";
 import QuickFormFields from "../components/QuickFormFields";
 import {
   getQuickJob,
@@ -132,6 +133,7 @@ export default function QuickApplyPage() {
                   Thank you! If you already applied with this number, your
                   existing application is kept.
                 </p>
+                <ApplicationCommunicationPrompt job={job} />
                 <p className="mt-5">
                   Want to apply for more jobs? Register for free on Jobs in
                   Vizag.

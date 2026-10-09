@@ -1,8 +1,7 @@
 import { recordAndOpenExternalApply } from '../services/jobApplyClicks.js';
 
-/** Default Instagram channel for daily Vizag job updates (Link in bio / external apply). */
-export const DEFAULT_INSTAGRAM_CHANNEL_URL =
-  'https://www.instagram.com/channel/Abb3Uh4CEdmuzv6D/';
+import { DEFAULT_INSTAGRAM_CHANNEL_URL } from './applicationCommunication.js';
+export { DEFAULT_INSTAGRAM_CHANNEL_URL } from './applicationCommunication.js';
 
 export const normalizeGroupLink = (value = '') => {
   const trimmed = String(value || '').trim();

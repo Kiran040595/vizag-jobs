@@ -60,6 +60,7 @@ try {
     ),
   );
   await db.exec(await readFile(new URL('../supabase/migrations/20261009120000_quick_job_visibility.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../supabase/migrations/20261009130000_quick_job_communication.sql', import.meta.url), 'utf8'));
   await db.exec(`alter table jobs enable row level security;
     grant select on jobs to anon,authenticated;
     create policy public_jobs on jobs for select to anon,authenticated using(status='published');`);
@@ -290,6 +291,22 @@ try {
   await identity(admin);
   await assert.rejects(db.query('select save_quick_job($1,$2)',[JSON.stringify({...payload,status:'typo'}),JSON.stringify(FORM_TEMPLATES.Basic)]),/Invalid quick job visibility/);
   assert.equal((await db.query('select count(*)::int count from job_applications where job_id=$1',[internal])).rows[0].count,1);
+  // Job communication links persist through create, edit, and visibility changes.
+  await identity(admin);
+  const groupPayload = {...payload, group_link:'https://chat.whatsapp.com/test-invite'};
+  const groupJob = (await db.query('select save_quick_job($1,$2) id',[JSON.stringify(groupPayload),JSON.stringify(FORM_TEMPLATES.Basic)])).rows[0].id;
+  assert.equal((await db.query('select get_quick_job($1) form',[groupJob])).rows[0].form.group_link,groupPayload.group_link);
+  await db.query('select save_quick_job($1,$2,$3)',[JSON.stringify({...payload,status:'published'}),JSON.stringify(FORM_TEMPLATES.Basic),groupJob]);
+  assert.equal((await db.query('select get_quick_job($1) form',[groupJob])).rows[0].form.group_link,groupPayload.group_link);
+  const instagram = 'https://www.instagram.com/channel/test/';
+  await db.query('select save_quick_job($1,$2,$3)',[JSON.stringify({...payload,group_link:instagram}),JSON.stringify(FORM_TEMPLATES.Basic),groupJob]);
+  await db.exec('set role anon');
+  assert.equal((await db.query('select get_quick_job($1) form',[groupJob])).rows[0].form.group_link,instagram);
+  await db.exec('reset role');
+  await db.query('select save_quick_job($1,$2,$3)',[JSON.stringify({...payload,group_link:''}),JSON.stringify(FORM_TEMPLATES.Basic),groupJob]);
+  assert.equal((await db.query('select get_quick_job($1) form',[groupJob])).rows[0].form.group_link,null);
+  await assert.rejects(db.query('select save_quick_job($1,$2)',[JSON.stringify({...payload,group_link:'javascript:alert(1)'}),JSON.stringify(FORM_TEMPLATES.Basic)]),/valid HTTPS/);
+  console.log('Communication checks passed: custom group create/edit, anonymous link read, clearing to default, preservation for legacy clients, and unsafe link rejection.');
   console.log('Visibility checks passed: internal by default, anonymous and signed-in listing isolation, shared-link read/submit, assigned company access, publish/unpublish, draft rejection, invalid status rejection, and application preservation.');
   console.log(
     "Quick applications PostgreSQL checks passed: migration, public form, guest submit, retries, phone/job deduplication, shared candidate grouping, account receipt linking, history preservation, guest separation, company authorization, private receipts, and closed jobs.",

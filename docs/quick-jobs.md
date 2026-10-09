@@ -32,3 +32,9 @@ node scripts/test-quick-applications.mjs C:\path\to\@electric-sql\pglite\dist\in
 ```
 
 `node scripts/preview-quick-jobs.mjs` starts isolated fixtures on port 5174 for the guest form and admin builder. Fixtures use mock data and never publish jobs, create accounts or save production applications. They are not part of the deployed routes.
+
+## After applying
+
+Quick Job details include an optional **Communication group / channel link**. Add a WhatsApp invite or Instagram group/channel URL. After a successful application, candidates see **Join for further communication** and a button opening that link. Leave it blank to show the existing Jobs in Vizag Instagram channel. The same fallback is shown after regular on-platform applications. Joining is optional and never delays saving the application.
+
+Migration `20261009130000_quick_job_communication.sql` reuses `jobs.group_link` and updates the Quick Job save and public-form RPCs. Existing job links remain intact.
