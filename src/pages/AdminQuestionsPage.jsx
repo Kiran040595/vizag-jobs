@@ -82,7 +82,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
           </span>
           <p className="mt-1.5 text-sm font-bold text-slate-950">{formatQuestionAsker(question)}</p>
           {question.askerEmail ? (
-            <p className="text-xs text-slate-500">{question.askerEmail}</p>
+            <p className="break-all text-xs text-slate-500">{question.askerEmail}</p>
           ) : null}
         </div>
         <span className="text-xs text-slate-400">
@@ -114,7 +114,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
       {/* Question Body */}
       <div className="mt-3.5 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5">
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Question Body</p>
-        <p className="mt-1 text-sm font-semibold text-slate-900">{question.body}</p>
+        <p className="mt-1 break-words text-base leading-7 font-semibold text-slate-900">{question.body}</p>
       </div>
 
       {/* Answer Form */}
@@ -134,7 +134,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
                 key={tmpl}
                 type="button"
                 onClick={() => applyTemplate(tmpl)}
-                className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600 hover:bg-slate-100"
+                className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
               >
                 + {tmpl.slice(0, 30)}…
               </button>
@@ -146,7 +146,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
             onChange={(event) => setAnswerDraft(event.target.value)}
             rows={3}
             placeholder="Type answer for the candidate..."
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            className="mt-2 w-full min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </div>
       ) : null}
@@ -166,7 +166,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
               }),
             )
           }
-          className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+          className="min-h-11 rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
         >
           {question.status === 'published' ? 'Update & Publish' : 'Publish with Answer'}
         </button>
@@ -184,7 +184,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
                 }),
               )
             }
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
             Save Draft
           </button>
@@ -195,7 +195,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
             type="button"
             disabled={isBusy}
             onClick={() => runAction(() => ignoreJobQuestion({ questionId: question.id, userId }))}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
           >
             Ignore
           </button>
@@ -205,7 +205,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
           type="button"
           disabled={isBusy}
           onClick={() => runAction(() => deleteJobQuestion(question.id))}
-          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60 ml-auto"
+          className="min-h-11 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60 ml-auto"
         >
           Delete
         </button>
@@ -266,7 +266,7 @@ export default function AdminQuestionsPage() {
                 key={tab.value}
                 type="button"
                 onClick={() => setStatusTab(tab.value)}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
                   activeStatus === tab.value
                     ? 'bg-cyan-500 text-slate-950 shadow-sm'
                     : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
@@ -283,7 +283,7 @@ export default function AdminQuestionsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search candidate doubts..."
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-base text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
             />
           </div>
         </div>
