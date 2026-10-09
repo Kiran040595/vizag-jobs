@@ -162,14 +162,14 @@ export default function AdminBillsPage() {
             <button
               type="button"
               onClick={handlePrint}
-              className="rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+              className="min-h-12 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
             >
               Print / Save PDF
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               Clear form
             </button>
@@ -194,7 +194,7 @@ export default function AdminBillsPage() {
                 <input
                   value={form.billNumber}
                   onChange={(event) => updateField('billNumber', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <label className="block text-sm">
@@ -203,7 +203,7 @@ export default function AdminBillsPage() {
                   type="date"
                   value={form.billDate}
                   onChange={(event) => updateField('billDate', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <label className="block text-sm">
@@ -212,7 +212,7 @@ export default function AdminBillsPage() {
                   type="date"
                   value={form.dueDate}
                   onChange={(event) => updateField('dueDate', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
             </section>
@@ -224,7 +224,7 @@ export default function AdminBillsPage() {
                   required
                   value={form.companyName}
                   onChange={(event) => updateField('companyName', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                   placeholder="Acme Pvt Ltd"
                 />
               </label>
@@ -233,15 +233,15 @@ export default function AdminBillsPage() {
                 <input
                   value={form.contactName}
                   onChange={(event) => updateField('contactName', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <label className="block text-sm">
                 <span className="font-medium text-slate-700">Phone</span>
                 <input
-                  value={form.contactPhone}
+                  type="tel" value={form.contactPhone}
                   onChange={(event) => updateField('contactPhone', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <label className="block text-sm">
@@ -250,7 +250,7 @@ export default function AdminBillsPage() {
                   type="email"
                   value={form.contactEmail}
                   onChange={(event) => updateField('contactEmail', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <label className="block text-sm">
@@ -258,7 +258,7 @@ export default function AdminBillsPage() {
                 <input
                   value={form.companyGstin}
                   onChange={(event) => updateField('companyGstin', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <label className="block text-sm sm:col-span-2">
@@ -267,7 +267,7 @@ export default function AdminBillsPage() {
                   rows={2}
                   value={form.companyAddress}
                   onChange={(event) => updateField('companyAddress', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
             </section>
@@ -279,21 +279,21 @@ export default function AdminBillsPage() {
                   <button
                     type="button"
                     onClick={() => addLineItem('website_job_post')}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                   >
                     + Job post
                   </button>
                   <button
                     type="button"
                     onClick={() => addLineItem('instagram_reel')}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                   >
                     + Instagram reel
                   </button>
                   <button
                     type="button"
                     onClick={() => addLineItem('custom')}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                   >
                     + Custom
                   </button>
@@ -314,7 +314,7 @@ export default function AdminBillsPage() {
                         type="button"
                         onClick={() => removeLineItem(item.id)}
                         disabled={form.lineItems.length <= 1}
-                        className="text-xs font-semibold text-rose-700 disabled:opacity-40"
+                        className="min-h-11 px-2 text-sm font-semibold text-rose-700 disabled:opacity-40"
                       >
                         Remove
                       </button>
@@ -325,7 +325,7 @@ export default function AdminBillsPage() {
                         <select
                           value={item.serviceKey}
                           onChange={(event) => handleServiceChange(item.id, event.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-cyan-400"
                         >
                           {BILL_SERVICE_CATALOG.map((service) => (
                             <option key={service.key} value={service.key}>
@@ -344,7 +344,7 @@ export default function AdminBillsPage() {
                           onChange={(event) =>
                             updateLineItem(item.id, { quantity: event.target.value })
                           }
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-cyan-400"
                         />
                       </label>
                       <label className="block text-sm">
@@ -357,7 +357,7 @@ export default function AdminBillsPage() {
                           onChange={(event) =>
                             updateLineItem(item.id, { unitPrice: event.target.value })
                           }
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-cyan-400"
                         />
                       </label>
                       <label className="block text-sm sm:col-span-2 lg:col-span-3">
@@ -367,7 +367,7 @@ export default function AdminBillsPage() {
                           onChange={(event) =>
                             updateLineItem(item.id, { description: event.target.value })
                           }
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-cyan-400"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none focus:border-cyan-400"
                           placeholder="What was delivered for this company"
                         />
                       </label>
@@ -395,7 +395,7 @@ export default function AdminBillsPage() {
                   step="0.01"
                   value={form.taxPercent}
                   onChange={(event) => updateField('taxPercent', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </label>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
@@ -420,7 +420,7 @@ export default function AdminBillsPage() {
                   rows={2}
                   value={form.notes}
                   onChange={(event) => updateField('notes', event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                   placeholder="Payment terms, job title, reel delivery date…"
                 />
               </label>
@@ -429,14 +429,14 @@ export default function AdminBillsPage() {
             <div className="flex flex-wrap gap-3">
               <button
                 type="submit"
-                className="rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+                className="min-h-12 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
               >
                 Print / Save PDF
               </button>
               <button
                 type="button"
                 onClick={handleReset}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="min-h-12 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Clear form
               </button>

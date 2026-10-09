@@ -78,8 +78,8 @@ export default function AdminBillDocument({ bill }) {
         </div>
       </section>
 
-      <section className="mt-8 overflow-hidden rounded-xl border border-slate-300">
-        <table className="w-full border-collapse text-left text-sm">
+      <section className="mt-8 overflow-x-auto rounded-xl border border-slate-300">
+        <table className="min-w-[30rem] w-full border-collapse text-left print:min-w-0 text-sm">
           <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
             <tr>
               <th className="px-3 py-3 font-semibold">#</th>
