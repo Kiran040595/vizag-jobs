@@ -23,7 +23,7 @@ export default function JobsInVizagPage() {
   // Sync searchTerm when URL query params change (e.g. navigation from companies directory or back/forward)
   useEffect(() => {
     setSearchTerm(urlQuery);
-    if (urlQuery && listHeadingRef.current) {
+    if (urlQuery && listHeadingRef.current && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
       listHeadingRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [urlQuery]);
@@ -107,12 +107,12 @@ export default function JobsInVizagPage() {
         {/* Company / Keyword Filter Active Banner */}
         {companyQuery ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
+            <div className="flex w-full min-w-0 items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
                 🏢
               </span>
-              <div>
-                <p className="font-semibold text-cyan-900">
+              <div className="min-w-0 flex-1">
+                <p className="min-w-0 break-words [overflow-wrap:anywhere] font-semibold text-cyan-900">
                   Showing jobs for company: <strong className="font-bold text-cyan-950">&quot;{companyQuery}&quot;</strong>
                 </p>
                 <p className="text-xs text-cyan-700">
@@ -123,19 +123,19 @@ export default function JobsInVizagPage() {
             <button
               type="button"
               onClick={handleClearSearch}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
             >
               <span>✕ Show all jobs ({allJobs.length})</span>
             </button>
           </div>
         ) : searchTerm ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-sm text-cyan-950 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
+            <div className="flex w-full min-w-0 items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white text-xs shadow-sm">
                 🔍
               </span>
-              <div>
-                <p className="font-semibold text-cyan-900">
+              <div className="min-w-0 flex-1">
+                <p className="min-w-0 break-words [overflow-wrap:anywhere] font-semibold text-cyan-900">
                   Showing jobs matching <strong className="font-bold text-cyan-950">&quot;{searchTerm}&quot;</strong>
                 </p>
                 <p className="text-xs text-cyan-700">
@@ -146,7 +146,7 @@ export default function JobsInVizagPage() {
             <button
               type="button"
               onClick={handleClearSearch}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
             >
               <span>✕ Show all jobs ({allJobs.length})</span>
             </button>
@@ -157,8 +157,8 @@ export default function JobsInVizagPage() {
           </p>
         )}
 
-        <div ref={listHeadingRef} className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-slate-800">
+        <div ref={listHeadingRef} className="flex min-w-0 items-center justify-between">
+          <h2 className="min-w-0 break-words [overflow-wrap:anywhere] text-2xl font-semibold text-slate-800">
             {companyQuery
               ? `Jobs at "${companyQuery}"`
               : searchTerm
@@ -168,7 +168,7 @@ export default function JobsInVizagPage() {
         </div>
 
         {filteredJobs.length === 0 && !isLoading ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <div className="break-words [overflow-wrap:anywhere] rounded-2xl border border-dashed border-slate-300 bg-white p-4 sm:p-8 text-center">
             <p className="text-base font-semibold text-slate-800">
               No direct job openings currently listed for &quot;{companyQuery || searchTerm}&quot;
             </p>
