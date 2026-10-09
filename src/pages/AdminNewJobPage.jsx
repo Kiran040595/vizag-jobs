@@ -349,7 +349,7 @@ export default function AdminNewJobPage() {
         />
 
         {/* 2. AI Raw Text / Paragraph Parser (Gemini) */}
-        <section className="rounded-[2rem] border border-cyan-100 bg-gradient-to-b from-white via-cyan-50/20 to-white p-6 shadow-xl shadow-cyan-100/50">
+        <section className="rounded-[2rem] border border-cyan-100 bg-gradient-to-b from-white via-cyan-50/20 to-white p-4 shadow-xl sm:p-6 shadow-cyan-100/50">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -417,7 +417,7 @@ export default function AdminNewJobPage() {
               value={rawJobText}
               onChange={(e) => setRawJobText(e.target.value)}
               placeholder={`Paste single or multiple job descriptions here...\n\nExample with multiple jobs:\n\nJob 1: React Frontend Developer at Tech Solutions Vizag\nExperience: 0-2 years (Freshers eligible from 2024/2025/2026 batches).\nLocation: Visakhapatnam (Dwaraka Nagar).\nSalary: 2.5 LPA - 4 LPA.\nKey Skills: React, Tailwind CSS, JavaScript.\n\nJob 2: Python Backend Developer at Tech Solutions Vizag\nExperience: 1-3 years.\nLocation: Visakhapatnam.\nSalary: 4 LPA - 6 LPA.\nKey Skills: Python, FastAPI, PostgreSQL.\n\nJob 3: HR Recruiter at Coastal Talent Solutions\nExperience: 6 months - 2 years. Location: Gajuwaka, Visakhapatnam.\nSalary: ₹20,000/month. Skills: Screening, Interviewing, Sourcing.`}
-              className="mt-2 min-h-[12rem] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+              className="mt-2 min-h-[12rem] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
               spellCheck={false}
             />
           </label>
@@ -441,7 +441,7 @@ export default function AdminNewJobPage() {
                     type="button"
                     onClick={handlePostAiJobsToWebsite}
                     disabled={isPostingAiJobs}
-                    className="rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-500 disabled:opacity-60"
+                    className="min-h-11 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-500 disabled:opacity-60"
                   >
                     {isPostingAiJobs
                       ? 'Posting...'
@@ -521,7 +521,7 @@ export default function AdminNewJobPage() {
         {/* 3. Quick SQL Import with Single / Multiple Jobs Toggle */}
         <section
           ref={sqlSectionRef}
-          className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60"
+          className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -542,7 +542,7 @@ export default function AdminNewJobPage() {
                 <button
                   type="button"
                   onClick={() => handleToggleSqlMode('single')}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  className={`min-h-11 rounded-xl px-4 py-2 text-sm font-bold transition ${
                     sqlMode === 'single'
                       ? 'bg-cyan-500 text-slate-950 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
@@ -553,7 +553,7 @@ export default function AdminNewJobPage() {
                 <button
                   type="button"
                   onClick={() => handleToggleSqlMode('multiple')}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+                  className={`min-h-11 rounded-xl px-4 py-2 text-sm font-bold transition ${
                     sqlMode === 'multiple'
                       ? 'bg-cyan-500 text-slate-950 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
@@ -602,7 +602,7 @@ export default function AdminNewJobPage() {
             <textarea
               value={sqlQuery}
               onChange={(event) => setSqlQuery(event.target.value)}
-              className="mt-2 min-h-[28rem] w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-xs text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+              className="mt-2 min-h-[28rem] w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
               spellCheck={false}
             />
           </label>
