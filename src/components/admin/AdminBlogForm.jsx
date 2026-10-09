@@ -7,7 +7,7 @@ import {
 } from '../../services/adminBlogs';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
+  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
 const getStoredDraft = (draftStorageKey, fallbackValues, fallbackIsSlugManual) => {
   if (!draftStorageKey) {
@@ -172,8 +172,8 @@ export default function AdminBlogForm({
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
-      <div className="flex items-start justify-between gap-4">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-xl shadow-slate-200/60">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
             {mode === 'edit' ? 'Update post' : 'Create post'}
@@ -187,7 +187,7 @@ export default function AdminBlogForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-2xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              className="min-h-11 rounded-2xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             >
               Cancel
             </button>
@@ -195,7 +195,7 @@ export default function AdminBlogForm({
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-2xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            className="min-h-11 rounded-2xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
             {mode === 'edit' ? 'Reset changes' : 'Reset'}
           </button>
@@ -224,7 +224,7 @@ export default function AdminBlogForm({
 
       <div className="mt-4">
         <Field label="Slug" hint="Generated from title and publish date until you edit it.">
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <TextInput
               name="slug"
               value={formValues.slug}
@@ -251,7 +251,7 @@ export default function AdminBlogForm({
 
       <div className="mt-4">
         <Field label="Body (Markdown)">
-          <TextArea name="body" value={formValues.body} onChange={handleFieldChange} className="min-h-[280px] font-mono text-sm" placeholder={'## Intro\n\nWrite your post in **Markdown**.'} />
+          <TextArea name="body" value={formValues.body} onChange={handleFieldChange} className="min-h-[280px] font-mono text-base" placeholder={'## Intro\n\nWrite your post in **Markdown**.'} />
         </Field>
       </div>
 
