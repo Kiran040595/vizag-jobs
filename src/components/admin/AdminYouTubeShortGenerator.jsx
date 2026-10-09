@@ -62,7 +62,7 @@ export default function AdminYouTubeShortGenerator() {
   };
 
   return (
-    <section className="rounded-[2rem] border border-rose-200 bg-gradient-to-br from-rose-50 via-white to-slate-50 p-6 shadow-xl shadow-rose-100/50">
+    <section className="rounded-[2rem] border border-rose-200 bg-gradient-to-br from-rose-50 via-white to-slate-50 p-4 sm:p-6 shadow-xl shadow-rose-100/50">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-rose-700">YouTube Shorts</p>
@@ -89,7 +89,7 @@ export default function AdminYouTubeShortGenerator() {
             value={privacy}
             onChange={(event) => setPrivacy(event.target.value)}
             disabled={isRunning || !publish}
-            className="h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100 disabled:bg-slate-100"
+            className="h-11 w-full rounded-2xl border border-slate-200 px-3 text-base outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100 disabled:bg-slate-100"
           >
             <option value="unlisted">Unlisted (recommended for tests)</option>
             <option value="public">Public</option>
