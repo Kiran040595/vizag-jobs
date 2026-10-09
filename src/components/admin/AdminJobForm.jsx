@@ -10,7 +10,7 @@ import { fetchLiveJobRoles } from '../../services/jobRoles';
 import { cleanJobRoleLabel } from '../../lib/jobRoleLabel';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
+  'mt-2 min-w-0 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
 const REQUIRED_FIELDS = ['title', 'company', 'role', 'category', 'job_type'];
 
@@ -234,7 +234,7 @@ export default function AdminJobForm({
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
@@ -320,7 +320,7 @@ export default function AdminJobForm({
             name="apply_mode"
             value={formValues.apply_mode || 'external'}
             onChange={handleFieldChange}
-            className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            className="mt-2 min-w-0 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           >
             <option value="internal">Accept applications on Vizag Jobs</option>
             <option value="external">External apply link</option>
@@ -452,7 +452,7 @@ export default function AdminJobForm({
         </p>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           disabled={isSaving}
