@@ -68,7 +68,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-6 text-slate-700 whitespace-pre-wrap">{feedback.body}</p>
+      <p className="mt-3 break-words text-base leading-7 text-slate-700 whitespace-pre-wrap">{feedback.body}</p>
 
       <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         {feedback.pageUrl ? (
@@ -87,7 +87,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
             onChange={(event) => setAdminReply(event.target.value)}
             rows={3}
             placeholder="Optional response visitors will see when published…"
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            className="mt-1 w-full min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>
       ) : null}
@@ -109,7 +109,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
                   }),
                 )
               }
-              className="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+              className="min-h-11 rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
             >
               Publish
             </button>
@@ -117,7 +117,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
               type="button"
               disabled={isBusy}
               onClick={() => runAction(() => ignoreSiteFeedback({ feedbackId: feedback.id, userId }))}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
             >
               Ignore
             </button>
@@ -137,7 +137,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
                 }),
               )
             }
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
           >
             Update reply
           </button>
@@ -147,7 +147,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
           type="button"
           disabled={isBusy}
           onClick={() => runAction(() => deleteSiteFeedback(feedback.id))}
-          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+          className="min-h-11 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
         >
           Delete
         </button>
@@ -209,8 +209,9 @@ export default function AdminFeedbackPage() {
           <button
             key={tab.value}
             type="button"
+            aria-pressed={activeStatus === tab.value}
             onClick={() => setActiveStatus(tab.value)}
-            className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+            className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
               activeStatus === tab.value
                 ? 'bg-cyan-500 text-slate-950'
                 : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
