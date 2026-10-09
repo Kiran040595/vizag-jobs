@@ -366,14 +366,14 @@ export default function CompanyCareerJobApprovalModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5"
+      className="fixed inset-0 z-70 flex items-center justify-center p-3 sm:p-5"
     >
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={bulkBusy ? undefined : onClose}
       />
 
-      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div className="relative flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] w-full max-w-4xl flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 p-5 sm:p-6">
           <div className="min-w-0 pr-4">
@@ -381,7 +381,7 @@ export default function CompanyCareerJobApprovalModal({
               <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-700">
                 🏢
               </span>
-              <h2 className="truncate text-lg font-black text-slate-950 sm:text-xl">
+              <h2 className="break-words text-base font-black text-slate-950 sm:text-xl">
                 {companyName} — Vizag Job Approval
               </h2>
             </div>
@@ -392,7 +392,7 @@ export default function CompanyCareerJobApprovalModal({
                 href={careersUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-cyan-700 hover:underline"
+                className="break-all font-medium text-cyan-700 hover:underline"
               >
                 {careersUrl} ↗
               </a>
@@ -403,14 +403,14 @@ export default function CompanyCareerJobApprovalModal({
             type="button"
             onClick={onClose}
             disabled={bulkBusy}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
+            className="min-h-11 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
           >
             ✕
           </button>
         </div>
 
         {/* Stepper Tabs */}
-        <div className="flex shrink-0 border-b border-slate-100 bg-slate-50/70 px-6">
+        <div className="grid shrink-0 grid-cols-1 border-b border-slate-100 bg-slate-50/70 px-4 sm:grid-cols-2 sm:px-6">
           <button
             type="button"
             onClick={() => setStep('review_fetch')}
@@ -429,13 +429,13 @@ export default function CompanyCareerJobApprovalModal({
             >
               1
             </span>
-            <span>Step 1: Admin Approval Before Optimize ({jobs.length})</span>
+            <span>Review fetched jobs ({jobs.length})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setStep('publish')}
-            className={`flex items-center gap-2 border-b-2 py-3.5 pl-6 text-xs font-bold transition-colors ${
+            className={`flex items-center gap-2 border-b-2 py-3.5 sm:pl-6 text-xs font-bold transition-colors ${
               step === 'publish'
                 ? 'border-violet-600 text-violet-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -458,7 +458,7 @@ export default function CompanyCareerJobApprovalModal({
 
         {/* Bulk Progress Banner */}
         {bulkBusy ? (
-          <div className="shrink-0 border-b border-violet-200 bg-violet-50 px-6 py-3">
+          <div className="min-h-11 shrink-0 border-b border-violet-200 bg-violet-50 px-6 py-3">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-2 font-bold text-violet-900">
                 <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-violet-600 border-t-transparent" />
@@ -509,7 +509,7 @@ export default function CompanyCareerJobApprovalModal({
                     type="button"
                     onClick={selectAllNewForSeo}
                     disabled={bulkBusy}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
                     Select All New
                   </button>
@@ -517,7 +517,7 @@ export default function CompanyCareerJobApprovalModal({
                     type="button"
                     onClick={deselectAllForSeo}
                     disabled={bulkBusy}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
                     Deselect All
                   </button>
@@ -525,7 +525,7 @@ export default function CompanyCareerJobApprovalModal({
                     type="button"
                     onClick={handleOptimizeSelected}
                     disabled={bulkBusy || selectedForSeoCount === 0}
-                    className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-violet-700 disabled:opacity-50"
+                    className="min-h-11 flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-violet-700 disabled:opacity-50"
                   >
                     <span>✨ Approve &amp; Optimize Selected ({selectedForSeoCount})</span>
                   </button>
@@ -572,10 +572,10 @@ export default function CompanyCareerJobApprovalModal({
                                   onChange={(e) =>
                                     setEditForm({ ...editForm, title: e.target.value })
                                   }
-                                  className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-900"
+                                  className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-base font-bold text-slate-900"
                                 />
                               </div>
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 <div>
                                   <label className="text-[10px] font-bold uppercase text-slate-500">
                                     Category
@@ -586,7 +586,7 @@ export default function CompanyCareerJobApprovalModal({
                                     onChange={(e) =>
                                       setEditForm({ ...editForm, category: e.target.value })
                                     }
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900"
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-base text-slate-900"
                                   />
                                 </div>
                                 <div>
@@ -599,7 +599,7 @@ export default function CompanyCareerJobApprovalModal({
                                     onChange={(e) =>
                                       setEditForm({ ...editForm, location: e.target.value })
                                     }
-                                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900"
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-base text-slate-900"
                                   />
                                 </div>
                               </div>
@@ -607,14 +607,14 @@ export default function CompanyCareerJobApprovalModal({
                                 <button
                                   type="button"
                                   onClick={() => setEditingJobId(null)}
-                                  className="rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"
+                                  className="min-h-11 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleSaveEdit(job.id)}
-                                  className="rounded-lg bg-violet-600 px-3 py-1 text-xs font-bold text-white hover:bg-violet-700"
+                                  className="min-h-11 rounded-lg bg-violet-600 px-3 py-1 text-xs font-bold text-white hover:bg-violet-700"
                                 >
                                   Save
                                 </button>
@@ -670,7 +670,7 @@ export default function CompanyCareerJobApprovalModal({
                                 <button
                                   type="button"
                                   onClick={() => handleStartEdit(job)}
-                                  className="font-medium text-slate-600 hover:text-slate-900 hover:underline"
+                                  className="min-h-11 font-medium text-slate-600 hover:text-slate-900 hover:underline"
                                 >
                                   Edit Info
                                 </button>
@@ -691,7 +691,7 @@ export default function CompanyCareerJobApprovalModal({
                             <button
                               type="button"
                               onClick={() => setStep('publish')}
-                              className="rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
+                              className="min-h-11 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-50"
                             >
                               Review SEO ↗
                             </button>
@@ -700,7 +700,7 @@ export default function CompanyCareerJobApprovalModal({
                               type="button"
                               disabled={isBusy || bulkBusy}
                               onClick={() => handleOptimizeSingle(job)}
-                              className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50 disabled:opacity-50"
+                              className="min-h-11 flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50 disabled:opacity-50"
                             >
                               {isBusy ? (
                                 <>
@@ -742,7 +742,7 @@ export default function CompanyCareerJobApprovalModal({
                     type="button"
                     onClick={selectAllReadyForPublish}
                     disabled={bulkBusy}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
                     Select All Ready
                   </button>
@@ -750,7 +750,7 @@ export default function CompanyCareerJobApprovalModal({
                     type="button"
                     onClick={deselectAllForPublish}
                     disabled={bulkBusy}
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
                     Deselect All
                   </button>
@@ -758,7 +758,7 @@ export default function CompanyCareerJobApprovalModal({
                     type="button"
                     onClick={handlePublishSelected}
                     disabled={bulkBusy || selectedForPublishCount === 0}
-                    className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+                    className="min-h-11 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                   >
                     <span>🚀 Approve &amp; Publish Selected ({selectedForPublishCount})</span>
                   </button>
@@ -771,7 +771,7 @@ export default function CompanyCareerJobApprovalModal({
                   <button
                     type="button"
                     onClick={() => setStep('review_fetch')}
-                    className="mt-3 inline-flex items-center gap-1 font-bold text-violet-700 hover:underline"
+                    className="min-h-11 mt-3 inline-flex items-center gap-1 font-bold text-violet-700 hover:underline"
                   >
                     ← Go to Step 1 to select and optimize jobs
                   </button>
@@ -844,7 +844,7 @@ export default function CompanyCareerJobApprovalModal({
                                 <button
                                   type="button"
                                   onClick={() => togglePreview(job.id)}
-                                  className="font-bold text-violet-700 hover:underline"
+                                  className="min-h-11 font-bold text-violet-700 hover:underline"
                                 >
                                   {isPreviewOpen ? 'Hide SEO Preview ▲' : 'View Full SEO Preview ▼'}
                                 </button>
@@ -934,7 +934,7 @@ export default function CompanyCareerJobApprovalModal({
                             </div>
 
                             {/* Publish Action Buttons */}
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex shrink-0 flex-wrap items-center gap-2">
                               {isPublished ? (
                                 <div className="flex items-center gap-2">
                                   <a
@@ -961,7 +961,7 @@ export default function CompanyCareerJobApprovalModal({
                                   type="button"
                                   disabled={isBusy || bulkBusy}
                                   onClick={() => handlePublishSingle(job)}
-                                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+                                  className="min-h-11 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                                 >
                                   {isBusy ? (
                                     <>
@@ -988,7 +988,7 @@ export default function CompanyCareerJobApprovalModal({
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50 p-4 sm:px-6">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 p-4 sm:px-6">
           <div className="text-xs text-slate-500">
             {stats.published > 0 ? (
               <span className="font-bold text-emerald-700">
@@ -1004,7 +1004,7 @@ export default function CompanyCareerJobApprovalModal({
               <button
                 type="button"
                 onClick={() => setStep('publish')}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
               >
                 Go to Publish Step →
               </button>
@@ -1014,7 +1014,7 @@ export default function CompanyCareerJobApprovalModal({
               type="button"
               onClick={onClose}
               disabled={bulkBusy}
-              className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+              className="min-h-11 rounded-xl bg-slate-900 px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
             >
               Done
             </button>
