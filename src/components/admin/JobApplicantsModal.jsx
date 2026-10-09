@@ -309,7 +309,7 @@ export default function JobApplicantsModal({
   const modalNode = (
     <>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs sm:p-4"
+      className="fixed inset-0 z-[70] [&_button]:min-h-11 [&_input]:text-base [&_select]:text-base [&_select]:min-h-11 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-xs sm:p-4"
       onClick={exportOpen ? undefined : onClose}
       role="presentation"
     >

@@ -241,7 +241,7 @@ export default function LinkCompanyModal({
 
   const modalNode = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-[70] [&_button]:min-h-11 [&_input]:text-base [&_select]:text-base [&_select]:min-h-11 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="link-company-title"

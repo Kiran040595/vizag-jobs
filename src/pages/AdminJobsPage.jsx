@@ -466,7 +466,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
         canonical={jobsListPath}
       />
 
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60">
+      <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
@@ -529,14 +529,14 @@ export default function AdminJobsPage({ scope = 'employer' }) {
               />
               Select filtered ({selectedCount} selected)
             </label>
-            <label className="block min-w-[14rem] flex-1">
+            <label className="block min-w-0 flex-1 sm:min-w-[14rem]">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Assign to employer
               </span>
               <select
                 value={assignEmployerId}
                 onChange={(event) => setAssignEmployerId(event.target.value)}
-                className="mt-1 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="mt-1 h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-base text-slate-900 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
               >
                 <option value="">Choose employer…</option>
                 {employers.map((employer) => (
@@ -816,7 +816,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
       {rejectingJob ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-950">Reject submission</h3>
             <p className="mt-2 text-sm text-slate-600">{rejectingJob.title}</p>
             <label className="mt-4 block">
@@ -824,7 +824,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
               <textarea
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 rows={3}
                 placeholder="Tell the employer why this was not approved."
               />
@@ -834,7 +834,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                 type="button"
                 disabled={busyJobId === rejectingJob.id}
                 onClick={handleReject}
-                className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+                className="min-h-11 rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
               >
                 Confirm reject
               </button>
@@ -844,7 +844,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                   setRejectingJob(null);
                   setRejectReason('');
                 }}
-                className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="min-h-11 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Cancel
               </button>
