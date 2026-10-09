@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import SEO from "../components/SEO";
 import QuickFormFields from "../components/QuickFormFields";
 import {
   getQuickJob,
@@ -99,6 +100,7 @@ export default function QuickApplyPage() {
   }
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-32">
+      <SEO title={job?.title || "Quick job application"} noindex />
       <div className="mx-auto max-w-xl">
         <Link
           to="/"

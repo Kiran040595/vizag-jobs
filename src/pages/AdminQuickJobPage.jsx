@@ -20,7 +20,7 @@ const blankJob = {
   description: "",
   company: "",
   owner_id: "",
-  status: "published",
+  status: "internal",
   is_open: true,
 };
 const button =
@@ -36,6 +36,7 @@ export default function AdminQuickJobPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState("");
+  const [savedStatus, setSavedStatus] = useState("");
   const [dragged, setDragged] = useState(null);
   const [templateName, setTemplateName] = useState("");
   useEffect(() => {
@@ -114,6 +115,7 @@ export default function AdminQuickJobPage() {
         .single();
       if (readError) throw readError;
       setLink(`${window.location.origin}/apply/${data.slug}`);
+      setSavedStatus(job.status);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -139,7 +141,7 @@ export default function AdminQuickJobPage() {
   return (
     <AdminShell
       title={jobId ? "Edit quick job" : "Create a quick job"}
-      description="Publish a short job and share a simple application form."
+      description="Create a short job, choose its visibility, and share a simple application form."
     >
       <Link
         to="/admin/candidates"
@@ -443,15 +445,22 @@ export default function AdminQuickJobPage() {
               Visibility
               <select
                 className={`${quickInputClass} mt-2`}
+                aria-describedby="quick-job-visibility-help"
                 value={job.status}
                 onChange={(e) =>
                   setJob((j) => ({ ...j, status: e.target.value }))
                 }
               >
-                <option value="published">Publish</option>
+                <option value="internal">Internal — link only</option>
+                <option value="published">Public — show on website</option>
                 <option value="draft">Save draft</option>
               </select>
             </label>
+            <p id="quick-job-visibility-help" className="mt-3 text-sm leading-6 text-slate-600">
+              Public jobs appear in website listings. Internal jobs are hidden from listings,
+              but anyone with the application link can apply. Drafts cannot accept applications.
+              Save to apply a visibility change.
+            </p>
             {error && (
               <p role="alert" className="my-4 break-words text-red-700">
                 {error}
@@ -467,54 +476,60 @@ export default function AdminQuickJobPage() {
               <div role="status" className="mt-5 space-y-3 break-all">
                 <p>
                   Saved.{" "}
-                  {job.status === "draft"
-                    ? "Publish before sharing."
-                    : "Your link is ready to share."}
+                  {savedStatus === "draft"
+                    ? "Draft saved. Choose Public or Internal before sharing."
+                    : savedStatus === "internal"
+                      ? "Internal job saved. Share this link directly; it is hidden from public listings."
+                      : "Public job saved. It is visible on the website and your link is ready to share."}
                 </p>
-                <Link
-                  className="block text-blue-700 underline"
-                  to={new URL(link).pathname}
-                >
-                  {link}
-                </Link>
-                <button
-                  type="button"
-                  className={button}
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(link);
-                    } catch {
-                      setError("Select and copy the link above.");
-                    }
-                  }}
-                >
-                  Copy link
-                </button>
-                <button
-                  type="button"
-                  className={`${button} ml-2 mt-2`}
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(
-                        `${link}?source=instagram`,
-                      );
-                    } catch {
-                      setError(
-                        "Select and copy the link above, then add ?source=instagram.",
-                      );
-                    }
-                  }}
-                >
-                  Copy Instagram link
-                </button>
-                <a
-                  className={`${button} ml-2 inline-flex items-center`}
-                  target="_blank"
-                  rel="noreferrer"
-                  href={`https://wa.me/?text=${encodeURIComponent(`${job.title} – ${job.location}\n${link}?source=whatsapp`)}`}
-                >
-                  WhatsApp
-                </a>
+                {savedStatus !== "draft" && (
+                  <>
+                    <Link
+                      className="block text-blue-700 underline"
+                      to={new URL(link).pathname}
+                    >
+                      {link}
+                    </Link>
+                    <button
+                      type="button"
+                      className={button}
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(link);
+                        } catch {
+                          setError("Select and copy the link above.");
+                        }
+                      }}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      type="button"
+                      className={`${button} ml-2 mt-2`}
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(
+                            `${link}?source=instagram`,
+                          );
+                        } catch {
+                          setError(
+                            "Select and copy the link above, then add ?source=instagram.",
+                          );
+                        }
+                      }}
+                    >
+                      Copy Instagram link
+                    </button>
+                    <a
+                      className={`${button} ml-2 inline-flex items-center`}
+                      target="_blank"
+                      rel="noreferrer"
+                      href={`https://wa.me/?text=${encodeURIComponent(`${job.title} – ${job.location}\n${link}?source=whatsapp`)}`}
+                    >
+                      WhatsApp
+                    </a>
+                  </>
+                )}
               </div>
             )}
           </section>

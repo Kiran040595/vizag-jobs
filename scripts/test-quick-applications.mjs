@@ -59,6 +59,10 @@ try {
       "utf8",
     ),
   );
+  await db.exec(await readFile(new URL('../supabase/migrations/20261009120000_quick_job_visibility.sql', import.meta.url), 'utf8'));
+  await db.exec(`alter table jobs enable row level security;
+    grant select on jobs to anon,authenticated;
+    create policy public_jobs on jobs for select to anon,authenticated using(status='published');`);
   async function identity(uid, role = "authenticated") {
     await db.query(
       "select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role',$2,false)",
@@ -71,6 +75,7 @@ try {
       await db.query("select save_quick_job($1,$2) id", [
         JSON.stringify({
           title,
+          status: "published",
           role: "Delivery",
           location: "Vizag",
           salary: "15000",
@@ -248,6 +253,44 @@ try {
     second,
   ]);
   await assert.rejects(submit(second, "e".repeat(64)), /closed/);
+  // Visibility is enforced by PostgreSQL, including direct REST/table reads.
+  await identity(admin);
+  const payload = {title:'Link only delivery',role:'Delivery',location:'Vizag',description:'Deliver orders around Vizag',owner_id:employer};
+  const internal = (await db.query('select save_quick_job($1,$2) id',[JSON.stringify(payload),JSON.stringify(FORM_TEMPLATES.Basic)])).rows[0].id;
+  assert.equal((await db.query('select status from jobs where id=$1',[internal])).rows[0].status,'internal');
+  const internalForm = (await db.query('select get_quick_job($1) form',[internal])).rows[0].form;
+  assert.equal(internalForm.status,'internal');
+  for (const role of ['anon','authenticated']) {
+    await identity(stranger,role);
+    await db.exec('set role '+role);
+    assert.equal((await db.query('select id from jobs where id=$1',[internal])).rows.length,0);
+    assert.equal((await db.query('select id from jobs where id=$1',[job])).rows.length,1);
+    assert.ok((await db.query('select get_quick_job($1) form',[internal])).rows[0].form);
+    await db.exec('reset role');
+  }
+  assert.equal((await submit(internal,'1'.repeat(64))).accepted,true);
+  await identity(employer);
+  assert.equal((await db.query('select count(*)::int count from get_job_applicant_records($1)',[internal])).rows[0].count,1);
+  await identity(admin);
+  await db.query('select save_quick_job($1,$2,$3)',[JSON.stringify({...payload,status:'published'}),JSON.stringify(FORM_TEMPLATES.Basic),internal]);
+  await identity('', 'anon');
+  await db.exec('set role anon');
+  assert.equal((await db.query('select id from jobs where id=$1',[internal])).rows.length,1);
+  await db.exec('reset role');
+  await identity(admin);
+  await db.query('select save_quick_job($1,$2,$3)',[JSON.stringify({...payload,status:'internal'}),JSON.stringify(FORM_TEMPLATES.Basic),internal]);
+  await db.exec('set role anon');
+  assert.equal((await db.query('select id from jobs where id=$1',[internal])).rows.length,0);
+  await db.exec('reset role');
+  await identity(admin);
+  await db.query('select save_quick_job($1,$2,$3)',[JSON.stringify({...payload,status:'draft'}),JSON.stringify(FORM_TEMPLATES.Basic),internal]);
+  assert.equal((await db.query('select get_quick_job($1) form',[internal])).rows[0].form,null);
+  await identity('', 'service_role');
+  await assert.rejects(db.query('select submit_quick_application($1,$2,$3,$4,$5,$6)',[internal,internalForm.form_id,JSON.stringify(answers),'2'.repeat(64),'direct','visibility-ip']), /closed/);
+  await identity(admin);
+  await assert.rejects(db.query('select save_quick_job($1,$2)',[JSON.stringify({...payload,status:'typo'}),JSON.stringify(FORM_TEMPLATES.Basic)]),/Invalid quick job visibility/);
+  assert.equal((await db.query('select count(*)::int count from job_applications where job_id=$1',[internal])).rows[0].count,1);
+  console.log('Visibility checks passed: internal by default, anonymous and signed-in listing isolation, shared-link read/submit, assigned company access, publish/unpublish, draft rejection, invalid status rejection, and application preservation.');
   console.log(
     "Quick applications PostgreSQL checks passed: migration, public form, guest submit, retries, phone/job deduplication, shared candidate grouping, account receipt linking, history preservation, guest separation, company authorization, private receipts, and closed jobs.",
   );
