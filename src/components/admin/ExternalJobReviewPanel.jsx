@@ -40,7 +40,7 @@ function DetailRow({ label, value, mono = false }) {
   return (
     <div className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-3">
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className={`text-sm text-slate-800 ${mono ? 'break-all font-mono text-xs' : ''}`}>{value}</dd>
+      <dd className={`min-w-0 break-words text-sm text-slate-800 ${mono ? 'break-all font-mono text-xs' : ''}`}>{value}</dd>
     </div>
   );
 }
@@ -193,7 +193,7 @@ function ExternalJobCard({
 
   return (
     <article
-      className={`rounded-2xl border p-5 ${
+      className={`min-w-0 rounded-2xl border p-4 sm:p-5 ${
         isDuplicate ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200 bg-slate-50/50'
       }`}
     >
@@ -209,7 +209,7 @@ function ExternalJobCard({
                 aria-label={`Select ${job.title}`}
               />
             ) : null}
-            <h3 className="text-lg font-bold text-slate-950">{job.title || 'Untitled job'}</h3>
+            <h3 className="break-words text-lg font-bold text-slate-950">{job.title || 'Untitled job'}</h3>
             {isDuplicate ? (
               <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
                 Already in DB ({duplicateReason})
@@ -251,13 +251,13 @@ function ExternalJobCard({
           <p className="mt-1 text-sm text-slate-600">
             {job.company || 'Unknown company'} · {job.location || '—'} · {job.category || 'No category'}
           </p>
-          <p className="mt-1 font-mono text-xs text-slate-500">{job.slug}</p>
+          <p className="mt-1 break-all font-mono text-xs text-slate-500">{job.slug}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setExpanded((current) => !current)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
             {expanded ? 'Hide details' : 'Show details'}
           </button>
@@ -265,7 +265,7 @@ function ExternalJobCard({
             type="button"
             disabled={isBusy || isSeoBusy}
             onClick={() => onEdit(job)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             Edit
           </button>
@@ -274,7 +274,7 @@ function ExternalJobCard({
               href={applyLinkUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-100"
+              className="inline-flex min-h-11 items-center rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-100"
             >
               Check apply link
             </a>
@@ -284,7 +284,7 @@ function ExternalJobCard({
               type="button"
               disabled={isBusy || isSeoBusy}
               onClick={() => onMakeSeo(job)}
-              className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 hover:bg-violet-100 disabled:opacity-50"
+              className="min-h-11 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 hover:bg-violet-100 disabled:opacity-50"
             >
               {isSeoBusy ? 'SEO…' : job.seo_optimized ? 'Re-run SEO' : 'Make SEO'}
             </button>
@@ -293,7 +293,7 @@ function ExternalJobCard({
             type="button"
             disabled={isBusy || isSeoBusy}
             onClick={() => onSkip(job)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             Skip
           </button>
@@ -301,7 +301,7 @@ function ExternalJobCard({
             type="button"
             disabled={isBusy || isSeoBusy}
             onClick={() => onSaveDraft(job)}
-            className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+            className="min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50"
           >
             {isBusy ? 'Saving…' : 'Save as draft'}
           </button>
@@ -309,7 +309,7 @@ function ExternalJobCard({
             type="button"
             disabled={isBusy || isSeoBusy}
             onClick={() => onPublish(job)}
-            className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:opacity-50"
+            className="min-h-11 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:opacity-50"
           >
             {isBusy ? 'Publishing…' : 'Approve & publish'}
           </button>
@@ -348,7 +348,7 @@ function ExternalJobCard({
                 value={String(seoKeyIndex || 0)}
                 onChange={(e) => onSeoKeyIndexChange(job, e.target.value)}
                 disabled={isBusy || isSeoBusy}
-                className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-base text-slate-800 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
               >
                 {geminiKeySelectOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -377,7 +377,7 @@ function ExternalJobCard({
             onChange={(e) => onSeoInstructionsChange(job, e.target.value)}
             disabled={isBusy || isSeoBusy}
             placeholder="e.g. Rewrite with Vizag and Visakhapatnam 5+ times each. Add 5 more mechanical/ECE FAQ questions for Vizag."
-            className="mt-2 w-full rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+            className="mt-2 w-full rounded-lg border border-violet-200 px-3 py-2 text-base text-slate-800 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
           />
           <p className="mt-1 text-right text-xs text-slate-500">
             {(job.seo_custom_instructions ?? '').length}/1200
@@ -407,7 +407,7 @@ function ExternalJobCard({
       {job.linkedin_post_text ? (
         <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Original LinkedIn post</p>
-          <pre className="mt-2 max-h-56 overflow-y-auto whitespace-pre-wrap font-sans text-sm leading-6 text-slate-800">
+          <pre className="mt-2 max-h-56 overflow-y-auto whitespace-pre-wrap break-words font-sans text-sm leading-6 text-slate-800">
             {job.linkedin_post_text}
           </pre>
         </div>
@@ -440,7 +440,7 @@ function ExternalJobCard({
           {job.description ? (
             <div className="space-y-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</dt>
-              <dd className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800">
+              <dd className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800">
                 {job.description}
               </dd>
             </div>
@@ -533,14 +533,14 @@ export default function ExternalJobReviewPanel({
             <button
               type="button"
               onClick={() => onBulkSaveDraft(selectedJobs)}
-              className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+              className="min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100"
             >
               Save {selectedJobs.length} as draft
             </button>
             <button
               type="button"
               onClick={() => onBulkPublish(selectedJobs)}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-600"
+              className="min-h-11 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-600"
             >
               Publish {selectedJobs.length} selected
             </button>

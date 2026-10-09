@@ -19,7 +19,7 @@ export default function ExternalSourceAutomationActions({
           type="button"
           disabled={fetchDisabled || fetchOnlyBusy}
           onClick={onFetchOnly}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {fetchOnlyBusy ? 'Fetching…' : fetchOnlyLabel}
         </button>
@@ -27,7 +27,7 @@ export default function ExternalSourceAutomationActions({
           type="button"
           disabled={fetchDisabled}
           onClick={onStartAutomation}
-          className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isThisChannel ? 'Automation running…' : 'Start automation →'}
         </button>

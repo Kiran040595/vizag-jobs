@@ -860,7 +860,7 @@ export default function AdminExternalFetchPage() {
           <button
             type="button"
             onClick={handleClearBatch}
-            className="rounded-xl border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-800 transition hover:border-violet-400 hover:bg-violet-100"
+            className="min-h-11 rounded-xl border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-800 transition hover:border-violet-400 hover:bg-violet-100"
           >
             Clear batch
           </button>
@@ -872,7 +872,7 @@ export default function AdminExternalFetchPage() {
           <button
             type="button"
             onClick={handleClearBatch}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
           >
             Clear batch
           </button>
@@ -913,7 +913,7 @@ export default function AdminExternalFetchPage() {
             <button
               type="button"
               onClick={handleCancelAutomation}
-              className="rounded-xl border border-emerald-400 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100"
+              className="min-h-11 rounded-xl border border-emerald-400 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100"
             >
               Stop automation
             </button>
@@ -951,7 +951,7 @@ export default function AdminExternalFetchPage() {
                   runIds: naukriPending.runIds,
                 })
               }
-              className="rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 disabled:opacity-50"
+              className="min-h-11 rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 disabled:opacity-50"
             >
               {naukriCollecting ? 'Loading…' : 'Load results now'}
             </button>
@@ -964,7 +964,7 @@ export default function AdminExternalFetchPage() {
                 naukriAutoCollectStarted.current = false;
                 setNotice('Cancelled Naukri wait timer.');
               }}
-              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100/80"
+              className="min-h-11 rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100/80"
             >
               Cancel wait
             </button>
@@ -1011,9 +1011,9 @@ export default function AdminExternalFetchPage() {
                 }`}
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{source.providerHint}</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-950">{source.title}</h2>
+                <h2 className="mt-1 break-words text-lg font-bold text-slate-950">{source.title}</h2>
                 <p className="mt-2 text-sm text-slate-600">{source.description}</p>
-                <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
+                <p className="mt-3 break-words font-mono text-xs leading-relaxed text-slate-500">{source.secretHint}</p>
 
                 {isLinkedInPosts ? (
                   <>
@@ -1025,7 +1025,7 @@ export default function AdminExternalFetchPage() {
                       value={linkedInPostPreset}
                       disabled={fetchDisabled}
                       onChange={(e) => setLinkedInPostPreset(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900"
                     >
                       {LINKEDIN_POST_PRESET_OPTIONS.map((opt) => (
                         <option key={opt.id} value={opt.id}>
@@ -1051,7 +1051,7 @@ export default function AdminExternalFetchPage() {
                           disabled={fetchDisabled}
                           onChange={(e) => setLinkedInCustomSearchUrl(e.target.value)}
                           placeholder="https://www.linkedin.com/search/results/content/?keywords=..."
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-base text-slate-900"
                         />
                       </>
                     ) : null}
@@ -1073,7 +1073,7 @@ export default function AdminExternalFetchPage() {
                       disabled={fetchDisabled}
                       onChange={(e) => setNaukriExistingRunIds(e.target.value)}
                       placeholder="e.g. IgDek8vwz4ODma0Ll,PFM5VhEQvS5SXn9Ch"
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-base text-slate-900"
                     />
                     <p className="mt-1 text-[11px] text-slate-500">
                       Paste one or more run IDs from Apify Console (comma-separated). Loads dataset only.
@@ -1095,7 +1095,7 @@ export default function AdminExternalFetchPage() {
                         setNotice('Loading jobs from existing Apify run(s) — no new scrape.');
                         collectNaukriResults(ids);
                       }}
-                      className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="min-h-11 mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {naukriCollecting ? 'Loading…' : 'Load from existing runs (free) →'}
                     </button>
@@ -1132,14 +1132,14 @@ export default function AdminExternalFetchPage() {
               type="button"
               disabled={fetchDisabled}
               onClick={() => handleFetch(source.id)}
-              className={`rounded-[1.5rem] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${source.accent} ${
+              className={`min-h-11 rounded-[1.5rem] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${source.accent} ${
                 isLast ? 'ring-2 ring-cyan-500 ring-offset-2' : ''
               }`}
             >
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{source.providerHint}</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-950">{source.title}</h2>
+              <h2 className="mt-1 break-words text-lg font-bold text-slate-950">{source.title}</h2>
               <p className="mt-2 text-sm text-slate-600">{source.description}</p>
-              <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-500">{source.secretHint}</p>
+              <p className="mt-3 break-words font-mono text-xs leading-relaxed text-slate-500">{source.secretHint}</p>
               <p className="mt-4 text-sm font-semibold text-cyan-700">
                 {isActive
                   ? source.id === 'naukri'
@@ -1219,7 +1219,7 @@ export default function AdminExternalFetchPage() {
 
       {fetchJson ? (
         <details className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-700">Raw JSON response</summary>
+          <summary className="min-h-11 cursor-pointer text-sm font-semibold text-slate-700">Raw JSON response</summary>
           <pre className="mt-3 max-h-[24rem] overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-emerald-100">
             {fetchJson}
           </pre>

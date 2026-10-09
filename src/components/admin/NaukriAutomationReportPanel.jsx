@@ -75,14 +75,14 @@ export default function NaukriAutomationReportPanel({
           <button
             type="button"
             onClick={() => downloadAutomationReport(report)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100"
+            className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100"
           >
             Download JSON
           </button>
           <button
             type="button"
             onClick={() => downloadAutomationReportCsv(report)}
-            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100"
+            className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100"
           >
             Download CSV
           </button>
@@ -91,7 +91,7 @@ export default function NaukriAutomationReportPanel({
               type="button"
               disabled={emailBusy}
               onClick={handleSendEmail}
-              className="rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-100 disabled:opacity-50"
+              className="min-h-11 rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-100 disabled:opacity-50"
             >
               {emailBusy ? 'Sending…' : 'Email summary'}
             </button>
@@ -100,7 +100,7 @@ export default function NaukriAutomationReportPanel({
             <button
               type="button"
               onClick={onClear}
-              className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="min-h-11 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
             >
               Clear report
             </button>
