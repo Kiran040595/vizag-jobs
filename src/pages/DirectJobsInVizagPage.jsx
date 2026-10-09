@@ -51,7 +51,7 @@ export default function DirectJobsInVizagPage() {
             <span>🏢</span>
             <span>Verified Local Employers</span>
           </div>
-          <h1 className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl">
+          <h1 className="mt-3 break-words text-2xl font-black text-slate-900 sm:text-4xl">
             Direct Company Jobs in Vizag
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-base text-slate-600 sm:text-lg">
@@ -61,13 +61,13 @@ export default function DirectJobsInVizagPage() {
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <Link
               to="/employer/register"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
             >
               Post a Job for Your Company
             </Link>
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               Browse All Jobs
             </Link>
