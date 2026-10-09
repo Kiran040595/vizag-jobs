@@ -399,7 +399,7 @@ export default function AdminStudentsPage() {
                           setRoleFilter('');
                           setCategoryFilter((current) => (current === item.value ? '' : item.value));
                         }}
-                        className={`px-3 py-1.5 text-xs font-semibold transition ${
+                        className={`min-h-11 px-3 py-1.5 text-sm font-semibold transition ${
                           selected
                             ? 'bg-cyan-500 text-white'
                             : 'bg-cyan-50 text-cyan-900 hover:bg-cyan-100'
@@ -416,7 +416,7 @@ export default function AdminStudentsPage() {
                             label,
                           )
                         }
-                        className="border-l border-cyan-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-50"
+                        className="border-l border-cyan-200 bg-white min-h-11 px-2.5 py-1.5 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-50"
                       >
                         Excel
                       </button>
@@ -456,7 +456,7 @@ export default function AdminStudentsPage() {
                               : item.value,
                           );
                         }}
-                        className={`px-3 py-1.5 text-xs font-semibold transition ${
+                        className={`min-h-11 px-3 py-1.5 text-sm font-semibold transition ${
                           selected
                             ? 'bg-indigo-500 text-white'
                             : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100'
@@ -473,7 +473,7 @@ export default function AdminStudentsPage() {
                             item.value,
                           )
                         }
-                        className="border-l border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-indigo-800 transition hover:bg-indigo-50"
+                        className="border-l border-indigo-200 bg-white min-h-11 px-2.5 py-1.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-50"
                       >
                         Excel
                       </button>
@@ -494,16 +494,17 @@ export default function AdminStudentsPage() {
             <div className="relative flex-1">
               <input
                 type="search"
+                aria-label="Search registered students"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search name, college, email, phone, role, category, skills…"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 py-3 pl-10 pr-4 text-base text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
               />
               <span className="absolute left-3.5 top-3.5 text-slate-400">🔍</span>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={loadStudents}
@@ -536,7 +537,7 @@ export default function AdminStudentsPage() {
               <select
                 value={graduationYearFilter}
                 onChange={(e) => setGraduationYearFilter(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-base font-semibold outline-none transition ${
                   graduationYearFilter
                     ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -559,7 +560,7 @@ export default function AdminStudentsPage() {
               <select
                 value={degreeFilter}
                 onChange={(e) => setDegreeFilter(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-base font-semibold outline-none transition ${
                   degreeFilter
                     ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -582,7 +583,7 @@ export default function AdminStudentsPage() {
               <select
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-base font-semibold outline-none transition ${
                   branchFilter
                     ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -605,7 +606,7 @@ export default function AdminStudentsPage() {
               <select
                 value={fresherFilter}
                 onChange={(e) => setFresherFilter(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-base font-semibold outline-none transition ${
                   fresherFilter
                     ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -629,7 +630,7 @@ export default function AdminStudentsPage() {
               <select
                 value={skillFilter}
                 onChange={(e) => setSkillFilter(e.target.value)}
-                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-base font-semibold outline-none transition ${
                   skillFilter
                     ? 'border-indigo-500 bg-indigo-50/70 text-indigo-900'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -655,7 +656,7 @@ export default function AdminStudentsPage() {
                   setRoleFilter('');
                   setCategoryFilter(e.target.value);
                 }}
-                className={`w-full rounded-xl border px-3 py-2 text-xs font-semibold outline-none transition ${
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-base font-semibold outline-none transition ${
                   categoryFilter
                     ? 'border-cyan-500 bg-cyan-50/70 text-cyan-900'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -673,10 +674,10 @@ export default function AdminStudentsPage() {
 
           {/* Active Filter Badges */}
           <section className="my-4 grid gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-2">
-            <label>Current area<input className="mt-1 w-full rounded-lg border p-2" value={candidateFilters.currentArea} onChange={e => setCandidateFilters(v => ({ ...v, currentArea: e.target.value }))} /></label>
-            <label>Current city<input className="mt-1 w-full rounded-lg border p-2" value={candidateFilters.currentCity} onChange={e => setCandidateFilters(v => ({ ...v, currentCity: e.target.value }))} /></label>
-            {[['educationStatus', 'Education status', [['studying', 'Studying'], ['completed', 'Completed']]], ['willingToRelocate', 'Willing to relocate', [['true', 'Yes'], ['false', 'No']]], ['gender', 'Gender (admin only)', [['female', 'Female'], ['male', 'Male'], ['other', 'Other']]]].map(([field, label, options]) => <label key={field}>{label}<select className="mt-1 w-full rounded-lg border p-2" value={candidateFilters[field]} onChange={e => setCandidateFilters(v => ({ ...v, [field]: e.target.value }))}><option value="">Any</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>)}
-            <label>Find matching candidates for a job<select className="mt-1 w-full rounded-lg border p-2" value={matchingJobId} onChange={e => setMatchingJobId(e.target.value)}><option value="">All candidates</option>{matchingJobs.filter(job => job.requirements_verified).map(job => <option key={job.id} value={job.id}>{job.title} — {job.company}</option>)}</select></label>
+            <label>Current area<input className="mt-1 min-h-11 w-full rounded-lg border p-2 text-base" value={candidateFilters.currentArea} onChange={e => setCandidateFilters(v => ({ ...v, currentArea: e.target.value }))} /></label>
+            <label>Current city<input className="mt-1 min-h-11 w-full rounded-lg border p-2 text-base" value={candidateFilters.currentCity} onChange={e => setCandidateFilters(v => ({ ...v, currentCity: e.target.value }))} /></label>
+            {[['educationStatus', 'Education status', [['studying', 'Studying'], ['completed', 'Completed']]], ['willingToRelocate', 'Willing to relocate', [['true', 'Yes'], ['false', 'No']]], ['gender', 'Gender (admin only)', [['female', 'Female'], ['male', 'Male'], ['other', 'Other']]]].map(([field, label, options]) => <label key={field}>{label}<select className="mt-1 min-h-11 w-full rounded-lg border p-2 text-base" value={candidateFilters[field]} onChange={e => setCandidateFilters(v => ({ ...v, [field]: e.target.value }))}><option value="">Any</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>)}
+            <label>Find matching candidates for a job<select className="mt-1 min-h-11 w-full rounded-lg border p-2 text-base" value={matchingJobId} onChange={e => setMatchingJobId(e.target.value)}><option value="">All candidates</option>{matchingJobs.filter(job => job.requirements_verified).map(job => <option key={job.id} value={job.id}>{job.title} — {job.company}</option>)}</select></label>
             {matchingJobId && <p className="text-xs text-slate-600">Shows candidates meeting all reviewed mandatory requirements. Missing information requires a profile update.</p>}
             {matchingJobsError && <p className="text-sm text-rose-700">Could not load matching jobs: {matchingJobsError}</p>}
           </section>
@@ -827,12 +828,12 @@ export default function AdminStudentsPage() {
               </span>{' '}
               of <span className="font-semibold text-slate-900">{filteredStudents.length}</span> registered students
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-slate-500">Per page:</span>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-cyan-500"
+                className="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-base font-semibold text-slate-800 outline-none focus:border-cyan-500"
               >
                 <option value={50}>50</option>
                 <option value={100}>100</option>
@@ -1096,7 +1097,7 @@ export default function AdminStudentsPage() {
                     <button
                       type="button"
                       onClick={() => setShareStudent(student)}
-                      className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100"
+                      className="min-h-11 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-800 transition hover:border-cyan-300 hover:bg-cyan-100"
                     >
                       Share
                     </button>
@@ -1104,7 +1105,7 @@ export default function AdminStudentsPage() {
                       type="button"
                       disabled={busyUserId === student.userId}
                       onClick={() => handleToggleActive(student)}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+                      className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
                     >
                       {student.isActive ? 'Deactivate' : 'Activate'}
                     </button>
@@ -1121,7 +1122,7 @@ export default function AdminStudentsPage() {
               Page <span className="font-bold text-slate-900">{currentPage}</span> of{' '}
               <span className="font-bold text-slate-900">{totalPages}</span>
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 disabled={currentPage <= 1}
@@ -1129,7 +1130,7 @@ export default function AdminStudentsPage() {
                   setCurrentPage((p) => Math.max(1, p - 1));
                   window.scrollTo({ top: 300, behavior: 'smooth' });
                 }}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+                className="rounded-xl border border-slate-200 bg-white min-h-11 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
               >
                 Previous
               </button>
@@ -1140,7 +1141,7 @@ export default function AdminStudentsPage() {
                   setCurrentPage((p) => Math.min(totalPages, p + 1));
                   window.scrollTo({ top: 300, behavior: 'smooth' });
                 }}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+                className="rounded-xl border border-slate-200 bg-white min-h-11 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
               >
                 Next
               </button>
