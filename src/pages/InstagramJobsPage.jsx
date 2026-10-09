@@ -163,7 +163,7 @@ export default function InstagramJobsPage() {
 
         {/* Loading Spinner */}
         {isLoading ? (
-          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+          <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 sm:p-10 text-center shadow-sm">
             <LoadingSpinner message="Finding latest Instagram jobs..." />
           </div>
         ) : null}
@@ -175,7 +175,7 @@ export default function InstagramJobsPage() {
             <p className="mt-1 text-xs text-rose-600">{loadError}</p>
             <Link
               to="/jobs"
-              className="mt-4 inline-flex items-center rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700"
+              className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700"
             >
               Browse all jobs on website
             </Link>
@@ -232,7 +232,7 @@ export default function InstagramJobsPage() {
                 return (
                   <article
                     key={job.id}
-                    className="group relative rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg sm:p-6"
+                    className="group relative min-w-0 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg sm:p-6"
                   >
                     {/* Header Row: Company Avatar + Names + Post Time */}
                     <div className="flex items-start gap-3.5">
@@ -245,7 +245,7 @@ export default function InstagramJobsPage() {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center justify-between gap-1">
-                          <p className="line-clamp-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+                          <p className="break-words text-xs font-bold uppercase tracking-wider text-slate-500">
                             {company}
                           </p>
                           {relativeTime ? (
@@ -255,8 +255,8 @@ export default function InstagramJobsPage() {
                           ) : null}
                         </div>
 
-                        <h2 className="mt-0.5 text-lg font-black leading-snug text-slate-900 transition group-hover:text-blue-600 sm:text-xl">
-                          <Link to={jobPath} className="focus:outline-none">
+                        <h2 className="mt-0.5 break-words text-lg font-black leading-snug text-slate-900 transition group-hover:text-blue-600 sm:text-xl">
+                          <Link to={jobPath} className="block rounded-md focus-visible:outline-2 focus-visible:outline-blue-600">
                             {job.title}
                           </Link>
                         </h2>
@@ -267,7 +267,7 @@ export default function InstagramJobsPage() {
                     <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
                       {directBadge ? (
                         <span
-                          className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-2xs ${
+                          className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider shadow-2xs ${
                             directBadge.tone === 'emerald'
                               ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
                               : directBadge.tone === 'cyan'
@@ -281,14 +281,14 @@ export default function InstagramJobsPage() {
                       ) : null}
 
                       {job.isFresher ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 shadow-2xs">
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider text-emerald-800 shadow-2xs">
                           <span aria-hidden="true">🎓</span>
                           <span>Fresher Friendly</span>
                         </span>
                       ) : null}
 
                       {salary ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-900 shadow-2xs">
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-bold text-teal-900 shadow-2xs">
                           <span aria-hidden="true">💰</span>
                           <span>{salary}</span>
                         </span>
@@ -321,7 +321,7 @@ export default function InstagramJobsPage() {
                     <div className="mt-4 pt-1">
                       <Link
                         to={jobPath}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-center text-sm font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-150 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98]"
+                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-center text-base font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-150 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98]"
                       >
                         <span>Apply Now</span>
                         <svg
@@ -381,19 +381,19 @@ export default function InstagramJobsPage() {
             <span className="text-slate-400">Popular:</span>
             <Link
               to="/jobs/it"
-              className="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-1 text-slate-200 transition hover:border-blue-400 hover:text-white"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-slate-200 transition hover:border-blue-400 hover:text-white"
             >
               💻 IT Jobs
             </Link>
             <Link
               to="/jobs/fresher"
-              className="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-1 text-slate-200 transition hover:border-blue-400 hover:text-white"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-slate-200 transition hover:border-blue-400 hover:text-white"
             >
               🎓 Fresher Jobs
             </Link>
             <Link
               to="/jobs/part-time"
-              className="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-1 text-slate-200 transition hover:border-blue-400 hover:text-white"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-slate-200 transition hover:border-blue-400 hover:text-white"
             >
               ⏱️ Part-Time Jobs
             </Link>
