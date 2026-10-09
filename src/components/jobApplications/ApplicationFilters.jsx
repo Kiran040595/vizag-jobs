@@ -4,7 +4,7 @@ import {
 } from '../../lib/applicationFilters';
 
 const fieldClassName =
-  'rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100';
+  'min-h-11 max-w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100';
 
 export default function ApplicationFilters({
   status = ALL_APPLICATION_STATUSES,
@@ -44,7 +44,7 @@ export default function ApplicationFilters({
           <button
             type="button"
             onClick={() => onStatusChange(ALL_APPLICATION_STATUSES)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+            className="min-h-11 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
           >
             Clear
           </button>

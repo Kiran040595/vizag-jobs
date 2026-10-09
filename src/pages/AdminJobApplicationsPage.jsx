@@ -114,13 +114,13 @@ export default function AdminJobApplicationsPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-4">
-          <Link to={getAdminJobsListPath(job)} className="text-sm font-semibold text-blue-700 hover:text-blue-800">
+          <Link to={getAdminJobsListPath(job)} className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 hover:text-blue-800">
             ← Back to jobs
           </Link>
           {job ? (
             <Link
               to={`/admin/jobs/${job.id}/edit`}
-              className="text-sm font-semibold text-slate-600 hover:text-slate-800"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-slate-600 hover:text-slate-800"
             >
               Edit job
             </Link>
@@ -130,7 +130,7 @@ export default function AdminJobApplicationsPage() {
           <button
             type="button"
             onClick={() => setExportOpen(true)}
-            className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+            className="min-h-12 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
           >
             Download Excel
           </button>
@@ -145,7 +145,7 @@ export default function AdminJobApplicationsPage() {
 
       {!isLoading ? (
         <div className="mb-6 rounded-3xl border border-indigo-100 bg-indigo-50/60 px-5 py-4">
-          <p className="text-2xl font-black text-slate-950">
+          <p className="break-words text-2xl font-black text-slate-950">
             {filteredApplications.length} application{filteredApplications.length === 1 ? '' : 's'}
             {filteredApplications.length !== applications.length ? (
               <span className="ml-2 text-base font-semibold text-slate-600">
