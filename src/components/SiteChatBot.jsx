@@ -184,7 +184,7 @@ export default function SiteChatBot() {
 
       {isOpen ? (
         <div
-          className={`fixed z-50 flex w-[min(100vw-1.5rem,24rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl right-[max(0.75rem,env(safe-area-inset-right))] ${bottomClass}`}
+          className={`fixed z-50 flex w-[min(calc(100%-1.5rem),24rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl right-[max(0.75rem,env(safe-area-inset-right))] ${bottomClass}`}
           style={{ maxHeight: 'min(32rem, calc(100dvh - 6rem))' }}
           role="dialog"
           aria-modal="false"
@@ -200,14 +200,14 @@ export default function SiteChatBot() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white"
               aria-label="Close help chat"
             >
               <CloseIcon />
             </button>
           </div>
 
-          <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-3 py-3">
+          <div ref={listRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 px-3 py-3">
             {messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}-${message.content.slice(0, 24)}`}
@@ -220,7 +220,7 @@ export default function SiteChatBot() {
                       : 'border border-slate-200 bg-white text-slate-800'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{linkifyText(message.content)}</p>
+                  <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{linkifyText(message.content)}</p>
                 </div>
               </div>
             ))}
@@ -246,7 +246,7 @@ export default function SiteChatBot() {
                     key={suggestion}
                     type="button"
                     onClick={() => sendMessage(suggestion)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                    className="min-h-11 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
                   >
                     {suggestion}
                   </button>
