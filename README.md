@@ -8,6 +8,10 @@ A job portal website for Visakhapatnam (Vizag) built with React, Vite, and Supab
 - Search jobs by title or company
 - Responsive design
 
+## Screen inventory and ongoing QA
+
+Use [the screen, functionality and mobile UI tracker](docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md) for the complete route inventory, end-to-end test status, mobile acceptance checks and two-screen daily work queue. Add new screens and features to this tracker in the same change that introduces them. Mark functionality **Tested** only with recorded end-to-end evidence; track mobile UI verification separately. Push each completed and verified item with its tracker update to `develop`.
+
 ## Getting Started
 
 1. Install dependencies:
