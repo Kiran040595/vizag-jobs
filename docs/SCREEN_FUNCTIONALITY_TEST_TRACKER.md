@@ -26,7 +26,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | Not tested | Not reviewed | — |
-| S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | Not tested | Not reviewed | — |
+| S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | Blocked | Blocked | QA-2026-10-14: search fix; local browser unreachable |
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | Not tested | Not reviewed | — |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
@@ -75,7 +75,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S053 | `/terms-of-service` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
 | S054 | `/disclaimer` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
 | S055 | `/companies` | Browse/search companies; company details and career links; empty/error states | Not tested | Not reviewed | — |
-| S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
+| S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Blocked | Blocked | QA-2026-10-14: typing fix; local browser unreachable |
 | S057 | `/apply` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S058 | `/jobs/latest` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
 | S059 | `/saved-jobs` | Save/unsave listings; reload; empty list; open job; stale/unavailable saved job | Not tested | Not reviewed | — |
@@ -360,7 +360,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 
 | Batch | Screens | Status |
 |---|---|---|
-| Day 1 | `/`, `/jobs` | Planned |
+| Day 1 | `/`, `/jobs` | Started 2026-10-14; fixes delivered, browser verification blocked |
 | Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | Planned |
 | Day 3 | `/student/login`, `/student/register` | Planned |
 | Day 4 | `/student/profile`, `/student/applied-jobs` | Planned |
@@ -430,3 +430,18 @@ Copy one record per completed or attempted feature/screen.
 ## Baseline log
 
 2026-10-13: Inventory created from source; develop pull returned Already up to date. No browser E2E or mobile visual checks performed for this baseline. All application rows remain pending. Documentation delivery is separate from completion of application testing.
+
+## QA-2026-10-14: Home and Jobs search
+
+- Screens/features: S007, S056; related U03 remains Not tested / Not reviewed.
+- Tester/environment: Codex, 2026-10-14 (Asia/Kolkata), develop baseline d89730b; local Vite on Windows, anonymous flow, no account or personal data used.
+- Source findings and fixes (not browser-confirmed): Home keyword edits/submission retained company mode, causing the URL writer to discard the keyword. Both paths now clear company mode. Jobs synchronized trimmed URL text into active typing, dropping trailing spaces between words. Track locally written URL text so external navigation still synchronizes the draft; remove stale q when writing search.
+- Reproduction/retest steps pending: (1) Open /?company=Example, enter and submit another keyword; expect company removed and keyword results. (2) On /jobs, type a multiword keyword one character at a time; expect spaces preserved. (3) Clear, reload, and navigate back/forward; expect input and results to match the URL. (4) Complete remaining inventory journeys and mobile checklist.
+- Automated evidence: node --test tests/*.test.mjs exited 0: 127 tests passed, 0 failed (baseline, includes existing local notification tests). After fixes, node --test tests/job-filters.test.mjs tests/e2e-companies-directory.test.mjs exited 0: 14 runner tests passed, including 67 internal filter assertions. Despite its filename, the company test is not browser E2E.
+- Lint: node node_modules/eslint/bin/eslint.js src/pages/HomePage.jsx src/pages/JobsInVizagPage.jsx exited 0.
+- Build: Vite compiled 604 modules; large-chunk warning. Sitemap jobs/blog fetch failed and fell back to 28 static URLs; generated sitemap restored. Overall build completion recorded below.
+- Browser evidence: Codex in-app browser navigation to localhost:5173 initially returned ERR_CONNECTION_REFUSED; after Vite reported ready at 127.0.0.1:5173, navigation returned ERR_CONNECTION_TIMED_OUT. No browser journey or screenshot captured. Only the in-app browser and MCP Apps were available in browser inventory.
+- Functional result: Blocked for full E2E. Mobile UI result: Blocked; no viewport/device checks performed. Neither screen is Tested or Verified.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js and notification-inbox.test.mjs changes excluded from this delivery.
+- Delivery: scoped search fixes and tracker to be committed/pushed; completion reported in chat after Git verification.
+- Overall npm run build exited 0; PWA service worker generated. Additional warning: Browserslist data is six months old.

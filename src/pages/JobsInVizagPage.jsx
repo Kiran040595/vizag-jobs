@@ -16,12 +16,16 @@ export default function JobsInVizagPage() {
   const textQuery = searchParams.get('search') || searchParams.get('q') || '';
   const urlQuery = companyQuery || textQuery;
   const [searchTerm, setSearchTerm] = useState(urlQuery);
+  const lastUrlQueryRef = useRef(urlQuery);
   const listHeadingRef = useRef(null);
 
   const { allJobs, isLoading, loadError } = useCachedPublicJobs();
 
   // Sync searchTerm when URL query params change (e.g. navigation from companies directory or back/forward)
   useEffect(() => {
+    // Keep spaces in active typing; only external URL changes replace the draft.
+    if (urlQuery === lastUrlQueryRef.current) return;
+    lastUrlQueryRef.current = urlQuery;
     setSearchTerm(urlQuery);
     if (urlQuery && listHeadingRef.current && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
       listHeadingRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -32,8 +36,10 @@ export default function JobsInVizagPage() {
     setSearchTerm(val);
     const nextParams = new URLSearchParams(searchParams);
     const trimmed = val.trim();
+    lastUrlQueryRef.current = trimmed;
     // User typing clears exact company mode and switches to global text search
     nextParams.delete('company');
+    nextParams.delete('q');
     if (trimmed) {
       nextParams.set('search', trimmed);
     } else {

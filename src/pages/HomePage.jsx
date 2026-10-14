@@ -98,7 +98,7 @@ export default function HomePage() {
     if (searchInput === filters.q) return;
     const handle = window.setTimeout(() => {
       lastUrlQRef.current = searchInput;
-      const next = writeFiltersToSearchParams({ ...filters, q: searchInput, page: 1 });
+      const next = writeFiltersToSearchParams({ ...filters, company: '', q: searchInput, page: 1 });
       setSearchParams(next, { replace: true });
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
@@ -252,7 +252,7 @@ export default function HomePage() {
       // writing right now.
       lastUrlQRef.current = value;
       setSearchInput(value);
-      const next = writeFiltersToSearchParams({ ...filters, q: value, page: 1 });
+      const next = writeFiltersToSearchParams({ ...filters, company: '', q: value, page: 1 });
       setSearchParams(next);
     },
     [filters, setSearchParams],
