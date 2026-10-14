@@ -126,7 +126,7 @@ export default function InstagramJobsPage() {
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-2xl px-4 py-6 pb-28 sm:px-6 sm:py-10 sm:pb-24">
+      <main className="mx-auto w-full max-w-2xl px-4 py-6 pb-mobile-chrome sm:px-6 sm:py-10">
         {/* Instagram Bio Header */}
         <header className="relative text-center">
           {/* Subtle Ambient Background Glow */}
@@ -175,7 +175,7 @@ export default function InstagramJobsPage() {
             <p className="mt-1 text-xs text-rose-600">{loadError}</p>
             <Link
               to="/jobs"
-              className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700"
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-rose-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700"
             >
               Browse all jobs on website
             </Link>
@@ -196,7 +196,7 @@ export default function InstagramJobsPage() {
             </p>
             <Link
               to="/jobs"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 active:scale-95"
+              className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 active:scale-95"
             >
               <span>Check All Jobs in Vizag</span>
               <span>→</span>
@@ -362,7 +362,7 @@ export default function InstagramJobsPage() {
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to="/jobs"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 active:scale-95 sm:w-auto"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-500 active:scale-95 sm:w-auto"
             >
               <span>Check All Jobs in Vizag (100+)</span>
               <span aria-hidden="true">→</span>
@@ -370,7 +370,7 @@ export default function InstagramJobsPage() {
 
             <Link
               to="/"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 px-5 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 active:scale-95 sm:w-auto"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 px-5 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 active:scale-95 sm:w-auto"
             >
               Go to Homepage
             </Link>

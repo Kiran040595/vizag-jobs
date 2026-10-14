@@ -47,7 +47,7 @@ export default function SavedJobsPage() {
             </p>
             <Link
               to="/jobs"
-              className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
             >
               Browse jobs
             </Link>

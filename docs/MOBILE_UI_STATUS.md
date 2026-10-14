@@ -22,13 +22,13 @@ Current branch: `develop`
 
 | Category | Total Screens | Fixed / Mobile-Friendly | In Progress / Planned Next | Pending |
 |---|---|---|---|---|
-| **Public Core** | 8 | 4 | 2 | 2 |
+| **Public Core** | 8 | 8 | 0 | 0 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
 | **Employer Portal** | 10 | 0 | 2 | 8 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
-| **Quick Apply / Static** | 14 | 0 | 0 | 14 |
-| **Total** | **79** | **9** | **4** | **66** |
+| **Quick Apply / Static** | 14 | 0 | 2 | 12 |
+| **Total** | **79** | **13** | **4** | **62** |
 
 ---
 
@@ -93,18 +93,29 @@ Current branch: `develop`
   - Application cards optimized with `min-w-0 flex-1 break-words` preventing text truncation or overlap with status pills on 320px screens.
   - Filter pills maintain `min-h-11` touch targets.
 
+### Batch 5: Saved Jobs & Instagram Apply
+- **`/saved-jobs` (Saved Jobs Bookmark List - S059):**
+  - Card layout optimized for mobile with `min-w-0 flex-1` and wrapping text.
+  - Action buttons ("Remove" and "View details") sized to 44px (`min-h-11`) touch height and expand evenly (`flex-1 sm:flex-none`) on narrow viewports.
+  - Centered empty-state "Browse jobs" button (`min-h-11 items-center justify-center`).
+  - Safe-area bottom spacing verified with `pb-mobile-chrome`.
+- **`/apply`, `/jobs/latest` (Instagram Direct Jobs Stream & Redirect - S057, S058):**
+  - Updated `<main>` container with `pb-mobile-chrome` safe-area bottom padding to prevent bottom navigation overlap.
+  - Upgraded "Check All Jobs in Vizag" empty state button to `min-h-11 items-center justify-center`.
+  - Elevated bottom exit ramp buttons ("Check All Jobs in Vizag" and "Go to Homepage") to `min-h-11 w-full sm:w-auto`.
+  - Verified touch targets for popular category chips (`min-h-11`) and full-width card apply CTAs (`min-h-12`).
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 5 | `/saved-jobs`, `/apply` | Saved jobs list, Instagram direct application feed |
-| **P2** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
-| **P3** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
-| **P4** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
-| **P5** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
-| **P6** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P1 (Next)** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
+| **P2** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
+| **P3** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
+| **P4** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
+| **P5** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
 
 ---
 
@@ -168,9 +179,9 @@ Current branch: `develop`
 | S054 | `/disclaimer` | Disclaimer | ⏳ Pending | — |
 | S055 | `/companies` | Companies in Vizag Directory | ⏳ Pending | — |
 | S056 | `/jobs` | All Jobs in Vizag | ✅ Fixed | 2026-10-14 |
-| S057 | `/apply` | Instagram Jobs Stream | ⏳ Pending | — |
-| S058 | `/jobs/latest` | Latest Jobs Redirect | ⏳ Pending | — |
-| S059 | `/saved-jobs` | Saved Jobs Bookmark List | ⏳ Pending | — |
+| S057 | `/apply` | Instagram Jobs Stream | ✅ Fixed | 2026-10-14 |
+| S058 | `/jobs/latest` | Latest Jobs Redirect | ✅ Fixed | 2026-10-14 |
+| S059 | `/saved-jobs` | Saved Jobs Bookmark List | ✅ Fixed | 2026-10-14 |
 | S060 | `/jobs/it` | IT Jobs in Vizag | ⏳ Pending | — |
 | S061 | `/jobs/fresher` | Fresher Jobs in Vizag | ⏳ Pending | — |
 | S062 | `/jobs/part-time` | Part Time Jobs | ⏳ Pending | — |

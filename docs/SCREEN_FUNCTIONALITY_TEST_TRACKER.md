@@ -76,9 +76,9 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S054 | `/disclaimer` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
 | S055 | `/companies` | Browse/search companies; company details and career links; empty/error states | Not tested | Not reviewed | — |
 | S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | QA-2026-10-14-UI: targeted browser checks passed; full checklist pending |
-| S057 | `/apply` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
-| S058 | `/jobs/latest` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
-| S059 | `/saved-jobs` | Save/unsave listings; reload; empty list; open job; stale/unavailable saved job | Not tested | Not reviewed | — |
+| S057 | `/apply` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | QA-2026-10-14-UI-Day5: mobile UI verified, full journey pending |
+| S058 | `/jobs/latest` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day5: mobile redirect verified, full journey pending |
+| S059 | `/saved-jobs` | Save/unsave listings; reload; empty list; open job; stale/unavailable saved job | In progress | In progress | QA-2026-10-14-UI-Day5: mobile UI verified, full journey pending |
 | S060 | `/jobs/it` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S061 | `/jobs/fresher` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S062 | `/jobs/part-time` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
@@ -364,7 +364,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
 | Day 3 | `/student/login`, `/student/register` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
 | Day 4 | `/student/profile`, `/student/applied-jobs` | In progress (2026-10-14: mobile UI touch targets, chips, and safe-area padding verified) |
-| Day 5 | `/saved-jobs`, `/apply` | Planned |
+| Day 5 | `/saved-jobs`, `/apply` | In progress (2026-10-14: mobile UI touch targets, empty states, and safe-area padding verified) |
 | Day 6 | `/quick-register`, `/apply/:slug` | Planned |
 | Day 7 | `/quick-applications/claim`, `/oauth/consent` | Planned |
 | Day 8 | `/employer/login`, `/employer/register` | Planned |
@@ -493,6 +493,17 @@ Copy one record per completed or attempted feature/screen.
   - StudentRegistrationConsent: Increased checkbox sizes to 20px (h-5 w-5) and added cursor-pointer to label containers for comfortable tapping on mobile touchscreens.
   - StudentApplicationsPage: Upgraded empty state "Browse jobs" link to inline-flex min-h-11 items-center justify-center; added "Show all applications" reset CTA (min-h-11) for filtered empty states; optimized application card header with min-w-0 flex-1 break-words preventing text-status badge overlap on 320px screens.
   - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 4 and in-progress Day 4 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day5: Saved Jobs and Instagram Apply mobile fixes
+
+- Scope: S057, S058, S059; develop baseline acaad98, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - SavedJobsPage: Card layout optimized for mobile with min-w-0 flex-1 and text wrapping; "Remove" and "View details" action buttons sized to 44px (min-h-11) touch height and flex-1 expansion on narrow viewports; centered empty state "Browse jobs" button (min-h-11 justify-center); safe-area bottom padding verified with pb-mobile-chrome.
+  - InstagramJobsPage: Updated main view container with pb-mobile-chrome safe-area bottom padding to ensure zero collision with mobile bottom navigation bar; upgraded "Check All Jobs in Vizag" empty state link to min-h-11 items-center justify-center; elevated bottom exit ramp buttons ("Check All Jobs in Vizag" and "Go to Homepage") to min-h-11 w-full sm:w-auto; confirmed touch targets on category chips (min-h-11) and full-width card apply CTAs (min-h-12).
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 5 and in-progress Day 5 queue status.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
