@@ -173,10 +173,12 @@ export default function JobsInVizagPage() {
           </h2>
         </div>
 
-        {filteredJobs.length === 0 && !isLoading ? (
+        {filteredJobs.length === 0 && !isLoading && !loadError ? (
           <div className="break-words [overflow-wrap:anywhere] rounded-2xl border border-dashed border-slate-300 bg-white p-4 sm:p-8 text-center">
             <p className="text-base font-semibold text-slate-800">
-              No direct job openings currently listed for &quot;{companyQuery || searchTerm}&quot;
+              {companyQuery || searchTerm
+                ? `No job openings match "${companyQuery || searchTerm}"`
+                : 'No job openings are available right now'}
             </p>
             <p className="mt-1 text-sm text-slate-500">
               Try searching with another keyword or explore other top employers in Visakhapatnam.
@@ -184,14 +186,14 @@ export default function JobsInVizagPage() {
             <button
               type="button"
               onClick={handleClearSearch}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow hover:bg-slate-800"
+              className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
               <span>View all available jobs →</span>
             </button>
           </div>
-        ) : (
+        ) : !isLoading && !loadError ? (
           <JobList jobs={filteredJobs} />
-        )}
+        ) : null}
 
       </main>
 

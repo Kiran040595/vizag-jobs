@@ -27,7 +27,7 @@ export default function Pagination({ page, totalPages, onPageChange, className =
   };
 
   const baseBtn =
-    'inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40';
+    'inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border px-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40';
   const inactiveBtn =
     'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700';
   const activeBtn = 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700';
@@ -49,7 +49,10 @@ export default function Pagination({ page, totalPages, onPageChange, className =
         <span className="ml-1 hidden sm:inline">Prev</span>
       </button>
 
-      <ul className="flex items-center gap-1.5">
+      <span className="min-w-0 text-center text-sm font-semibold text-slate-700 sm:hidden" aria-live="polite" aria-atomic="true">
+        Page {safePage} of {totalPages}
+      </span>
+      <ul className="hidden flex-wrap items-center justify-center gap-1.5 sm:flex">
         {items.map((item, idx) =>
           item === '…' ? (
             <li key={`ellipsis-${idx}`} aria-hidden="true" className="px-1 text-slate-400">

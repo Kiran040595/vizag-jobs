@@ -26,7 +26,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | Not tested | Not reviewed | — |
-| S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | Blocked | Blocked | QA-2026-10-14: search fix; local browser unreachable |
+| S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-10-14-UI: targeted browser checks passed; full checklist pending |
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | Not tested | Not reviewed | — |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
@@ -75,7 +75,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S053 | `/terms-of-service` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
 | S054 | `/disclaimer` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
 | S055 | `/companies` | Browse/search companies; company details and career links; empty/error states | Not tested | Not reviewed | — |
-| S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Blocked | Blocked | QA-2026-10-14: typing fix; local browser unreachable |
+| S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | QA-2026-10-14-UI: targeted browser checks passed; full checklist pending |
 | S057 | `/apply` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S058 | `/jobs/latest` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
 | S059 | `/saved-jobs` | Save/unsave listings; reload; empty list; open job; stale/unavailable saved job | Not tested | Not reviewed | — |
@@ -126,7 +126,7 @@ Each item below needs independent verification and regression checks on the scre
 |---|---|---|---|---|---|
 | U01 | Header, navbar, footer and role shells | Menu open/close, active link, role links, logout, keyboard focus and navigation | Not tested | Not reviewed | — |
 | U02 | Mobile bottom navigation | Active tab, saved/applied counts, safe-area spacing and no covered page actions | Not tested | Not reviewed | — |
-| U03 | Search, filters, source tabs, category links and pagination | Combine/reset filters; correct matching and counts; page boundaries; browser back | Not tested | Not reviewed | — |
+| U03 | Search, filters, source tabs, category links and pagination | Combine/reset filters; correct matching and counts; page boundaries; browser back; compact mobile pagination and removable long search chips | In progress | In progress | QA-2026-10-14-UI |
 | U04 | Job cards and recommendations | Long titles, salary/location/source labels, freshness, eligibility, counts, save and details | Not tested | Not reviewed | — |
 | U05 | Job details and apply gates | Anonymous/student/staff/employer access; internal/external apply; preserve destination after login | Not tested | Not reviewed | — |
 | U06 | Apply dialogs and communication prompts | External apply, channel prompt, success modal, WhatsApp/phone links; cancel/continue and no duplicate records | Not tested | Not reviewed | — |
@@ -360,7 +360,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 
 | Batch | Screens | Status |
 |---|---|---|
-| Day 1 | `/`, `/jobs` | Started 2026-10-14; fixes delivered, browser verification blocked |
+| Day 1 | `/`, `/jobs` | Started 2026-10-14; targeted UI checks passed, full journeys/checklist pending |
 | Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | Planned |
 | Day 3 | `/student/login`, `/student/register` | Planned |
 | Day 4 | `/student/profile`, `/student/applied-jobs` | Planned |
@@ -445,3 +445,17 @@ Copy one record per completed or attempted feature/screen.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js and notification-inbox.test.mjs changes excluded from this delivery.
 - Delivery: scoped search fixes and tracker to be committed/pushed; completion reported in chat after Git verification.
 - Overall npm run build exited 0; PWA service worker generated. Additional warning: Browserslist data is six months old.
+
+## QA-2026-10-14-UI: Home and Jobs mobile fixes
+
+- Scope: S007, S056, U03; develop baseline 9922b0f, Codex, 2026-10-14 Asia/Kolkata. Existing notification edits preserved and excluded.
+- Environment: local Vite at http://127.0.0.1:5174 with live public backend, anonymous browser. Starting Vite outside the filesystem/network sandbox resolved the earlier local-server blocker. No accounts created or backend records changed.
+- Fixes: constrain filter grid children so horizontal chip rows cannot widen the page; wrap long active search chips while keeping the 44px remove control visible; 44px clear/toggle/pagination controls; connect toggle to its panel with aria-controls; mobile previous/page-count/next pagination, desktop numbered pagination; source tabs wrap label/count instead of overlapping; Jobs empty-state wording covers all jobs and has a 44px reset action; suppress contradictory empty content during loading/errors. Removing Home's company search chip now clears company mode too.
+- Browser-confirmed defects: at 320px source-tab label overlapped its count; expanded filter rows produced document scrollWidth 1948px. After fixes, document width stayed within the viewport.
+- Browser checks: Home expanded/collapsed filters; submitted a 136-character unbroken synthetic keyword; observed wrapped chip and zero results; removed chip and restored listings; mobile next moved URL/page label from page 1 to 2, previous removed page query; cleared /?company=Example using its chip; desktop numbered page 2 updated URL. Jobs synthetic unmatched search displayed accurate empty copy; reset returned /jobs and Latest Jobs in Vizag heading.
+- Responsive geometry: both screens checked at requested widths 320, 360, 390, 430, 768 and 1280px. Actual innerWidth/scrollWidth pairs for both: 320/305, 360/346, 391/376, 430/415, 768/753, 1281/1266. Browser rounding accounts for 391/1281; scrollbar accounts for smaller document width. No page-level horizontal overflow. Home measurement included expanded filters and long search; Jobs included long search and empty state.
+- Visual evidence: docs/qa/2026-10-14/home-mobile-search.jpg and docs/qa/2026-10-14/jobs-mobile-empty.jpg (320x740 viewport). Tool screenshots also captured the tab overlap before correction. Stored screenshots contain synthetic search text and no test-user personal data.
+- Supplemental checks: changed-file ESLint passed; tests/job-filters.test.mjs passed all 67 internal assertions. Build result recorded below.
+- Functional: In progress, targeted checks passed; full inventory journeys, negative/backend cases and browser-back checks remain pending. Mobile UI: In progress, not Verified; Android Chrome/iOS Safari, physical keyboard overlays, landscape, 200% zoom and all loading/error/overlay combinations remain pending. Existing floating feedback/chat overlays still need broader collision review.
+- Delivery: scoped UI changes, evidence and tracker committed together; push confirmation recorded in chat after Git verification.
+- Build: npm run build exited 0 (604 modules; PWA generated). Existing large-chunk/Browserslist warnings; sandboxed sitemap fetch failed and generated fallback URLs, so generated sitemap was restored and excluded.

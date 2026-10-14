@@ -27,7 +27,7 @@ function JobSourceTabs({
           aria-selected={activeTab === 'all'}
           aria-controls="job-list-section"
           onClick={() => onTabChange('all')}
-          className={`group flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+          className={`group flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
             activeTab === 'all'
               ? 'bg-white text-slate-900 shadow-sm shadow-slate-300/40 ring-1 ring-slate-950/5'
               : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
@@ -44,7 +44,7 @@ function JobSourceTabs({
             >
               <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
             </svg>
-            <span className="whitespace-nowrap">
+            <span className="min-w-0 break-words">
               <span className="min-[400px]:hidden">All Jobs</span>
               <span className="hidden min-[400px]:inline">All Openings</span>
             </span>
@@ -68,7 +68,7 @@ function JobSourceTabs({
           aria-selected={activeTab === 'direct'}
           aria-controls="job-list-section"
           onClick={() => onTabChange('direct')}
-          className={`group relative flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+          className={`group relative flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
             activeTab === 'direct'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-700/20'
               : 'text-slate-700 hover:bg-emerald-50/60 hover:text-emerald-800'
@@ -89,7 +89,7 @@ function JobSourceTabs({
                 clipRule="evenodd"
               />
             </svg>
-            <span className="whitespace-nowrap">
+            <span className="min-w-0 break-words">
               <span className="min-[400px]:hidden">Direct Jobs</span>
               <span className="hidden min-[400px]:inline sm:hidden">Direct Company</span>
               <span className="hidden sm:inline">Direct Company Jobs</span>
