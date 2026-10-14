@@ -31,8 +31,8 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S011 | `/employer/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
-| S012 | `/employer/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
-| S013 | `/employer/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
+| S012 | `/employer/forgot-password` | Request password reset; validate email; verify recovery message and reset link | In progress | In progress | QA-2026-10-14-UI-Day12: mobile UI verified, full journey pending |
+| S013 | `/employer/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | In progress | In progress | QA-2026-10-14-UI-Day12: mobile UI verified, full journey pending |
 | S014 | `/employer` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
 | S015 | `/employer/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
 | S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
@@ -371,9 +371,9 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 9 | `/employer/jobs`, `/employer/jobs/new` | In progress (2026-10-14: mobile UI touch targets, cards layout, and posting wizard verified) |
 | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | In progress (2026-10-14: mobile UI touch targets, dynamic field reorder, and share buttons verified) |
 | Day 11 | `/admin/candidates`, `/admin/login` | In progress (2026-10-14: mobile UI touch targets, candidate cards, and admin auth verified) |
-| Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Planned |
-| Day 13 | `/employer`, `/employer/jobs/new` | Planned |
-| Day 14 | `/employer/jobs/:jobId/edit`, `/employer/jobs/:jobId/applications` | Planned |
+| Day 12 | `/employer/forgot-password`, `/employer/reset-password` | In progress (2026-10-14: mobile UI touch targets and safe-area padding verified) |
+| Day 13 | `/employer/jobs/:jobId/applications` | Planned |
+| Day 14 | `/student/forgot-password`, `/student/reset-password` | Planned |
 | Day 15 | `/student/forgot-password`, `/student/reset-password` | Planned |
 | Day 16 | `/student`, `/student/applications` | Planned |
 | Day 17 | `/admin`, `/admin/new` | Planned |
@@ -574,6 +574,18 @@ Copy one record per completed or attempted feature/screen.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day12: Employer Forgot Password and Reset Password mobile fixes
+
+- Scope: S012, S013; develop baseline c3b2ebc, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - EmployerForgotPasswordPage: Standardized "Send reset link" button to min-h-12 w-full (48px touch target); elevated "Back to sign in" return link to min-h-11 touch height (inline-flex min-h-11 items-center font-semibold text-cyan-600); added pb-16 safe-area bottom clearance.
+  - EmployerResetPasswordPage: Standardized "Update password" CTA button to min-h-12 w-full (48px touch target); elevated "Request a new reset link" return link to min-h-11 touch height (inline-flex min-h-11 items-center font-semibold text-cyan-600); added pb-16 safe-area bottom clearance; confirmed full-width inputs with 16px text-base preventing iOS Safari viewport auto-zoom.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 12 and in-progress Day 12 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
 
 
 

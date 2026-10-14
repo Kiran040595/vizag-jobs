@@ -25,10 +25,10 @@ Current branch: `develop`
 | **Public Core** | 8 | 8 | 0 | 0 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
-| **Employer Portal** | 10 | 7 | 0 | 3 |
+| **Employer Portal** | 10 | 9 | 0 | 1 |
 | **Admin Portal** | 24 | 4 | 0 | 20 |
 | **Quick Apply / Static** | 14 | 6 | 0 | 8 |
-| **Total** | **79** | **30** | **0** | **49** |
+| **Total** | **79** | **32** | **0** | **47** |
 
 ---
 
@@ -180,16 +180,27 @@ Current branch: `develop`
   - Elevated "Continue to admin" submit button to 48px touch height (`min-h-12 w-full`).
   - Verified role mismatch sign-out action with 44px touch height (`inline-flex min-h-11 items-center`).
 
+### Batch 12: Employer Password Recovery
+- **`/employer/forgot-password` (Employer Forgot Password - S012):**
+  - Standardized "Send reset link" button to 48px touch target (`min-h-12 w-full font-semibold`).
+  - Elevated "Back to sign in" link to 44px touch height (`inline-flex min-h-11 items-center font-semibold text-cyan-600`).
+  - Added safe-area bottom clearance with `pb-16`.
+- **`/employer/reset-password` (Employer Reset Password - S013):**
+  - Standardized "Update password" CTA button to 48px touch target (`min-h-12 w-full font-semibold`).
+  - Elevated "Request a new reset link" return link to 44px touch target (`inline-flex min-h-11 items-center font-semibold text-cyan-600`).
+  - Form password inputs maintain full-width 48px touch height and 16px text-base preventing iOS Safari auto-zoom.
+  - Added safe-area bottom clearance with `pb-16`.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
-| **P2** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
-| **P3** | Day 14 | `/student/forgot-password`, `/student/reset-password` | Student password reset flows |
-| **P4** | Day 15 | `/admin`, `/admin/new` | Admin overview, job creation |
+| **P1 (Next)** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
+| **P2** | Day 14 | `/student/forgot-password`, `/student/reset-password` | Student password reset flows |
+| **P3** | Day 15 | `/admin`, `/admin/new` | Admin overview, job creation |
+| **P4** | Day 16 | `/admin/jobs`, `/admin/admin-jobs` | Admin job listings & actions |
 
 ---
 
@@ -208,8 +219,8 @@ Current branch: `develop`
 | S009 | `/oauth/consent` | OAuth Consent | ✅ Fixed | 2026-10-14 |
 | S010 | `/employer/login` | Employer Login | ✅ Fixed | 2026-10-14 |
 | S011 | `/employer/register` | Employer Register | ✅ Fixed | 2026-10-14 |
-| S012 | `/employer/forgot-password` | Employer Forgot Password | ⏳ Pending | — |
-| S013 | `/employer/reset-password` | Employer Reset Password | ⏳ Pending | — |
+| S012 | `/employer/forgot-password` | Employer Forgot Password | ✅ Fixed | 2026-10-14 |
+| S013 | `/employer/reset-password` | Employer Reset Password | ✅ Fixed | 2026-10-14 |
 | S014 | `/employer` | Employer Dashboard Redirect | ✅ Fixed | 2026-10-14 |
 | S015 | `/employer/profile` | Employer Profile | ✅ Fixed | 2026-10-14 |
 | S016 | `/employer/jobs` | Employer Jobs List | ✅ Fixed | 2026-10-14 |

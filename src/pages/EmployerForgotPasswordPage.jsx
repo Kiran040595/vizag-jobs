@@ -57,7 +57,7 @@ export default function EmployerForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.2),_transparent_35%),linear-gradient(180deg,_#eff6ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 sm:px-4 sm:py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.2),_transparent_35%),linear-gradient(180deg,_#eff6ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 pb-16 sm:px-4 sm:py-12">
       <SEO
         title="Forgot password | Employer | Vizag Jobs"
         description="Reset your Vizag Jobs employer account password."
@@ -96,14 +96,14 @@ export default function EmployerForgotPasswordPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-70"
+            className="min-h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-70"
           >
             {isSubmitting ? 'Sending...' : 'Send reset link'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          <Link to="/employer/login" className="font-semibold text-cyan-600 hover:text-cyan-700">
+          <Link to="/employer/login" className="inline-flex min-h-11 items-center font-semibold text-cyan-600 hover:text-cyan-700">
             Back to sign in
           </Link>
         </p>
