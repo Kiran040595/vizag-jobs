@@ -18,6 +18,8 @@ Current branch: `develop`
 
 ---
 
+Implementation counts below track code changes, not full E2E or device acceptance. Use SCREEN_FUNCTIONALITY_TEST_TRACKER.md execution evidence and independent functional/mobile statuses for verification. Home/Jobs have targeted browser evidence; remaining checks are listed in the delivery summary dated 2026-10-14.
+
 ## 2. Summary Dashboard
 
 | Category | Total Screens | Fixed / Mobile-Friendly | In Progress / Planned Next | Pending |
@@ -32,7 +34,7 @@ Current branch: `develop`
 
 ---
 
-## 3. Fixed Screens (Completed & Verified)
+## 3. Screens with implemented UI fixes (full verification pending)
 
 ### Batch 1: Home & Jobs Search
 - **`/` (Home - S007):**

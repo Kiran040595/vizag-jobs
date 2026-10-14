@@ -590,3 +590,24 @@ Copy one record per completed or attempted feature/screen.
 
 
 
+
+## Delivery summary — 2026-10-14
+
+Remote verification: origin/develop contains 9c94e4b4c1e98b810a51d98faae9b75b27f542fa. Search fixes were delivered in 9922b0f and Home/Jobs mobile fixes in 5c490b2. Later UI batches through 9c94e4b are also committed and pushed.
+
+### Fixed and delivered
+
+- Home and Jobs: keyword search exits company mode; multiword input keeps spaces; long search chips wrap; expanded filters stay within narrow viewports; source tab labels/counts no longer overlap; larger touch controls; compact mobile pagination; clearer empty states and reset actions.
+- Subsequent committed batches: mobile form controls, wrapping, action layouts and bottom spacing for job details/student apply, student login/registration/profile/applications, saved jobs/Instagram listings, quick registration/application/claim, OAuth consent, employer login/registration/profile/jobs/job forms/password recovery, and admin quick-job forms/candidate list/login. See the individual execution records for exact scope and checks.
+- Recorded checks: Home/Jobs targeted browser interactions and responsive geometry at six widths, with screenshots under docs/qa/2026-10-14. Lint, filter tests and production build passed for that batch. Later execution records report automated checks; these do not establish full browser E2E or mobile acceptance.
+
+### Remaining
+
+- Finish Home/Jobs full journeys: combined filters/counts, reload/back/forward, save/details/apply paths, permission/negative cases and backend outcomes.
+- Complete browser-based functional and visual verification for subsequent UI batches. Do not interpret implemented CSS, source review, tests or builds as Tested/Verified status.
+- Check Android Chrome and iOS Safari, landscape, 200% zoom, device keyboards, focus behavior, loading/error states, and collisions among feedback/chat/notifications/consent/bottom navigation.
+- Continue the remaining tracker queue: employer applications, student password recovery, remaining admin screens, public/static/community screens, and category listings. The Day 14/15 student password-recovery queue entries currently duplicate each other and need reconciliation when that batch is planned.
+- Existing uncommitted work is pending review and verification: notification inbox/bell and employer application page/card/table/export-dialog edits. These are excluded from the delivered commits summarized here.
+- Investigate sandboxed sitemap-fetch failures separately; generated fallback sitemap changes were excluded. Build warnings remain for large chunks and outdated Browserslist data.
+
+Delivery status: fixed application commits above confirmed on origin/develop; this summary is delivered in a separate documentation commit. Full application QA remains in progress.
