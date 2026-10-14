@@ -88,7 +88,7 @@ export default function QuickRegisterPage() {
                 device to link your saved application.
               </p>
               <Link
-                className="mt-5 inline-flex min-h-12 items-center text-blue-700"
+                className="mt-5 inline-flex min-h-12 items-center font-semibold text-blue-700"
                 to="/student/login?next=%2Fquick-applications%2Fclaim"
               >
                 Sign in
@@ -153,7 +153,7 @@ export default function QuickRegisterPage() {
                 {busy ? "Creating account…" : "Create free account"}
               </button>
               <Link
-                className="inline-flex min-h-12 items-center text-blue-700"
+                className="inline-flex min-h-12 items-center font-semibold text-blue-700"
                 to="/student/login?next=%2Fquick-applications%2Fclaim"
               >
                 Already registered? Sign in

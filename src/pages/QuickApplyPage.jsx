@@ -150,7 +150,7 @@ export default function QuickApplyPage() {
                 >
                   Already registered? Sign in and link my application
                 </Link>
-                <Link className="mt-4 inline-block py-3 text-blue-700" to="/">
+                <Link className="mt-4 inline-flex min-h-11 items-center font-semibold text-blue-700" to="/">
                   Browse more jobs
                 </Link>
               </section>
@@ -186,7 +186,7 @@ export default function QuickApplyPage() {
                     />
                   </label>
                 </div>
-                <label className="mt-6 flex min-h-12 items-start gap-3">
+                <label className="mt-6 flex min-h-12 cursor-pointer items-start gap-3">
                   <input
                     className="mt-1 size-5 shrink-0"
                     type="checkbox"
@@ -197,7 +197,7 @@ export default function QuickApplyPage() {
                   <span>
                     I agree to share these details with Jobs in Vizag and the
                     employer for this application.{" "}
-                    <Link to="/privacy-policy" className="underline">
+                    <Link to="/privacy-policy" className="underline font-semibold" target="_blank">
                       Privacy policy
                     </Link>
                   </span>
@@ -227,14 +227,14 @@ export function ClaimQuickApplicationsPage() {
   );
   const [busy, setBusy] = useState(false);
   return (
-    <main className="mx-auto max-w-xl px-4 py-10">
+    <main className="mx-auto max-w-xl px-4 py-10 pb-16">
       <h1 className="text-2xl font-bold">Your quick applications</h1>
       <p className="my-5" role="status">
         {message}
       </p>
       <button
         disabled={busy}
-        className="min-h-12 rounded-xl bg-blue-700 px-5 text-white"
+        className="min-h-12 w-full sm:w-auto rounded-xl bg-blue-700 px-5 font-semibold text-white disabled:opacity-60"
         onClick={async () => {
           setBusy(true);
           try {
@@ -252,7 +252,7 @@ export function ClaimQuickApplicationsPage() {
         Link my applications
       </button>
       <Link
-        className="mt-5 block py-3 text-blue-700"
+        className="mt-5 inline-flex min-h-11 items-center font-semibold text-blue-700"
         to="/student/applied-jobs"
       >
         View my applications

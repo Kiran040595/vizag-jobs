@@ -20,9 +20,9 @@ Each route variant has its own row, including redirects and category screens. Dy
 
 | ID | Route | Functionality / E2E acceptance scenarios | Functional | Mobile UI | Evidence / defect |
 |---|---|---|---|---|---|
-| S001 | `/quick-register` | Complete quick candidate registration; validation, consent and duplicate submission handling | Not tested | Not reviewed | — |
-| S002 | `/apply/:slug` | Load quick job and dynamic form; validate fields; submit; receipt; duplicate/closed/missing job and claim flow | Not tested | Not reviewed | — |
-| S003 | `/quick-applications/claim` | Claim receipt after login; verify ownership, duplicate claim, invalid receipt and application association | Not tested | Not reviewed | — |
+| S001 | `/quick-register` | Complete quick candidate registration; validation, consent and duplicate submission handling | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
+| S002 | `/apply/:slug` | Load quick job and dynamic form; validate fields; submit; receipt; duplicate/closed/missing job and claim flow | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
+| S003 | `/quick-applications/claim` | Claim receipt after login; verify ownership, duplicate claim, invalid receipt and application association | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
 | S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | Not tested | Not reviewed | — |
@@ -365,7 +365,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 3 | `/student/login`, `/student/register` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
 | Day 4 | `/student/profile`, `/student/applied-jobs` | In progress (2026-10-14: mobile UI touch targets, chips, and safe-area padding verified) |
 | Day 5 | `/saved-jobs`, `/apply` | In progress (2026-10-14: mobile UI touch targets, empty states, and safe-area padding verified) |
-| Day 6 | `/quick-register`, `/apply/:slug` | Planned |
+| Day 6 | `/quick-register`, `/apply/:slug` | In progress (2026-10-14: mobile UI touch targets, dynamic fields, and claim flow verified) |
 | Day 7 | `/quick-applications/claim`, `/oauth/consent` | Planned |
 | Day 8 | `/employer/login`, `/employer/register` | Planned |
 | Day 9 | `/employer/profile`, `/employer/jobs` | Planned |
@@ -504,6 +504,18 @@ Copy one record per completed or attempted feature/screen.
   - SavedJobsPage: Card layout optimized for mobile with min-w-0 flex-1 and text wrapping; "Remove" and "View details" action buttons sized to 44px (min-h-11) touch height and flex-1 expansion on narrow viewports; centered empty state "Browse jobs" button (min-h-11 justify-center); safe-area bottom padding verified with pb-mobile-chrome.
   - InstagramJobsPage: Updated main view container with pb-mobile-chrome safe-area bottom padding to ensure zero collision with mobile bottom navigation bar; upgraded "Check All Jobs in Vizag" empty state link to min-h-11 items-center justify-center; elevated bottom exit ramp buttons ("Check All Jobs in Vizag" and "Go to Homepage") to min-h-11 w-full sm:w-auto; confirmed touch targets on category chips (min-h-11) and full-width card apply CTAs (min-h-12).
   - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 5 and in-progress Day 5 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day6: Quick Register and Quick Apply mobile fixes
+
+- Scope: S001, S002, S003; develop baseline e660e53, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - QuickRegisterPage: Standardized full-width inputs with quickInputClass (min-h-12 and font-size >= 16px to prevent iOS auto-zoom); elevated "Create free account" CTA to min-h-12; improved "Sign in" and "Already registered? Sign in" touch links to inline-flex min-h-12 items-center font-semibold text-blue-700. Integrated enhanced StudentRegistrationConsent component with 20px accessible checkboxes.
+  - QuickApplyPage: Form fields and choices verified with min-h-12 touch targets and [overflow-wrap:anywhere] for narrow screens; elevated consent checkbox container with cursor-pointer min-h-12; upgraded "Browse more jobs" link to inline-flex min-h-11 items-center font-semibold text-blue-700; standardized submit button to min-h-12 w-full.
+  - ClaimQuickApplicationsPage: Upgraded "Link my applications" button to min-h-12 w-full sm:w-auto font-semibold; elevated "View my applications" link to inline-flex min-h-11 items-center font-semibold text-blue-700; added pb-16 bottom padding.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 6 and in-progress Day 6 queue status.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.

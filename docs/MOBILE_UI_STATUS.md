@@ -27,8 +27,8 @@ Current branch: `develop`
 | **Student Portal** | 8 | 5 | 0 | 3 |
 | **Employer Portal** | 10 | 0 | 2 | 8 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
-| **Quick Apply / Static** | 14 | 0 | 2 | 12 |
-| **Total** | **79** | **13** | **4** | **62** |
+| **Quick Apply / Static** | 14 | 3 | 1 | 10 |
+| **Total** | **79** | **16** | **3** | **60** |
 
 ---
 
@@ -105,17 +105,31 @@ Current branch: `develop`
   - Elevated bottom exit ramp buttons ("Check All Jobs in Vizag" and "Go to Homepage") to `min-h-11 w-full sm:w-auto`.
   - Verified touch targets for popular category chips (`min-h-11`) and full-width card apply CTAs (`min-h-12`).
 
+### Batch 6: Quick Register & Quick Apply Flow
+- **`/quick-register` (Quick Registration - S001):**
+  - Form inputs styled with `quickInputClass` ensuring 48px touch height (`min-h-12`) and text size $\ge 16\text{px}$ preventing mobile auto-zoom.
+  - Buttons and helper links standardized with 48px touch targets (`min-h-12 w-full font-bold` and `inline-flex min-h-12 items-center font-semibold text-blue-700`).
+  - Integrated enhanced `StudentRegistrationConsent` component with 20px accessible checkboxes.
+- **`/apply/:slug` (Quick Job Apply - S002):**
+  - Dynamic fields styled with `quickInputClass` and radio/checkbox options with `min-h-12` and text wrapping (`[overflow-wrap:anywhere]`).
+  - Elevated consent checkbox container with `cursor-pointer min-h-12`.
+  - Upgraded "Browse more jobs" link to `inline-flex min-h-11 items-center font-semibold text-blue-700`.
+  - Full-width 48px submit CTA (`min-h-12 w-full`).
+- **`/quick-applications/claim` (Claim Quick Applications - S003):**
+  - Upgraded claim button to `min-h-12 w-full sm:w-auto font-semibold`.
+  - Elevated "View my applications" link to `inline-flex min-h-11 items-center font-semibold text-blue-700`.
+  - Safe-area bottom padding with `pb-16`.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
-| **P2** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
-| **P3** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
-| **P4** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
-| **P5** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P1 (Next)** | Day 7 | `/oauth/consent`, `/employer/login` | OAuth modal on mobile, recruiter auth layout |
+| **P2** | Day 8 | `/employer/register`, `/employer/profile` | Company registration fields, profile editor |
+| **P3** | Day 9 | `/employer/jobs`, `/employer/jobs/new` | Job management cards, posting wizard |
+| **P4** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
 
 ---
 
@@ -123,9 +137,9 @@ Current branch: `develop`
 
 | ID | Route | Screen Name | Mobile Status | Last Updated |
 |---|---|---|---|---|
-| S001 | `/quick-register` | Quick Registration | ⏳ Pending | — |
-| S002 | `/apply/:slug` | Quick Job Apply | ⏳ Pending | — |
-| S003 | `/quick-applications/claim` | Claim Quick Application | ⏳ Pending | — |
+| S001 | `/quick-register` | Quick Registration | ✅ Fixed | 2026-10-14 |
+| S002 | `/apply/:slug` | Quick Job Apply | ✅ Fixed | 2026-10-14 |
+| S003 | `/quick-applications/claim` | Claim Quick Application | ✅ Fixed | 2026-10-14 |
 | S004 | `/admin/quick-jobs/new` | Admin Create Quick Job | ⏳ Pending | — |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Admin Edit Quick Job | ⏳ Pending | — |
 | S006 | `/admin/candidates` | Admin Quick Candidates | ⏳ Pending | — |
