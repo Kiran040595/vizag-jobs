@@ -38,7 +38,7 @@ function DetailRow({ label, value, mono = false }) {
   }
 
   return (
-    <div className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-3">
+    <div className="grid gap-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
       <dd className={`min-w-0 break-words text-sm text-slate-800 ${mono ? 'break-all font-mono text-xs' : ''}`}>{value}</dd>
     </div>
@@ -47,7 +47,7 @@ function DetailRow({ label, value, mono = false }) {
 
 function DetailRowBoolean({ label, value }) {
   return (
-    <div className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-3">
+    <div className="grid gap-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
       <dd className="text-sm text-slate-800">{value ? 'Yes' : 'No'}</dd>
     </div>

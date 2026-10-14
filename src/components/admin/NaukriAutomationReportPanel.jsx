@@ -148,7 +148,7 @@ export default function NaukriAutomationReportPanel({
         they already exist in the database or have no apply link.
       </p>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+      <div className="mt-4 max-w-full overflow-x-auto rounded-xl border border-slate-200" role="region" aria-label="Automation report results" tabIndex={0}>
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>

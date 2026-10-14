@@ -481,6 +481,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           </div>
           <div className="flex w-full max-w-lg flex-col gap-2 sm:flex-row">
             <select
+              aria-label="Filter jobs by status"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
               className="h-11 rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
@@ -490,6 +491,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             </select>
             <input
               type="search"
+              aria-label="Search jobs by title, company or slug"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search title, company, slug..."

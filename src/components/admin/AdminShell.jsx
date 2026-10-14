@@ -86,7 +86,7 @@ export default function AdminShell({ children, title, description }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl min-w-0 px-3 py-6 pb-16 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+      <main className="admin-workspace mx-auto w-full max-w-7xl min-w-0 px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">{children}</main>
     </div>
   );
 }

@@ -62,7 +62,7 @@ const clearStoredDraft = (draftStorageKey) => {
 
 function Field({ label, children, hint }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-sm font-semibold text-slate-700">{label}</span>
       {children}
       {hint ? <span className="mt-1 block text-xs text-slate-500">{hint}</span> : null}
@@ -234,8 +234,8 @@ export default function AdminJobForm({
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60">
-      <div className="flex items-start justify-between gap-4">
+    <section className="min-w-0 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 shadow-slate-200/60 [&_button]:min-h-11">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
             {mode === 'edit' ? 'Update job' : 'Create job'}
@@ -429,11 +429,11 @@ export default function AdminJobForm({
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <input type="checkbox" name="is_fresher" checked={formValues.is_fresher} onChange={handleFieldChange} className="h-4 w-4 rounded border-slate-300 text-cyan-500" />
+          <input type="checkbox" name="is_fresher" checked={formValues.is_fresher} onChange={handleFieldChange} className="h-5 w-5 shrink-0 rounded border-slate-300 text-cyan-500" />
           <span className="text-sm font-medium text-slate-700">Mark as fresher job</span>
         </label>
         <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <input type="checkbox" name="is_featured" checked={formValues.is_featured} onChange={handleFieldChange} className="h-4 w-4 rounded border-slate-300 text-cyan-500" />
+          <input type="checkbox" name="is_featured" checked={formValues.is_featured} onChange={handleFieldChange} className="h-5 w-5 shrink-0 rounded border-slate-300 text-cyan-500" />
           <span className="text-sm font-medium text-slate-700">Feature on the site</span>
         </label>
       </div>

@@ -36,16 +36,16 @@ Per screen: inspect layout and states â†’ fix responsive/accessibility issues â†
 | S026 | `/student/applied-jobs` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S027 | `/student/applications` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S028 | `/student/apply/:jobId` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
-| S029 | `/admin` | [ ] | [ ] | [ ] | Queued |
-| S030 | `/admin/new` | [ ] | [ ] | [ ] | Queued |
-| S031 | `/admin/jobs` | [ ] | [ ] | [ ] | Queued |
-| S032 | `/admin/admin-jobs` | [ ] | [ ] | [ ] | Queued |
-| S033 | `/admin/fetch` | [ ] | [ ] | [ ] | Queued |
-| S034 | `/admin/jobs/:jobId/edit` | [ ] | [ ] | [ ] | Queued |
+| S029 | `/admin` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S030 | `/admin/new` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S031 | `/admin/jobs` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S032 | `/admin/admin-jobs` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S033 | `/admin/fetch` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S034 | `/admin/jobs/:jobId/edit` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
 | S035 | `/admin/jobs/:jobId/applications` | [x] | [ ] | [ ] | Applicant UI batch 4e087f0; synthetic component checks only |
-| S036 | `/admin/blog` | [ ] | [ ] | [ ] | Queued |
-| S037 | `/admin/blog/new` | [ ] | [ ] | [ ] | Queued |
-| S038 | `/admin/blog/:postId/edit` | [ ] | [ ] | [ ] | Queued |
+| S036 | `/admin/blog` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S037 | `/admin/blog/new` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
+| S038 | `/admin/blog/:postId/edit` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
 | S039 | `/admin/feedback` | [ ] | [ ] | [ ] | Queued |
 | S040 | `/admin/questions` | [ ] | [ ] | [ ] | Queued |
 | S041 | `/admin/employers` | [ ] | [ ] | [ ] | Queued |

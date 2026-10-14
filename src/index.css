@@ -83,6 +83,30 @@ textarea {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* Keep management controls usable without affecting public inline links or print layouts. */
+@media screen {
+  .admin-workspace {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-workspace :where(button, select, input:not([type='checkbox']):not([type='radio']):not([type='hidden'])) {
+    min-height: 44px;
+  }
+
+  .admin-workspace :where(.grid > *, .flex > *, label) {
+    min-width: 0;
+  }
+
+  .admin-workspace :where(input, select, textarea) {
+    max-width: 100%;
+  }
+
+  .admin-workspace :where(button, a, select, input, textarea):focus-visible {
+    outline: 2px solid #0891b2;
+    outline-offset: 2px;
+  }
+}
+
 @media (min-width: 1024px) {
   .pb-mobile-chrome {
     padding-bottom: 0;

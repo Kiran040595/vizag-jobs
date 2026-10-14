@@ -7,7 +7,7 @@ import {
 } from '../../services/adminBlogs';
 
 const INPUT_CLASS =
-  'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
+  'mt-2 min-w-0 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100';
 
 const getStoredDraft = (draftStorageKey, fallbackValues, fallbackIsSlugManual) => {
   if (!draftStorageKey) {
@@ -43,7 +43,7 @@ const clearStoredDraft = (draftStorageKey) => {
 
 function Field({ label, children, hint }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="text-sm font-semibold text-slate-700">{label}</span>
       {children}
       {hint ? <span className="mt-1 block text-xs text-slate-500">{hint}</span> : null}
@@ -172,7 +172,7 @@ export default function AdminBlogForm({
   };
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-xl shadow-slate-200/60">
+    <section className="min-w-0 [&_button]:min-h-11 rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-xl shadow-slate-200/60">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
@@ -255,7 +255,7 @@ export default function AdminBlogForm({
         </Field>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           disabled={isSaving}

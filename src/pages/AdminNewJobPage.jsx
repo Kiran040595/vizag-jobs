@@ -537,8 +537,8 @@ export default function AdminNewJobPage() {
             </div>
 
             {/* Toggle button between Single Job and Multiple Jobs */}
-            <div className="flex flex-col items-end gap-2">
-              <div className="inline-flex rounded-2xl border border-slate-200 bg-slate-100 p-1">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+              <div className="grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-100 p-1">
                 <button
                   type="button"
                   onClick={() => handleToggleSqlMode('single')}
