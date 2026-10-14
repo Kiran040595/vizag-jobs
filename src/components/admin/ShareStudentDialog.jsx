@@ -1,3 +1,4 @@
+import { useNativeModal } from '../../hooks/useNativeModal';
 import { useMemo, useState } from 'react';
 import {
   getDefaultStudentShareFieldIds,
@@ -16,6 +17,7 @@ export default function ShareStudentDialog({ open, student, onClose }) {
   const [selectedIds, setSelectedIds] = useState(() => getDefaultStudentShareFieldIds());
   const [companyLabel, setCompanyLabel] = useState('');
   const [format, setFormat] = useState('image');
+  const dialogRef = useNativeModal(open && Boolean(student));
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSharing, setIsSharing] = useState(false);
@@ -114,12 +116,9 @@ export default function ShareStudentDialog({ open, student, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
+    <dialog ref={dialogRef} aria-labelledby="share-student-title" onCancel={(event) => { event.preventDefault(); onClose?.(); }} onKeyDown={(event) => { if (event.key === 'Escape') event.stopPropagation(); }} className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-950/40">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="share-student-title"
-        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl"
+        className="min-w-0 p-4 [overflow-wrap:anywhere] sm:p-6 [&_button]:min-h-11"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -214,7 +213,7 @@ export default function ShareStudentDialog({ open, student, onClose }) {
             {groupedFields.map(({ group, fields }) => (
               <fieldset
                 key={group}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
               >
                 <legend className="px-1 text-xs font-bold uppercase tracking-wide text-slate-500">
                   {group}
@@ -231,7 +230,7 @@ export default function ShareStudentDialog({ open, student, onClose }) {
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleField(field.id)}
-                          className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                          className="h-5 w-5 shrink-0 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
                         />
                         <span>{field.label}</span>
                       </label>
@@ -265,7 +264,7 @@ export default function ShareStudentDialog({ open, student, onClose }) {
           </p>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -293,6 +292,6 @@ export default function ShareStudentDialog({ open, student, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -445,7 +445,7 @@ export default function AdminBillsPage() {
 
           <section className="mt-8">
             <h2 className="mb-4 text-lg font-bold text-slate-900">Bill preview</h2>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-8">
               <AdminBillDocument bill={billPreview} />
             </div>
           </section>

@@ -874,7 +874,7 @@ export default function AdminStudentsPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-bold text-slate-950">{student.fullName}</h2>
+                      <h2 className="min-w-0 [overflow-wrap:anywhere] text-lg font-bold text-slate-950">{student.fullName}</h2>
                       {!student.hasRegistrationConsents ? (
                         <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-800">
                           Consent pending

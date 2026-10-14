@@ -49,7 +49,7 @@ function FeedbackModerationCard({ feedback, userId, highlighted, onUpdated }) {
   return (
     <article
       id={`site-feedback-${feedback.id}`}
-      className={`rounded-2xl border p-4 shadow-sm sm:p-5 ${
+      className={`min-w-0 [overflow-wrap:anywhere] rounded-2xl border p-4 shadow-sm sm:p-5 ${
         highlighted
           ? 'border-cyan-300 bg-cyan-50/60 ring-2 ring-cyan-200'
           : 'border-slate-200 bg-white'

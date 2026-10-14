@@ -849,6 +849,7 @@ export default function AdminNotificationsPage() {
                   type="search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Search notification analytics"
                   placeholder="Search jobs, companies, devices..."
                   className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-base text-slate-800 placeholder-slate-400 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
                 />
@@ -886,7 +887,7 @@ export default function AdminNotificationsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-w-full overflow-x-auto" role="region" aria-label="Notification data table" tabIndex={0}>
                 <table className="w-full text-left text-sm text-slate-700">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
@@ -1039,7 +1040,7 @@ export default function AdminNotificationsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-w-full overflow-x-auto" role="region" aria-label="Notification data table" tabIndex={0}>
                 <table className="w-full text-left text-sm text-slate-700">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
@@ -1133,7 +1134,7 @@ export default function AdminNotificationsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-w-full overflow-x-auto" role="region" aria-label="Notification data table" tabIndex={0}>
                 <table className="w-full text-left text-sm text-slate-700">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
@@ -1327,7 +1328,7 @@ export default function AdminNotificationsPage() {
                   <p className="text-sm font-medium text-slate-500">No push subscribers found.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="max-w-full overflow-x-auto" role="region" aria-label="Notification data table" tabIndex={0}>
                   <table className="w-full text-left text-sm text-slate-700">
                     <thead>
                       <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
@@ -1459,7 +1460,7 @@ export default function AdminNotificationsPage() {
                 <p className="text-sm font-medium text-slate-500">No in-app job alerts recorded.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-w-full overflow-x-auto" role="region" aria-label="Notification data table" tabIndex={0}>
                 <table className="w-full text-left text-sm text-slate-700">
                   <thead>
                     <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">

@@ -1,0 +1,44 @@
+[
+  {
+    "dialog": 272,
+    "dialogContent": 272,
+    "height": 767.9990234375,
+    "page": 320,
+    "width": 320
+  },
+  {
+    "dialog": 312,
+    "dialogContent": 312,
+    "height": 767.9990234375,
+    "page": 360,
+    "width": 360
+  },
+  {
+    "dialog": 342,
+    "dialogContent": 342,
+    "height": 767.9990234375,
+    "page": 391,
+    "width": 391
+  },
+  {
+    "dialog": 382,
+    "dialogContent": 382,
+    "height": 767.9990234375,
+    "page": 430,
+    "width": 430
+  },
+  {
+    "dialog": 720,
+    "dialogContent": 720,
+    "height": 767.9990234375,
+    "page": 768,
+    "width": 768
+  },
+  {
+    "dialog": 752,
+    "dialogContent": 752,
+    "height": 767.9990234375,
+    "page": 1281,
+    "width": 1281
+  }
+]

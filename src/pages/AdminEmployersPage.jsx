@@ -389,7 +389,7 @@ export default function AdminEmployersPage() {
                             {employer.contactEmail ? (
                               <a
                                 href={`mailto:${employer.contactEmail}`}
-                                className="text-cyan-700 hover:underline"
+                                className="inline-flex min-h-11 max-w-full items-center text-cyan-700 hover:underline"
                               >
                                 {employer.contactEmail}
                               </a>
@@ -417,7 +417,7 @@ export default function AdminEmployersPage() {
                                 href={employer.website}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-cyan-700 hover:underline"
+                                className="inline-flex min-h-11 max-w-full items-center text-cyan-700 hover:underline"
                               >
                                 {employer.website}
                               </a>

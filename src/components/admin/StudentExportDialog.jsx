@@ -1,3 +1,4 @@
+import { useNativeModal } from '../../hooks/useNativeModal';
 import { useMemo, useState } from 'react';
 import {
   downloadStudentExcel,
@@ -14,6 +15,7 @@ export default function StudentExportDialog({
   scopeLabel = 'All students',
 }) {
   const [selectedIds, setSelectedIds] = useState(() => getDefaultStudentExportColumnIds());
+  const dialogRef = useNativeModal(open);
   const [error, setError] = useState('');
 
   const groupedColumns = useMemo(() => {
@@ -68,12 +70,9 @@ export default function StudentExportDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
+    <dialog ref={dialogRef} aria-labelledby="student-export-title" onCancel={(event) => { event.preventDefault(); onClose?.(); }} onKeyDown={(event) => { if (event.key === 'Escape') event.stopPropagation(); }} className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-950/40">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="student-export-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl"
+        className="min-w-0 p-4 [overflow-wrap:anywhere] sm:p-6 [&_button]:min-h-11"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -121,7 +120,7 @@ export default function StudentExportDialog({
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           {groupedColumns.map(({ group, columns }) => (
-            <fieldset key={group} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <fieldset key={group} className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <legend className="px-1 text-xs font-bold uppercase tracking-wide text-slate-500">
                 {group}
               </legend>
@@ -137,7 +136,7 @@ export default function StudentExportDialog({
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleColumn(column.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        className="h-5 w-5 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                       />
                       <span>{column.label}</span>
                     </label>
@@ -154,7 +153,7 @@ export default function StudentExportDialog({
           </p>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -172,6 +171,6 @@ export default function StudentExportDialog({
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

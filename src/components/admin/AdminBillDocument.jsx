@@ -21,7 +21,7 @@ export default function AdminBillDocument({ bill }) {
   if (!bill) return null;
 
   return (
-    <article className="bill-document mx-auto w-full max-w-3xl bg-white text-slate-900">
+    <article className="bill-document mx-auto min-w-0 w-full max-w-3xl bg-white text-slate-900 [overflow-wrap:anywhere]">
       <header className="border-b-2 border-slate-900 pb-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -78,7 +78,7 @@ export default function AdminBillDocument({ bill }) {
         </div>
       </section>
 
-      <section className="mt-8 overflow-x-auto rounded-xl border border-slate-300">
+      <section className="mt-8 max-w-full overflow-x-auto rounded-xl border border-slate-300" role="region" aria-label="Bill line items" tabIndex={0}>
         <table className="min-w-[30rem] w-full border-collapse text-left print:min-w-0 text-sm">
           <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
             <tr>

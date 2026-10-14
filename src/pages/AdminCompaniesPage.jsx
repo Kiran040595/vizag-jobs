@@ -562,6 +562,7 @@ export default function AdminCompaniesPage() {
             </span>
             <input
               type="search"
+              aria-label="Search companies"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by company name, category, website, or location..."
@@ -572,6 +573,7 @@ export default function AdminCompaniesPage() {
           {/* Category Dropdown */}
           <div className="flex flex-wrap items-center gap-2">
             <select
+              aria-label="Filter companies by industry"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-sm font-semibold text-slate-700 transition focus:border-cyan-500 focus:bg-white focus:outline-none"

@@ -142,6 +142,7 @@ function QuestionModerationCard({ question, userId, highlighted, onUpdated }) {
           </div>
 
           <textarea
+            aria-label="Answer for the candidate"
             value={answerDraft}
             onChange={(event) => setAnswerDraft(event.target.value)}
             rows={3}
@@ -266,6 +267,7 @@ export default function AdminQuestionsPage() {
                 key={tab.value}
                 type="button"
                 onClick={() => setStatusTab(tab.value)}
+                aria-pressed={activeStatus === tab.value}
                 className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
                   activeStatus === tab.value
                     ? 'bg-cyan-500 text-slate-950 shadow-sm'
@@ -280,6 +282,7 @@ export default function AdminQuestionsPage() {
           <div className="w-full sm:w-72">
             <input
               type="text"
+              aria-label="Search candidate questions"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search candidate doubts..."

@@ -46,13 +46,13 @@ Per screen: inspect layout and states â†’ fix responsive/accessibility issues â†
 | S036 | `/admin/blog` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
 | S037 | `/admin/blog/new` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
 | S038 | `/admin/blog/:postId/edit` | [x] | [ ] | [ ] | Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids; full verification pending |
-| S039 | `/admin/feedback` | [ ] | [ ] | [ ] | Queued |
-| S040 | `/admin/questions` | [ ] | [ ] | [ ] | Queued |
-| S041 | `/admin/employers` | [ ] | [ ] | [ ] | Queued |
-| S042 | `/admin/companies` | [ ] | [ ] | [ ] | Queued |
-| S043 | `/admin/bills` | [ ] | [ ] | [ ] | Queued |
-| S044 | `/admin/students` | [ ] | [ ] | [ ] | Queued |
-| S045 | `/admin/notifications` | [ ] | [ ] | [ ] | Queued |
+| S039 | `/admin/feedback` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
+| S040 | `/admin/questions` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
+| S041 | `/admin/employers` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
+| S042 | `/admin/companies` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
+| S043 | `/admin/bills` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
+| S044 | `/admin/students` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
+| S045 | `/admin/notifications` | [x] | [ ] | [ ] | Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs; full verification pending |
 | S046 | `/blog` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
 | S047 | `/blog/:slug` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
 | S048 | `/about` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
