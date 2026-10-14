@@ -23,8 +23,8 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S001 | `/quick-register` | Complete quick candidate registration; validation, consent and duplicate submission handling | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
 | S002 | `/apply/:slug` | Load quick job and dynamic form; validate fields; submit; receipt; duplicate/closed/missing job and claim flow | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
 | S003 | `/quick-applications/claim` | Claim receipt after login; verify ownership, duplicate claim, invalid receipt and application association | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
-| S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
-| S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | Not tested | Not reviewed | — |
+| S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
+| S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | Not tested | Not reviewed | — |
 | S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-10-14-UI: targeted browser checks passed; full checklist pending |
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
@@ -369,7 +369,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 7 | `/oauth/consent`, `/employer/login` | In progress (2026-10-14: mobile UI touch targets, permissions layout, and auth verified) |
 | Day 8 | `/employer/register`, `/employer/profile` | In progress (2026-10-14: mobile UI touch targets, selects, and safe-area padding verified) |
 | Day 9 | `/employer/jobs`, `/employer/jobs/new` | In progress (2026-10-14: mobile UI touch targets, cards layout, and posting wizard verified) |
-| Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Planned |
+| Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | In progress (2026-10-14: mobile UI touch targets, dynamic field reorder, and share buttons verified) |
 | Day 11 | `/admin/candidates`, `/admin/login` | Planned |
 | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Planned |
 | Day 13 | `/employer`, `/employer/jobs/new` | Planned |
@@ -552,5 +552,17 @@ Copy one record per completed or attempted feature/screen.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day10: Admin Quick Job New and Edit mobile fixes
+
+- Scope: S004, S005; develop baseline 581463a, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - AdminQuickJobPage: Standardized general action buttons with inline-flex min-h-12 items-center justify-center (48px touch targets); sized dynamic field reorder controls (↑ and ↓) to dedicated 48x48px touch squares with vertical centering and clear disabled contrast; upgraded field Required and Accept applications checkboxes to min-h-12 cursor-pointer with 20px accessible checkbox boxes (size-5); standardized candidate directory back link to min-h-12; converted post-save share tray to responsive flex-col sm:flex-row layout with full-width mobile action buttons; elevated sticky bottom submit bar spacer to h-24 sm:hidden.
+  - AdminShell: Added pb-16 safe-area bottom clearance to main container preventing fixed bottom mobile bar overlap across all admin views.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 10 and in-progress Day 10 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
 
 

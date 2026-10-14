@@ -26,9 +26,9 @@ Current branch: `develop`
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
 | **Employer Portal** | 10 | 7 | 0 | 3 |
-| **Admin Portal** | 24 | 0 | 0 | 24 |
+| **Admin Portal** | 24 | 2 | 0 | 22 |
 | **Quick Apply / Static** | 14 | 6 | 0 | 8 |
-| **Total** | **79** | **26** | **0** | **53** |
+| **Total** | **79** | **28** | **0** | **51** |
 
 ---
 
@@ -158,16 +158,25 @@ Current branch: `develop`
   - Standardized Cancel and Submit action buttons to 48px touch targets (`inline-flex min-h-12 w-full sm:w-auto items-center justify-center`).
   - Responsive empty prompt banner with `shrink-0` icon and `min-w-0 flex-1` text.
 
+### Batch 10: Admin Quick Job Creator & Editor
+- **`/admin/quick-jobs/new` & `/admin/quick-jobs/:jobId/edit` (Admin Quick Job Form - S004, S005):**
+  - Standardized action buttons with `inline-flex min-h-12 items-center justify-center` ensuring accessible $\ge 48$px touch targets.
+  - Sized dynamic field reorder controls (↑ and ↓) to dedicated $48 \times 48$px touch squares (`inline-flex min-h-12 w-12 items-center justify-center`) with vertical centering and high-contrast disabled states.
+  - Upgraded field "Required" and "Accept applications" toggles to `min-h-12 cursor-pointer` with 20px accessible check targets (`size-5`).
+  - Standardized candidate return link to 48px touch target (`inline-flex min-h-12 items-center font-semibold text-blue-700`).
+  - Mobile-responsive post-save share tray: converted hardcoded margin buttons to responsive `flex-col sm:flex-row flex-wrap gap-2` with full-width mobile action buttons (`w-full sm:w-auto`).
+  - Elevated sticky bottom submit bar spacer to `h-24 sm:hidden` and added `pb-16` safe-area bottom clearance to `AdminShell`.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
-| **P2** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
-| **P3** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
-| **P4** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
+| **P1 (Next)** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
+| **P2** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
+| **P3** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
+| **P4** | Day 14 | `/student/forgot-password`, `/student/reset-password` | Student password reset flows |
 
 ---
 
@@ -178,8 +187,8 @@ Current branch: `develop`
 | S001 | `/quick-register` | Quick Registration | ✅ Fixed | 2026-10-14 |
 | S002 | `/apply/:slug` | Quick Job Apply | ✅ Fixed | 2026-10-14 |
 | S003 | `/quick-applications/claim` | Claim Quick Application | ✅ Fixed | 2026-10-14 |
-| S004 | `/admin/quick-jobs/new` | Admin Create Quick Job | ⏳ Pending | — |
-| S005 | `/admin/quick-jobs/:jobId/edit` | Admin Edit Quick Job | ⏳ Pending | — |
+| S004 | `/admin/quick-jobs/new` | Admin Create Quick Job | ✅ Fixed | 2026-10-14 |
+| S005 | `/admin/quick-jobs/:jobId/edit` | Admin Edit Quick Job | ✅ Fixed | 2026-10-14 |
 | S006 | `/admin/candidates` | Admin Quick Candidates | ⏳ Pending | — |
 | S007 | `/` | Home Page | ✅ Fixed | 2026-10-14 |
 | S008 | `/admin/login` | Admin Login | ⏳ Pending | — |

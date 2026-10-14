@@ -26,7 +26,7 @@ const blankJob = {
   is_open: true,
 };
 const button =
-  "min-h-12 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold";
+  "inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50";
 export default function AdminQuickJobPage() {
   const { jobId } = useParams();
   const [savedId, setSavedId] = useState(null);
@@ -147,9 +147,9 @@ export default function AdminQuickJobPage() {
     >
       <Link
         to="/admin/candidates"
-        className="mb-5 inline-flex min-h-12 items-center text-blue-700"
+        className="mb-5 inline-flex min-h-12 items-center font-semibold text-blue-700 hover:underline"
       >
-        View quick candidates and jobs →
+        ← View quick candidates and jobs
       </Link>
       <form
         id="quick-job-editor"
@@ -280,7 +280,7 @@ export default function AdminQuickJobPage() {
                     </span>
                     <button
                       type="button"
-                      className={button}
+                      className="inline-flex min-h-12 w-12 items-center justify-center rounded-xl border border-slate-300 bg-white text-base font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
                       aria-label={`Move ${field.label} up`}
                       disabled={index === 0}
                       onClick={() => move(index, index - 1)}
@@ -289,7 +289,7 @@ export default function AdminQuickJobPage() {
                     </button>
                     <button
                       type="button"
-                      className={button}
+                      className="inline-flex min-h-12 w-12 items-center justify-center rounded-xl border border-slate-300 bg-white text-base font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
                       aria-label={`Move ${field.label} down`}
                       disabled={index === fields.length - 1}
                       onClick={() => move(index, index + 1)}
@@ -308,7 +308,7 @@ export default function AdminQuickJobPage() {
                       </button>
                     )}
                   </div>
-                  <label className="mt-3 block text-sm">
+                  <label className="mt-3 block text-sm font-semibold">
                     Label
                     <input
                       aria-label={`Field ${index + 1} label`}
@@ -323,7 +323,7 @@ export default function AdminQuickJobPage() {
                   </label>
                   {!["full_name", "phone"].includes(field.id) && (
                     <>
-                      <label className="mt-3 block text-sm">
+                      <label className="mt-3 block text-sm font-semibold">
                         Answer type
                         <select
                           className={`${quickInputClass} mt-1`}
@@ -352,9 +352,10 @@ export default function AdminQuickJobPage() {
                           ))}
                         </select>
                       </label>
-                      <label className="flex min-h-12 items-center gap-3">
+                      <label className="flex min-h-12 cursor-pointer items-center gap-3">
                         <input
                           type="checkbox"
+                          className="size-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                           checked={field.required}
                           onChange={(e) =>
                             updateField(field.id, {
@@ -362,7 +363,7 @@ export default function AdminQuickJobPage() {
                             })
                           }
                         />
-                        Required
+                        <span className="text-sm font-medium text-slate-700">Required</span>
                       </label>
                     </>
                   )}
@@ -440,15 +441,16 @@ export default function AdminQuickJobPage() {
             />
           </section>
           <section className="rounded-2xl bg-white p-5">
-            <label className="flex min-h-12 items-center gap-3">
+            <label className="flex min-h-12 cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
+                className="size-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 checked={job.is_open}
                 onChange={(e) =>
                   setJob((j) => ({ ...j, is_open: e.target.checked }))
                 }
               />
-              Accept applications
+              <span className="text-sm font-medium text-slate-700">Accept applications</span>
             </label>
             <label className="block">
               Visibility
@@ -477,7 +479,7 @@ export default function AdminQuickJobPage() {
             )}
             <button
               disabled={busy}
-              className="mt-5 min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-60"
+              className="mt-5 min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white transition hover:bg-blue-800 disabled:opacity-60"
             >
               {busy ? "Saving…" : "Save quick job"}
             </button>
@@ -494,49 +496,51 @@ export default function AdminQuickJobPage() {
                 {savedStatus !== "draft" && (
                   <>
                     <Link
-                      className="block text-blue-700 underline"
+                      className="inline-flex min-h-11 items-center font-semibold text-blue-700 underline"
                       to={new URL(link).pathname}
                     >
                       {link}
                     </Link>
-                    <button
-                      type="button"
-                      className={button}
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(link);
-                        } catch {
-                          setError("Select and copy the link above.");
-                        }
-                      }}
-                    >
-                      Copy link
-                    </button>
-                    <button
-                      type="button"
-                      className={`${button} ml-2 mt-2`}
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(
-                            `${link}?source=instagram`,
-                          );
-                        } catch {
-                          setError(
-                            "Select and copy the link above, then add ?source=instagram.",
-                          );
-                        }
-                      }}
-                    >
-                      Copy Instagram link
-                    </button>
-                    <a
-                      className={`${button} ml-2 inline-flex items-center`}
-                      target="_blank"
-                      rel="noreferrer"
-                      href={`https://wa.me/?text=${encodeURIComponent(`${job.title} – ${job.location}\n${link}?source=whatsapp`)}`}
-                    >
-                      WhatsApp
-                    </a>
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-2">
+                      <button
+                        type="button"
+                        className={`${button} w-full sm:w-auto`}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(link);
+                          } catch {
+                            setError("Select and copy the link above.");
+                          }
+                        }}
+                      >
+                        Copy link
+                      </button>
+                      <button
+                        type="button"
+                        className={`${button} w-full sm:w-auto`}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(
+                              `${link}?source=instagram`,
+                            );
+                          } catch {
+                            setError(
+                              "Select and copy the link above, then add ?source=instagram.",
+                            );
+                          }
+                        }}
+                      >
+                        Copy Instagram link
+                      </button>
+                      <a
+                        className={`${button} w-full sm:w-auto`}
+                        target="_blank"
+                        rel="noreferrer"
+                        href={`https://wa.me/?text=${encodeURIComponent(`${job.title} – ${job.location}\n${link}?source=whatsapp`)}`}
+                      >
+                        WhatsApp
+                      </a>
+                    </div>
                   </>
                 )}
               </div>
@@ -544,13 +548,13 @@ export default function AdminQuickJobPage() {
           </section>
         </div>
       </form>
-      <div className="h-16 sm:hidden" />
+      <div className="h-24 sm:hidden" />
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-white p-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:hidden">
         <button
           form="quick-job-editor"
           type="submit"
           disabled={busy}
-          className="min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white transition hover:bg-blue-800 disabled:opacity-60"
         >
           {busy ? "Saving…" : "Save quick job"}
         </button>
