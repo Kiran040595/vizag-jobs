@@ -34,7 +34,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
   const gradientClass = SECTOR_GRADIENTS[company.sectorId] || 'from-slate-700 to-slate-900 text-white';
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-md sm:p-5">
+    <div className="group relative flex min-w-0 flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 [overflow-wrap:anywhere] shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-md sm:p-5">
       <div>
         <div className="flex items-start gap-3">
           <div
@@ -280,7 +280,7 @@ export default function CompaniesInVizagPage() {
       />
       <Navbar />
 
-      <main className="flex-1 pb-28 sm:pb-16">
+      <main className="min-w-0 flex-1 pb-mobile-chrome [&_button]:min-h-11">
         {/* Hero Section */}
         <section className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-cyan-900 via-slate-900 to-slate-900 px-4 py-8 text-white sm:px-6 sm:py-16">
           <div className="mx-auto max-w-5xl text-center">
@@ -445,8 +445,7 @@ export default function CompaniesInVizagPage() {
             <div>
               <div className="mb-4 flex items-center justify-between text-xs text-slate-500">
                 <span>
-                  Showing {filteredCompanies.length} company
-                  {filteredCompanies.length > 1 ? 'ies' : ''}
+                  Showing {filteredCompanies.length} {filteredCompanies.length === 1 ? 'company' : 'companies'}
                 </span>
                 {selectedSector !== 'all' || searchQuery ? (
                   <button
@@ -487,13 +486,13 @@ export default function CompaniesInVizagPage() {
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Link
                 to="/employer/register"
-                className="rounded-xl bg-cyan-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-cyan-700"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-700"
               >
                 Register as Employer →
               </Link>
               <Link
                 to="/employer/jobs/new"
-                className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Post a Job in Vizag
               </Link>

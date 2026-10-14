@@ -1,0 +1,56 @@
+[
+  {
+    "route": "/about",
+    "scrollWidth": 305,
+    "title": "About Us",
+    "width": 320
+  },
+  {
+    "route": "/contact",
+    "scrollWidth": 305,
+    "title": "Contact Us",
+    "width": 320
+  },
+  {
+    "route": "/privacy-policy",
+    "scrollWidth": 305,
+    "title": "Privacy Policy",
+    "width": 320
+  },
+  {
+    "route": "/terms-of-service",
+    "scrollWidth": 305,
+    "title": "Terms of Service",
+    "width": 320
+  },
+  {
+    "route": "/disclaimer",
+    "scrollWidth": 305,
+    "title": "Disclaimer",
+    "width": 320
+  },
+  {
+    "route": "/blog",
+    "scrollWidth": 305,
+    "title": "Blog",
+    "width": 320
+  },
+  {
+    "route": "/feedback",
+    "scrollWidth": 305,
+    "title": "Feedback & feature requests",
+    "width": 320
+  },
+  {
+    "route": "/qa",
+    "scrollWidth": 305,
+    "title": "Vizag Jobs Community Q&A",
+    "width": 320
+  },
+  {
+    "route": "/companies",
+    "scrollWidth": 305,
+    "title": "Top Companies & Employers in Visakhapatnam",
+    "width": 320
+  }
+]

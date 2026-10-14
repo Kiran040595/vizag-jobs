@@ -53,16 +53,16 @@ Per screen: inspect layout and states â†’ fix responsive/accessibility issues â†
 | S043 | `/admin/bills` | [ ] | [ ] | [ ] | Queued |
 | S044 | `/admin/students` | [ ] | [ ] | [ ] | Queued |
 | S045 | `/admin/notifications` | [ ] | [ ] | [ ] | Queued |
-| S046 | `/blog` | [ ] | [ ] | [ ] | Queued |
-| S047 | `/blog/:slug` | [ ] | [ ] | [ ] | Queued |
-| S048 | `/about` | [ ] | [ ] | [ ] | Queued |
-| S049 | `/contact` | [ ] | [ ] | [ ] | Queued |
-| S050 | `/feedback` | [ ] | [ ] | [ ] | Queued |
-| S051 | `/qa` | [ ] | [ ] | [ ] | Queued |
-| S052 | `/privacy-policy` | [ ] | [ ] | [ ] | Queued |
-| S053 | `/terms-of-service` | [ ] | [ ] | [ ] | Queued |
-| S054 | `/disclaimer` | [ ] | [ ] | [ ] | Queued |
-| S055 | `/companies` | [ ] | [ ] | [ ] | Queued |
+| S046 | `/blog` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S047 | `/blog/:slug` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S048 | `/about` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S049 | `/contact` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S050 | `/feedback` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S051 | `/qa` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S052 | `/privacy-policy` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S053 | `/terms-of-service` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S054 | `/disclaimer` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
+| S055 | `/companies` | [x] | [ ] | [ ] | Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording; full verification pending |
 | S056 | `/jobs` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
 | S057 | `/apply` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S058 | `/jobs/latest` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |

@@ -65,16 +65,16 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S043 | `/admin/bills` | Edit customer/services/quantity/prices; verify totals; preview, print and reset | Not tested | Not reviewed | — |
 | S044 | `/admin/students` | Search/filter/page students; inspect profile; resume access; export and share selected candidates | Not tested | Not reviewed | — |
 | S045 | `/admin/notifications` | Inspect push statistics, dispatches, clicks, subscribers and alerts; filters; controlled test-push flow | Not tested | Not reviewed | — |
-| S046 | `/blog` | Browse published articles; open article; list empty/error states | Not tested | Not reviewed | — |
-| S047 | `/blog/:slug` | Load article; markdown, metadata and links; missing/unpublished slug | Not tested | Not reviewed | — |
-| S048 | `/about` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
-| S049 | `/contact` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
-| S050 | `/feedback` | Submit feedback type/message; validation; pending moderation; published reply and notification | Not tested | Not reviewed | — |
-| S051 | `/qa` | Browse/filter questions; submit; validation; AI-answer fallback; helpful vote; moderation and notifications | Not tested | Not reviewed | — |
-| S052 | `/privacy-policy` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
-| S053 | `/terms-of-service` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
-| S054 | `/disclaimer` | Read page; verify navigation, content and available contact/legal links | Not tested | Not reviewed | — |
-| S055 | `/companies` | Browse/search companies; company details and career links; empty/error states | Not tested | Not reviewed | — |
+| S046 | `/blog` | Browse published articles; open article; list empty/error states | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S047 | `/blog/:slug` | Load article; markdown, metadata and links; missing/unpublished slug | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S048 | `/about` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S049 | `/contact` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S050 | `/feedback` | Submit feedback type/message; validation; pending moderation; published reply and notification | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S051 | `/qa` | Browse/filter questions; submit; validation; AI-answer fallback; helpful vote; moderation and notifications | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S052 | `/privacy-policy` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S053 | `/terms-of-service` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S054 | `/disclaimer` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
+| S055 | `/companies` | Browse/search companies; company details and career links; empty/error states | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
 | S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S057 | `/apply` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | QA-2026-10-14-UI-Day5: mobile UI verified, full journey pending |
 | S058 | `/jobs/latest` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day5: mobile redirect verified, full journey pending |
@@ -640,3 +640,10 @@ Delivery status: fixed application commits above confirmed on origin/develop; th
 - Implemented: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping.
 - Functional E2E and full mobile acceptance remain In progress. Source changes, lint and builds are supplemental evidence; no authenticated journey is implied. Details and check results recorded below.
 - Checks: changed-file ESLint, category taxonomy/filter/source tests and production build passed. Browser visited each of the 17 category routes individually at 320x740; correct h1, no unsupported category select, page scrollWidth 305px within 320px. Logistics unmatched-search reset restored input/listings. Evidence: docs/qa/2026-10-14/category-route-checks.json and category-mobile.jpg. Other widths/devices and complete journeys pending. Home/Jobs reopened because HeroSection changed.
+
+
+### UI continuation 2026-10-14 — S046, S047, S048, S049, S050, S051, S052, S053, S054, S055
+
+- Implemented: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording.
+- Functional E2E and full mobile acceptance remain In progress. Source changes, lint and builds are supplemental evidence; no authenticated journey is implied. Details and check results recorded below.
+- Checks: ESLint, blog markdown and company unit/contract tests passed; Vite production build passed. Browser visited About, Contact, Privacy, Terms, Disclaimer, Blog, Feedback, Q&A, Companies individually at 320x740: page scrollWidth 305px within 320px. Opened a published blog article from its visible link. Q&A dialog opened, fit viewport, closed with Escape and restored Ask a Doubt focus. No question, vote or feedback submitted. Evidence: public-route-checks.json, qa-dialog-mobile.jpg. Full content/state/device/keyboard journeys remain pending.

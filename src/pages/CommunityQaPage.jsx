@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -72,6 +72,21 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!session || !isStudent) return;
@@ -113,13 +128,13 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
       aria-label="Ask a career or hiring question"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-sm [&_button]:min-h-11"
+      className="fixed inset-0 m-auto max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-0 [overflow-wrap:anywhere] shadow-2xl backdrop:bg-slate-950/60 [&_button]:min-h-11"
     >
-      <div className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-8">
+      <div className="relative min-w-0 p-4 sm:p-8">
         <button
           type="button"
           onClick={onClose}
@@ -272,7 +287,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
           </form>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }
 
@@ -352,7 +367,7 @@ export default function CommunityQaPage() {
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto min-w-0 w-full max-w-5xl px-4 py-8 pb-mobile-chrome [overflow-wrap:anywhere] [&_button]:min-h-11 sm:px-6 lg:px-8">
         {/* Top Header Hero */}
         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-10">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">

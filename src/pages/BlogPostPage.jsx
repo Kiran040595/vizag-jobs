@@ -112,7 +112,7 @@ export default function BlogPostPage() {
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto min-w-0 w-full max-w-3xl px-4 py-6 pb-mobile-chrome [overflow-wrap:anywhere] [&_img]:max-w-full sm:py-10 sm:px-6 lg:px-8">
         <Link to="/blog" className="inline-flex min-h-11 items-center text-sm font-semibold text-cyan-700 hover:text-cyan-600">
           Back to blog
         </Link>

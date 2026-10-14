@@ -50,7 +50,7 @@ export default function BlogListPage() {
       />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto min-w-0 w-full max-w-3xl px-4 py-6 pb-mobile-chrome [overflow-wrap:anywhere] sm:py-10 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-black text-slate-950 sm:text-4xl">Blog</h1>
         <p className="mt-2 text-slate-600">Articles for job seekers in Vizag and beyond.</p>
 

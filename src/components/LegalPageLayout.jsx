@@ -20,7 +20,7 @@ export default function LegalPageLayout({
       <SEO title={seoTitle || title} description={description} canonical={canonical} />
       <Navbar />
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto min-w-0 w-full max-w-3xl px-4 py-6 pb-mobile-chrome sm:py-10 sm:px-6 lg:px-8">
         <nav className="text-sm text-slate-500" aria-label="Breadcrumb">
           <Link to="/" className="inline-flex min-h-11 items-center font-medium text-cyan-700 hover:text-cyan-800">
             Home
