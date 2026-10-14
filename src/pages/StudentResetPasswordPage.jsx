@@ -52,7 +52,7 @@ export default function StudentResetPasswordPage() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-slate-950 px-3 py-6 sm:px-4 sm:py-12 text-white">
+      <div className="min-h-screen bg-slate-950 px-3 py-6 pb-mobile-chrome sm:px-4 sm:py-12 text-white">
         <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8">
           <h1 className="text-2xl font-black">Supabase is not configured.</h1>
         </div>
@@ -62,7 +62,7 @@ export default function StudentResetPasswordPage() {
 
   if (isLoading || !recoveryChecked) {
     return (
-      <div className="min-h-screen bg-slate-50 px-3 py-6 sm:px-4 sm:py-12">
+      <div className="min-h-screen bg-slate-50 px-3 py-6 pb-mobile-chrome sm:px-4 sm:py-12">
         <div className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white p-8">
           <LoadingSpinner message="Checking reset link..." />
         </div>
@@ -98,7 +98,7 @@ export default function StudentResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 sm:px-4 sm:py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 pb-mobile-chrome sm:px-4 sm:py-12">
       <SEO
         title="Reset password | Student | Vizag Jobs"
         description="Choose a new password for your Vizag Jobs student account."

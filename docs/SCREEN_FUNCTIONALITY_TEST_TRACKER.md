@@ -41,8 +41,8 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | In progress | In progress | QA-2026-10-14-Applicants: component preview checks; authenticated E2E pending |
 | S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S021 | `/student/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
-| S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
-| S023 | `/student/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
+| S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | In progress | In progress | UI continuation 2026-10-14: Student recovery pages: bottom navigation clearance and 44px return link |
+| S023 | `/student/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | In progress | In progress | UI continuation 2026-10-14: Student recovery pages: bottom navigation clearance and 44px return link |
 | S024 | `/student` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
 | S025 | `/student/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | In progress | In progress | QA-2026-10-14-UI-Day4: mobile UI verified, full journey pending |
 | S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records | In progress | In progress | QA-2026-10-14-UI-Day4: mobile UI verified, full journey pending |
@@ -626,3 +626,10 @@ Delivery status: fixed application commits above confirmed on origin/develop; th
 - Functional: In progress. Mobile UI: In progress. Full employer/admin journeys, auth/ownership, persistence and export contents/download, keyboard traversal across all controls, nested admin-modal integration, device keyboards, iOS Safari/Android Chrome, landscape and 200% zoom remain pending. No Tested/Verified claim.
 - Delivery: scoped applicant UI, evidence and tracker to be committed/pushed together. Push result reported in chat after Git verification.
 - Build: npm run build exited 0; final Vite production rebuild after Escape scoping also exited 0 with 604 modules and PWA generated. Existing large-chunk/Browserslist warnings remain. Sandboxed sitemap fetch fell back to static URLs; generated sitemap restored and excluded.
+
+
+### UI continuation 2026-10-14 — S022, S023
+
+- Implemented: Student recovery pages: bottom navigation clearance and 44px return link.
+- Functional E2E and full mobile acceptance remain In progress. Source changes, lint and builds are supplemental evidence; no authenticated journey is implied. Details and check results recorded below.
+- Checks: ESLint and Vite production build passed. Browser at 320x740: recovery form fits; return link measured 43.99px (44px target); reset without a session shows invalid/expired-link recovery state. No reset email sent and no password changed. Other devices, valid recovery session and backend flow remain pending. User explicitly expanded scope to all screens; docs/UI_IMPROVEMENT_CHECKLIST.md tracks implementation and independent verification for all 79 routes.
