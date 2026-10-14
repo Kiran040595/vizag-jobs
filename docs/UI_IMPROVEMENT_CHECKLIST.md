@@ -87,3 +87,16 @@ Per screen: inspect layout and states → fix responsive/accessibility issues �
 | S077 | `/jobs/education` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
 | S078 | `/jobs/hospitality` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
 | S079 | `/jobs/logistics` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+
+## Pass summary — 2026-10-14
+
+- [x] Record scoped UI implementation coverage for all 79 route entries, including inherited layouts and redirects.
+- [x] Keep screen E2E and mobile acceptance separate from code implementation.
+- [x] Check public category routes individually at 320px and public content pages at 320px.
+- [x] Exercise job/blog authoring and applicant/student export/share components with synthetic previews at six widths.
+- [ ] Complete authenticated admin, employer and student journeys with controlled accounts/fixtures.
+- [ ] Complete all applicable loading/error/empty/permission/negative cases and persistence/export checks.
+- [ ] Complete Android Chrome/iOS Safari, landscape, 200% zoom, device-keyboard and overlay-collision checks for every screen.
+- [ ] Review and verify the pre-existing notification inbox/bell changes, which remain outside these scoped UI commits.
+
+Implementation checkboxes cover the recorded fixes only; they are not a claim that every possible UI issue has been found or that full acceptance passed. Missing authentication/device evidence remains visible in the tracker. No screen is newly marked Tested or Verified by this pass.

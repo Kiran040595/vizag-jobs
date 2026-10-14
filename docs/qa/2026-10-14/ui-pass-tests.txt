@@ -1,0 +1,1317 @@
+TAP version 13
+# admin-employers.test.mjs: OK
+# Subtest: tests\\admin-employers.test.mjs
+ok 1 - tests\\admin-employers.test.mjs
+  ---
+  duration_ms: 217.5985
+  type: 'test'
+  ...
+# Round-trip: save → load returns the same shape
+# ----------------------------------------------
+#   OK    load returns a snapshot after save
+#   OK    activeSource preserved  (got "naukri")
+#   OK    reviewJobs preserved  (got 1)
+#   OK    skippedKeys preserved  (got ["skipped-1"])
+#   OK    importErrors preserved  (got {"k1":"duplicate"})
+#   OK    linkedInPostPreset preserved  (got "general")
+# TTL: snapshot older than 24h is dropped on load
+# -----------------------------------------------
+#   OK    expired snapshot returns null
+#   OK    expired snapshot is wiped from storage
+# Version mismatch: returns null and wipes
+# ----------------------------------------
+#   OK    wrong-version snapshot returns null
+#   OK    wrong-version snapshot is wiped
+# Corrupt JSON: returns null and wipes
+# ------------------------------------
+#   OK    corrupt JSON returns null
+#   OK    corrupt entry is wiped
+# Invalid shape: defensive defaults applied
+# -----------------------------------------
+#   OK    invalid-shape snapshot still loads (with defaults)
+#   OK    reviewJobs falls back to []  (got [])
+#   OK    skippedKeys falls back to []  (got [])
+#   OK    importErrors falls back to {}  (got {})
+#   OK    linkedInPostPreset falls back to "general"  (got "general")
+# clear: removes the snapshot
+# ---------------------------
+#   OK    precondition: snapshot saved
+#   OK    clearAdminFetchSnapshot removes the entry
+#   OK    load returns null after clear
+# save: silently no-ops on storage failure (e.g. quota)
+# -----------------------------------------------------
+#   OK    save does not throw when storage rejects setItem
+# Empty storage: load returns null without writing
+# ------------------------------------------------
+#   OK    fresh storage → null
+#   OK    load did not write anything
+# 23 passed, 0 failed
+# Subtest: tests\\admin-external-fetch-persistence.test.mjs
+ok 2 - tests\\admin-external-fetch-persistence.test.mjs
+  ---
+  duration_ms: 218.9999
+  type: 'test'
+  ...
+# admin-job-scope.test.mjs: OK
+# Subtest: tests\\admin-job-scope.test.mjs
+ok 3 - tests\\admin-job-scope.test.mjs
+  ---
+  duration_ms: 218.0258
+  type: 'test'
+  ...
+# admin-link-company.test.mjs: ALL ASSERTIONS PASSED!
+# Subtest: tests\\admin-link-company.test.mjs
+ok 4 - tests\\admin-link-company.test.mjs
+  ---
+  duration_ms: 209.7161
+  type: 'test'
+  ...
+# admin-new-job-page.test.mjs: ALL CONTRACT CHECKS PASSED
+# Subtest: tests\\admin-new-job-page.test.mjs
+ok 5 - tests\\admin-new-job-page.test.mjs
+  ---
+  duration_ms: 212.7051
+  type: 'test'
+  ...
+# admin-sql-multiple-jobs.test.mjs: ALL PASSED
+# Subtest: tests\\admin-sql-multiple-jobs.test.mjs
+ok 6 - tests\\admin-sql-multiple-jobs.test.mjs
+  ---
+  duration_ms: 417.0137
+  type: 'test'
+  ...
+# Subtest: normalizeSkillValue handles lowercase, whitespace, and special characters
+ok 7 - normalizeSkillValue handles lowercase, whitespace, and special characters
+  ---
+  duration_ms: 2.3911
+  type: 'test'
+  ...
+# Subtest: Student filter logic correctly matches single and combined attributes
+ok 8 - Student filter logic correctly matches single and combined attributes
+  ---
+  duration_ms: 1.968
+  type: 'test'
+  ...
+# Subtest: fetchAdminStudentProfiles fetches all students beyond the 1000 row PostgREST limit
+ok 9 - fetchAdminStudentProfiles fetches all students beyond the 1000 row PostgREST limit
+  ---
+  duration_ms: 28.8825
+  type: 'test'
+  ...
+# Source landmarks
+#   OK    apify-linkedin parses date-only as IST end of day
+#   OK    index parsePostedAt handles date-only
+#   OK    apifyLinkedInJobsOnly skip-scrape branch exists
+# Date-only postedAt within 24h (user repro)
+#   OK    midnight UTC would fail 24h filter
+#   OK    IST end-of-day passes 24h filter
+#   OK    fixture maps to job that passes 24h filter
+# ----
+# apify-linkedin-date.test.mjs: OK
+# Subtest: tests\\apify-linkedin-date.test.mjs
+ok 9 - tests\\apify-linkedin-date.test.mjs
+  ---
+  duration_ms: 190.5484
+  type: 'test'
+  ...
+# apify-naukri-map.test.mjs: OK
+# Subtest: tests\\apify-naukri-map.test.mjs
+ok 10 - tests\\apify-naukri-map.test.mjs
+  ---
+  duration_ms: 193.6374
+  type: 'test'
+  ...
+# application-export.test.mjs: OK
+# Subtest: tests\\application-export.test.mjs
+ok 11 - tests\\application-export.test.mjs
+  ---
+  duration_ms: 606.634
+  type: 'test'
+  ...
+# application-status.test.mjs: OK
+# Subtest: tests\\application-status.test.mjs
+ok 12 - tests\\application-status.test.mjs
+  ---
+  duration_ms: 170.1371
+  type: 'test'
+  ...
+# Subtest: missing group uses the existing Instagram channel
+ok 14 - missing group uses the existing Instagram channel
+  ---
+  duration_ms: 1.9281
+  type: 'test'
+  ...
+# Subtest: custom WhatsApp and Instagram groups take priority over the default
+ok 15 - custom WhatsApp and Instagram groups take priority over the default
+  ---
+  duration_ms: 0.6764
+  type: 'test'
+  ...
+# Subtest: normalizes links and rejects unsafe or malformed links
+ok 16 - normalizes links and rejects unsafe or malformed links
+  ---
+  duration_ms: 0.7642
+  type: 'test'
+  ...
+# apply-click-export.test.mjs: OK
+# Subtest: tests\\apply-click-export.test.mjs
+ok 14 - tests\\apply-click-export.test.mjs
+  ---
+  duration_ms: 621.9581
+  type: 'test'
+  ...
+# Subtest: hasStoredSupabaseSession returns false when localStorage is empty
+ok 18 - hasStoredSupabaseSession returns false when localStorage is empty
+  ---
+  duration_ms: 1.6286
+  type: 'test'
+  ...
+# Subtest: hasStoredSupabaseSession returns true when pending OAuth hash or code is present
+ok 19 - hasStoredSupabaseSession returns true when pending OAuth hash or code is present
+  ---
+  duration_ms: 0.2685
+  type: 'test'
+  ...
+# Subtest: hasStoredSupabaseSession and getStoredSupabaseSession detect stored session in localStorage
+ok 20 - hasStoredSupabaseSession and getStoredSupabaseSession detect stored session in localStorage
+  ---
+  duration_ms: 0.4318
+  type: 'test'
+  ...
+#   OK    wall of text gets paragraph breaks
+#   OK    wall of text becomes multiple paragraphs
+#   OK    single newlines become paragraph breaks
+#   OK    literal \\\\n escapes become real newlines
+#   OK    existing paragraph breaks are preserved
+#   OK    markdown lists stay compact
+# 6 passed, 0 failed
+# Subtest: tests\\blog-body-markdown.test.mjs
+ok 16 - tests\\blog-body-markdown.test.mjs
+  ---
+  duration_ms: 203.2558
+  type: 'test'
+  ...
+# Subtest: mandatory requirements combine with AND; accepted alternatives combine with OR
+ok 22 - mandatory requirements combine with AND; accepted alternatives combine with OR
+  ---
+  duration_ms: 3.5046
+  type: 'test'
+  ...
+# Subtest: missing facts stay unknown and legacy jobs stay unverified
+ok 23 - missing facts stay unknown and legacy jobs stay unverified
+  ---
+  duration_ms: 0.663
+  type: 'test'
+  ...
+# Subtest: current residence, locality, and relocation are distinct from preferred job locations
+ok 24 - current residence, locality, and relocation are distinct from preferred job locations
+  ---
+  duration_ms: 0.6542
+  type: 'test'
+  ...
+# Subtest: recommendations omit known ineligible jobs but retain unknown eligibility
+ok 25 - recommendations omit known ineligible jobs but retain unknown eligibility
+  ---
+  duration_ms: 9.6256
+  type: 'test'
+  ...
+# Subtest: mapped admin candidates use the same eligibility evaluator
+ok 26 - mapped admin candidates use the same eligibility evaluator
+  ---
+  duration_ms: 1.4698
+  type: 'test'
+  ...
+# Subtest: gender never changes eligibility and is not exported
+ok 27 - gender never changes eligibility and is not exported
+  ---
+  duration_ms: 0.7407
+  type: 'test'
+  ...
+# Subtest: candidate and requirement normalization rejects invalid values and preserves tri-state relocation
+ok 28 - candidate and requirement normalization rejects invalid values and preserves tri-state relocation
+  ---
+  duration_ms: 1.1908
+  type: 'test'
+  ...
+# Subtest: registration saves new columns; blank certifications and legacy missing fields stay valid
+ok 29 - registration saves new columns; blank certifications and legacy missing fields stay valid
+  ---
+  duration_ms: 1.419
+  type: 'test'
+  ...
+# Subtest: structured job requirements survive editing and SQL export/import
+ok 30 - structured job requirements survive editing and SQL export/import
+  ---
+  duration_ms: 6.4685
+  type: 'test'
+  ...
+# Subtest: legacy SQL export supplies valid non-null defaults for new database columns
+ok 31 - legacy SQL export supplies valid non-null defaults for new database columns
+  ---
+  duration_ms: 1.1505
+  type: 'test'
+  ...
+# Subtest: admin filters combine current city aliases, locality, education, relocation, and optional gender
+ok 32 - admin filters combine current city aliases, locality, education, relocation, and optional gender
+  ---
+  duration_ms: 0.5001
+  type: 'test'
+  ...
+# Subtest: mandatory skills retain C/R and reject invalid input instead of silently dropping restrictions
+ok 33 - mandatory skills retain C/R and reject invalid input instead of silently dropping restrictions
+  ---
+  duration_ms: 0.3863
+  type: 'test'
+  ...
+# Subtest: Company Career Fetch: URL & Title Key Normalization
+    # Subtest: normalizes URLs by trimming and stripping trailing slashes
+    ok 1 - normalizes URLs by trimming and stripping trailing slashes
+      ---
+      duration_ms: 2.4005
+      type: 'test'
+      ...
+    # Subtest: builds normalized company::title keys
+    ok 2 - builds normalized company::title keys
+      ---
+      duration_ms: 0.4239
+      type: 'test'
+      ...
+    # Subtest: resolves apply_link with fallback to careersUrl
+    ok 3 - resolves apply_link with fallback to careersUrl
+      ---
+      duration_ms: 0.5267
+      type: 'test'
+      ...
+    1..3
+ok 34 - Company Career Fetch: URL & Title Key Normalization
+  ---
+  duration_ms: 5.5849
+  type: 'test'
+  ...
+# Subtest: Company Career Fetch: Smart Deduplication for Shared Hub Careers URL
+    # Subtest: allows a new role even if its apply_link is the shared company careersUrl
+    ok 1 - allows a new role even if its apply_link is the shared company careersUrl
+      ---
+      duration_ms: 2.8693
+      type: 'test'
+      ...
+    # Subtest: skips a role when the same company + title is already published
+    ok 2 - skips a role when the same company + title is already published
+      ---
+      duration_ms: 0.6684
+      type: 'test'
+      ...
+    # Subtest: skips a role when a distinct per-job apply_link is already in database
+    ok 3 - skips a role when a distinct per-job apply_link is already in database
+      ---
+      duration_ms: 0.4759
+      type: 'test'
+      ...
+    1..3
+ok 35 - Company Career Fetch: Smart Deduplication for Shared Hub Careers URL
+  ---
+  duration_ms: 5.8147
+  type: 'test'
+  ...
+# Subtest: Company Career Fetch: End-to-End Single-Company Pipeline Orchestration
+    # Subtest: fetches Vizag roles, refines with Gemini SEO, skips duplicates, and publishes
+    ok 1 - fetches Vizag roles, refines with Gemini SEO, skips duplicates, and publishes
+      ---
+      duration_ms: 7.443
+      type: 'test'
+      ...
+    # Subtest: handles 0 Vizag roles found cleanly
+    ok 2 - handles 0 Vizag roles found cleanly
+      ---
+      duration_ms: 0.5676
+      type: 'test'
+      ...
+    1..2
+ok 36 - Company Career Fetch: End-to-End Single-Company Pipeline Orchestration
+  ---
+  duration_ms: 9.5837
+  type: 'test'
+  ...
+# Subtest: Company Career Fetch: Modular Approval Steps (Pre-Optimize & Post-Optimize)
+    # Subtest: fetchAndClassifyCompanyJobs flags duplicates and marks new roles for SEO
+    ok 1 - fetchAndClassifyCompanyJobs flags duplicates and marks new roles for SEO
+      ---
+      duration_ms: 0.8837
+      type: 'test'
+      ...
+    # Subtest: optimizeSingleCompanyJob produces SEO refined fields
+    ok 2 - optimizeSingleCompanyJob produces SEO refined fields
+      ---
+      duration_ms: 0.5467
+      type: 'test'
+      ...
+    # Subtest: publishSingleCompanyJob inserts to DB and updates existing index
+    ok 3 - publishSingleCompanyJob inserts to DB and updates existing index
+      ---
+      duration_ms: 0.3331
+      type: 'test'
+      ...
+    1..3
+ok 37 - Company Career Fetch: Modular Approval Steps (Pre-Optimize & Post-Optimize)
+  ---
+  duration_ms: 2.5664
+  type: 'test'
+  ...
+# Subtest: parseCookieConsent requires a decidedAt timestamp
+ok 38 - parseCookieConsent requires a decidedAt timestamp
+  ---
+  duration_ms: 2.3572
+  type: 'test'
+  ...
+# Subtest: writeCookieConsent persists and readCookieConsent restores preferences
+ok 39 - writeCookieConsent persists and readCookieConsent restores preferences
+  ---
+  duration_ms: 3.0811
+  type: 'test'
+  ...
+# Subtest: readCookieConsent returns a stable snapshot reference until storage changes
+ok 40 - readCookieConsent returns a stable snapshot reference until storage changes
+  ---
+  duration_ms: 0.2603
+  type: 'test'
+  ...
+# Subtest: acceptEssentialCookiesOnly disables optional categories
+ok 41 - acceptEssentialCookiesOnly disables optional categories
+  ---
+  duration_ms: 0.2613
+  type: 'test'
+  ...
+#   OK    seven rotating article angles
+#   OK    picks an angle for a date
+#   OK    slug includes date
+#   OK    prompt mentions AdSense quality bar
+#   OK    prompt limits raw job listing share
+#   OK    prompt includes job data
+#   OK    prompt includes web context
+#   OK    prompt includes internal links
+#   OK    prompt requires paragraph breaks
+#   OK    custom instructions section is built
+#   OK    source rewrite section is built
+#   OK    custom instructions are included
+#   OK    custom prompt includes admin instructions
+#   OK    custom prompt includes source material
+#   OK    custom prompt notes angle override
+#   OK    parses gemini JSON title
+#   OK    parses gemini JSON body
+# 17 passed, 0 failed
+# Subtest: tests\\daily-blog-prompt.test.mjs
+ok 20 - tests\\daily-blog-prompt.test.mjs
+  ---
+  duration_ms: 266.3693
+  type: 'test'
+  ...
+# ✓ All daily code audit framework verification tests passed successfully!
+# Subtest: tests\\daily-code-audit.test.mjs
+ok 21 - tests\\daily-code-audit.test.mjs
+  ---
+  duration_ms: 253.5768
+  type: 'test'
+  ...
+# Subtest: Companies Directory: Sector Taxonomy & Mapping
+    # Subtest: has all required sectors defined
+    ok 1 - has all required sectors defined
+      ---
+      duration_ms: 2.8376
+      type: 'test'
+      ...
+    # Subtest: maps categories accurately to sectors
+    ok 2 - maps categories accurately to sectors
+      ---
+      duration_ms: 4.559
+      type: 'test'
+      ...
+    1..2
+ok 44 - Companies Directory: Sector Taxonomy & Mapping
+  ---
+  duration_ms: 9.7627
+  type: 'test'
+  ...
+# Subtest: Companies Directory: Browser Storage Cache (10-minute TTL)
+    # Subtest: writes and reads cached public companies
+    ok 1 - writes and reads cached public companies
+      ---
+      duration_ms: 0.8041
+      type: 'test'
+      ...
+    # Subtest: clears cache on admin mutation
+    ok 2 - clears cache on admin mutation
+      ---
+      duration_ms: 0.4034
+      type: 'test'
+      ...
+    # Subtest: expires cache after 10-minute TTL
+    ok 3 - expires cache after 10-minute TTL
+      ---
+      duration_ms: 0.3433
+      type: 'test'
+      ...
+    1..3
+ok 45 - Companies Directory: Browser Storage Cache (10-minute TTL)
+  ---
+  duration_ms: 2.9855
+  type: 'test'
+  ...
+# Subtest: Companies Directory & Jobs Page: Exact Company Name Matching
+    # Subtest: filters jobs exactly by company search param
+    ok 1 - filters jobs exactly by company search param
+      ---
+      duration_ms: 1.5009
+      type: 'test'
+      ...
+    # Subtest: does not bleed partial matches into exact company search
+    ok 2 - does not bleed partial matches into exact company search
+      ---
+      duration_ms: 0.5717
+      type: 'test'
+      ...
+    1..2
+ok 46 - Companies Directory & Jobs Page: Exact Company Name Matching
+  ---
+  duration_ms: 3.474
+  type: 'test'
+  ...
+# Subtest: Companies Directory: Verified Vizag Company URLs & Non-Vizag Exclusions
+    # Subtest: all non-Vizag, remote-only, and invalid companies are in EXCLUDED_DIRECTORY_COMPANIES
+    ok 1 - all non-Vizag, remote-only, and invalid companies are in EXCLUDED_DIRECTORY_COMPANIES
+      ---
+      duration_ms: 0.402
+      type: 'test'
+      ...
+    # Subtest: all premier Vizag companies have valid official websites and careers URLs in KNOWN_COMPANY_DEFAULTS
+    ok 2 - all premier Vizag companies have valid official websites and careers URLs in KNOWN_COMPANY_DEFAULTS
+      ---
+      duration_ms: 0.4968
+      type: 'test'
+      ...
+    1..2
+ok 47 - Companies Directory: Verified Vizag Company URLs & Non-Vizag Exclusions
+  ---
+  duration_ms: 1.7653
+  type: 'test'
+  ...
+# ✓ All employer linked job applications and pipeline stage verification tests passed successfully!
+# Subtest: tests\\employer-linked-job-applications.test.mjs
+ok 23 - tests\\employer-linked-job-applications.test.mjs
+  ---
+  duration_ms: 201.3985
+  type: 'test'
+  ...
+# ✓ All employer login redirect tests passed successfully!
+# Subtest: tests\\employer-login-redirect.test.mjs
+ok 24 - tests\\employer-login-redirect.test.mjs
+  ---
+  duration_ms: 199.9152
+  type: 'test'
+  ...
+# employer-registration.test.mjs: ALL TESTS PASSED! OK
+# Subtest: tests\\employer-registration.test.mjs
+ok 25 - tests\\employer-registration.test.mjs
+  ---
+  duration_ms: 204.1732
+  type: 'test'
+  ...
+#   OK    formats pool index and GEMINI_API_KEYS label
+#   OK    falls back to source name
+#   OK    appendGeminiKeyToSeoErrorMessage adds last key on timeout
+# ----
+# format-gemini-key-usage.test.mjs: OK
+# Subtest: tests\\format-gemini-key-usage.test.mjs
+ok 26 - tests\\format-gemini-key-usage.test.mjs
+  ---
+  duration_ms: 217.7263
+  type: 'test'
+  ...
+#   OK    is_fresher flag matches
+#   OK    experience 0 Years matches
+#   OK    experience 0-2 years matches
+#   OK    10 years does not match zero rule
+#   OK    senior job with no flag excluded
+#   OK    title fresher alone does not match without flag or exp 0
+# ----
+# fresher-match.test.mjs: OK
+# Subtest: tests\\fresher-match.test.mjs
+ok 27 - tests\\fresher-match.test.mjs
+  ---
+  duration_ms: 177.1723
+  type: 'test'
+  ...
+# LinkedIn post SEO timeout fixes
+#   OK    compact prompt uses LINKEDIN_POST_COMPACT_TASKS
+#   OK    linkedin SEO uses single-model default
+#   OK    no schema retry on timeout
+#   OK    linkedin hard cap raised
+#   OK    client browser timeout >= 120s for linkedin posts
+# ----
+# gemini-linkedin-seo-timeout.test.mjs: OK
+# Subtest: tests\\gemini-linkedin-seo-timeout.test.mjs
+ok 28 - tests\\gemini-linkedin-seo-timeout.test.mjs
+  ---
+  duration_ms: 218.449
+  type: 'test'
+  ...
+#   OK    formatGeminiSeoKeyOptionLabel
+#   OK    buildGeminiSeoKeySelectOptions includes default
+#   OK    parseGeminiSeoKeySelectValue
+# ----
+# gemini-seo-key-options.test.mjs: OK
+# Subtest: tests\\gemini-seo-key-options.test.mjs
+ok 29 - tests\\gemini-seo-key-options.test.mjs
+  ---
+  duration_ms: 224.9392
+  type: 'test'
+  ...
+# normalizeApplicationCount
+#   OK    undefined is 0
+#   OK    null is 0
+#   OK    negative is 0
+#   OK    floors decimals
+#   OK    numeric string
+# jobApplicationCount
+#   OK    camelCase applications
+#   OK    snake_case applications
+#   OK    prefers camelCase
+#   OK    unique clicks only
+#   OK    applications plus unique clicks
+#   OK    snake_case clicks
+# resolveJobApplicationCount
+#   OK    lookup wins for on-platform
+#   OK    lookup plus clicks
+#   OK    falls back to job
+# shouldShowAdminApplicantCount
+#   OK    hidden without admin
+#   OK    clicks hidden from public
+#   OK    admin sees internal with 0
+#   OK    admin sees snake_case internal
+#   OK    admin sees external applicants
+#   OK    admin sees unique clicks
+#   OK    admin hides empty external
+# summarizeApplyClickCounts
+#   OK    sums unique clicks across imported jobs
+# apply visitor key
+#   OK    valid uuid
+#   OK    rejects junk
+#   OK    logged-in users map to user:<uuid>
+#   OK    anonymous visitors use anon: prefix
+#   OK    anonymous key is stable in the same browser
+# labels
+#   OK    singular applied
+#   OK    plural applied
+#   OK    singular noun
+#   OK    zero noun
+#   OK    singular unique click
+#   OK    plural unique clicks
+# 33 passed, 0 failed
+# Subtest: tests\\job-application-count.test.mjs
+ok 30 - tests\\job-application-count.test.mjs
+  ---
+  duration_ms: 254.3489
+  type: 'test'
+  ...
+# Civil branch
+#   OK    title civil engineer
+#   OK    category civil
+#   OK    software is not civil
+# Mechanical branch
+#   OK    mechanical title
+#   OK    manufacturing category
+#   OK    accountant is not mechanical
+# Electrical branch
+#   OK    electrical title
+#   OK    eee category
+# ECE branch
+#   OK    ece title
+#   OK    ece skills
+# Engineering umbrella
+#   OK    civil under engineering
+#   OK    instrumentation under engineering
+#   OK    sales is not engineering
+# 13 passed, 0 failed
+# Subtest: tests\\job-branch-match.test.mjs
+ok 31 - tests\\job-branch-match.test.mjs
+  ---
+  duration_ms: 264.2687
+  type: 'test'
+  ...
+#   OK    skip vague work arrangement fallback
+#   OK    skip discussed work phrase
+#   OK    keep real work mode
+#   OK    skip at interview work mode
+#   OK    skip salary discussed fallback
+#   OK    skip non-numeric salary
+#   OK    keep LPA salary
+#   OK    detect INR range salary
+#   OK    buildCardHighlightItems omits vague work mode
+#   OK    buildCardHighlightItems omits vague salary
+#   OK    buildCardHighlightItems omits vague experience
+#   OK    buildCardHighlightItems keeps category
+#   OK    shows proper salary
+#   OK    shows proper work mode
+# 14 passed, 0 failed
+# Subtest: tests\\job-card-display.test.mjs
+ok 32 - tests\\job-card-display.test.mjs
+  ---
+  duration_ms: 256.1496
+  type: 'test'
+  ...
+# normalizeJobCategory
+#   OK    civil alias
+#   OK    exact IT
+#   OK    short IT label
+#   OK    HR id/alias
+#   OK    hospitality alias
+#   OK    waiter is not IT via substring "it"
+#   OK    credit is not IT via substring "it"
+#   OK    necessary is not ECE via substring "ece"
+#   OK    unknown returns null
+# inferJobCategoryFromSignals
+#   OK    civil from title
+#   OK    IT from title/skills
+#   OK    BPO from title
+# inferIsFresherFromJob
+#   OK    0-2 years
+#   OK    senior not fresher
+#   OK    eligibility passout
+# classifyJobRecord
+#   OK    classify mechanical
+#   OK    experienced mechanical
+# jobMatchesCategoryFilter
+#   OK    banking filter
+#   OK    IT canonical category
+#   OK    IT short category label
+#   OK    hospitality job is not IT
+#   OK    nurse is not IT via "hospital" containing "it"
+#   OK    HR job is not IT via "recruitment" containing "it"
+#   OK    digital marketing is not IT
+#   OK    uncategorized developer still matches IT
+# 25 passed, 0 failed
+# Subtest: tests\\job-category-taxonomy.test.mjs
+ok 33 - tests\\job-category-taxonomy.test.mjs
+  ---
+  duration_ms: 258.4479
+  type: 'test'
+  ...
+# isExternalAggregatorJob
+# -----------------------
+#   OK    identifies Naukri as aggregator
+#   OK    identifies LinkedIn as aggregator
+#   OK    identifies Indeed as aggregator
+#   OK    identifies Glassdoor as aggregator
+#   OK    manual admin post is not aggregator
+#   OK    employer job is not aggregator
+# isEmployerPosting
+# -----------------
+#   OK    job with createdBy is employer posting
+#   OK    job with created_by snake_case is employer posting
+#   OK    job without createdBy is not employer posting
+# isInternalApplyPosting
+# ----------------------
+#   OK    job with applyMode=internal
+#   OK    job with apply_mode=internal
+#   OK    job with applyMode=external is not internal apply
+# isDirectPosting
+# ---------------
+#   OK    employer job with internal apply is direct
+#   OK    employer job with company apply link is direct
+#   OK    admin post is direct
+#   OK    Naukri job is NOT direct
+#   OK    LinkedIn job is NOT direct
+# getDirectPostingBadge
+# ---------------------
+#   OK    employer posting gets Direct Employer badge (got {"label":"Direct Employer","icon":"🏢","tone":"emerald"}, want {"label":"Direct Employer","icon":"🏢","tone":"emerald"})
+#   OK    internal apply gets Easy Apply on Vizag Jobs badge (got {"label":"Easy Apply on Vizag Jobs","icon":"⚡","tone":"cyan"}, want {"label":"Easy Apply on Vizag Jobs","icon":"⚡","tone":"cyan"})
+#   OK    admin verified post gets Verified Direct badge (got {"label":"Verified Direct","icon":"🛡️","tone":"indigo"}, want {"label":"Verified Direct","icon":"🛡️","tone":"indigo"})
+#   OK    aggregator job gets null badge (got null, want null)
+# countDirectJobs
+# ---------------
+#   OK    correctly counts 2 direct jobs out of 4 (got 2, want 2)
+#   OK    empty list counts 0 (got 0, want 0)
+# 23 passed, 0 failed
+# Subtest: tests\\job-direct-posting.test.mjs
+ok 34 - tests\\job-direct-posting.test.mjs
+  ---
+  duration_ms: 286.4651
+  type: 'test'
+  ...
+#   OK    empty is placeholder
+#   OK    N/A is placeholder
+#   OK    Unknown is placeholder
+#   OK    Not specified is placeholder
+#   OK    experience range is real
+#   OK    category is real
+#   OK    company fallback
+#   OK    salary fallback
+#   OK    work mode placeholder returns null
+#   OK    work mode fallback text returns null
+#   OK    work mode passthrough
+#   OK    job type passthrough
+#   OK    generic experience phrase is placeholder
+#   OK    experience placeholder returns null
+#   OK    experience passthrough
+#   OK    category passthrough
+#   OK    fresher no
+#   OK    fresher yes
+#   OK    posted at fallback
+#   OK    relative posted at
+#   OK    sanitize company
+#   OK    sanitize salary
+#   OK    sanitize experience clears placeholder
+#   OK    sanitize work mode keeps SEO fallback
+#   OK    sanitize json_ld org
+# 25 passed, 0 failed
+# Subtest: tests\\job-display-labels.test.mjs
+ok 35 - tests\\job-display-labels.test.mjs
+  ---
+  duration_ms: 245.8288
+  type: 'test'
+  ...
+#   OK    public display window is 30 days
+#   OK    direct jobs display window is 180 days
+#   OK    min posted_at is roughly 30 days ago
+#   OK    recent job is visible
+#   OK    40-day-old job is hidden by default posted_at window
+#   OK    60-day-old direct company job is visible
+#   OK    60-day-old external job is hidden
+#   OK    expired direct job is hidden
+#   OK    filterProcessedJobsForPublicDisplay keeps active direct jobs
+# 9 passed, 0 failed
+# Subtest: tests\\job-display-window.test.mjs
+ok 36 - tests\\job-display-window.test.mjs
+  ---
+  duration_ms: 276.7742
+  type: 'test'
+  ...
+# Sanity: option lists are non-empty and have an "all" entry
+# ----------------------------------------------------------
+#   OK    CATEGORY_OPTIONS is a non-empty array
+#   OK    CATEGORY_OPTIONS contains 'all'
+#   OK    JOB_TYPE_OPTIONS is a non-empty array
+#   OK    JOB_TYPE_OPTIONS contains 'all'
+#   OK    FRESHNESS_OPTIONS is a non-empty array
+#   OK    FRESHNESS_OPTIONS contains 'all'
+#   OK    SOURCE_OPTIONS is a non-empty array
+#   OK    SOURCE_OPTIONS contains 'all'
+#   OK    TAB_OPTIONS is a non-empty array
+#   OK    TAB_OPTIONS contains 'all'
+#   OK    PAGE_SIZE is 12  (got 12, want 12)
+# readFiltersFromSearchParams — defaults & invalid values
+# -------------------------------------------------------
+#   OK    empty params -> DEFAULT_FILTERS  (got {"tab":"all","q":"","company":"","category":"all","jobType":"all","freshness":"all","source":"all","page":1}, want {"tab":"all","q":"","company":"","category":"all","jobType":"all","freshness":"all","source":"all","page":1})
+#   OK    all params parsed  (got {"tab":"direct","q":"react","company":"","category":"it","jobType":"full-time","freshness":"24h","source":"naukri","page":3}, want {"tab":"direct","q":"react","company":"","category":"it","jobType":"full-time","freshness":"24h","source":"naukri","page":3})
+#   OK    invalid values fall back to defaults  (got {"tab":"all","q":"","company":"","category":"all","jobType":"all","freshness":"all","source":"all","page":1}, want {"tab":"all","q":"","company":"","category":"all","jobType":"all","freshness":"all","source":"all","page":1})
+# writeFiltersToSearchParams — defaults are NEVER serialized
+# ----------------------------------------------------------
+#   OK    default filter state -> empty query string  (got "", want "")
+#   OK    tab=direct is serialized
+#   OK    q is trimmed before serializing
+#   OK    non-default category is serialized
+#   OK    default jobType is omitted
+#   OK    freshness=24h is serialized
+#   OK    page=2 is serialized
+#   OK    admin source filter is serialized
+#   OK    page=1 is omitted (canonical URL has no page param)  (got "", want "")
+# isAnyFilterActive
+# -----------------
+#   OK    defaults -> not active
+#   OK    q -> active
+#   OK    category -> active
+#   OK    source -> active
+#   OK    tab=direct -> active
+#   OK    page change alone -> not active
+# applyJobFilters — tab filter (direct company jobs)
+# --------------------------------------------------
+#   OK    tab=all shows all jobs  (got ["agg","d1","d2"], want ["agg","d1","d2"])
+#   OK    tab=direct shows only direct employer & admin jobs  (got ["d1","d2"], want ["d1","d2"])
+# applyJobFilters — admin source filter
+# -------------------------------------
+#   OK    source=naukri  (got ["n"], want ["n"])
+#   OK    source=linkedin_jobs  (got ["lj"], want ["lj"])
+#   OK    source=linkedin matches jobs and posts  (got ["lj","lp"], want ["lj","lp"])
+# applyJobFilters — search text matches title/company/skills/location
+# -------------------------------------------------------------------
+#   OK    search "react" -> only React Developer  (got ["a"], want ["a"])
+#   OK    search is case-insensitive on company  (got ["c"], want ["c"])
+#   OK    search matches the skills field  (got ["b"], want ["b"])
+# applyJobFilters — freshness window
+# ----------------------------------
+#   OK    last 24h -> only 5h-old job  (got ["5h"], want ["5h"])
+#   OK    last 7d -> 5h and 2d  (got ["5h","2d"], want ["5h","2d"])
+#   OK    anytime -> everything  (got ["5h","2d","40d"], want ["5h","2d","40d"])
+# applyJobFilters — job type tolerates spelling variants
+# ------------------------------------------------------
+#   OK    full-time matches all three spellings  (got ["a","b","c"], want ["a","b","c"])
+#   OK    internship matches plural form too  (got ["d","e"], want ["d","e"])
+# applyJobFilters — fresher / walk-in categories
+# ----------------------------------------------
+#   OK    fresher matches flag, experience 0, or fresher in title  (got ["fr","fr2","fr3","titleOnly"], want ["fr","fr2","fr3","titleOnly"])
+#   OK    fresher does NOT match a senior with no 0 in experience
+#   OK    fresher does NOT match 10 years via naive zero digit
+#   OK    walk-in matches via title  (got ["wi"], want ["wi"])
+# applyJobFilters — IT category does not match hospitality / digital marketing
+# ----------------------------------------------------------------------------
+#   OK    IT filter keeps software roles only  (got ["java","react"], want ["java","react"])
+#   OK    hospitality filter  (got ["hotel"], want ["hotel"])
+#   OK    non-IT excludes software roles  (got ["digital","hotel","hr","nurse"], want ["digital","hotel","hr","nurse"])
+# applyJobFilters — engineering branch categories
+# -----------------------------------------------
+#   OK    civil filter  (got ["civil"], want ["civil"])
+#   OK    mechanical filter  (got ["mech"], want ["mech"])
+#   OK    engineering includes civil and mechanical  (got ["civil","mech"], want ["civil","mech"])
+# applyJobFilters / sortJobsForListing — featured jobs first
+# ----------------------------------------------------------
+#   OK    featured jobs sort above regular, then by postedAt  (got ["featured-new","featured-old","regular-new"], want ["featured-new","featured-old","regular-new"])
+#   OK    sortJobsForListing pins featured first  (got ["featured-old","regular-new"], want ["featured-old","regular-new"])
+# paginate
+# --------
+#   OK    page 1 has 10 items  (got 10, want 10)
+#   OK    page=1  (got 1, want 1)
+#   OK    totalPages=3  (got 3, want 3)
+#   OK    total=25  (got 25, want 25)
+#   OK    page 3 has 5 items  (got 5, want 5)
+#   OK    page > totalPages clamps to last page  (got 3, want 3)
+#   OK    empty list still has 1 page (no special-casing)  (got 1, want 1)
+#   OK    empty list -> empty page  (got [], want [])
+# buildPaginationItems — smart truncation
+# ---------------------------------------
+#   OK    1 page -> [1]  (got [1], want [1])
+#   OK    <=7 pages -> all numbers  (got [1,2,3,4,5], want [1,2,3,4,5])
+#   OK    page 1 of 10  (got [1,2,"…",10], want [1,2,"…",10])
+#   OK    middle page truncates both sides  (got [1,"…",4,5,6,"…",10], want [1,"…",4,5,6,"…",10])
+#   OK    last page of 10  (got [1,"…",9,10], want [1,"…",9,10])
+# 67 passed, 0 failed
+# Subtest: tests\\job-filters.test.mjs
+ok 37 - tests\\job-filters.test.mjs
+  ---
+  duration_ms: 285.4314
+  type: 'test'
+  ...
+# isItRelatedJob
+#   OK    canonical IT category
+#   OK    short IT category
+#   OK    developer title
+#   OK    hospitality
+#   OK    digital marketing is not IT via substring git
+#   OK    nurse
+#   OK    HR
+#   OK    waiter
+# 8 passed, 0 failed
+# Subtest: tests\\job-it-match.test.mjs
+ok 38 - tests\\job-it-match.test.mjs
+  ---
+  duration_ms: 249.5362
+  type: 'test'
+  ...
+# job-posted-at.test.mjs: OK
+# Subtest: tests\\job-posted-at.test.mjs
+ok 39 - tests\\job-posted-at.test.mjs
+  ---
+  duration_ms: 262.0819
+  type: 'test'
+  ...
+# job-publish-notify.test.mjs: OK
+# Subtest: tests\\job-publish-notify.test.mjs
+ok 40 - tests\\job-publish-notify.test.mjs
+  ---
+  duration_ms: 472.6649
+  type: 'test'
+  ...
+# job-publish-quality.test.mjs: OK
+# Subtest: tests\\job-publish-quality.test.mjs
+ok 41 - tests\\job-publish-quality.test.mjs
+  ---
+  duration_ms: 233.0072
+  type: 'test'
+  ...
+# job-question-gemini-notify.test.mjs: OK
+# Subtest: tests\\job-question-gemini-notify.test.mjs
+ok 42 - tests\\job-question-gemini-notify.test.mjs
+  ---
+  duration_ms: 447.4772
+  type: 'test'
+  ...
+# company inference
+#   OK    valid company
+#   OK    reject naukri
+#   OK    posted by from description
+# experience inference
+#   OK    min years from description
+#   OK    fresher from eligibility
+#   OK    normalize experience range
+#   OK    resolve experience from description
+#   OK    hide experience when unknown
+# 8 passed, 0 failed
+# Subtest: tests\\job-record-inference.test.mjs
+ok 43 - tests\\job-record-inference.test.mjs
+  ---
+  duration_ms: 203.8153
+  type: 'test'
+  ...
+# job-role-label.test.mjs: OK
+# Subtest: tests\\job-role-label.test.mjs
+ok 44 - tests\\job-role-label.test.mjs
+  ---
+  duration_ms: 208.252
+  type: 'test'
+  ...
+#   OK    naukri source with URL (got {"label":"Naukri","href":"https://www.naukri.com/job-listings-example"}, expected {"label":"Naukri","href":"https://www.naukri.com/job-listings-example"})
+#   OK    linkedin source with URL (got {"label":"LinkedIn","href":"https://www.linkedin.com/jobs/view/123"}, expected {"label":"LinkedIn","href":"https://www.linkedin.com/jobs/view/123"})
+#   OK    infer label from source URL hostname (got {"label":"Indeed","href":"https://www.indeed.com/viewjob?jk=abc"}, expected {"label":"Indeed","href":"https://www.indeed.com/viewjob?jk=abc"})
+#   OK    employer portal submissions are hidden (got null, expected null)
+#   OK    empty source data is hidden (got null, expected null)
+#   OK    source name without URL stays text-only (got {"label":"Naukri","href":null}, expected {"label":"Naukri","href":null})
+# 6 passed, 0 failed
+# Subtest: tests\\job-source-attribution.test.mjs
+ok 45 - tests\\job-source-attribution.test.mjs
+  ---
+  duration_ms: 201.1121
+  type: 'test'
+  ...
+# ADMIN_SOURCE_OPTIONS includes expected buckets
+# ----------------------------------------------
+#   OK    has naukri
+#   OK    has linkedin_jobs
+#   OK    has linkedin_posts
+# inferJobAdminSourceId
+# ---------------------
+#   OK    naukri.com source_name (got "naukri", want "naukri")
+#   OK    linkedin job listing URL (got "linkedin_jobs", want "linkedin_jobs")
+#   OK    linkedin post URL (got "linkedin_posts", want "linkedin_posts")
+#   OK    indeed source (got "indeed", want "indeed")
+#   OK    manual admin post (got "admin", want "admin")
+#   OK    employer submission (got "employer", want "employer")
+# matchesAdminSourceFilter
+# ------------------------
+#   OK    all matches everything
+#   OK    naukri filter matches naukri job
+#   OK    linkedin_jobs filter excludes naukri
+#   OK    linkedin umbrella matches linkedin jobs
+#   OK    linkedin umbrella matches linkedin posts
+# 14 passed, 0 failed
+# Subtest: tests\\job-source-filter.test.mjs
+ok 46 - tests\\job-source-filter.test.mjs
+  ---
+  duration_ms: 229.6781
+  type: 'test'
+  ...
+#   OK    /jobs-in-vizag -> /jobs
+#   OK    /it-jobs-in-vizag -> /jobs/it
+#   OK    /fresher-jobs-in-vizag -> /jobs/fresher
+#   OK    /part-time-jobs-vizag -> /jobs/part-time
+#   OK    /ig -> /apply
+#   OK    /jobs/latest -> /apply
+#   OK    /civil-jobs-in-vizag -> /jobs/civil
+#   OK    /mechanical-jobs-in-vizag -> /jobs/mechanical
+#   OK    /electrical-jobs-in-vizag -> /jobs/electrical
+#   OK    /ece-jobs-in-vizag -> /jobs/ece
+#   OK    /engineering-jobs-in-vizag -> /jobs/engineering
+#   OK    vercel.json has no extra legacy route redirects
+# 12 passed, 0 failed
+# Subtest: tests\\legacy-redirects.test.mjs
+ok 47 - tests\\legacy-redirects.test.mjs
+  ---
+  duration_ms: 221.161
+  type: 'test'
+  ...
+# Source landmark checks (drift detection)
+# ----------------------------------------
+#   OK    source contains months-ago regex
+#   OK    source contains years-ago regex
+#   OK    resolvePostedAtFromSource returns string | null
+#   OK    resolvePostedAtFromSource accepts strict option
+#   OK    Naukri call site passes strict option
+#   OK    FETCH_NAUKRI_STRICT_DATES env wired
+#   OK    extractPostedPhrase recognizes month/year wording
+#   OK    NAUKRI_VIZAG_24H_HUB_URL constant is wired with jobAge=1 + cityTypeGid=26
+#   OK    naukri channel scrapes the 24h hub URL
+#   OK    FETCH_NAUKRI_USE_SEARCH defaults to false
+#   OK    FETCH_NAUKRI_HUB_PAGES env wired with sane bounds
+# parseRelativePostedAt — coverage
+# --------------------------------
+#   OK    "just now" -> reference time
+#   OK    "today"
+#   OK    "yesterday" -> -1d
+#   OK    "5 hours ago" -> -5h
+#   OK    "2 days ago" -> -2d
+#   OK    "3 weeks ago" -> -21d
+#   OK    "1d" short -> -1d
+#   OK    "45 minutes ago" -> -45min
+# parseRelativePostedAt — month/year (NEW)
+# ----------------------------------------
+#   OK    "1 month ago" -> -30d (NEW)
+#   OK    "3 months ago" -> -90d (NEW)
+#   OK    "1 mo ago" -> -30d (NEW)
+#   OK    "1 year ago" -> -365d (NEW)
+#   OK    "2 yrs ago" -> -730d (NEW)
+#   OK    "30+ days ago" -> -31d (NEW)
+#   OK    "over a month ago" -> -31d (NEW)
+#   OK    unparseable phrase returns null
+#   OK    empty phrase returns null
+# resolvePostedAtFromSource — strict-mode (FIX)
+# ---------------------------------------------
+#   OK    undated + strict -> null  ← THE FIX
+#   OK    undated + non-strict -> fetchInstant (legacy preserved)
+#   OK    undated + no opts -> fetchInstant (default = non-strict)
+#   OK    Naukri "Posted: 2 months ago" -> aged correctly (was: leaked through)
+#   OK    Job with explicit posted_at within 24h passes through verbatim
+#   OK    raw.posted_at fallback when job.posted_at absent
+#   OK    "Posted: 5 hours ago" markdown -> -5h regardless of strict flag
+# ----
+# All tests passed.
+# Subtest: tests\\naukri-date-filter.test.mjs
+ok 48 - tests\\naukri-date-filter.test.mjs
+  ---
+  duration_ms: 228.8396
+  type: 'test'
+  ...
+# naukriExperienceTier
+# compareNaukriJobsByExperience
+# prioritizeNaukriJobsByExperience — 75% fresher quota
+# prioritizeNaukriJobsByExperience — backfill when few freshers
+# naukri-experience-sort.test.mjs: OK
+# Subtest: tests\\naukri-experience-sort.test.mjs
+ok 49 - tests\\naukri-experience-sort.test.mjs
+  ---
+  duration_ms: 234.4205
+  type: 'test'
+  ...
+# navbar-applied-jobs.test.mjs: OK
+# Subtest: tests\\navbar-applied-jobs.test.mjs
+ok 50 - tests\\navbar-applied-jobs.test.mjs
+  ---
+  duration_ms: 251.9338
+  type: 'test'
+  ...
+# Subtest: student inbox fetches replies once and never requests moderator data
+ok 76 - student inbox fetches replies once and never requests moderator data
+  ---
+  duration_ms: 2.8583
+  type: 'test'
+  ...
+# Subtest: admin count matches visible rows and excludes deleted question/feedback targets
+ok 77 - admin count matches visible rows and excludes deleted question/feedback targets
+  ---
+  duration_ms: 0.8361
+  type: 'test'
+  ...
+# Subtest: employer receives questions and replies without admin feedback
+ok 78 - employer receives questions and replies without admin feedback
+  ---
+  duration_ms: 2.4108
+  type: 'test'
+  ...
+# Subtest: failed fetch rejects rather than reporting an empty inbox
+ok 79 - failed fetch rejects rather than reporting an empty inbox
+  ---
+  duration_ms: 1.2214
+  type: 'test'
+  ...
+# Subtest: clear waits for successful writes even when another write fails
+ok 80 - clear waits for successful writes even when another write fails
+  ---
+  duration_ms: 10.3674
+  type: 'test'
+  ...
+# Subtest: student clear only touches that student reply inbox
+ok 81 - student clear only touches that student reply inbox
+  ---
+  duration_ms: 0.4959
+  type: 'test'
+  ...
+# Subtest: public jobs session cache
+    # Subtest: hydrates valid cached jobs synchronously
+    ok 1 - hydrates valid cached jobs synchronously
+      ---
+      duration_ms: 4.8884
+      type: 'test'
+      ...
+    # Subtest: ignores expired cache entries
+    ok 2 - ignores expired cache entries
+      ---
+      duration_ms: 0.5073
+      type: 'test'
+      ...
+    # Subtest: ignores cache entries outside the public display window
+    ok 3 - ignores cache entries outside the public display window
+      ---
+      duration_ms: 0.6009
+      type: 'test'
+      ...
+    # Subtest: hydrates Instagram jobs from dedicated cache
+    ok 4 - hydrates Instagram jobs from dedicated cache
+      ---
+      duration_ms: 0.8488
+      type: 'test'
+      ...
+    # Subtest: falls back to Instagram-flagged rows from the public list cache
+    ok 5 - falls back to Instagram-flagged rows from the public list cache
+      ---
+      duration_ms: 0.9679
+      type: 'test'
+      ...
+    1..5
+ok 82 - public jobs session cache
+  ---
+  duration_ms: 10.1461
+  type: 'suite'
+  ...
+# Subtest: India phone normalization accepts common mobile input and rejects invalid numbers
+ok 83 - India phone normalization accepts common mobile input and rejects invalid numbers
+  ---
+  duration_ms: 1.8216
+  type: 'test'
+  ...
+# Subtest: templates keep required identity fields and validate
+ok 84 - templates keep required identity fields and validate
+  ---
+  duration_ms: 1.1819
+  type: 'test'
+  ...
+# Subtest: submission validates required, choices, typed values, lengths and strips unknown fields
+ok 85 - submission validates required, choices, typed values, lengths and strips unknown fields
+  ---
+  duration_ms: 5.0646
+  type: 'test'
+  ...
+# Subtest: optional fields can be empty; number and email answers are validated
+ok 86 - optional fields can be empty; number and email answers are validated
+  ---
+  duration_ms: 0.718
+  type: 'test'
+  ...
+# Subtest: submission receipts survive refreshes and are distinct for different jobs
+ok 87 - submission receipts survive refreshes and are distinct for different jobs
+  ---
+  duration_ms: 4.0136
+  type: 'test'
+  ...
+# Subtest: quick applicants are not assumed to be freshers when experience was not collected
+ok 88 - quick applicants are not assumed to be freshers when experience was not collected
+  ---
+  duration_ms: 0.4783
+  type: 'test'
+  ...
+# Subtest: quick API uses stored schema, strips forged identity/status and keeps receipts private
+ok 89 - quick API uses stored schema, strips forged identity/status and keeps receipts private
+  ---
+  duration_ms: 42.6927
+  type: 'test'
+  ...
+# recruiter-pipeline.test.mjs: ALL TESTS PASSED! OK
+# Subtest: tests\\recruiter-pipeline.test.mjs
+ok 55 - tests\\recruiter-pipeline.test.mjs
+  ---
+  duration_ms: 236.915
+  type: 'test'
+  ...
+#   OK    detects timeout / 502 as retryable
+#   OK    parses gemini key index from error
+#   OK    rotates to next gemini key
+#   OK    uses default delay for gateway errors
+#   OK    max attempts capped by key pool
+# ----
+# seo-retry.test.mjs: OK
+# Subtest: tests\\seo-retry.test.mjs
+ok 56 - tests\\seo-retry.test.mjs
+  ---
+  duration_ms: 192.6737
+  type: 'test'
+  ...
+# Subtest: computeSiteStats counts jobs, companies, and recency buckets
+ok 92 - computeSiteStats counts jobs, companies, and recency buckets
+  ---
+  duration_ms: 3.9038
+  type: 'test'
+  ...
+# Subtest: formatStatCount renders locale numbers and placeholders
+ok 93 - formatStatCount renders locale numbers and placeholders
+  ---
+  duration_ms: 48.8435
+  type: 'test'
+  ...
+# Subtest: staff apply access
+    # Subtest: treats signed-in admins as staff applicants
+    ok 1 - treats signed-in admins as staff applicants
+      ---
+      duration_ms: 1.6031
+      type: 'test'
+      ...
+    # Subtest: treats signed-in employers as staff applicants
+    ok 2 - treats signed-in employers as staff applicants
+      ---
+      duration_ms: 0.2914
+      type: 'test'
+      ...
+    # Subtest: does not treat students as staff applicants
+    ok 3 - does not treat students as staff applicants
+      ---
+      duration_ms: 0.223
+      type: 'test'
+      ...
+    # Subtest: does not treat guests as staff applicants
+    ok 4 - does not treat guests as staff applicants
+      ---
+      duration_ms: 2.0067
+      type: 'test'
+      ...
+    1..4
+ok 94 - staff apply access
+  ---
+  duration_ms: 6.4842
+  type: 'suite'
+  ...
+# student-consent.test.mjs: OK
+# Subtest: tests\\student-consent.test.mjs
+ok 59 - tests\\student-consent.test.mjs
+  ---
+  duration_ms: 165.0546
+  type: 'test'
+  ...
+# student-job-match.test.mjs: OK
+# Subtest: tests\\student-job-match.test.mjs
+ok 60 - tests\\student-job-match.test.mjs
+  ---
+  duration_ms: 193.5336
+  type: 'test'
+  ...
+# student-phone-auth.test.mjs: OK
+# Subtest: tests\\student-phone-auth.test.mjs
+ok 61 - tests\\student-phone-auth.test.mjs
+  ---
+  duration_ms: 318.9976
+  type: 'test'
+  ...
+# Testing Student Registration Wizard Logic...
+# student-register-wizard.test.mjs: OK
+# Subtest: tests\\student-register-wizard.test.mjs
+ok 62 - tests\\student-register-wizard.test.mjs
+  ---
+  duration_ms: 160.7145
+  type: 'test'
+  ...
+# student-registration.test.mjs: OK
+# Subtest: tests\\student-registration.test.mjs
+ok 63 - tests\\student-registration.test.mjs
+  ---
+  duration_ms: 160.884
+  type: 'test'
+  ...
+# student-resume.test.mjs: OK
+# Subtest: tests\\student-resume.test.mjs
+ok 64 - tests\\student-resume.test.mjs
+  ---
+  duration_ms: 139.2415
+  type: 'test'
+  ...
+1..100
+# tests 127
+# suites 2
+# pass 127
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1832.8323

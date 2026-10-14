@@ -9,9 +9,9 @@ Current branch: `develop`
 
 ## 1. Mobile Quality Standards (For Every Screen)
 
-- **Viewports tested:** 320px (iPhone SE narrow), 360px, 390px (iPhone 14/15), 430px (iPhone Pro Max), 768px (Tablet), and desktop.
+- **Required viewport checks:** 320px (iPhone SE narrow), 360px, 390px (iPhone 14/15), 430px (iPhone Pro Max), 768px (Tablet), and desktop.
 - **Touch targets:** Minimum 44 × 44px for buttons, links, toggles, and modal close triggers (`min-h-11` or `h-11`).
-- **No horizontal overflow:** `overflow-x: hidden`, flexible grids, wrapping text (`break-words`), and responsive image/table containers.
+- **No horizontal overflow:** Contained scroll regions, flexible grids, wrapping text (`break-words`), and responsive image/table containers.
 - **Mobile bottom navigation clearance:** Pages with mobile bottom nav or sticky bottom actions must include safe-area padding (`pb-mobile-chrome` / `pb-[max(0.75rem,env(safe-area-inset-bottom))]`).
 - **Input accessibility:** Form inputs have minimum 16px font-size on mobile to prevent iOS auto-zoom, clear labels, and error states.
 - **Modals & Dialogs:** Trapped focus, responsive dimensions (`max-h-[calc(100dvh-2rem)]`), internal scrolling, and backdrop dismiss.
@@ -22,15 +22,14 @@ Implementation counts below track code changes, not full E2E or device acceptanc
 
 ## 2. Summary Dashboard
 
-| Category | Total Screens | Fixed / Mobile-Friendly | In Progress / Planned Next | Pending |
-|---|---|---|---|---|
-| **Public Core** | 8 | 8 | 0 | 0 |
-| **Category Listings** | 15 | 0 | 0 | 15 |
-| **Student Portal** | 8 | 5 | 0 | 3 |
-| **Employer Portal** | 10 | 9 | 0 | 1 |
-| **Admin Portal** | 24 | 4 | 0 | 20 |
-| **Quick Apply / Static** | 14 | 6 | 0 | 8 |
-| **Total** | **79** | **32** | **0** | **47** |
+| Measure | Count |
+|---|---|
+| Routes in inventory | 79 |
+| Routes mapped to a scoped implementation batch (including shared layouts/redirects) | 79 |
+| Full functional E2E accepted by this pass | 0 |
+| Full mobile/device acceptance completed by this pass | 0 |
+
+Use UI_IMPROVEMENT_CHECKLIST.md for the per-route implementation checklist and SCREEN_FUNCTIONALITY_TEST_TRACKER.md for exact evidence and remaining checks.
 
 ---
 
@@ -210,85 +209,85 @@ Implementation counts below track code changes, not full E2E or device acceptanc
 
 | ID | Route | Screen Name | Mobile Status | Last Updated |
 |---|---|---|---|---|
-| S001 | `/quick-register` | Quick Registration | ✅ Fixed | 2026-10-14 |
-| S002 | `/apply/:slug` | Quick Job Apply | ✅ Fixed | 2026-10-14 |
-| S003 | `/quick-applications/claim` | Claim Quick Application | ✅ Fixed | 2026-10-14 |
-| S004 | `/admin/quick-jobs/new` | Admin Create Quick Job | ✅ Fixed | 2026-10-14 |
-| S005 | `/admin/quick-jobs/:jobId/edit` | Admin Edit Quick Job | ✅ Fixed | 2026-10-14 |
-| S006 | `/admin/candidates` | Admin Quick Candidates | ✅ Fixed | 2026-10-14 |
-| S007 | `/` | Home Page | ✅ Fixed | 2026-10-14 |
-| S008 | `/admin/login` | Admin Login | ✅ Fixed | 2026-10-14 |
-| S009 | `/oauth/consent` | OAuth Consent | ✅ Fixed | 2026-10-14 |
-| S010 | `/employer/login` | Employer Login | ✅ Fixed | 2026-10-14 |
-| S011 | `/employer/register` | Employer Register | ✅ Fixed | 2026-10-14 |
-| S012 | `/employer/forgot-password` | Employer Forgot Password | ✅ Fixed | 2026-10-14 |
-| S013 | `/employer/reset-password` | Employer Reset Password | ✅ Fixed | 2026-10-14 |
-| S014 | `/employer` | Employer Dashboard Redirect | ✅ Fixed | 2026-10-14 |
-| S015 | `/employer/profile` | Employer Profile | ✅ Fixed | 2026-10-14 |
-| S016 | `/employer/jobs` | Employer Jobs List | ✅ Fixed | 2026-10-14 |
-| S017 | `/employer/jobs/new` | Employer New Job | ✅ Fixed | 2026-10-14 |
-| S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | ✅ Fixed | 2026-10-14 |
-| S019 | `/employer/jobs/:jobId/applications` | Employer Job Applicants | UI implemented; component checks passed; E2E pending | 2026-10-14 |
-| S020 | `/student/login` | Student Login | ✅ Fixed | 2026-10-14 |
-| S021 | `/student/register` | Student Register | ✅ Fixed | 2026-10-14 |
-| S022 | `/student/forgot-password` | Student Forgot Password | ⏳ Pending | — |
-| S023 | `/student/reset-password` | Student Reset Password | ⏳ Pending | — |
-| S024 | `/student` | Student Dashboard Redirect | ✅ Fixed | 2026-10-14 |
-| S025 | `/student/profile` | Student Profile | ✅ Fixed | 2026-10-14 |
-| S026 | `/student/applied-jobs` | Student Applied Jobs | ✅ Fixed | 2026-10-14 |
-| S027 | `/student/applications` | Student Applications Redirect | ✅ Fixed | 2026-10-14 |
-| S028 | `/student/apply/:jobId` | Student Job Apply | ✅ Fixed | 2026-10-14 |
-| S029 | `/admin` | Admin Dashboard Redirect | ⏳ Pending | — |
-| S030 | `/admin/new` | Admin New Job | ⏳ Pending | — |
-| S031 | `/admin/jobs` | Admin Employer Jobs | ⏳ Pending | — |
-| S032 | `/admin/admin-jobs` | Admin Platform Jobs | ⏳ Pending | — |
-| S033 | `/admin/fetch` | Admin External Job Fetch | ⏳ Pending | — |
-| S034 | `/admin/jobs/:jobId/edit` | Admin Edit Job | ⏳ Pending | — |
-| S035 | `/admin/jobs/:jobId/applications` | Admin Job Applications | ⏳ Pending | — |
-| S036 | `/admin/blog` | Admin Blog List | ⏳ Pending | — |
-| S037 | `/admin/blog/new` | Admin New Blog | ⏳ Pending | — |
-| S038 | `/admin/blog/:postId/edit` | Admin Edit Blog | ⏳ Pending | — |
-| S039 | `/admin/feedback` | Admin Feedback Review | ⏳ Pending | — |
-| S040 | `/admin/questions` | Admin Questions Review | ⏳ Pending | — |
-| S041 | `/admin/employers` | Admin Employers Management | ⏳ Pending | — |
-| S042 | `/admin/companies` | Admin Companies Management | ⏳ Pending | — |
-| S043 | `/admin/bills` | Admin Billing Tool | ⏳ Pending | — |
-| S044 | `/admin/students` | Admin Student Directory | ⏳ Pending | — |
-| S045 | `/admin/notifications` | Admin Notification Analytics | ⏳ Pending | — |
-| S046 | `/blog` | Public Blog List | ⏳ Pending | — |
-| S047 | `/blog/:slug` | Public Blog Post | ⏳ Pending | — |
-| S048 | `/about` | About Vizag Jobs | ⏳ Pending | — |
-| S049 | `/contact` | Contact Us | ⏳ Pending | — |
-| S050 | `/feedback` | Submit Feedback | ⏳ Pending | — |
-| S051 | `/qa` | Community Q&A | ⏳ Pending | — |
-| S052 | `/privacy-policy` | Privacy Policy | ⏳ Pending | — |
-| S053 | `/terms-of-service` | Terms of Service | ⏳ Pending | — |
-| S054 | `/disclaimer` | Disclaimer | ⏳ Pending | — |
-| S055 | `/companies` | Companies in Vizag Directory | ⏳ Pending | — |
-| S056 | `/jobs` | All Jobs in Vizag | ✅ Fixed | 2026-10-14 |
-| S057 | `/apply` | Instagram Jobs Stream | ✅ Fixed | 2026-10-14 |
-| S058 | `/jobs/latest` | Latest Jobs Redirect | ✅ Fixed | 2026-10-14 |
-| S059 | `/saved-jobs` | Saved Jobs Bookmark List | ✅ Fixed | 2026-10-14 |
-| S060 | `/jobs/it` | IT Jobs in Vizag | ⏳ Pending | — |
-| S061 | `/jobs/fresher` | Fresher Jobs in Vizag | ⏳ Pending | — |
-| S062 | `/jobs/part-time` | Part Time Jobs | ⏳ Pending | — |
-| S063 | `/jobs/vizagjobs` | Direct Platform Jobs | ⏳ Pending | — |
-| S064 | `/jobs/:jobSegment/:jobSlug` | Canonical Job Details | ✅ Fixed | 2026-10-14 |
-| S065 | `/job/:jobSlug` | Job Details Slug Alias | ✅ Fixed | 2026-10-14 |
-| S066 | `/jobs/:jobId` | Job Details ID Alias | ✅ Fixed | 2026-10-14 |
-| S067 | `/jobs/civil` | Civil Engineering Jobs | ⏳ Pending | — |
-| S068 | `/jobs/mechanical` | Mechanical Jobs | ⏳ Pending | — |
-| S069 | `/jobs/electrical` | Electrical Jobs | ⏳ Pending | — |
-| S070 | `/jobs/ece` | ECE Jobs | ⏳ Pending | — |
-| S071 | `/jobs/engineering` | Engineering Jobs | ⏳ Pending | — |
-| S072 | `/jobs/banking` | Banking Jobs | ⏳ Pending | — |
-| S073 | `/jobs/bpo` | BPO & Support Jobs | ⏳ Pending | — |
-| S074 | `/jobs/sales` | Sales Jobs | ⏳ Pending | — |
-| S075 | `/jobs/hr` | HR Jobs | ⏳ Pending | — |
-| S076 | `/jobs/healthcare` | Healthcare Jobs | ⏳ Pending | — |
-| S077 | `/jobs/education` | Teaching & Education Jobs | ⏳ Pending | — |
-| S078 | `/jobs/hospitality` | Hospitality Jobs | ⏳ Pending | — |
-| S079 | `/jobs/logistics` | Logistics & Supply Chain | ⏳ Pending | — |
+| S001 | `/quick-register` | Quick Registration | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S002 | `/apply/:slug` | Quick Job Apply | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S003 | `/quick-applications/claim` | Claim Quick Application | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S004 | `/admin/quick-jobs/new` | Admin Create Quick Job | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S005 | `/admin/quick-jobs/:jobId/edit` | Admin Edit Quick Job | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S006 | `/admin/candidates` | Admin Quick Candidates | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S007 | `/` | Home Page | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S008 | `/admin/login` | Admin Login | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S009 | `/oauth/consent` | OAuth Consent | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S010 | `/employer/login` | Employer Login | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S011 | `/employer/register` | Employer Register | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S012 | `/employer/forgot-password` | Employer Forgot Password | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S013 | `/employer/reset-password` | Employer Reset Password | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S014 | `/employer` | Employer Dashboard Redirect | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S015 | `/employer/profile` | Employer Profile | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S016 | `/employer/jobs` | Employer Jobs List | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S017 | `/employer/jobs/new` | Employer New Job | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S019 | `/employer/jobs/:jobId/applications` | Employer Job Applicants | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S020 | `/student/login` | Student Login | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S021 | `/student/register` | Student Register | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S022 | `/student/forgot-password` | Student Forgot Password | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S023 | `/student/reset-password` | Student Reset Password | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S024 | `/student` | Student Dashboard Redirect | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S025 | `/student/profile` | Student Profile | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S026 | `/student/applied-jobs` | Student Applied Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S027 | `/student/applications` | Student Applications Redirect | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S028 | `/student/apply/:jobId` | Student Job Apply | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S029 | `/admin` | Admin Dashboard Redirect | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S030 | `/admin/new` | Admin New Job | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S031 | `/admin/jobs` | Admin Employer Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S032 | `/admin/admin-jobs` | Admin Platform Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S033 | `/admin/fetch` | Admin External Job Fetch | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S034 | `/admin/jobs/:jobId/edit` | Admin Edit Job | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S035 | `/admin/jobs/:jobId/applications` | Admin Job Applications | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S036 | `/admin/blog` | Admin Blog List | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S037 | `/admin/blog/new` | Admin New Blog | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S038 | `/admin/blog/:postId/edit` | Admin Edit Blog | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S039 | `/admin/feedback` | Admin Feedback Review | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S040 | `/admin/questions` | Admin Questions Review | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S041 | `/admin/employers` | Admin Employers Management | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S042 | `/admin/companies` | Admin Companies Management | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S043 | `/admin/bills` | Admin Billing Tool | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S044 | `/admin/students` | Admin Student Directory | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S045 | `/admin/notifications` | Admin Notification Analytics | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S046 | `/blog` | Public Blog List | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S047 | `/blog/:slug` | Public Blog Post | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S048 | `/about` | About Vizag Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S049 | `/contact` | Contact Us | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S050 | `/feedback` | Submit Feedback | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S051 | `/qa` | Community Q&A | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S052 | `/privacy-policy` | Privacy Policy | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S053 | `/terms-of-service` | Terms of Service | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S054 | `/disclaimer` | Disclaimer | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S055 | `/companies` | Companies in Vizag Directory | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S056 | `/jobs` | All Jobs in Vizag | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S057 | `/apply` | Instagram Jobs Stream | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S058 | `/jobs/latest` | Latest Jobs Redirect | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S059 | `/saved-jobs` | Saved Jobs Bookmark List | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S060 | `/jobs/it` | IT Jobs in Vizag | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S061 | `/jobs/fresher` | Fresher Jobs in Vizag | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S062 | `/jobs/part-time` | Part Time Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S063 | `/jobs/vizagjobs` | Direct Platform Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S064 | `/jobs/:jobSegment/:jobSlug` | Canonical Job Details | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S065 | `/job/:jobSlug` | Job Details Slug Alias | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S066 | `/jobs/:jobId` | Job Details ID Alias | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S067 | `/jobs/civil` | Civil Engineering Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S068 | `/jobs/mechanical` | Mechanical Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S069 | `/jobs/electrical` | Electrical Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S070 | `/jobs/ece` | ECE Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S071 | `/jobs/engineering` | Engineering Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S072 | `/jobs/banking` | Banking Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S073 | `/jobs/bpo` | BPO & Support Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S074 | `/jobs/sales` | Sales Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S075 | `/jobs/hr` | HR Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S076 | `/jobs/healthcare` | Healthcare Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S077 | `/jobs/education` | Teaching & Education Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S078 | `/jobs/hospitality` | Hospitality Jobs | Scoped UI changes implemented; full QA pending | 2026-10-14 |
+| S079 | `/jobs/logistics` | Logistics & Supply Chain | Scoped UI changes implemented; full QA pending | 2026-10-14 |
 
 ### Applicant UI continuation — 2026-10-14
 

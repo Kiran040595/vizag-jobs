@@ -354,7 +354,7 @@ Existing local change: QuestionNotificationBell.jsx contains uncommitted touch-t
 
 ## Daily work plan
 
-Work on at most two screen routes per working day. Day 0 is inventory/setup. Start with home and jobs, then details and student apply, then authentication/profile, quick apply, employer, admin and remaining public pages. Shared components are addressed with their first affected screen. Do not advance a failed or blocked item as completed just to keep the schedule.
+Original plan: work on at most two screen routes per working day. On 2026-10-14 the user explicitly expanded scope to continue through all screens sequentially. Day 0 is inventory/setup. Start with home and jobs, then details and student apply, then authentication/profile, quick apply, employer, admin and remaining public pages. Shared components are addressed with their first affected screen. Do not advance a failed or blocked item as completed just to keep the schedule.
 
 This is a work queue, not an automatic scheduled job. Calendar dates are assigned when a batch starts.
 
@@ -373,33 +373,33 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 11 | `/admin/candidates`, `/admin/login` | In progress (2026-10-14: mobile UI touch targets, candidate cards, and admin auth verified) |
 | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | In progress (2026-10-14: mobile UI touch targets and safe-area padding verified) |
 | Day 13 | `/employer/jobs/:jobId/applications` | UI implementation delivered; component preview checks passed, authenticated E2E/device checks pending |
-| Day 14 | `/student/forgot-password`, `/student/reset-password` | Planned |
-| Day 15 | `/student/forgot-password`, `/student/reset-password` | Planned |
-| Day 16 | `/student`, `/student/applications` | Planned |
-| Day 17 | `/admin`, `/admin/new` | Planned |
-| Day 18 | `/admin/jobs`, `/admin/admin-jobs` | Planned |
-| Day 19 | `/admin/fetch`, `/admin/jobs/:jobId/edit` | Planned |
-| Day 20 | `/admin/jobs/:jobId/applications`, `/admin/blog` | Planned |
-| Day 21 | `/admin/blog/new`, `/admin/blog/:postId/edit` | Planned |
-| Day 22 | `/admin/feedback`, `/admin/questions` | Planned |
-| Day 23 | `/admin/employers`, `/admin/companies` | Planned |
-| Day 24 | `/admin/bills`, `/admin/students` | Planned |
-| Day 25 | `/admin/notifications`, `/blog` | Planned |
-| Day 26 | `/blog/:slug`, `/about` | Planned |
-| Day 27 | `/contact`, `/feedback` | Planned |
-| Day 28 | `/qa`, `/privacy-policy` | Planned |
-| Day 29 | `/terms-of-service`, `/disclaimer` | Planned |
-| Day 30 | `/companies`, `/jobs/latest` | Planned |
-| Day 31 | `/jobs/it`, `/jobs/fresher` | Planned |
-| Day 32 | `/jobs/part-time`, `/jobs/vizagjobs` | Planned |
-| Day 33 | `/job/:jobSlug`, `/jobs/:jobId` | Planned |
-| Day 34 | `/jobs/civil`, `/jobs/mechanical` | Planned |
-| Day 35 | `/jobs/electrical`, `/jobs/ece` | Planned |
-| Day 36 | `/jobs/engineering`, `/jobs/banking` | Planned |
-| Day 37 | `/jobs/bpo`, `/jobs/sales` | Planned |
-| Day 38 | `/jobs/hr`, `/jobs/healthcare` | Planned |
-| Day 39 | `/jobs/education`, `/jobs/hospitality` | Planned |
-| Day 40 | `/jobs/logistics` | Planned |
+| Day 14 | `/student/forgot-password`, `/student/reset-password` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 15 | Student recovery duplicate queue entry | Consolidated into Day 14; see S022/S023 and implementation checklist |
+| Day 16 | `/student`, `/student/applications` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 17 | `/admin`, `/admin/new` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 18 | `/admin/jobs`, `/admin/admin-jobs` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 19 | `/admin/fetch`, `/admin/jobs/:jobId/edit` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 20 | `/admin/jobs/:jobId/applications`, `/admin/blog` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 21 | `/admin/blog/new`, `/admin/blog/:postId/edit` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 22 | `/admin/feedback`, `/admin/questions` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 23 | `/admin/employers`, `/admin/companies` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 24 | `/admin/bills`, `/admin/students` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 25 | `/admin/notifications`, `/blog` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 26 | `/blog/:slug`, `/about` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 27 | `/contact`, `/feedback` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 28 | `/qa`, `/privacy-policy` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 29 | `/terms-of-service`, `/disclaimer` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 30 | `/companies`, `/jobs/latest` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 31 | `/jobs/it`, `/jobs/fresher` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 32 | `/jobs/part-time`, `/jobs/vizagjobs` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 33 | `/job/:jobSlug`, `/jobs/:jobId` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 34 | `/jobs/civil`, `/jobs/mechanical` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 35 | `/jobs/electrical`, `/jobs/ece` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 36 | `/jobs/engineering`, `/jobs/banking` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 37 | `/jobs/bpo`, `/jobs/sales` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 38 | `/jobs/hr`, `/jobs/healthcare` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 39 | `/jobs/education`, `/jobs/hospitality` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
+| Day 40 | `/jobs/logistics` | Scoped UI implementation pass delivered; full E2E/device acceptance pending |
 
 ## Execution record template
 
@@ -661,3 +661,12 @@ Delivery status: fixed application commits above confirmed on origin/develop; th
 - Implemented: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs.
 - Functional E2E and full mobile acceptance remain In progress. Source changes, lint and builds are supplemental evidence; no authenticated journey is implied. Details and check results recorded below.
 - Checks: changed-file ESLint and employer/student filter/pagination/export tests passed; production build passed. Synthetic StudentExportDialog/ShareStudentDialog/AdminBillDocument fixture: export Escape and share Cancel restore opener focus, selection controls render, share dialog stays within viewport at all six widths, long-name bill preview stays within 320px. Evidence: student-share-mobile.jpg, bill-preview-mobile.jpg, student-share-widths.json. No actual student data exported/shared and no bills issued. Moderation/push/company/account actions and all authenticated states remain pending; test push was not sent.
+
+## All-screen implementation pass — 2026-10-14
+
+User explicitly requested continued sequential work across all screens, superseding the earlier two-screen daily planning limit. Per-route checklist: docs/UI_IMPROVEMENT_CHECKLIST.md. All 79 screen/route entries now map to a scoped UI implementation batch (shared components and redirect variants included). Implementation coverage does not establish full screen acceptance.
+
+Pushed batches this continuation: 6a7b765 student recovery/checklist; b465c1a category listings; 3ca3410 public content/Q&A; ee87d3e admin authoring/imports; 0a1258b admin directories/reporting/dialogs. Earlier records describe previous batches. Temporary QA fixture pages and scripts removed before final delivery.
+
+Remaining: authenticated journeys/ownership/persistence and exports, valid password recovery flows, all negative/loading/error states, actual Android/iOS/keyboard/landscape/zoom checks, nested protected modals and overlay-collision review. Existing notification inbox/bell local work remains preserved and excluded from scoped commits. No new Tested/Verified claims. docs/MOBILE_UI_STATUS.md summary now distinguishes implementation coverage from acceptance evidence.
+- Final integration regression: node --test tests/*.test.mjs exited 0, 127 passed / 0 failed. Log: docs/qa/2026-10-14/ui-pass-tests.txt. Existing notification tests are included in the working-tree run; notification source changes are not part of the UI deliveries.
