@@ -65,9 +65,9 @@ export default function ItJobsInVizagPage() {
         </p>
 
         <h2 className="text-2xl font-semibold text-slate-800">Latest IT Jobs in Vizag</h2>
-        <JobList jobs={filteredJobs} />
+        <JobList jobs={filteredJobs} isLoading={isLoading} onResetFilters={searchTerm ? () => setSearchTerm('') : undefined} />
 
-        <div className="prose prose-slate mx-auto max-w-4xl">
+        <div className="prose prose-slate mx-auto min-w-0 max-w-4xl [overflow-wrap:anywhere]">
           <h2>Information Technology Jobs in Visakhapatnam</h2>
           <p>Visakhapatnam has emerged as a significant IT hub in Andhra Pradesh, attracting tech companies and startups. The city's IT sector offers diverse opportunities for software developers, data analysts, cybersecurity professionals, and other tech roles.</p>
 

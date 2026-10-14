@@ -90,9 +90,9 @@ export default function DirectJobsInVizagPage() {
         </p>
 
         <h2 className="text-2xl font-bold text-slate-800">Featured Direct Openings</h2>
-        <JobList jobs={directJobs} />
+        <JobList jobs={directJobs} isLoading={isLoading} onResetFilters={searchTerm ? () => setSearchTerm('') : undefined} />
 
-        <div className="prose prose-slate mx-auto max-w-4xl pt-6">
+        <div className="prose prose-slate mx-auto min-w-0 max-w-4xl [overflow-wrap:anywhere] pt-6">
           <h2>Why Apply to Direct Company Jobs on Vizag Jobs?</h2>
           <p>
             Unlike automated scrapes from broad job aggregators, direct company postings on{' '}

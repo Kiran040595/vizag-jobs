@@ -14,7 +14,7 @@ Per screen: inspect layout and states â†’ fix responsive/accessibility issues â†
 | S004 | `/admin/quick-jobs/new` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S005 | `/admin/quick-jobs/:jobId/edit` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S006 | `/admin/candidates` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
-| S007 | `/` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
+| S007 | `/` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
 | S008 | `/admin/login` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S009 | `/oauth/consent` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S010 | `/employer/login` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
@@ -63,27 +63,27 @@ Per screen: inspect layout and states â†’ fix responsive/accessibility issues â†
 | S053 | `/terms-of-service` | [ ] | [ ] | [ ] | Queued |
 | S054 | `/disclaimer` | [ ] | [ ] | [ ] | Queued |
 | S055 | `/companies` | [ ] | [ ] | [ ] | Queued |
-| S056 | `/jobs` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
+| S056 | `/jobs` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
 | S057 | `/apply` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S058 | `/jobs/latest` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S059 | `/saved-jobs` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
-| S060 | `/jobs/it` | [ ] | [ ] | [ ] | Queued |
-| S061 | `/jobs/fresher` | [ ] | [ ] | [ ] | Queued |
-| S062 | `/jobs/part-time` | [ ] | [ ] | [ ] | Queued |
-| S063 | `/jobs/vizagjobs` | [ ] | [ ] | [ ] | Queued |
+| S060 | `/jobs/it` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S061 | `/jobs/fresher` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S062 | `/jobs/part-time` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S063 | `/jobs/vizagjobs` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
 | S064 | `/jobs/:jobSegment/:jobSlug` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S065 | `/job/:jobSlug` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
 | S066 | `/jobs/:jobId` | [x] | [ ] | [ ] | Prior UI batch implemented; verification incomplete |
-| S067 | `/jobs/civil` | [ ] | [ ] | [ ] | Queued |
-| S068 | `/jobs/mechanical` | [ ] | [ ] | [ ] | Queued |
-| S069 | `/jobs/electrical` | [ ] | [ ] | [ ] | Queued |
-| S070 | `/jobs/ece` | [ ] | [ ] | [ ] | Queued |
-| S071 | `/jobs/engineering` | [ ] | [ ] | [ ] | Queued |
-| S072 | `/jobs/banking` | [ ] | [ ] | [ ] | Queued |
-| S073 | `/jobs/bpo` | [ ] | [ ] | [ ] | Queued |
-| S074 | `/jobs/sales` | [ ] | [ ] | [ ] | Queued |
-| S075 | `/jobs/hr` | [ ] | [ ] | [ ] | Queued |
-| S076 | `/jobs/healthcare` | [ ] | [ ] | [ ] | Queued |
-| S077 | `/jobs/education` | [ ] | [ ] | [ ] | Queued |
-| S078 | `/jobs/hospitality` | [ ] | [ ] | [ ] | Queued |
-| S079 | `/jobs/logistics` | [ ] | [ ] | [ ] | Queued |
+| S067 | `/jobs/civil` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S068 | `/jobs/mechanical` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S069 | `/jobs/electrical` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S070 | `/jobs/ece` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S071 | `/jobs/engineering` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S072 | `/jobs/banking` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S073 | `/jobs/bpo` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S074 | `/jobs/sales` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S075 | `/jobs/hr` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S076 | `/jobs/healthcare` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S077 | `/jobs/education` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S078 | `/jobs/hospitality` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |
+| S079 | `/jobs/logistics` | [x] | [ ] | [ ] | Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping; full verification pending |

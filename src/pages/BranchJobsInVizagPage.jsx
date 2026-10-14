@@ -86,9 +86,9 @@ export default function BranchJobsInVizagPage({ categoryId }) {
         </p>
 
         <h2 className="text-2xl font-semibold text-slate-800">Latest {config.label} in Vizag</h2>
-        <JobList jobs={filteredJobs} isLoading={isLoading && filteredJobs.length === 0} />
+        <JobList jobs={filteredJobs} isLoading={isLoading} onResetFilters={searchTerm ? () => setSearchTerm('') : undefined} />
 
-        <article className="prose prose-slate mx-auto max-w-4xl">
+        <article className="prose prose-slate mx-auto min-w-0 max-w-4xl [overflow-wrap:anywhere]">
           <h2>{config.introTitle}</h2>
           <p>{config.introBody}</p>
 

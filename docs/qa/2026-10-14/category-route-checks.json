@@ -1,0 +1,121 @@
+[
+  {
+    "categoryControls": 0,
+    "route": "/jobs/it",
+    "scrollWidth": 305,
+    "title": "IT Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/fresher",
+    "scrollWidth": 305,
+    "title": "Fresher Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/part-time",
+    "scrollWidth": 305,
+    "title": "Part-time Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/vizagjobs",
+    "scrollWidth": 305,
+    "title": "Direct Company Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/civil",
+    "scrollWidth": 305,
+    "title": "Civil Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/mechanical",
+    "scrollWidth": 305,
+    "title": "Mechanical Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/electrical",
+    "scrollWidth": 305,
+    "title": "Electrical & EEE Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/ece",
+    "scrollWidth": 305,
+    "title": "ECE Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/engineering",
+    "scrollWidth": 305,
+    "title": "Engineering Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/banking",
+    "scrollWidth": 305,
+    "title": "Banking & Finance Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/bpo",
+    "scrollWidth": 305,
+    "title": "BPO & Customer Support Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/sales",
+    "scrollWidth": 305,
+    "title": "Sales & Marketing Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/hr",
+    "scrollWidth": 305,
+    "title": "HR & Admin Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/healthcare",
+    "scrollWidth": 305,
+    "title": "Healthcare Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/education",
+    "scrollWidth": 305,
+    "title": "Education Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/hospitality",
+    "scrollWidth": 305,
+    "title": "Hospitality & Retail Jobs in Vizag",
+    "width": 320
+  },
+  {
+    "categoryControls": 0,
+    "route": "/jobs/logistics",
+    "scrollWidth": 305,
+    "title": "Logistics Jobs in Vizag",
+    "width": 320
+  }
+]

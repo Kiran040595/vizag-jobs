@@ -11,9 +11,7 @@ export default function HeroSection({
   title = 'Find the Right Job in Visakhapatnam',
   subtitle = 'Your one-stop platform for IT, engineering, fresher and experienced jobs in Vizag',
 }) {
-  const [localCategory, setLocalCategory] = useState('All Categories');
-  const category = onCategoryChange ? categoryProp ?? 'All Categories' : localCategory;
-  const [location, setLocation] = useState('Visakhapatnam');
+  const category = categoryProp ?? 'All Categories';
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
@@ -38,11 +36,7 @@ export default function HeroSection({
   };
 
   const handleSelectQuickCategory = (catLabel) => {
-    if (onCategoryChange) {
-      onCategoryChange(catLabel);
-    } else {
-      setLocalCategory(catLabel);
-    }
+    onCategoryChange?.(catLabel);
   };
 
   return (
@@ -71,7 +65,7 @@ export default function HeroSection({
           onSubmit={handleSubmit}
           className="mt-4 w-full max-w-5xl rounded-2xl border border-white/30 bg-white/95 p-2 shadow-2xl backdrop-blur sm:mt-8 sm:p-4"
         >
-          <div className="grid gap-2 md:grid-cols-[1.7fr_1.2fr_1.2fr_auto] md:gap-3">
+          <div className={`grid min-w-0 gap-2 md:gap-3 ${onCategoryChange ? 'md:grid-cols-[minmax(0,1.7fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto]' : 'md:grid-cols-[minmax(0,1.7fr)_minmax(0,1.2fr)_auto]'}`}>
             <input
               aria-label="Search by job title, skill or company"
               id="job-title"
@@ -84,12 +78,11 @@ export default function HeroSection({
               className="h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4 md:text-sm"
             />
 
-            <select
+            {onCategoryChange ? <select
               value={category}
               onChange={(event) => {
                 const next = event.target.value;
-                if (onCategoryChange) onCategoryChange(next);
-                else setLocalCategory(next);
+                onCategoryChange(next);
               }}
               className="h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:h-12 md:px-4 md:text-sm"
               aria-label="Select category"
@@ -99,12 +92,12 @@ export default function HeroSection({
                   {opt.label}
                 </option>
               ))}
-            </select>
+            </select> : null}
             <input
               id="location"
               type="text"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
+              value="Visakhapatnam"
+              readOnly
               className="hidden h-12 w-full rounded-xl border border-slate-200 px-3.5 text-base text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200 md:block md:h-12 md:px-4 md:text-sm"
               aria-label="Location"
             />
@@ -122,7 +115,7 @@ export default function HeroSection({
         </form>
 
         {/* Quick Filter Pills on Mobile */}
-        <div className="mt-3 flex w-full max-w-5xl items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none sm:hidden">
+        {onCategoryChange ? <div className="mt-3 flex w-full max-w-5xl items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none sm:hidden">
           <span className="shrink-0 text-[11px] font-semibold text-blue-200">Quick:</span>
           {[
             { label: 'IT & Software', icon: '💻' },
@@ -145,7 +138,7 @@ export default function HeroSection({
               <span>{item.icon} {item.label}</span>
             </button>
           ))}
-        </div>
+        </div> : null}
       </div>
     </section>
   );
