@@ -515,11 +515,11 @@ export default function StudentRegisterWizard({
         /* STEP 2: EDUCATION & CAREER PROFILE */
         <form onSubmit={handleFinalSubmit} className="space-y-6">
           {/* Top Back Button */}
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <button
               type="button"
               onClick={() => setCurrentStep(currentStep === 3 ? 2 : 1)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700"
+              className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -1078,7 +1078,7 @@ export default function StudentRegisterWizard({
       {/* Footer Switch to Sign In */}
       <div className="mt-8 border-t border-slate-100 pt-6 text-center text-sm text-slate-500">
         Already have a student account?{' '}
-        <Link to={loginPath} className="font-bold text-indigo-600 hover:underline">
+        <Link to={loginPath} className="inline-flex min-h-11 items-center font-bold text-indigo-600 hover:underline">
           Sign in here
         </Link>
       </div>

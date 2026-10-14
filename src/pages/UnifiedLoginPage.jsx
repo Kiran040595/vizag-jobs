@@ -180,8 +180,8 @@ function StudentLoginPanel({ searchParams }) {
             className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
           />
         </label>
-        <p className="-mt-2 text-right text-sm">
-          <Link to="/student/forgot-password" className="font-semibold text-indigo-600 hover:text-indigo-700">
+        <p className="-mt-1 text-right text-sm">
+          <Link to="/student/forgot-password" className="inline-flex min-h-11 items-center font-semibold text-indigo-600 hover:text-indigo-700">
             Forgot password?
           </Link>
         </p>
@@ -191,7 +191,7 @@ function StudentLoginPanel({ searchParams }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="h-12 w-full rounded-2xl bg-indigo-600 text-base font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-70"
+          className="min-h-12 w-full rounded-2xl bg-indigo-600 text-base font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-70"
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>
@@ -199,7 +199,7 @@ function StudentLoginPanel({ searchParams }) {
 
       <p className="mt-6 text-center text-sm text-slate-600">
         New here?{' '}
-        <Link to={registerPath} className="font-semibold text-indigo-600 hover:text-indigo-700">
+        <Link to={registerPath} className="inline-flex min-h-11 items-center font-semibold text-indigo-600 hover:text-indigo-700">
           Create free student account
         </Link>
       </p>
@@ -292,8 +292,8 @@ function EmployerLoginPanel({ searchParams }) {
             className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
           />
         </label>
-        <p className="-mt-2 text-right text-sm">
-          <Link to="/employer/forgot-password" className="font-semibold text-cyan-600 hover:text-cyan-700">
+        <p className="-mt-1 text-right text-sm">
+          <Link to="/employer/forgot-password" className="inline-flex min-h-11 items-center font-semibold text-cyan-600 hover:text-cyan-700">
             Forgot password?
           </Link>
         </p>
@@ -306,14 +306,14 @@ function EmployerLoginPanel({ searchParams }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
+          className="min-h-12 w-full rounded-2xl bg-cyan-500 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
       <p className="mt-6 text-sm text-slate-600">
         New employer?{' '}
-        <Link to="/employer/register" className="font-semibold text-cyan-600 hover:text-cyan-700">
+        <Link to="/employer/register" className="inline-flex min-h-11 items-center font-semibold text-cyan-600 hover:text-cyan-700">
           Create a company account
         </Link>
       </p>
@@ -470,7 +470,7 @@ export default function UnifiedLoginPage() {
   }[role];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_55%,_#f1f5f9_100%)] px-3 py-6 sm:px-4 sm:py-14">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_55%,_#f1f5f9_100%)] px-3 py-6 pb-mobile-chrome sm:px-4 sm:py-14">
       <SEO title={seo.title} description={seo.description} canonical={seo.canonical} />
 
       <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/60 sm:p-8">
@@ -488,8 +488,8 @@ export default function UnifiedLoginPage() {
         {role === 'admin' ? <AdminLoginPanel /> : null}
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          <Link to="/" className="hover:text-slate-700">
-            Back to job listings
+          <Link to="/" className="inline-flex min-h-11 items-center hover:text-slate-700">
+            ← Back to job listings
           </Link>
         </p>
       </div>

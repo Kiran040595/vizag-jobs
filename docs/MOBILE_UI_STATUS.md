@@ -24,11 +24,11 @@ Current branch: `develop`
 |---|---|---|---|---|
 | **Public Core** | 8 | 4 | 2 | 2 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
-| **Student Portal** | 8 | 1 | 4 | 3 |
+| **Student Portal** | 8 | 3 | 2 | 3 |
 | **Employer Portal** | 10 | 0 | 2 | 8 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
 | **Quick Apply / Static** | 14 | 0 | 0 | 14 |
-| **Total** | **79** | **5** | **8** | **66** |
+| **Total** | **79** | **7** | **6** | **66** |
 
 ---
 
@@ -67,20 +67,31 @@ Current branch: `develop`
   - Increased touch targets on "Ask Gemini AI", "Sign In", "Cancel", "Helpful", and moderator actions to 44px (`min-h-11`).
   - "Show all questions" button upgraded to `min-h-11 w-full`.
 
+### Batch 3: Student Authentication
+- **`/student/login` (Student Login - S020):**
+  - Upgraded "Forgot password?", "Create free student account", and "Back to job listings" links to full touch targets (`inline-flex min-h-11 items-center`).
+  - Form submission buttons standardized with 48px touch height (`min-h-12`).
+  - Role switcher toggles kept at `min-h-11` for mobile finger switching.
+  - Added `pb-mobile-chrome` padding to ensure the mobile bottom navigation bar never overlaps the bottom links or actions.
+- **`/student/register` (Student Register Wizard - S021):**
+  - Added `pb-mobile-chrome` safe-area bottom padding to the page container.
+  - Sized top back buttons ("Back to Education", "Back to Account Info") to `inline-flex min-h-11 items-center` with `flex-wrap` so headers never clip on 320px screens.
+  - Upgraded "Employer registration" and footer "Sign in here" links to `min-h-11` touch targets.
+  - Responsive multi-step wizard preserves input readability with font-size $\ge 16\text{px}$ on mobile viewports.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 3 | `/student/login`, `/student/register` | Authentication wizards, mobile keyboard spacing, touch submit |
-| **P2** | Day 4 | `/student/profile`, `/student/applied-jobs` | Mobile profile form, resume uploader, applicant status cards |
-| **P3** | Day 5 | `/saved-jobs`, `/apply` | Saved jobs list, Instagram direct application feed |
-| **P4** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
-| **P5** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
-| **P6** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
-| **P7** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
-| **P8** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P1 (Next)** | Day 4 | `/student/profile`, `/student/applied-jobs` | Mobile profile form, resume uploader, applicant status cards |
+| **P2** | Day 5 | `/saved-jobs`, `/apply` | Saved jobs list, Instagram direct application feed |
+| **P3** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
+| **P4** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
+| **P5** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
+| **P6** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
+| **P7** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
 
 ---
 
@@ -107,8 +118,8 @@ Current branch: `develop`
 | S017 | `/employer/jobs/new` | Employer New Job | ⏳ Pending | — |
 | S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | ⏳ Pending | — |
 | S019 | `/employer/jobs/:jobId/applications` | Employer Job Applicants | ⏳ Pending | — |
-| S020 | `/student/login` | Student Login | 🔄 In Progress | Planned Day 3 |
-| S021 | `/student/register` | Student Register | 🔄 In Progress | Planned Day 3 |
+| S020 | `/student/login` | Student Login | ✅ Fixed | 2026-10-14 |
+| S021 | `/student/register` | Student Register | ✅ Fixed | 2026-10-14 |
 | S022 | `/student/forgot-password` | Student Forgot Password | ⏳ Pending | — |
 | S023 | `/student/reset-password` | Student Reset Password | ⏳ Pending | — |
 | S024 | `/student` | Student Dashboard Redirect | ⏳ Pending | — |

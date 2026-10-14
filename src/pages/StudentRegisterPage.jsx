@@ -239,7 +239,7 @@ export default function StudentRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 sm:px-4 sm:py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.18),_transparent_35%),linear-gradient(180deg,_#eef2ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-3 py-6 pb-mobile-chrome sm:px-4 sm:py-12">
       <SEO
         title="Student register | Vizag Jobs"
         description={
@@ -293,7 +293,7 @@ export default function StudentRegisterPage() {
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Hiring for a company?{' '}
-          <Link to="/employer/register" className="font-semibold text-cyan-600 hover:text-cyan-700">
+          <Link to="/employer/register" className="inline-flex min-h-11 items-center font-semibold text-cyan-600 hover:text-cyan-700">
             Employer registration
           </Link>
         </p>

@@ -39,8 +39,8 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
 | S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
 | S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | Not tested | Not reviewed | — |
-| S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
-| S021 | `/student/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | Not tested | Not reviewed | — |
+| S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
+| S021 | `/student/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
 | S023 | `/student/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
 | S024 | `/student` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
@@ -362,7 +362,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 |---|---|---|
 | Day 1 | `/`, `/jobs` | Started 2026-10-14; targeted UI checks passed, full journeys/checklist pending |
 | Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
-| Day 3 | `/student/login`, `/student/register` | Planned |
+| Day 3 | `/student/login`, `/student/register` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
 | Day 4 | `/student/profile`, `/student/applied-jobs` | Planned |
 | Day 5 | `/saved-jobs`, `/apply` | Planned |
 | Day 6 | `/quick-register`, `/apply/:slug` | Planned |
@@ -471,3 +471,15 @@ Copy one record per completed or attempted feature/screen.
   - StudentShell: Added pb-mobile-chrome bottom padding on the main view container so that mobile bottom navigation never obscures the bottom of student forms or actions.
   - Documentation: Created `docs/MOBILE_UI_STATUS.md` tracking all fixed screens, in-progress items, and pending backlog.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors; Vite production build completed with exit code 0.
+
+## QA-2026-10-14-UI-Day3: Student Login and Register mobile fixes
+
+- Scope: S020, S021; develop baseline 86d6879, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - UnifiedLoginPage: Added pb-mobile-chrome safe-area padding to the main container; upgraded "Forgot password?", "Create free student account", "Register your company", and "Back to job listings" links to full touch targets (inline-flex min-h-11 items-center); standardized submit button to min-h-12 (48px); role switcher toggles maintain min-h-11 touch height.
+  - StudentRegisterPage: Added pb-mobile-chrome safe-area padding to page wrapper; upgraded "Employer registration" link to inline-flex min-h-11 items-center.
+  - StudentRegisterWizard: Standardized top back buttons ("Back to Education", "Back to Account Info") to inline-flex min-h-11 items-center with flex-wrap on mobile header to prevent text clipping at 320px viewport; elevated footer "Sign in here" link to inline-flex min-h-11.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 3 and in-progress Day 3 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
