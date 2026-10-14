@@ -125,7 +125,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
             <button
               type="button"
               onClick={() => setAnsweredResult(null)}
-              className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+              className="inline-flex min-h-11 items-center px-2 text-xs font-semibold text-slate-400 hover:text-slate-600"
             >
               ✕ Dismiss
             </button>
@@ -163,7 +163,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
               setAnsweredResult(null);
               setIsOpen(true);
             }}
-            className="mt-3 text-xs font-bold text-cyan-700 hover:underline"
+            className="mt-3 inline-flex min-h-11 items-center text-xs font-bold text-cyan-700 hover:underline"
           >
             Ask another question →
           </button>
@@ -184,14 +184,14 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400"
           >
             <span>💬 Ask Gemini AI</span>
           </button>
           {!isAuthenticated ? (
             <Link
               to="/student/login"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
             >
               Sign In
             </Link>
@@ -208,7 +208,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="text-xs font-semibold text-slate-400 hover:text-slate-600"
+          className="inline-flex min-h-11 items-center px-2 text-xs font-semibold text-slate-400 hover:text-slate-600"
         >
           ✕ Cancel
         </button>
@@ -257,11 +257,11 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
 
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? (
             <>
@@ -278,7 +278,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
         >
           Cancel
         </button>
@@ -311,7 +311,7 @@ function HelpfulButton({ questionId, initialCount = 0 }) {
       type="button"
       onClick={handleVote}
       disabled={hasVoted || isVoting}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
         hasVoted
           ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
           : 'bg-slate-100 text-slate-600 hover:bg-cyan-50 hover:text-cyan-700'
@@ -451,7 +451,7 @@ function ModeratorQuestionCard({
           onClick={() =>
             runAction(() => saveJobQuestionAnswer({ questionId: question.id, answerBody: answerDraft, userId }))
           }
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex min-h-11 sm:min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
         >
           Save answer
         </button>
@@ -463,7 +463,7 @@ function ModeratorQuestionCard({
               publishJobQuestion({ questionId: question.id, userId, answerBody: answerDraft }),
             )
           }
-          className="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
+          className="inline-flex min-h-11 sm:min-h-9 items-center justify-center rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-60"
         >
           Publish
         </button>
@@ -471,7 +471,7 @@ function ModeratorQuestionCard({
           type="button"
           disabled={isBusy}
           onClick={() => runAction(() => ignoreJobQuestion({ questionId: question.id, userId }))}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+          className="inline-flex min-h-11 sm:min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
         >
           Ignore
         </button>
@@ -479,7 +479,7 @@ function ModeratorQuestionCard({
           type="button"
           disabled={isBusy}
           onClick={() => runAction(() => deleteJobQuestion(question.id))}
-          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+          className="inline-flex min-h-11 sm:min-h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
         >
           Delete
         </button>
@@ -602,7 +602,7 @@ export default function JobQuestionsSection({
             <button
               type="button"
               onClick={() => setShowAllQuestions(!showAllQuestions)}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-cyan-700 transition hover:bg-slate-50"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-cyan-700 transition hover:bg-slate-50"
             >
               {showAllQuestions
                 ? 'Show fewer questions ↑'

@@ -130,7 +130,7 @@ function StudentApplyContent() {
       <SEO title="Apply for job | Vizag Jobs" canonical={`/student/apply/${jobId}`} />
 
       <div className="mb-6">
-        <Link to={returnPath} className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+        <Link to={returnPath} className="inline-flex min-h-11 items-center text-sm font-semibold text-indigo-600 hover:text-indigo-700">
           ← Back to job
         </Link>
       </div>
@@ -220,7 +220,7 @@ function StudentApplyContent() {
               <div className="mt-6">
                 <span className="text-sm font-semibold text-slate-700">Resume (optional)</span>
                 {profile?.resume_path ? (
-                  <label className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                     <input
                       type="checkbox"
                       checked={useSavedResume}

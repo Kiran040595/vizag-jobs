@@ -252,7 +252,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
   };
 
   const baseBtn =
-    'inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex min-h-11 sm:min-h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50';
   const neutral =
     'border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus:ring-slate-300';
   const primary = 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-300';
@@ -332,7 +332,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
             value={String(seoGeminiKeyIndex || 0)}
             onChange={(e) => setSeoGeminiKeyIndex(parseGeminiSeoKeySelectValue(e.target.value))}
             disabled={Boolean(busyAction)}
-            className="max-w-[14rem] rounded-xl border border-violet-200 bg-violet-50 px-2 py-2 text-[11px] font-semibold text-violet-900 disabled:opacity-50"
+            className="min-h-11 sm:min-h-9 max-w-[14rem] rounded-xl border border-violet-200 bg-violet-50 px-2 py-2 text-[11px] font-semibold text-violet-900 disabled:opacity-50"
             title="Choose which Gemini API key runs Make SEO"
             aria-label="Gemini API key for Make SEO"
           >

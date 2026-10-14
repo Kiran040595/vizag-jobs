@@ -47,7 +47,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S025 | `/student/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | Not tested | Not reviewed | — |
 | S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records | Not tested | Not reviewed | — |
 | S027 | `/student/applications` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
-| S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views | Not tested | Not reviewed | — |
+| S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
 | S029 | `/admin` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
 | S030 | `/admin/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
 | S031 | `/admin/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | Not tested | Not reviewed | — |
@@ -83,9 +83,9 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S061 | `/jobs/fresher` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S062 | `/jobs/part-time` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S063 | `/jobs/vizagjobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
-| S064 | `/jobs/:jobSegment/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | Not tested | Not reviewed | — |
-| S065 | `/job/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | Not tested | Not reviewed | — |
-| S066 | `/jobs/:jobId` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | Not tested | Not reviewed | — |
+| S064 | `/jobs/:jobSegment/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
+| S065 | `/job/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
+| S066 | `/jobs/:jobId` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
 | S067 | `/jobs/civil` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S068 | `/jobs/mechanical` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
 | S069 | `/jobs/electrical` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | Not tested | Not reviewed | — |
@@ -361,7 +361,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Batch | Screens | Status |
 |---|---|---|
 | Day 1 | `/`, `/jobs` | Started 2026-10-14; targeted UI checks passed, full journeys/checklist pending |
-| Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | Planned |
+| Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
 | Day 3 | `/student/login`, `/student/register` | Planned |
 | Day 4 | `/student/profile`, `/student/applied-jobs` | Planned |
 | Day 5 | `/saved-jobs`, `/apply` | Planned |
@@ -459,3 +459,15 @@ Copy one record per completed or attempted feature/screen.
 - Functional: In progress, targeted checks passed; full inventory journeys, negative/backend cases and browser-back checks remain pending. Mobile UI: In progress, not Verified; Android Chrome/iOS Safari, physical keyboard overlays, landscape, 200% zoom and all loading/error/overlay combinations remain pending. Existing floating feedback/chat overlays still need broader collision review.
 - Delivery: scoped UI changes, evidence and tracker committed together; push confirmation recorded in chat after Git verification.
 - Build: npm run build exited 0 (604 modules; PWA generated). Existing large-chunk/Browserslist warnings; sandboxed sitemap fetch failed and generated fallback URLs, so generated sitemap was restored and excluded.
+
+## QA-2026-10-14-UI-Day2: Job Details and Student Apply mobile fixes
+
+- Scope: S028, S064, S065, S066, U01, U11; develop baseline 5c490b2, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - JobDetailsPage: Added min-h-11 touch targets for admin matching candidates and applicant details modal buttons. Ensured sticky bottom apply button has safe-area padding and 48px touch height without collision with mobile bottom nav or floating feedback launcher.
+  - AdminJobActionsBar: Elevated baseBtn and Gemini SEO select elements to min-h-11 on mobile (sm:min-h-9 on desktop).
+  - JobQuestionsSection: Elevated Ask Gemini AI, Sign In, Dismiss, Cancel, Helpful vote, moderator actions (Save, Publish, Ignore, Delete), and Show All Questions buttons to min-h-11 touch targets.
+  - StudentApplyPage: Added inline-flex min-h-11 back button and min-h-11 saved resume checkbox label; verified file input and submit CTA responsiveness.
+  - StudentShell: Added pb-mobile-chrome bottom padding on the main view container so that mobile bottom navigation never obscures the bottom of student forms or actions.
+  - Documentation: Created `docs/MOBILE_UI_STATUS.md` tracking all fixed screens, in-progress items, and pending backlog.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors; Vite production build completed with exit code 0.

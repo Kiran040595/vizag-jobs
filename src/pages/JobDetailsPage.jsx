@@ -290,7 +290,14 @@ export default function JobDetailsPage() {
           </p>
         ) : null}
 
-        {isAdmin && job?.requirements_verified && <Link className="my-3 inline-block rounded-lg border border-indigo-300 px-4 py-2 text-sm text-indigo-700" to={`/admin/students?job=${encodeURIComponent(job.id)}`}>Find matching candidates</Link>}
+        {isAdmin && job?.requirements_verified && (
+          <Link
+            className="my-3 inline-flex min-h-11 items-center rounded-xl border border-indigo-300 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+            to={`/admin/students?job=${encodeURIComponent(job.id)}`}
+          >
+            Find matching candidates
+          </Link>
+        )}
         {isAdmin && job ? (
           <AdminJobActionsBar
             job={job}
@@ -381,12 +388,12 @@ export default function JobDetailsPage() {
                 </span>
               </p>
               {shouldShowAdminApplicantCount(job, isAdmin) ? (
-                <p>
+                <p className="flex items-center gap-1.5">
                   <span className="font-semibold text-slate-900">Applications:</span>{' '}
                   <button
                     type="button"
                     onClick={() => setIsApplicantsModalOpen(true)}
-                    className="inline-flex cursor-pointer items-center gap-1 font-bold text-indigo-700 underline decoration-indigo-300 underline-offset-2 transition hover:text-indigo-900 hover:decoration-indigo-500"
+                    className="inline-flex min-h-11 cursor-pointer items-center gap-1 font-bold text-indigo-700 underline decoration-indigo-300 underline-offset-2 transition hover:text-indigo-900 hover:decoration-indigo-500"
                     title="View applicant details (Admin)"
                   >
                     <span>👥</span>
