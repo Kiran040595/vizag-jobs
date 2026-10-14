@@ -35,9 +35,9 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S013 | `/employer/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
 | S014 | `/employer` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
 | S015 | `/employer/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
-| S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | Not tested | Not reviewed | — |
-| S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
-| S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
+| S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
+| S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
+| S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | Not tested | Not reviewed | — |
 | S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S021 | `/student/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
@@ -368,7 +368,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 6 | `/quick-register`, `/apply/:slug` | In progress (2026-10-14: mobile UI touch targets, dynamic fields, and claim flow verified) |
 | Day 7 | `/oauth/consent`, `/employer/login` | In progress (2026-10-14: mobile UI touch targets, permissions layout, and auth verified) |
 | Day 8 | `/employer/register`, `/employer/profile` | In progress (2026-10-14: mobile UI touch targets, selects, and safe-area padding verified) |
-| Day 9 | `/employer/profile`, `/employer/jobs` | Planned |
+| Day 9 | `/employer/jobs`, `/employer/jobs/new` | In progress (2026-10-14: mobile UI touch targets, cards layout, and posting wizard verified) |
 | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Planned |
 | Day 11 | `/admin/candidates`, `/admin/login` | Planned |
 | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Planned |
@@ -541,4 +541,16 @@ Copy one record per completed or attempted feature/screen.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day9: Employer Jobs and New/Edit Job mobile fixes
+
+- Scope: S016, S017, S018; develop baseline 80e123b, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - EmployerJobsListPage: Upgraded "Post a new job" CTA to min-h-12 w-full sm:w-auto; stacked header action and metrics counters cleanly on narrow viewports; responsive job submission cards with flex-col layout on mobile and wrapped titles/badges; upgraded "View applications" and "Edit" action buttons to full-width min-h-11 touch targets; added accessible direct CTA in empty submissions state.
+  - EmployerNewJobPage & EmployerJobForm: Standardized form inputs and textareas with 16px text-base preventing iOS Safari viewport auto-zoom; upgraded fresher checkbox container to min-h-12 cursor-pointer with 20px checkbox; standardized Cancel and Submit action buttons to min-h-12 w-full sm:w-auto touch targets; responsive empty prompt banner.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 9 and in-progress Day 9 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
 

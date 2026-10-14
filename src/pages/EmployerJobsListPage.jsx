@@ -117,10 +117,10 @@ function EmployerJobsListContent() {
     <EmployerShell title="My job submissions" description="Track pending, live, and rejected listings.">
       <SEO title="My jobs | Vizag Jobs Employer" canonical="/employer/jobs" />
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
         <Link
           to="/employer/jobs/new"
-          className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
+          className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
         >
           Post a new job
         </Link>
@@ -152,17 +152,25 @@ function EmployerJobsListContent() {
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No submissions yet</h3>
           <p className="mt-2 text-sm text-slate-600">Post your first job and our team will review it.</p>
+          <div className="mt-6 flex justify-center">
+            <Link
+              to="/employer/jobs/new"
+              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
+            >
+              Post your first job
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
           {jobs.map((job) => {
             const candidateCount = resolveJobApplicationCount(job, applicationCounts);
             return (
-              <article key={job.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0 break-words">
+              <article key={job.id} className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1 break-words">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-bold text-slate-950">{job.title}</h3>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-950 break-words">{job.title}</h3>
                       <span
                         className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${
                           STATUS_STYLES[job.status] || STATUS_STYLES.draft
@@ -184,18 +192,18 @@ function EmployerJobsListContent() {
                       <p className="mt-2 text-sm text-slate-600">
                         <Link
                           to={`/employer/jobs/${job.id}/applications`}
-                          className="font-medium text-cyan-700 underline hover:text-cyan-800"
+                          className="inline-flex min-h-11 items-center font-medium text-cyan-700 underline hover:text-cyan-800"
                         >
                           {formatApplicationCountNoun(candidateCount)}
                         </Link>
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
                     {job.apply_mode === 'internal' || candidateCount > 0 ? (
                       <Link
                         to={`/employer/jobs/${job.id}/applications`}
-                        className="inline-flex min-h-11 items-center rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
+                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-100 w-full sm:w-auto text-center"
                       >
                         View applications ({candidateCount})
                       </Link>
@@ -204,7 +212,7 @@ function EmployerJobsListContent() {
                       <button
                         type="button"
                         onClick={() => navigate(`/employer/jobs/${job.id}/edit`)}
-                        className="min-h-11 rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 w-full sm:w-auto"
                       >
                         Edit
                       </button>

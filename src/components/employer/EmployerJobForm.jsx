@@ -240,8 +240,8 @@ export default function EmployerJobForm({
         </Field>
       </div>
 
-      <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <input type="checkbox" name="is_fresher" checked={formValues.is_fresher} onChange={handleFieldChange} className="h-4 w-4" />
+      <label className="mt-4 flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <input type="checkbox" name="is_fresher" checked={formValues.is_fresher} onChange={handleFieldChange} className="h-5 w-5 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500" />
         <span className="text-sm font-medium text-slate-700">This is a fresher job</span>
       </label>
 
@@ -250,7 +250,7 @@ export default function EmployerJobForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Cancel
           </button>
@@ -259,7 +259,7 @@ export default function EmployerJobForm({
           type="button"
           disabled={isSaving}
           onClick={handleSubmit}
-          className="min-h-12 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSaving ? 'Submitting...' : mode === 'edit' ? 'Resubmit for review' : 'Submit for review'}
         </button>

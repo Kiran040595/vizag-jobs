@@ -25,10 +25,10 @@ Current branch: `develop`
 | **Public Core** | 8 | 8 | 0 | 0 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
-| **Employer Portal** | 10 | 4 | 2 | 4 |
+| **Employer Portal** | 10 | 7 | 0 | 3 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
 | **Quick Apply / Static** | 14 | 6 | 0 | 8 |
-| **Total** | **79** | **23** | **2** | **54** |
+| **Total** | **79** | **26** | **0** | **53** |
 
 ---
 
@@ -145,16 +145,29 @@ Current branch: `develop`
 - **`/employer` (Employer Dashboard Redirect - S014):**
   - Confirmed redirect destination `/employer/jobs` is clean and role-guarded.
 
+### Batch 9: Employer Job Postings & Submissions
+- **`/employer/jobs` (Employer Jobs List - S016):**
+  - Upgraded "Post a new job" CTA to full width on mobile (`inline-flex min-h-12 w-full sm:w-auto items-center justify-center`).
+  - Stacked header action and metrics chips cleanly on narrow viewports (`flex-col sm:flex-row`).
+  - Responsive job submission cards: switched to column orientation on mobile (`flex-col sm:flex-row`), wrapping title/badges with zero horizontal overflow.
+  - Sized action buttons ("View applications" and "Edit") to full width on mobile with $\ge 44$px touch height (`inline-flex min-h-11 items-center justify-center w-full sm:w-auto`).
+  - Added direct 48px touch CTA to empty submissions state.
+- **`/employer/jobs/new` & `/employer/jobs/:jobId/edit` (Employer Job Wizard & Edit - S017, S018):**
+  - Form inputs and textareas standardized with 16px font-size to prevent iOS Safari auto-zoom.
+  - Sized "This is a fresher job" checkbox container to 48px touch height (`min-h-12 cursor-pointer`) with 20px checkbox icon.
+  - Standardized Cancel and Submit action buttons to 48px touch targets (`inline-flex min-h-12 w-full sm:w-auto items-center justify-center`).
+  - Responsive empty prompt banner with `shrink-0` icon and `min-w-0 flex-1` text.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 9 | `/employer/jobs`, `/employer/jobs/new` | Job management cards, posting wizard |
-| **P2** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
-| **P3** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
-| **P4** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
+| **P1 (Next)** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P2** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
+| **P3** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
+| **P4** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
 
 ---
 
@@ -177,9 +190,9 @@ Current branch: `develop`
 | S013 | `/employer/reset-password` | Employer Reset Password | ⏳ Pending | — |
 | S014 | `/employer` | Employer Dashboard Redirect | ✅ Fixed | 2026-10-14 |
 | S015 | `/employer/profile` | Employer Profile | ✅ Fixed | 2026-10-14 |
-| S016 | `/employer/jobs` | Employer Jobs List | ⏳ Pending | — |
-| S017 | `/employer/jobs/new` | Employer New Job | ⏳ Pending | — |
-| S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | ⏳ Pending | — |
+| S016 | `/employer/jobs` | Employer Jobs List | ✅ Fixed | 2026-10-14 |
+| S017 | `/employer/jobs/new` | Employer New Job | ✅ Fixed | 2026-10-14 |
+| S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | ✅ Fixed | 2026-10-14 |
 | S019 | `/employer/jobs/:jobId/applications` | Employer Job Applicants | ⏳ Pending | — |
 | S020 | `/student/login` | Student Login | ✅ Fixed | 2026-10-14 |
 | S021 | `/student/register` | Student Register | ✅ Fixed | 2026-10-14 |

@@ -15,7 +15,7 @@ function EmployerNewJobContent() {
 
       {isEmptyPrompt ? (
         <div className="mb-6 flex items-start gap-3.5 rounded-2xl border border-cyan-200 bg-cyan-50/90 p-4 text-cyan-950 shadow-sm backdrop-blur sm:p-5">
-          <div className="mt-0.5 rounded-full bg-cyan-100 p-1.5 text-cyan-700">
+          <div className="mt-0.5 shrink-0 rounded-full bg-cyan-100 p-1.5 text-cyan-700">
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path
                 fillRule="evenodd"
@@ -24,7 +24,7 @@ function EmployerNewJobContent() {
               />
             </svg>
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h3 className="text-sm font-bold text-cyan-950 sm:text-base">Welcome to your employer portal!</h3>
             <p className="mt-1 text-xs text-cyan-800 sm:text-sm">
               No jobs have been listed for your company yet. Submit your first job listing below for admin review.
