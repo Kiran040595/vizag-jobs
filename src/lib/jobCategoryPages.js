@@ -382,6 +382,27 @@ export const JOB_CATEGORY_PAGES = [
 /** Category ids that have a dedicated `/jobs/:id` landing page (for redirects). */
 export const JOB_CATEGORY_LANDING_IDS = new Set(JOB_CATEGORY_PAGES.map((page) => page.id));
 
+/** All category slugs that have dedicated listing pages under `/jobs/:slug`. */
+export const ALL_CATEGORY_SLUGS = new Set([
+  'it',
+  'fresher',
+  'part-time',
+  'vizagjobs',
+  ...JOB_CATEGORY_LANDING_IDS,
+]);
+
+/**
+ * Checks whether a given pathname is a category listing route rather than an individual job detail page.
+ * @param {string} pathname
+ * @returns {boolean}
+ */
+export const isCategoryListingPath = (pathname) => {
+  if (!pathname) return false;
+  const match = pathname.match(/^\/jobs\/([^/]+)$/);
+  if (!match) return false;
+  return ALL_CATEGORY_SLUGS.has(match[1].toLowerCase());
+};
+
 /** @param {BranchCategoryId | string} id */
 export const getJobCategoryPageConfig = (id) =>
   JOB_CATEGORY_PAGES.find((page) => page.id === id) ?? null;

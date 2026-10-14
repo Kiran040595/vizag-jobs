@@ -1,19 +1,8 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useSavedJobsList } from '../lib/useSavedJob';
+import { ALL_CATEGORY_SLUGS } from '../lib/jobCategoryPages';
 
 const HIDDEN_PREFIXES = ['/admin', '/employer', '/oauth'];
-
-const CATEGORY_LISTING_SLUGS = new Set([
-  'it',
-  'fresher',
-  'part-time',
-  'civil',
-  'mechanical',
-  'electrical',
-  'ece',
-  'engineering',
-  'vizagjobs',
-]);
 
 function HomeIcon({ active }) {
   return (
@@ -122,7 +111,7 @@ export default function MobileBottomNav() {
     const singleSegmentMatch = location.pathname.match(/^\/jobs\/([^/]+)$/);
     if (singleSegmentMatch) {
       const segment = singleSegmentMatch[1].toLowerCase();
-      return !CATEGORY_LISTING_SLUGS.has(segment);
+      return !ALL_CATEGORY_SLUGS.has(segment);
     }
     return false;
   })();
@@ -140,7 +129,7 @@ export default function MobileBottomNav() {
       isActiveMatch: (pathname) =>
         pathname === '/jobs' ||
         (pathname.startsWith('/jobs/') &&
-          CATEGORY_LISTING_SLUGS.has(pathname.split('/')[2]?.toLowerCase())),
+          ALL_CATEGORY_SLUGS.has(pathname.split('/')[2]?.toLowerCase())),
       Icon: JobsIcon,
     },
     { to: '/companies', label: 'Companies', exact: false, Icon: CompaniesIcon },

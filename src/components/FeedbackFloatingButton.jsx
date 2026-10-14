@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import SiteFeedbackForm from './SiteFeedbackForm';
 import { useOptionalCookieConsent } from '../context/CookieConsentContext.jsx';
+import { isCategoryListingPath } from '../lib/jobCategoryPages';
 
 const HIDDEN_PREFIXES = ['/admin', '/employer', '/oauth'];
 
@@ -17,11 +18,8 @@ export default function FeedbackFloatingButton() {
     /^\/job\/[^/]+/.test(location.pathname) ||
     /^\/jobs\/[^/]+$/.test(location.pathname);
 
-  // Listing pages like /jobs/it should keep the default feedback position.
-  const isCategoryListing =
-    /^\/jobs\/(it|fresher|part-time|civil|mechanical|electrical|ece|engineering)$/.test(
-      location.pathname,
-    );
+  // Listing pages like /jobs/it or /jobs/banking should keep the default feedback position.
+  const isCategoryListing = isCategoryListingPath(location.pathname);
   const hasStickyApplyChrome = isJobDetailPage && !isCategoryListing && location.pathname !== '/jobs';
 
   useEffect(() => {

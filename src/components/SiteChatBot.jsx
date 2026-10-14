@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useOptionalCookieConsent } from '../context/CookieConsentContext.jsx';
 import { SITE_CONTACT_EMAIL } from '../lib/siteLegal.js';
+import { isCategoryListingPath } from '../lib/jobCategoryPages.js';
 import {
   DEFAULT_CHAT_SUGGESTIONS,
   fetchSiteChatMeta,
@@ -84,10 +85,7 @@ export default function SiteChatBot() {
     /^\/jobs\/[^/]+\/[^/]+/.test(location.pathname) ||
     /^\/job\/[^/]+/.test(location.pathname) ||
     /^\/jobs\/[^/]+$/.test(location.pathname);
-  const isCategoryListing =
-    /^\/jobs\/(it|fresher|part-time|civil|mechanical|electrical|ece|engineering)$/.test(
-      location.pathname,
-    );
+  const isCategoryListing = isCategoryListingPath(location.pathname);
   const hasStickyApplyChrome = isJobDetailPage && !isCategoryListing && location.pathname !== '/jobs';
 
   const bottomClass = cookieBannerOpen
