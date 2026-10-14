@@ -228,7 +228,7 @@ Implementation counts below track code changes, not full E2E or device acceptanc
 | S016 | `/employer/jobs` | Employer Jobs List | ✅ Fixed | 2026-10-14 |
 | S017 | `/employer/jobs/new` | Employer New Job | ✅ Fixed | 2026-10-14 |
 | S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | ✅ Fixed | 2026-10-14 |
-| S019 | `/employer/jobs/:jobId/applications` | Employer Job Applicants | ⏳ Pending | — |
+| S019 | `/employer/jobs/:jobId/applications` | Employer Job Applicants | UI implemented; component checks passed; E2E pending | 2026-10-14 |
 | S020 | `/student/login` | Student Login | ✅ Fixed | 2026-10-14 |
 | S021 | `/student/register` | Student Register | ✅ Fixed | 2026-10-14 |
 | S022 | `/student/forgot-password` | Student Forgot Password | ⏳ Pending | — |
@@ -289,3 +289,7 @@ Implementation counts below track code changes, not full E2E or device acceptanc
 | S077 | `/jobs/education` | Teaching & Education Jobs | ⏳ Pending | — |
 | S078 | `/jobs/hospitality` | Hospitality Jobs | ⏳ Pending | — |
 | S079 | `/jobs/logistics` | Logistics & Supply Chain | ⏳ Pending | — |
+
+### Applicant UI continuation — 2026-10-14
+
+Employer applicant cards/actions, long text, table scrolling and export dialog improved. Shared admin application surfaces require regression verification. Synthetic component browser checks passed at six widths; authenticated journeys and full device acceptance remain pending. See QA-2026-10-14-Applicants in SCREEN_FUNCTIONALITY_TEST_TRACKER.md for screenshots, checks, limitations and remaining work. Dashboard implementation counts have not been recalculated for this partial batch.

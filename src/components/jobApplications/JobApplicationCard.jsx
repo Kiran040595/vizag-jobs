@@ -351,13 +351,13 @@ export default function JobApplicationCard({
       {/* Top Header Card Bar */}
       <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
         {/* Candidate Avatar & Identity */}
-        <div className="flex items-start gap-3.5">
+        <div className="flex min-w-0 items-start gap-3.5">
           <div
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-base font-black text-white shadow-xs`}
           >
             {initials}
           </div>
-          <div>
+          <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-black text-slate-950">{candidateName}</h3>
               <span
@@ -400,13 +400,13 @@ export default function JobApplicationCard({
 
       <div className="p-5">
         {/* Recruiter Instant Contact & Resume Action Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3">
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {/* Phone & Direct Call */}
             {snapshot.phone ? (
               <a
                 href={`tel:${snapshot.phone}`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
                 title={`Call ${snapshot.phone}`}
               >
                 <PhoneIcon />
@@ -422,7 +422,7 @@ export default function JobApplicationCard({
                 href={directWhatsAppUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
                 title="Message candidate on WhatsApp"
               >
                 <WhatsAppIcon />
@@ -434,7 +434,7 @@ export default function JobApplicationCard({
             {snapshot.contactEmail ? (
               <a
                 href={`mailto:${snapshot.contactEmail}`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
                 title={`Email ${snapshot.contactEmail}`}
               >
                 <MailIcon />
@@ -450,13 +450,13 @@ export default function JobApplicationCard({
                 type="button"
                 onClick={handleViewResume}
                 disabled={isOpeningResume}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-cyan-500 disabled:opacity-50"
+                className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-cyan-500 disabled:opacity-50"
               >
                 <DocumentIcon />
                 <span>{isOpeningResume ? 'Opening resume…' : 'View Resume (PDF)'}</span>
               </button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-400">
+              <span className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-400">
                 <DocumentIcon />
                 <span>No resume attached</span>
               </span>

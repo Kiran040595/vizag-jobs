@@ -38,7 +38,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
-| S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | Not tested | Not reviewed | — |
+| S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | In progress | In progress | QA-2026-10-14-Applicants: component preview checks; authenticated E2E pending |
 | S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S021 | `/student/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
@@ -54,7 +54,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S032 | `/admin/admin-jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | Not tested | Not reviewed | — |
 | S033 | `/admin/fetch` | Fetch each enabled source; start/collect runs; review, SEO optimize, deduplicate and publish; resume/retry failed run | Not tested | Not reviewed | — |
 | S034 | `/admin/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
-| S035 | `/admin/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | Not tested | Not reviewed | — |
+| S035 | `/admin/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | In progress | In progress | QA-2026-10-14-Applicants: component preview checks; authenticated E2E pending |
 | S036 | `/admin/blog` | List and manage blogs; publication states; open edit; generation workflow and errors | Not tested | Not reviewed | — |
 | S037 | `/admin/blog/new` | Create/edit blog; validate content/metadata; preview and publish; verify public article | Not tested | Not reviewed | — |
 | S038 | `/admin/blog/:postId/edit` | Create/edit blog; validate content/metadata; preview and publish; verify public article | Not tested | Not reviewed | — |
@@ -136,7 +136,7 @@ Each item below needs independent verification and regression checks on the scre
 | U10 | Feedback floating button and chatbot | Open/close; validate input; response/error/retry; narrow-screen keyboard and stacking | Not tested | Not reviewed | — |
 | U11 | Question sections and community previews | Submit, AI answer/failure, moderation, helpful votes and reply notification | Not tested | Not reviewed | — |
 | U12 | Resume upload, download and sharing | Supported/invalid/oversize files; upload/reuse; signed URL expiry and ownership; share/revoke behavior where supported | Not tested | Not reviewed | — |
-| U13 | Applicant cards/tables, filters and export dialogs | Filter and select candidates; export correct rows/columns; notes, stages and interview updates persist | Not tested | Not reviewed | — |
+| U13 | Applicant cards/tables, filters and export dialogs | Filter and select candidates; export correct rows/columns; notes, stages and interview updates persist | In progress | In progress | QA-2026-10-14-Applicants; includes shared admin export modal |
 | U14 | Student export/share and company-link dialogs | Selection and preview; confirm/cancel; valid links; restricted data visibility | Not tested | Not reviewed | — |
 | U15 | Job forms and external review/approval dialogs | Validation; requirements; raw text/SQL import; SEO preview; duplicate prevention; publish result | Not tested | Not reviewed | — |
 | U16 | Blog and YouTube generation panels | Start generation; progress/error/retry; review content; controlled publish/upload confirmation | Not tested | Not reviewed | — |
@@ -372,7 +372,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | In progress (2026-10-14: mobile UI touch targets, dynamic field reorder, and share buttons verified) |
 | Day 11 | `/admin/candidates`, `/admin/login` | In progress (2026-10-14: mobile UI touch targets, candidate cards, and admin auth verified) |
 | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | In progress (2026-10-14: mobile UI touch targets and safe-area padding verified) |
-| Day 13 | `/employer/jobs/:jobId/applications` | Planned |
+| Day 13 | `/employer/jobs/:jobId/applications` | UI implementation delivered; component preview checks passed, authenticated E2E/device checks pending |
 | Day 14 | `/student/forgot-password`, `/student/reset-password` | Planned |
 | Day 15 | `/student/forgot-password`, `/student/reset-password` | Planned |
 | Day 16 | `/student`, `/student/applications` | Planned |
@@ -611,3 +611,18 @@ Remote verification: origin/develop contains 9c94e4b4c1e98b810a51d98faae9b75b27f
 - Investigate sandboxed sitemap-fetch failures separately; generated fallback sitemap changes were excluded. Build warnings remain for large chunks and outdated Browserslist data.
 
 Delivery status: fixed application commits above confirmed on origin/develop; this summary is delivered in a separate documentation commit. Full application QA remains in progress.
+
+## QA-2026-10-14-Applicants: applicant cards, table and export dialog
+
+- Scope: S019 employer applications; S035 admin applications and U13 reopened because card/export are shared. Export also appears inside the existing admin JobApplicantsModal. No new product routes, screens or dialogs introduced.
+- Baseline/environment: develop 12e4e5d, 2026-10-14 Asia/Kolkata, Codex; local Vite port 5175. Reviewed and completed pre-existing employer applications/card UI edits. Existing notification inbox/bell work excluded.
+- Fixes: stack employer header/actions and contact/resume bar on phones; 44px controls and empty-state actions; readable mobile search/select text; long breadcrumb/candidate/college text wraps; accessible candidate search; clear-search hit area widened. Candidate table remains within a labelled, keyboard-focusable horizontal scroll region with a mobile swipe hint, larger controls and labelled pipeline/WhatsApp actions.
+- Export: native modal dialog keeps background inert and focus contained, scrolls within viewport, locks/restores body scrolling, supports Escape/Close/Cancel, restores focus to the opener, wraps long job names and stacks footer actions on mobile. Escape propagation stopped so the parent applicant modal does not receive the key event. Existing column selection/export logic retained.
+- Evidence type: isolated browser component preview using the real card/table/export components with entirely synthetic props (example.invalid contact; no real candidates). Temporary .qa-preview files used solely for QA and removed before delivery. This is component UI verification, not an authenticated application journey or backend E2E pass.
+- Browser steps/results: inspect long unbroken candidate name/college/skill; open export; inspect long unbroken job title; clear selections -> download disabled at 0 columns; Recommended -> download enabled at 18 columns; Shift+Tab stayed inside dialog; Escape closed dialog and restored Open export focus; reopen/Cancel also restored focus. Initial focus-restoration failure was fixed and retested. No download, status/notes/interview mutation, resume access or communication performed.
+- Responsive checks: requested widths 320/360/390/430/768/1280, height 800. Actual innerWidth/page scrollWidth without dialog: 320/305, 360/346, 391/376, 430/415, 768/753, 1281/1266. Table content 2004-2016px remained within its own 272-990px scroll region. With dialog, page scrollWidth equalled viewport; dialog clientWidth equalled scrollWidth (272/312/342/382/656/656px), height 768px within 800px viewport. No page/dialog horizontal overflow. Mobile screenshots captured at 320x740.
+- Evidence: docs/qa/2026-10-14/applicants-card-mobile.jpg and applicants-export-mobile.jpg. Only synthetic data appears in screenshots.
+- Automated checks: five relevant test files passed (application-export, apply-click-export, application-status, recruiter-pipeline, employer-linked-job-applications); changed-file ESLint passed. Build result below.
+- Functional: In progress. Mobile UI: In progress. Full employer/admin journeys, auth/ownership, persistence and export contents/download, keyboard traversal across all controls, nested admin-modal integration, device keyboards, iOS Safari/Android Chrome, landscape and 200% zoom remain pending. No Tested/Verified claim.
+- Delivery: scoped applicant UI, evidence and tracker to be committed/pushed together. Push result reported in chat after Git verification.
+- Build: npm run build exited 0; final Vite production rebuild after Escape scoping also exited 0 with 604 modules and PWA generated. Existing large-chunk/Browserslist warnings remain. Sandboxed sitemap fetch fell back to static URLs; generated sitemap restored and excluded.

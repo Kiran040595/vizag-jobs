@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   APPLICATION_EXPORT_COLUMNS,
   downloadApplicationExcel,
@@ -23,6 +23,24 @@ export default function ApplicationExportDialog({
 }) {
   const [selectedIds, setSelectedIds] = useState(() => getDefaultExportColumnIds());
   const [error, setError] = useState('');
+  const dialogRef = useRef(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const dialog = dialogRef.current;
+    const previousFocus = document.activeElement;
+    dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus();
+      }
+    };
+  }, [open]);
 
   const groupedColumns = useMemo(() => {
     const groups = new Map();
@@ -76,16 +94,25 @@ export default function ApplicationExportDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/40 p-4 sm:items-center">
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      onKeyDown={(event) => {
+        // Keep Escape scoped to this dialog when exporting from an applicant modal.
+        if (event.key === 'Escape') event.stopPropagation();
+      }}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose?.();
+      }}
+      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-950/40"
+    >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="application-export-title"
-        className="max-h-[calc(100dvh-2rem)] min-w-0 w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6 [&_button]:min-h-11"
+        className="min-w-0 p-4 [overflow-wrap:anywhere] sm:p-6 [&_button]:min-h-11"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 id="application-export-title" className="text-xl font-black text-slate-950">
+            <h2 id={titleId} className="text-xl font-black text-slate-950">
               Download applicants (Excel)
             </h2>
             <p className="mt-1 text-sm text-slate-600">
@@ -164,7 +191,7 @@ export default function ApplicationExportDialog({
           </p>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -182,6 +209,6 @@ export default function ApplicationExportDialog({
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -304,16 +304,16 @@ function EmployerJobApplicationsContent() {
       />
 
       {/* Top Breadcrumb & Actions Bar */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-2 text-sm">
           <Link
             to="/employer/jobs"
-            className="font-bold text-slate-600 transition hover:text-cyan-700"
+            className="inline-flex min-h-11 shrink-0 items-center font-bold text-slate-600 transition hover:text-cyan-700"
           >
             ← My Jobs
           </Link>
           <span className="text-slate-300">/</span>
-          <span className="font-semibold text-slate-900">{job?.title || 'Job Applications'}</span>
+          <span className="min-w-0 self-center font-semibold text-slate-900 [overflow-wrap:anywhere]">{job?.title || 'Job Applications'}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -322,7 +322,7 @@ function EmployerJobApplicationsContent() {
               to={publicJobPath}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
             >
               <span>View Job Post</span>
               <ExternalLinkIcon />
@@ -333,7 +333,7 @@ function EmployerJobApplicationsContent() {
             type="button"
             onClick={handleRefresh}
             disabled={isRefreshing || isLoading}
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
             title="Refresh candidates list"
           >
             <RefreshIcon />
@@ -344,7 +344,7 @@ function EmployerJobApplicationsContent() {
             <button
               type="button"
               onClick={() => setExportOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-cyan-500 px-4 py-2 text-xs font-black text-slate-950 shadow-2xs transition hover:bg-cyan-400"
+              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-2xl bg-cyan-500 px-4 py-2 text-xs font-black text-slate-950 shadow-2xs transition hover:bg-cyan-400"
             >
               <ExcelIcon />
               <span>Download Excel ({applications.length})</span>
@@ -419,7 +419,7 @@ function EmployerJobApplicationsContent() {
 
       {/* Recruiter Pipeline Stage Funnel Bar */}
       {!isLoading && applications.length > 0 ? (
-        <div className="mb-6 overflow-x-auto pb-1">
+        <div className="mb-6 -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
           <div className="flex min-w-max items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xs">
             {FUNNEL_STAGES.map((stage) => {
               const count = stageCounts[stage.id] ?? 0;
@@ -466,13 +466,14 @@ function EmployerJobApplicationsContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by candidate name, phone, email, college, branch, or skills..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-8 text-base text-slate-900 placeholder-slate-400 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100 sm:text-sm"
+              aria-label="Search candidates"
+              className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-14 text-base text-slate-900 placeholder-slate-400 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100 sm:text-sm"
             />
             {searchQuery ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-2.5 flex items-center text-xs font-bold text-slate-400 hover:text-slate-700"
+                className="absolute inset-y-0 right-1 flex min-w-11 items-center justify-center text-xs font-bold text-slate-500 hover:text-slate-700"
               >
                 ✕
               </button>
@@ -485,7 +486,7 @@ function EmployerJobApplicationsContent() {
             <button
               type="button"
               onClick={() => setHasResumeOnly(!hasResumeOnly)}
-              className={`rounded-xl px-3 py-2 text-xs font-bold transition ${
+              className={`inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold transition ${
                 hasResumeOnly
                   ? 'border border-cyan-400 bg-cyan-50 text-cyan-900'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -498,7 +499,7 @@ function EmployerJobApplicationsContent() {
             <button
               type="button"
               onClick={() => setHasPhoneOnly(!hasPhoneOnly)}
-              className={`rounded-xl px-3 py-2 text-xs font-bold transition ${
+              className={`inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold transition ${
                 hasPhoneOnly
                   ? 'border border-emerald-400 bg-emerald-50 text-emerald-900'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -511,7 +512,7 @@ function EmployerJobApplicationsContent() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400"
+              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
@@ -524,7 +525,7 @@ function EmployerJobApplicationsContent() {
               <button
                 type="button"
                 onClick={() => setViewMode('cards')}
-                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                className={`inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
                   viewMode === 'cards' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="Detailed Card View"
@@ -534,7 +535,7 @@ function EmployerJobApplicationsContent() {
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
-                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                className={`inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
                   viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="High-Density Table View"
@@ -558,7 +559,7 @@ function EmployerJobApplicationsContent() {
             <button
               type="button"
               onClick={clearAllFilters}
-              className="font-bold text-cyan-700 hover:text-cyan-800 hover:underline"
+              className="inline-flex min-h-11 items-center font-bold text-cyan-700 hover:text-cyan-800 hover:underline"
             >
               Clear all filters
             </button>
@@ -570,7 +571,7 @@ function EmployerJobApplicationsContent() {
 
       {/* Empty State: Zero Applications on Job */}
       {!isLoading && applications.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 sm:p-12 text-center shadow-xs">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-2xl">
             👥
           </div>
@@ -585,7 +586,7 @@ function EmployerJobApplicationsContent() {
                 to={publicJobPath}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+                className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
               >
                 <span>Preview Your Job Listing</span>
                 <ExternalLinkIcon />
@@ -597,7 +598,7 @@ function EmployerJobApplicationsContent() {
 
       {/* Empty State: Filters yielded 0 results */}
       {!isLoading && applications.length > 0 && filteredApplications.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-xs">
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 sm:p-10 text-center shadow-xs">
           <h3 className="text-lg font-bold text-slate-900">No candidates match your current filter</h3>
           <p className="mt-2 text-sm text-slate-600">
             Try choosing a different stage, clearing your search keywords, or resetting filters.
@@ -605,7 +606,7 @@ function EmployerJobApplicationsContent() {
           <button
             type="button"
             onClick={clearAllFilters}
-            className="mt-5 rounded-2xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+            className="mt-5 inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
           >
             Show All Candidates ({applications.length})
           </button>

@@ -113,8 +113,9 @@ export default function JobApplicationTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
+    <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm [&_button]:min-h-11 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_select]:min-h-11 [&_select]:text-base">
+      <p className="px-4 pt-3 text-xs text-slate-600 sm:hidden">Swipe sideways to see all candidate columns.</p>
+      <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-cyan-600" role="region" aria-label="Candidate applications table" tabIndex={0}>
         <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
           <thead className="bg-slate-50/80 text-xs font-bold uppercase tracking-wider text-slate-500">
             <tr>
@@ -188,6 +189,7 @@ export default function JobApplicationTable({
                               rel="noopener noreferrer"
                               className="rounded-md bg-emerald-600 p-1 text-white shadow-2xs transition hover:bg-emerald-700"
                               title="Chat on WhatsApp"
+                              aria-label={`Chat with ${name} on WhatsApp`}
                             >
                               <WhatsAppIcon />
                             </a>
@@ -264,6 +266,7 @@ export default function JobApplicationTable({
                   {/* Pipeline Stage Dropdown */}
                   <td className="px-5 py-4">
                     <select
+                      aria-label={`Pipeline stage for ${name}`}
                       value={app.status}
                       onChange={(e) => handleStageSelect(app, e.target.value)}
                       className={`rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 shadow-2xs focus:border-cyan-500 focus:outline-none`}
