@@ -45,16 +45,21 @@ function StudentProfileContent() {
       ) : null}
       <StudentProfileForm onSaved={handleSaved} />
       {profileComplete ? (
-        <p className="mt-6 text-sm text-slate-600">
-          <Link to="/jobs/fresher" className="font-semibold text-indigo-600 hover:text-indigo-700">
+        <div className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+          <Link
+            to="/jobs/fresher"
+            className="inline-flex min-h-11 items-center font-semibold text-indigo-600 hover:text-indigo-700"
+          >
             Browse fresher jobs in Vizag
-          </Link>{' '}
-          or{' '}
-          <Link to="/saved-jobs" className="font-semibold text-indigo-600 hover:text-indigo-700">
+          </Link>
+          <span>or</span>
+          <Link
+            to="/saved-jobs"
+            className="inline-flex min-h-11 items-center font-semibold text-indigo-600 hover:text-indigo-700"
+          >
             view saved jobs
           </Link>
-          .
-        </p>
+        </div>
       ) : null}
     </StudentShell>
   );

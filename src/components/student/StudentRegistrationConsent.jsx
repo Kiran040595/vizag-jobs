@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SITE_LEGAL_NAME } from '../../lib/siteLegal';
 
-const CHECKBOX_CLASS = 'mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500';
+const CHECKBOX_CLASS = 'mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500';
 
 export default function StudentRegistrationConsent({ values, onChange, idPrefix = 'student-consent' }) {
   const setChecked = (key) => (event) => {
@@ -12,7 +12,7 @@ export default function StudentRegistrationConsent({ values, onChange, idPrefix 
     <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <legend className="px-1 text-sm font-semibold text-slate-800">Agreements required to register *</legend>
 
-      <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+      <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-700">
         <input
           id={`${idPrefix}-terms`}
           type="checkbox"
@@ -34,7 +34,7 @@ export default function StudentRegistrationConsent({ values, onChange, idPrefix 
         </span>
       </label>
 
-      <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+      <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-700">
         <input
           id={`${idPrefix}-share`}
           type="checkbox"
@@ -51,7 +51,7 @@ export default function StudentRegistrationConsent({ values, onChange, idPrefix 
         </span>
       </label>
 
-      <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+      <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-700">
         <input
           id={`${idPrefix}-accurate`}
           type="checkbox"
@@ -66,7 +66,7 @@ export default function StudentRegistrationConsent({ values, onChange, idPrefix 
         </span>
       </label>
 
-      <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+      <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-slate-700">
         <input
           id={`${idPrefix}-age`}
           type="checkbox"

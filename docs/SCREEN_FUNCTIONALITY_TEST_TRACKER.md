@@ -43,10 +43,10 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S021 | `/student/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
 | S023 | `/student/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
-| S024 | `/student` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
-| S025 | `/student/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | Not tested | Not reviewed | — |
-| S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records | Not tested | Not reviewed | — |
-| S027 | `/student/applications` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
+| S024 | `/student` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
+| S025 | `/student/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | In progress | In progress | QA-2026-10-14-UI-Day4: mobile UI verified, full journey pending |
+| S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records | In progress | In progress | QA-2026-10-14-UI-Day4: mobile UI verified, full journey pending |
+| S027 | `/student/applications` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
 | S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
 | S029 | `/admin` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
 | S030 | `/admin/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
@@ -363,7 +363,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 1 | `/`, `/jobs` | Started 2026-10-14; targeted UI checks passed, full journeys/checklist pending |
 | Day 2 | `/jobs/:jobSegment/:jobSlug`, `/student/apply/:jobId` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
 | Day 3 | `/student/login`, `/student/register` | In progress (2026-10-14: mobile UI touch targets and padding verified) |
-| Day 4 | `/student/profile`, `/student/applied-jobs` | Planned |
+| Day 4 | `/student/profile`, `/student/applied-jobs` | In progress (2026-10-14: mobile UI touch targets, chips, and safe-area padding verified) |
 | Day 5 | `/saved-jobs`, `/apply` | Planned |
 | Day 6 | `/quick-register`, `/apply/:slug` | Planned |
 | Day 7 | `/quick-applications/claim`, `/oauth/consent` | Planned |
@@ -480,6 +480,19 @@ Copy one record per completed or attempted feature/screen.
   - StudentRegisterPage: Added pb-mobile-chrome safe-area padding to page wrapper; upgraded "Employer registration" link to inline-flex min-h-11 items-center.
   - StudentRegisterWizard: Standardized top back buttons ("Back to Education", "Back to Account Info") to inline-flex min-h-11 items-center with flex-wrap on mobile header to prevent text clipping at 320px viewport; elevated footer "Sign in here" link to inline-flex min-h-11.
   - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 3 and in-progress Day 3 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day4: Student Profile and Applied Jobs mobile fixes
+
+- Scope: S024, S025, S026, S027; develop baseline 0f08498, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - StudentProfilePage: Sized bottom helper links ("Browse fresher jobs in Vizag", "view saved jobs") with inline-flex min-h-11 items-center and a wrapping flex container to prevent overlap and mis-clicks on mobile viewports.
+  - StudentProfileFields: Elevated "Add sector" and "Add skill" buttons from h-10 (40px) to min-h-11 h-11 (44px); standardized custom skill chips to min-h-11 with px-3 py-2 matching preset skill chip touch sizing; increased touch targets on "Are you a fresher?" radio options to min-h-11 with cursor-pointer.
+  - StudentRegistrationConsent: Increased checkbox sizes to 20px (h-5 w-5) and added cursor-pointer to label containers for comfortable tapping on mobile touchscreens.
+  - StudentApplicationsPage: Upgraded empty state "Browse jobs" link to inline-flex min-h-11 items-center justify-center; added "Show all applications" reset CTA (min-h-11) for filtered empty states; optimized application card header with min-w-0 flex-1 break-words preventing text-status badge overlap on 320px screens.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 4 and in-progress Day 4 queue status.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.

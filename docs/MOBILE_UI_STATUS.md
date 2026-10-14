@@ -24,11 +24,11 @@ Current branch: `develop`
 |---|---|---|---|---|
 | **Public Core** | 8 | 4 | 2 | 2 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
-| **Student Portal** | 8 | 3 | 2 | 3 |
+| **Student Portal** | 8 | 5 | 0 | 3 |
 | **Employer Portal** | 10 | 0 | 2 | 8 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
 | **Quick Apply / Static** | 14 | 0 | 0 | 14 |
-| **Total** | **79** | **7** | **6** | **66** |
+| **Total** | **79** | **9** | **4** | **66** |
 
 ---
 
@@ -79,19 +79,32 @@ Current branch: `develop`
   - Upgraded "Employer registration" and footer "Sign in here" links to `min-h-11` touch targets.
   - Responsive multi-step wizard preserves input readability with font-size $\ge 16\text{px}$ on mobile viewports.
 
+### Batch 4: Student Profile & Applied Jobs
+- **`/student/profile` (Student Profile - S025):**
+  - Upgraded "Browse fresher jobs in Vizag" and "view saved jobs" helper links to `inline-flex min-h-11 items-center` with wrapping flex container.
+  - Sized "Add sector" and "Add skill" buttons to 44px (`min-h-11 h-11`).
+  - Standardized custom skills buttons to `min-h-11 max-w-full rounded-full border border-indigo-500 bg-indigo-500 px-3 py-2 text-sm font-semibold text-white` matching preset chip touch targets.
+  - Elevated "Are you a fresher?" radio button options to 44px touch targets (`min-h-11 cursor-pointer`).
+  - Enhanced registration consent checkboxes to 20px (`h-5 w-5`) with `cursor-pointer` labels.
+  - Safe-area bottom spacing verified with `pb-mobile-chrome` via `StudentShell.jsx`.
+- **`/student/applied-jobs`, `/student/applications` (Student Applied Jobs & Redirect - S026, S027):**
+  - Upgraded "Browse jobs" empty state button to `min-h-11` touch target.
+  - Added "Show all applications" reset button in filtered empty states for quick recovery.
+  - Application cards optimized with `min-w-0 flex-1 break-words` preventing text truncation or overlap with status pills on 320px screens.
+  - Filter pills maintain `min-h-11` touch targets.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 4 | `/student/profile`, `/student/applied-jobs` | Mobile profile form, resume uploader, applicant status cards |
-| **P2** | Day 5 | `/saved-jobs`, `/apply` | Saved jobs list, Instagram direct application feed |
-| **P3** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
-| **P4** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
-| **P5** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
-| **P6** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
-| **P7** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P1 (Next)** | Day 5 | `/saved-jobs`, `/apply` | Saved jobs list, Instagram direct application feed |
+| **P2** | Day 6 | `/quick-register`, `/apply/:slug` | One-page fast apply form, receipt confirmation |
+| **P3** | Day 7 | `/quick-applications/claim`, `/oauth/consent` | OAuth modal on mobile, receipt claim flow |
+| **P4** | Day 8 | `/employer/login`, `/employer/register` | Recruiter auth layout, company registration fields |
+| **P5** | Day 9 | `/employer/profile`, `/employer/jobs` | Company profile editor, job management cards |
+| **P6** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
 
 ---
 
@@ -122,10 +135,10 @@ Current branch: `develop`
 | S021 | `/student/register` | Student Register | ✅ Fixed | 2026-10-14 |
 | S022 | `/student/forgot-password` | Student Forgot Password | ⏳ Pending | — |
 | S023 | `/student/reset-password` | Student Reset Password | ⏳ Pending | — |
-| S024 | `/student` | Student Dashboard Redirect | ⏳ Pending | — |
-| S025 | `/student/profile` | Student Profile | 🔄 In Progress | Planned Day 4 |
-| S026 | `/student/applied-jobs` | Student Applied Jobs | 🔄 In Progress | Planned Day 4 |
-| S027 | `/student/applications` | Student Applications Redirect | ⏳ Pending | — |
+| S024 | `/student` | Student Dashboard Redirect | ✅ Fixed | 2026-10-14 |
+| S025 | `/student/profile` | Student Profile | ✅ Fixed | 2026-10-14 |
+| S026 | `/student/applied-jobs` | Student Applied Jobs | ✅ Fixed | 2026-10-14 |
+| S027 | `/student/applications` | Student Applications Redirect | ✅ Fixed | 2026-10-14 |
 | S028 | `/student/apply/:jobId` | Student Job Apply | ✅ Fixed | 2026-10-14 |
 | S029 | `/admin` | Admin Dashboard Redirect | ⏳ Pending | — |
 | S030 | `/admin/new` | Admin New Job | ⏳ Pending | — |

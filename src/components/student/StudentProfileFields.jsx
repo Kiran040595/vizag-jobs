@@ -248,25 +248,27 @@ export default function StudentProfileFields({
       <fieldset className="block sm:col-span-2">
         <legend className="text-sm font-semibold text-slate-700">Are you a fresher? *</legend>
         <div className="mt-3 flex flex-wrap gap-4">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label className="inline-flex min-h-11 items-center gap-2 text-sm text-slate-700 cursor-pointer">
             <input
               type="radio"
               name={`${idPrefix}-is_fresher`}
               checked={form.is_fresher === true}
               onChange={() => onFresherChange('yes')}
               required={form.is_fresher === null}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
             />
-            Yes — entry-level / no full-time experience
+            <span>Yes — entry-level / no full-time experience</span>
           </label>
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label className="inline-flex min-h-11 items-center gap-2 text-sm text-slate-700 cursor-pointer">
             <input
               type="radio"
               name={`${idPrefix}-is_fresher`}
               checked={form.is_fresher === false}
               onChange={() => onFresherChange('no')}
               required={form.is_fresher === null}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
             />
-            No — I have work experience
+            <span>No — I have work experience</span>
           </label>
         </div>
       </fieldset>
@@ -323,7 +325,7 @@ export default function StudentProfileFields({
           <button
             type="button"
             onClick={addCustomCategory}
-            className="h-10 shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100"
+            className="min-h-11 h-11 shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100"
           >
             Add sector
           </button>
@@ -483,7 +485,7 @@ export default function StudentProfileFields({
                     key={option.value}
                     type="button"
                     onClick={() => onToggleSkill(option.value)}
-                    className="rounded-full border border-indigo-500 bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition"
+                    className="min-h-11 max-w-full rounded-full border border-indigo-500 bg-indigo-500 px-3 py-2 text-sm font-semibold text-white transition"
                   >
                     {option.label}
                   </button>
@@ -511,7 +513,7 @@ export default function StudentProfileFields({
           <button
             type="button"
             onClick={addCustomSkill}
-            className="h-10 shrink-0 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100"
+            className="min-h-11 h-11 shrink-0 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100"
           >
             Add skill
           </button>
