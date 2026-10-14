@@ -3,10 +3,12 @@ import {
   registerStaleAssetRecovery,
   registerPwaAutoUpdate,
 } from './lib/pwaRecovery.js';
+import { initGlobalErrorListeners } from './lib/errorReporter.js';
 
 unregisterLegacyServiceWorkers();
 registerStaleAssetRecovery();
 registerPwaAutoUpdate();
+initGlobalErrorListeners();
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
