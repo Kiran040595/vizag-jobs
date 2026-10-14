@@ -26,9 +26,9 @@ Current branch: `develop`
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
 | **Employer Portal** | 10 | 7 | 0 | 3 |
-| **Admin Portal** | 24 | 2 | 0 | 22 |
+| **Admin Portal** | 24 | 4 | 0 | 20 |
 | **Quick Apply / Static** | 14 | 6 | 0 | 8 |
-| **Total** | **79** | **28** | **0** | **51** |
+| **Total** | **79** | **30** | **0** | **49** |
 
 ---
 
@@ -167,16 +167,29 @@ Current branch: `develop`
   - Mobile-responsive post-save share tray: converted hardcoded margin buttons to responsive `flex-col sm:flex-row flex-wrap gap-2` with full-width mobile action buttons (`w-full sm:w-auto`).
   - Elevated sticky bottom submit bar spacer to `h-24 sm:hidden` and added `pb-16` safe-area bottom clearance to `AdminShell`.
 
+### Batch 11: Admin Quick Candidates & Admin Login
+- **`/admin/candidates` (Admin Quick Candidates - S006):**
+  - Upgraded "Create quick job" action to full width on mobile (`inline-flex min-h-12 w-full sm:w-auto items-center justify-center`).
+  - Job card links upgraded to 44px touch targets (`inline-flex min-h-11 items-center font-medium`).
+  - Filter tabs standardized to `inline-flex min-h-11 items-center justify-center` with high-contrast active states.
+  - Export CSV button upgraded to responsive `inline-flex min-h-11 w-full sm:w-auto items-center justify-center`.
+  - Candidate cards: added border separation, break-words protection, elevated phone tap targets (`inline-flex min-h-11 items-center`), styled answers disclosure with 44px summary trigger, and upgraded status/interview link to 44px (`inline-flex min-h-11 items-center`).
+  - Upgraded student account linking sub-flow (`QuickCandidateAccountLink`) with full-width 48px action buttons and accessible 20px verification checkbox.
+- **`/admin/login` (Admin Login via UnifiedLoginPage - S008):**
+  - Confirmed 44px role tab switcher (`min-h-11`) and full-width 48px email and password inputs (`h-12 w-full text-base`).
+  - Elevated "Continue to admin" submit button to 48px touch height (`min-h-12 w-full`).
+  - Verified role mismatch sign-out action with 44px touch height (`inline-flex min-h-11 items-center`).
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
-| **P2** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
-| **P3** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
-| **P4** | Day 14 | `/student/forgot-password`, `/student/reset-password` | Student password reset flows |
+| **P1 (Next)** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
+| **P2** | Day 13 | `/employer/jobs/:jobId/applications` | Candidate pipeline & status |
+| **P3** | Day 14 | `/student/forgot-password`, `/student/reset-password` | Student password reset flows |
+| **P4** | Day 15 | `/admin`, `/admin/new` | Admin overview, job creation |
 
 ---
 
@@ -189,9 +202,9 @@ Current branch: `develop`
 | S003 | `/quick-applications/claim` | Claim Quick Application | ✅ Fixed | 2026-10-14 |
 | S004 | `/admin/quick-jobs/new` | Admin Create Quick Job | ✅ Fixed | 2026-10-14 |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Admin Edit Quick Job | ✅ Fixed | 2026-10-14 |
-| S006 | `/admin/candidates` | Admin Quick Candidates | ⏳ Pending | — |
+| S006 | `/admin/candidates` | Admin Quick Candidates | ✅ Fixed | 2026-10-14 |
 | S007 | `/` | Home Page | ✅ Fixed | 2026-10-14 |
-| S008 | `/admin/login` | Admin Login | ⏳ Pending | — |
+| S008 | `/admin/login` | Admin Login | ✅ Fixed | 2026-10-14 |
 | S009 | `/oauth/consent` | OAuth Consent | ✅ Fixed | 2026-10-14 |
 | S010 | `/employer/login` | Employer Login | ✅ Fixed | 2026-10-14 |
 | S011 | `/employer/register` | Employer Register | ✅ Fixed | 2026-10-14 |

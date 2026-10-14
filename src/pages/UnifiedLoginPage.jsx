@@ -424,7 +424,7 @@ function AdminLoginPanel() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="h-12 w-full rounded-2xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
+        className="min-h-12 w-full rounded-2xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
       >
         {isSubmitting ? 'Signing in...' : 'Continue to admin'}
       </button>

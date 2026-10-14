@@ -123,30 +123,30 @@ export default function AdminQuickCandidatesPage() {
     >
       <Link
         to="/admin/quick-jobs/new"
-        className="inline-flex min-h-12 items-center rounded-xl bg-blue-700 px-5 text-white"
+        className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-xl bg-blue-700 px-5 font-semibold text-white transition hover:bg-blue-800"
       >
         Create quick job
       </Link>
-      <section className="mt-5 rounded-2xl bg-white p-4">
-        <h2 className="text-xl font-bold">Quick jobs</h2>
+      <section className="mt-5 rounded-2xl bg-white p-4 sm:p-5 shadow-sm border border-slate-200">
+        <h2 className="text-xl font-bold text-slate-900">Quick jobs</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {jobs.map((j) => (
-            <div className="rounded-xl border p-3" key={j.id}>
-              <p className="font-bold">
-                {j.title} · {j.status}
+            <div className="rounded-xl border border-slate-200 p-3 sm:p-4" key={j.id}>
+              <p className="font-bold text-slate-900">
+                {j.title} · <span className="capitalize font-semibold text-slate-600">{j.status}</span>
               </p>
-              <div className="mt-2 flex flex-wrap gap-4">
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                 <Link
-                  className="py-3 text-blue-700"
+                  className="inline-flex min-h-11 items-center font-medium text-blue-700 hover:underline text-sm"
                   to={`/admin/quick-jobs/${j.id}/edit`}
                 >
                   Edit / close / assign
                 </Link>
-                <Link className="py-3 text-blue-700" to={`/apply/${j.slug}`}>
+                <Link className="inline-flex min-h-11 items-center font-medium text-blue-700 hover:underline text-sm" to={`/apply/${j.slug}`}>
                   Form link
                 </Link>
                 <Link
-                  className="py-3 text-blue-700"
+                  className="inline-flex min-h-11 items-center font-medium text-blue-700 hover:underline text-sm"
                   to={`/admin/jobs/${j.id}/applications`}
                 >
                   Manage applications
@@ -156,11 +156,15 @@ export default function AdminQuickCandidatesPage() {
           ))}
         </div>
       </section>
-      <section className="mt-5 rounded-2xl bg-white p-4">
+      <section className="mt-5 rounded-2xl bg-white p-4 sm:p-5 shadow-sm border border-slate-200">
         <div className="flex flex-wrap gap-2">
           {["all", "guest", "registered", "review"].map((t) => (
             <button
-              className={`min-h-12 rounded-xl border px-4 ${tab === t ? "bg-blue-700 text-white" : ""}`}
+              className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition ${
+                tab === t
+                  ? "border-blue-700 bg-blue-700 text-white"
+                  : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
               key={t}
               onClick={() => setTab(t)}
             >
@@ -210,12 +214,12 @@ export default function AdminQuickCandidatesPage() {
             ))}
           </select>
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p>
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-sm font-medium text-slate-700">
             {count} candidate records · {filtered.length} applications
           </p>
           <button
-            className="min-h-12 rounded-xl border px-4"
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             onClick={exportCsv}
           >
             Export CSV
@@ -241,39 +245,39 @@ export default function AdminQuickCandidatesPage() {
           {filtered.map((r) => (
             <article
               key={r.id}
-              className="min-w-0 rounded-2xl bg-white p-5 shadow-sm"
+              className="min-w-0 break-words rounded-2xl bg-white p-4 sm:p-5 shadow-sm border border-slate-200"
             >
-              <h2 className="text-xl font-bold">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 break-words">
                 {r.candidate?.full_name || r.form_answers.full_name}
               </h2>
               <a
-                className="my-2 inline-flex min-h-12 items-center text-blue-700"
+                className="my-1 inline-flex min-h-11 items-center font-semibold text-blue-700 hover:underline"
                 href={`tel:${r.candidate?.phone}`}
               >
-                {r.candidate?.phone}
+                📞 {r.candidate?.phone}
               </a>
-              <p>
-                {r.student_user_id ? "Registered" : "Not registered"}
+              <p className="text-sm text-slate-700">
+                <span className="font-medium">{r.student_user_id ? "Registered" : "Not registered"}</span>
                 {r.candidate?.needs_review ? " · Needs review" : ""} ·{" "}
-                {r.status}
+                <span className="capitalize">{r.status}</span>
               </p>
-              <p className="mt-2">
-                Applied for: {r.applied_role} · {r.job?.title}
+              <p className="mt-2 text-sm text-slate-800">
+                <span className="font-medium">Applied for:</span> {r.applied_role} · {r.job?.title}
               </p>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-1 text-xs text-slate-500">
                 Source: {r.application_source} ·{" "}
                 {new Date(r.submitted_at).toLocaleDateString()}
               </p>
-              <details className="mt-3">
-                <summary className="min-h-12 cursor-pointer py-3 font-semibold">
+              <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                <summary className="min-h-11 cursor-pointer font-semibold text-sm text-slate-800 flex items-center">
                   Application answers
                 </summary>
-                <p className="whitespace-pre-wrap break-words">
+                <p className="mt-2 text-xs sm:text-sm whitespace-pre-wrap break-words text-slate-600">
                   {answerText(r.form_snapshot, r.form_answers)}
                 </p>
               </details>
               <Link
-                className="mt-3 inline-flex min-h-12 items-center text-blue-700"
+                className="mt-3 inline-flex min-h-11 items-center font-semibold text-blue-700 hover:underline text-sm"
                 to={`/admin/jobs/${r.job_id}/applications`}
               >
                 Update status / interview →

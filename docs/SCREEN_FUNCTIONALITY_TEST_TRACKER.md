@@ -25,9 +25,9 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S003 | `/quick-applications/claim` | Claim receipt after login; verify ownership, duplicate claim, invalid receipt and application association | In progress | In progress | QA-2026-10-14-UI-Day6: mobile UI verified, full journey pending |
 | S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
-| S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | Not tested | Not reviewed | — |
+| S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | In progress | In progress | QA-2026-10-14-UI-Day11: mobile UI verified, full journey pending |
 | S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-10-14-UI: targeted browser checks passed; full checklist pending |
-| S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
+| S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day11: mobile UI verified, full journey pending |
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S011 | `/employer/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
@@ -370,7 +370,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 8 | `/employer/register`, `/employer/profile` | In progress (2026-10-14: mobile UI touch targets, selects, and safe-area padding verified) |
 | Day 9 | `/employer/jobs`, `/employer/jobs/new` | In progress (2026-10-14: mobile UI touch targets, cards layout, and posting wizard verified) |
 | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | In progress (2026-10-14: mobile UI touch targets, dynamic field reorder, and share buttons verified) |
-| Day 11 | `/admin/candidates`, `/admin/login` | Planned |
+| Day 11 | `/admin/candidates`, `/admin/login` | In progress (2026-10-14: mobile UI touch targets, candidate cards, and admin auth verified) |
 | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Planned |
 | Day 13 | `/employer`, `/employer/jobs/new` | Planned |
 | Day 14 | `/employer/jobs/:jobId/edit`, `/employer/jobs/:jobId/applications` | Planned |
@@ -563,6 +563,18 @@ Copy one record per completed or attempted feature/screen.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day11: Admin Quick Candidates and Admin Login mobile fixes
+
+- Scope: S006, S008; develop baseline 77ff93d, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - AdminQuickCandidatesPage: Upgraded "Create quick job" action to full width on mobile (min-h-12 w-full sm:w-auto); job card links upgraded to min-h-11 touch targets; filter tabs standardized with min-h-11 items-center justify-center; export CSV button upgraded to responsive min-h-11 w-full sm:w-auto; candidate cards styled with clear border separation, break-words protection, elevated phone tap targets (min-h-11 inline-flex), 44px disclosure trigger for application answers, and min-h-11 status/interview update link. Upgraded QuickCandidateAccountLink buttons to min-h-12 full-width and styled 20px account verification checkbox.
+  - AdminLoginPage (UnifiedLoginPage): Confirmed 44px role switcher (min-h-11), full-width inputs (h-12 w-full text-base), elevated "Continue to admin" submit button to min-h-12 w-full, and role mismatch sign-out action to min-h-11.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 11 and in-progress Day 11 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
 
 
 

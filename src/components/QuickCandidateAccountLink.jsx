@@ -87,7 +87,7 @@ export default function QuickCandidateAccountLink({ application, onLinked }) {
           />
           <button
             disabled={busy}
-            className="min-h-12 rounded-xl border px-4"
+            className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             onClick={find}
           >
             Find account
@@ -112,20 +112,20 @@ export default function QuickCandidateAccountLink({ application, onLinked }) {
           )}
           {selected && (
             <>
-              <label className="flex min-h-12 items-start gap-3">
+              <label className="flex min-h-12 cursor-pointer items-start gap-3">
                 <input
-                  className="mt-1 size-5 shrink-0"
+                  className="mt-1 size-5 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   type="checkbox"
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
-                <span>
+                <span className="text-sm font-medium text-slate-700">
                   I verified that this applicant owns the selected account.
                 </span>
               </label>
               <button
                 disabled={busy || !confirmed}
-                className="min-h-12 rounded-xl bg-blue-700 px-4 text-white disabled:opacity-50"
+                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-xl bg-blue-700 px-5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
                 onClick={link}
               >
                 Link application
