@@ -25,10 +25,10 @@ Current branch: `develop`
 | **Public Core** | 8 | 8 | 0 | 0 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
-| **Employer Portal** | 10 | 0 | 2 | 8 |
+| **Employer Portal** | 10 | 1 | 2 | 7 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
-| **Quick Apply / Static** | 14 | 3 | 1 | 10 |
-| **Total** | **79** | **16** | **3** | **60** |
+| **Quick Apply / Static** | 14 | 4 | 0 | 10 |
+| **Total** | **79** | **18** | **2** | **59** |
 
 ---
 
@@ -120,16 +120,28 @@ Current branch: `develop`
   - Elevated "View my applications" link to `inline-flex min-h-11 items-center font-semibold text-blue-700`.
   - Safe-area bottom padding with `pb-16`.
 
+### Batch 7: OAuth Consent & Employer Login
+- **`/oauth/consent` (OAuth Consent - S009):**
+  - Added safe-area bottom clearance (`pb-16`) to invalid and active consent layouts.
+  - Added `break-all` on redirect URIs and requested OAuth permissions scopes to prevent horizontal overflow on narrow mobile screens (320px).
+  - Elevated "Approve" and "Deny" action buttons to 48px (`min-h-12 flex-1`).
+  - Standardized "Back to home" and "Employer dashboard" return links to 44px (`inline-flex min-h-11 items-center`).
+- **`/employer/login` (Employer Login via UnifiedLoginPage - S010):**
+  - Role switcher toggles sized to 44px (`min-h-11`).
+  - Elevated "Forgot password?" and "Create a company account" links to `inline-flex min-h-11 items-center`.
+  - Standardized "Sign in" button to `min-h-12 w-full`.
+  - Safe-area bottom spacing verified with `pb-mobile-chrome`.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 7 | `/oauth/consent`, `/employer/login` | OAuth modal on mobile, recruiter auth layout |
-| **P2** | Day 8 | `/employer/register`, `/employer/profile` | Company registration fields, profile editor |
-| **P3** | Day 9 | `/employer/jobs`, `/employer/jobs/new` | Job management cards, posting wizard |
-| **P4** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P1 (Next)** | Day 8 | `/employer/register`, `/employer/profile` | Company registration fields, profile editor |
+| **P2** | Day 9 | `/employer/jobs`, `/employer/jobs/new` | Job management cards, posting wizard |
+| **P3** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P4** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
 
 ---
 
@@ -145,8 +157,8 @@ Current branch: `develop`
 | S006 | `/admin/candidates` | Admin Quick Candidates | ⏳ Pending | — |
 | S007 | `/` | Home Page | ✅ Fixed | 2026-10-14 |
 | S008 | `/admin/login` | Admin Login | ⏳ Pending | — |
-| S009 | `/oauth/consent` | OAuth Consent | ⏳ Pending | — |
-| S010 | `/employer/login` | Employer Login | ⏳ Pending | — |
+| S009 | `/oauth/consent` | OAuth Consent | ✅ Fixed | 2026-10-14 |
+| S010 | `/employer/login` | Employer Login | ✅ Fixed | 2026-10-14 |
 | S011 | `/employer/register` | Employer Register | ⏳ Pending | — |
 | S012 | `/employer/forgot-password` | Employer Forgot Password | ⏳ Pending | — |
 | S013 | `/employer/reset-password` | Employer Reset Password | ⏳ Pending | — |

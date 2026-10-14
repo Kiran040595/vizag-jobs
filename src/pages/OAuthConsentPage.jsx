@@ -49,7 +49,7 @@ export default function OAuthConsentPage() {
 
   if (!authorizationId) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-6 sm:py-12">
+      <div className="min-h-screen bg-slate-50 px-4 py-6 pb-16 sm:py-12">
         <div className="mx-auto max-w-lg break-words [overflow-wrap:anywhere] rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 text-center shadow-sm">
           <h1 className="text-xl font-bold text-slate-900">Invalid request</h1>
           <p className="mt-2 text-sm text-slate-600">This authorization link is incomplete. Please open a fresh link from the application requesting access.</p>
@@ -115,7 +115,7 @@ export default function OAuthConsentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:py-12">
+    <div className="min-h-screen bg-slate-50 px-4 py-6 pb-16 sm:py-12">
       <SEO title="Authorize application | Vizag Jobs" canonical="/oauth/consent" />
       <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 shadow-xl">
         <h1 className="text-2xl font-black text-slate-950">Authorize application</h1>
@@ -137,11 +137,11 @@ export default function OAuthConsentPage() {
           </div>
         ) : (
           <div className="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-            <p>
+            <p className="break-words">
               <span className="font-semibold">Application:</span> {details.client?.name || 'Unknown app'}
             </p>
             {details.redirect_uri ? (
-              <p>
+              <p className="break-all">
                 <span className="font-semibold">Redirect:</span> {details.redirect_uri}
               </p>
             ) : null}
@@ -150,7 +150,7 @@ export default function OAuthConsentPage() {
                 <span className="font-semibold">Permissions:</span>
                 <ul className="mt-1 list-inside list-disc">
                   {details.scope.split(' ').filter(Boolean).map((scope) => (
-                    <li key={scope}>{scope}</li>
+                    <li key={scope} className="break-all">{scope}</li>
                   ))}
                 </ul>
               </div>

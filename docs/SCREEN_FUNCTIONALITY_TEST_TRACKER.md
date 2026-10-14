@@ -28,8 +28,8 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | Not tested | Not reviewed | — |
 | S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-10-14-UI: targeted browser checks passed; full checklist pending |
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
-| S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | Not tested | Not reviewed | — |
-| S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
+| S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
+| S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S011 | `/employer/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | Not tested | Not reviewed | — |
 | S012 | `/employer/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
 | S013 | `/employer/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
@@ -366,7 +366,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 4 | `/student/profile`, `/student/applied-jobs` | In progress (2026-10-14: mobile UI touch targets, chips, and safe-area padding verified) |
 | Day 5 | `/saved-jobs`, `/apply` | In progress (2026-10-14: mobile UI touch targets, empty states, and safe-area padding verified) |
 | Day 6 | `/quick-register`, `/apply/:slug` | In progress (2026-10-14: mobile UI touch targets, dynamic fields, and claim flow verified) |
-| Day 7 | `/quick-applications/claim`, `/oauth/consent` | Planned |
+| Day 7 | `/oauth/consent`, `/employer/login` | In progress (2026-10-14: mobile UI touch targets, permissions layout, and auth verified) |
 | Day 8 | `/employer/login`, `/employer/register` | Planned |
 | Day 9 | `/employer/profile`, `/employer/jobs` | Planned |
 | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Planned |
@@ -516,6 +516,17 @@ Copy one record per completed or attempted feature/screen.
   - QuickApplyPage: Form fields and choices verified with min-h-12 touch targets and [overflow-wrap:anywhere] for narrow screens; elevated consent checkbox container with cursor-pointer min-h-12; upgraded "Browse more jobs" link to inline-flex min-h-11 items-center font-semibold text-blue-700; standardized submit button to min-h-12 w-full.
   - ClaimQuickApplicationsPage: Upgraded "Link my applications" button to min-h-12 w-full sm:w-auto font-semibold; elevated "View my applications" link to inline-flex min-h-11 items-center font-semibold text-blue-700; added pb-16 bottom padding.
   - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 6 and in-progress Day 6 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day7: OAuth Consent and Employer Login mobile fixes
+
+- Scope: S009, S010; develop baseline 20b79ef, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - OAuthConsentPage: Added pb-16 safe-area bottom clearance to prevent clipped content; added break-all to redirect URIs and permissions scopes to avoid horizontal overflow on 320px screens; elevated "Approve" and "Deny" buttons to 48px touch height (min-h-12 flex-1); standardized return links ("Back to home" and "Employer dashboard") to min-h-11 touch targets.
+  - EmployerLoginPage (UnifiedLoginPage): Role switcher maintains min-h-11 touch targets; elevated "Forgot password?" and "Create a company account" links to inline-flex min-h-11 items-center; standardized "Sign in" button to min-h-12 w-full; elevated AdminLoginPanel Sign out action to inline-flex min-h-11 items-center; verified pb-mobile-chrome safe-area padding.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 7 and in-progress Day 7 queue status.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.

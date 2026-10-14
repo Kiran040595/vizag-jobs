@@ -379,7 +379,7 @@ function AdminLoginPanel() {
             <button
               type="button"
               onClick={() => signOut()}
-              className="font-semibold text-rose-700 underline hover:text-rose-800"
+              className="inline-flex min-h-11 items-center font-semibold text-rose-700 underline hover:text-rose-800"
             >
               Sign out
             </button>
