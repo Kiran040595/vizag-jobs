@@ -30,11 +30,11 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | Not tested | Not reviewed | — |
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
-| S011 | `/employer/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | Not tested | Not reviewed | — |
+| S011 | `/employer/register` | Register account; required fields and consent; duplicate account; complete profile and verify persistence | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
 | S012 | `/employer/forgot-password` | Request password reset; validate email; verify recovery message and reset link | Not tested | Not reviewed | — |
 | S013 | `/employer/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | Not tested | Not reviewed | — |
-| S014 | `/employer` | Verify redirect destination, correct role guard, refresh and browser back | Not tested | Not reviewed | — |
-| S015 | `/employer/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | Not tested | Not reviewed | — |
+| S014 | `/employer` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
+| S015 | `/employer/profile` | Load, validate, edit and save profile; reload to verify persistence; student resume/preferences or employer company details | In progress | In progress | QA-2026-10-14-UI-Day8: mobile UI verified, full journey pending |
 | S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | Not tested | Not reviewed | — |
 | S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
 | S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | Not tested | Not reviewed | — |
@@ -367,7 +367,7 @@ This is a work queue, not an automatic scheduled job. Calendar dates are assigne
 | Day 5 | `/saved-jobs`, `/apply` | In progress (2026-10-14: mobile UI touch targets, empty states, and safe-area padding verified) |
 | Day 6 | `/quick-register`, `/apply/:slug` | In progress (2026-10-14: mobile UI touch targets, dynamic fields, and claim flow verified) |
 | Day 7 | `/oauth/consent`, `/employer/login` | In progress (2026-10-14: mobile UI touch targets, permissions layout, and auth verified) |
-| Day 8 | `/employer/login`, `/employer/register` | Planned |
+| Day 8 | `/employer/register`, `/employer/profile` | In progress (2026-10-14: mobile UI touch targets, selects, and safe-area padding verified) |
 | Day 9 | `/employer/profile`, `/employer/jobs` | Planned |
 | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Planned |
 | Day 11 | `/admin/candidates`, `/admin/login` | Planned |
@@ -530,3 +530,15 @@ Copy one record per completed or attempted feature/screen.
 - Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
 - Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
 - Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+
+## QA-2026-10-14-UI-Day8: Employer Register and Profile mobile fixes
+
+- Scope: S011, S014, S015; develop baseline e04b8d9, 2026-10-14 Asia/Kolkata.
+- Fixes:
+  - EmployerRegisterPage: Upgraded industry and location select inputs to text-base preventing iOS Safari viewport auto-zoom; elevated registration CTA button to min-h-12 w-full (48px touch target); elevated "Sign in" and "Candidate registration →" links to min-h-11 (44px) inline-flex touch targets; added pb-16 safe-area bottom padding.
+  - EmployerProfilePage & EmployerProfileForm: Replaced raw anchor tags with client-side Links wrapped in an inline-flex min-h-11 layout; elevated profile save button to min-h-12 w-full sm:w-auto text-base; added pb-16 bottom spacing to EmployerShell main view container.
+  - Documentation: Updated `docs/MOBILE_UI_STATUS.md` and `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md` reflecting completed Batch 8 and in-progress Day 8 queue status.
+- Verification: node --test tests/*.test.mjs passed 127/127 tests; ESLint passed with 0 errors on modified files; Vite production build completed with exit code 0.
+- Preservation: existing QuestionNotificationBell.jsx, notificationInbox.js, and notification-inbox.test.mjs changes excluded.
+- Delivery: scoped UI changes and tracker committed together and pushed to origin/develop.
+

@@ -166,7 +166,7 @@ export default function EmployerProfileForm({ onSaved }) {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+            className="min-h-12 w-full rounded-2xl bg-cyan-500 px-6 py-3 text-base sm:w-auto font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSaving ? 'Saving...' : 'Save profile'}
           </button>

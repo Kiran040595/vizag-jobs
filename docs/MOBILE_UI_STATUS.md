@@ -25,10 +25,10 @@ Current branch: `develop`
 | **Public Core** | 8 | 8 | 0 | 0 |
 | **Category Listings** | 15 | 0 | 0 | 15 |
 | **Student Portal** | 8 | 5 | 0 | 3 |
-| **Employer Portal** | 10 | 1 | 2 | 7 |
+| **Employer Portal** | 10 | 4 | 2 | 4 |
 | **Admin Portal** | 24 | 0 | 0 | 24 |
-| **Quick Apply / Static** | 14 | 4 | 0 | 10 |
-| **Total** | **79** | **18** | **2** | **59** |
+| **Quick Apply / Static** | 14 | 6 | 0 | 8 |
+| **Total** | **79** | **23** | **2** | **54** |
 
 ---
 
@@ -132,16 +132,29 @@ Current branch: `develop`
   - Standardized "Sign in" button to `min-h-12 w-full`.
   - Safe-area bottom spacing verified with `pb-mobile-chrome`.
 
+### Batch 8: Employer Register & Company Profile
+- **`/employer/register` (Employer Register - S011):**
+  - Upgraded select inputs to `text-base` preventing iOS Safari viewport auto-zoom on mobile devices.
+  - Sized registration CTA to 48px touch height (`min-h-12 w-full`).
+  - Elevated "Sign in" and "Candidate registration →" links to 44px (`inline-flex min-h-11 items-center`).
+  - Added `pb-16` safe-area bottom padding to prevent collisions with mobile navigation and home indicator.
+- **`/employer/profile` (Employer Profile - S015):**
+  - Sized submit button to 48px touch height (`min-h-12 w-full sm:w-auto text-base`).
+  - Replaced native anchor tags with client-side `<Link>` tags wrapped in a mobile-friendly flex layout with `inline-flex min-h-11 items-center`.
+  - Added `pb-16` bottom spacing to `EmployerShell` main view container ensuring clearance.
+- **`/employer` (Employer Dashboard Redirect - S014):**
+  - Confirmed redirect destination `/employer/jobs` is clean and role-guarded.
+
 ---
 
 ## 4. Work Queue: Next Screens Up
 
 | Priority | Batch | Screen Routes | Target Focus |
 |---|---|---|---|
-| **P1 (Next)** | Day 8 | `/employer/register`, `/employer/profile` | Company registration fields, profile editor |
-| **P2** | Day 9 | `/employer/jobs`, `/employer/jobs/new` | Job management cards, posting wizard |
-| **P3** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
-| **P4** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
+| **P1 (Next)** | Day 9 | `/employer/jobs`, `/employer/jobs/new` | Job management cards, posting wizard |
+| **P2** | Day 10 | `/admin/quick-jobs/new`, `/admin/quick-jobs/:jobId/edit` | Mobile dynamic field editor |
+| **P3** | Day 11 | `/admin/candidates`, `/admin/login` | Quick candidate directory, admin auth |
+| **P4** | Day 12 | `/employer/forgot-password`, `/employer/reset-password` | Password recovery, auth security |
 
 ---
 
@@ -159,11 +172,11 @@ Current branch: `develop`
 | S008 | `/admin/login` | Admin Login | ⏳ Pending | — |
 | S009 | `/oauth/consent` | OAuth Consent | ✅ Fixed | 2026-10-14 |
 | S010 | `/employer/login` | Employer Login | ✅ Fixed | 2026-10-14 |
-| S011 | `/employer/register` | Employer Register | ⏳ Pending | — |
+| S011 | `/employer/register` | Employer Register | ✅ Fixed | 2026-10-14 |
 | S012 | `/employer/forgot-password` | Employer Forgot Password | ⏳ Pending | — |
 | S013 | `/employer/reset-password` | Employer Reset Password | ⏳ Pending | — |
-| S014 | `/employer` | Employer Dashboard Redirect | ⏳ Pending | — |
-| S015 | `/employer/profile` | Employer Profile | ⏳ Pending | — |
+| S014 | `/employer` | Employer Dashboard Redirect | ✅ Fixed | 2026-10-14 |
+| S015 | `/employer/profile` | Employer Profile | ✅ Fixed | 2026-10-14 |
 | S016 | `/employer/jobs` | Employer Jobs List | ⏳ Pending | — |
 | S017 | `/employer/jobs/new` | Employer New Job | ⏳ Pending | — |
 | S018 | `/employer/jobs/:jobId/edit` | Employer Edit Job | ⏳ Pending | — |

@@ -103,13 +103,13 @@ export default function EmployerRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_35%),linear-gradient(180deg,_#f0f9ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_35%),linear-gradient(180deg,_#f0f9ff_0%,_#ffffff_45%,_#f8fafc_100%)] px-4 py-8 pb-16 sm:py-12">
       <SEO
         title="Employer Registration | Vizag Jobs Consultancy"
         description="Register your company on VizagJobs to post job openings, receive screened candidate profiles, and schedule interviews."
         canonical="/employer/register"
       />
-      <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-6 shadow-xl sm:p-10">
+      <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-8">
         <div className="border-b border-slate-100 pb-5">
           <span className="inline-flex items-center rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
             For Employers & Hiring Teams
@@ -151,7 +151,7 @@ export default function EmployerRegisterPage() {
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
                   required
-                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 >
                   <option value="">Select industry…</option>
                   {EMPLOYER_INDUSTRY_OPTIONS.map((opt) => (
@@ -170,7 +170,7 @@ export default function EmployerRegisterPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   required
-                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                  className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
                 >
                   <option value="">Select office area…</option>
                   {EMPLOYER_LOCATION_OPTIONS.map((opt) => (
@@ -302,7 +302,7 @@ export default function EmployerRegisterPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-12 w-full rounded-2xl bg-cyan-500 text-sm font-bold text-slate-950 shadow-md transition hover:bg-cyan-400 disabled:opacity-70"
+            className="min-h-12 w-full rounded-2xl bg-cyan-500 text-sm font-bold text-slate-950 shadow-md transition hover:bg-cyan-400 disabled:opacity-70"
           >
             {isSubmitting ? 'Creating employer account…' : 'Register Employer Account'}
           </button>
@@ -310,14 +310,14 @@ export default function EmployerRegisterPage() {
 
         <p className="mt-6 text-center text-sm text-slate-600">
           Already have an account?{' '}
-          <Link to="/employer/login" className="font-semibold text-cyan-600 hover:text-cyan-700">
+          <Link to="/employer/login" className="inline-flex min-h-11 items-center font-semibold text-cyan-600 hover:text-cyan-700">
             Sign in
           </Link>
         </p>
 
         <p className="mt-3 text-center text-xs text-slate-400">
           Looking for a job instead?{' '}
-          <Link to="/student/register" className="font-medium text-indigo-600 hover:text-indigo-700">
+          <Link to="/student/register" className="inline-flex min-h-11 items-center font-medium text-indigo-600 hover:text-indigo-700">
             Candidate registration →
           </Link>
         </p>
