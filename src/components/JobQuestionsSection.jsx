@@ -18,6 +18,57 @@ import {
   requestJobAiAnswer,
 } from '../services/jobQuestions';
 
+function DeviceAlertPrompt() {
+  const [permission, setPermission] = useState(() =>
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported',
+  );
+  const [enabled, setEnabled] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  if (permission !== 'default' || enabled) {
+    return null;
+  }
+
+  const handleRequest = async () => {
+    setIsRequesting(true);
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        const result = await Notification.requestPermission();
+        setPermission(result);
+        if (result === 'granted') {
+          setEnabled(true);
+        }
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  return (
+    <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-cyan-200 bg-cyan-50/80 p-3 sm:p-3.5">
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-100 text-cyan-700">
+          🔔
+        </span>
+        <div className="text-xs text-slate-800">
+          <p className="font-bold text-slate-900">Get alerts on this device</p>
+          <p className="text-[11px] text-slate-600">Receive instant browser alerts when an answer or job update is ready.</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        disabled={isRequesting}
+        onClick={handleRequest}
+        className="inline-flex min-h-9 items-center justify-center rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-cyan-500 disabled:opacity-60"
+      >
+        {isRequesting ? 'Enabling…' : 'Enable Device Alerts'}
+      </button>
+    </div>
+  );
+}
+
 function QuestionAskForm({ jobId, job = null, onSubmitted }) {
   const { isStudent, session: studentSession, profile } = useStudentAuth();
   const { isAdmin, session: adminSession, user: adminUser } = useAdminAuth();
@@ -121,7 +172,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
                 ✓
               </span>
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
-                Answer received &amp; Auto-Published
+                Question Posted &amp; Under Review
               </p>
             </div>
             <button
@@ -141,23 +192,23 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
           {answeredResult.answer ? (
             <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-sm">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[10px] font-bold text-cyan-800">
-                  🤖 Gemini AI (Verified from Job Post)
+                <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-[10px] font-bold text-cyan-800">
+                  Verified Response (Job Posting Details)
                 </span>
               </div>
               <p className="text-xs sm:text-sm leading-relaxed text-slate-800">{answeredResult.answer}</p>
             </div>
           ) : (
             <p className="mt-3 text-xs text-slate-600">
-              Your question was submitted. Check your notification bell for a reply.
+              Your question has been posted and is under review. Check your notification bell for updates.
             </p>
           )}
 
-          {answeredResult.answer ? (
-            <p className="mt-2.5 text-[11px] text-slate-500">
-              🔔 Auto-published to this job&apos;s Q&amp;A. Students and applicants have been notified!
-            </p>
-          ) : null}
+          <p className="mt-2.5 text-[11px] text-slate-500">
+            🔔 Response recorded. You can track replies in your notification bell icon.
+          </p>
+
+          <DeviceAlertPrompt />
 
           <button
             type="button"
@@ -178,9 +229,9 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
   if (!isOpen) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-3.5 text-center sm:p-4">
-        <p className="text-xs sm:text-sm font-semibold text-slate-900">Have a doubt about this job?</p>
+        <p className="text-xs sm:text-sm font-semibold text-slate-900">Have a question about this job?</p>
         <p className="mt-1 text-xs text-slate-600">
-          Ask our Gemini AI Assistant for an instant verified answer and notify students.
+          Ask a doubt to verify eligibility, walk-ins, or requirements from the job posting.
         </p>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
           <button
@@ -188,7 +239,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
             onClick={() => setIsOpen(true)}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-cyan-400"
           >
-            <span>💬 Ask Gemini AI</span>
+            <span>💬 Ask a Question</span>
           </button>
           {!isAuthenticated ? (
             <Link
@@ -218,7 +269,7 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
 
       {isAuthenticated ? (
         <p className="mt-1 text-xs text-slate-600">
-          Asking as <span className="font-semibold text-slate-800">{resolvedAskerName || resolvedAskerEmail}</span>{isAdmin && !isStudent ? ' (Admin)' : ''}. Gemini will auto-publish the answer and notify students.
+          Asking as <span className="font-semibold text-slate-800">{resolvedAskerName || resolvedAskerEmail}</span>{isAdmin && !isStudent ? ' (Admin)' : ''}. Your question will be reviewed and answered based on verified job details.
         </p>
       ) : (
         <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
@@ -271,10 +322,10 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
-              <span>Gemini is answering…</span>
+              <span>Checking job details…</span>
             </>
           ) : (
-            <span>Ask Gemini AI</span>
+            <span>Submit Question</span>
           )}
         </button>
         <button
@@ -367,7 +418,9 @@ function PublishedQuestionItem({ question, highlighted = false }) {
               ✓
             </span>
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
-              {question.answeredByRole || (question.isAiAnswer ? '🤖 Gemini AI (Verified from Job Post)' : 'VizagJobs Team')}
+              {question.answeredByRole && !question.answeredByRole.includes('Gemini')
+                ? question.answeredByRole
+                : 'Verified Response (Job Posting Details)'}
             </p>
           </div>
           <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-700">{question.answerBody}</p>

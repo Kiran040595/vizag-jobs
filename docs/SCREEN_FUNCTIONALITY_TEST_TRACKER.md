@@ -684,3 +684,18 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Node test suite: `node --test tests/*.test.mjs` exited with 0 (129/129 passed).
   - ESLint: 0 errors / 0 warnings across all project files.
 
+## QA-2026-10-15: Q&A Candidate Experience De-Branding & Browser Alert Opt-In
+
+- Scope: `src/components/JobQuestionsSection.jsx`, `src/pages/CommunityQaPage.jsx`, `src/services/jobQuestions.js`, `api/answer-job-question.js`, `supabase/functions/answer-job-question/index.ts`, `tests/job-question-gemini-notify.test.mjs`.
+- Deliverables:
+  - Removed "Gemini" and "AI" branding from candidate-facing Q&A interfaces across Job Details and Community Q&A.
+  - Question submission state displays "Question Posted & Under Review" with transparent review messaging instead of automated AI branding.
+  - Verified responses present official credentials ("Verified Response (Job Posting Details)" / "Verified Career Guidance" / "VizagJobs Team") rather than robot emojis or AI labels.
+  - Added `DeviceAlertPrompt` asking candidate permission (`Notification.requestPermission()`) on the post-submission confirmation card so candidates can opt-in to instant browser alerts.
+  - Updated notification titles in Supabase Edge Function and API to clean candidate alerts ("New response for your question: ...").
+  - Supabase Edge Function `answer-job-question` redeployed to production project `fbyyfyhdglcpkhxskffj` and verified 200 OK.
+- Verification:
+  - Unit tests: `node --test tests/*.test.mjs` passed (129 tests passed, 0 failed).
+  - ESLint: `npm run lint` passed (0 errors, 0 warnings).
+  - Preserved unrelated local notification changes untouched.
+

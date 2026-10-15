@@ -257,7 +257,7 @@ export default async function handler(req, res) {
                   user_id: askerUserId,
                   kind: 'job_question',
                   ref_id: inserted.id,
-                  title: `Gemini answered your question: ${jobTitle.slice(0, 60)}`,
+                  title: `New response for your question: ${jobTitle.slice(0, 60)}`,
                   preview: answerText.slice(0, 180),
                   link_path: link,
                   is_read: false,

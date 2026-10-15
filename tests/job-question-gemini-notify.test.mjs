@@ -36,7 +36,7 @@ assert.match(edgeFunctionSrc, /status:\s*'published'/);
 assert.match(edgeFunctionSrc, /buildJobQuestionReplyEmail/);
 assert.match(edgeFunctionSrc, /from\('job_applications'\)/);
 assert.match(edgeFunctionSrc, /from\('student_profiles'\)/);
-assert.match(edgeFunctionSrc, /Gemini answered your question/);
+assert.match(edgeFunctionSrc, /New response for your question/);
 assert.match(edgeFunctionSrc, /New Q&A answered for/);
 
 // 3. Verify Vercel Serverless API implementation
@@ -52,14 +52,14 @@ assert.match(apiSrc, /from\('student_profiles'\)/);
 const jobQuestionsSrc = readFileSync(path.join(repoRoot, 'src/services/jobQuestions.js'), 'utf8');
 assert.match(jobQuestionsSrc, /export const requestJobAiAnswer/);
 assert.match(jobQuestionsSrc, /\/api\/answer-job-question/);
-assert.match(jobQuestionsSrc, /🤖 Gemini AI/);
+assert.match(jobQuestionsSrc, /Verified Response/);
 assert.match(jobQuestionsSrc, /insertPendingJobQuestion/);
 assert.match(jobQuestionsSrc, /export const submitJobQuestion/);
 
 // 5. Verify CommunityQaPage integration
 const communityQaSrc = readFileSync(path.join(repoRoot, 'src/pages/CommunityQaPage.jsx'), 'utf8');
 assert.match(communityQaSrc, /requestJobAiAnswer/);
-assert.match(communityQaSrc, /Answered by Gemini AI/);
+assert.match(communityQaSrc, /Verified Career Guidance/);
 assert.match(communityQaSrc, /Auto-Published &amp; Students Notified/);
 
 // 6. Verify JobQuestionsSection on job details page
@@ -67,10 +67,10 @@ const jobQuestionsSectionSrc = readFileSync(
   path.join(repoRoot, 'src/components/JobQuestionsSection.jsx'),
   'utf8',
 );
-assert.match(jobQuestionsSectionSrc, /Ask Gemini AI/);
-assert.match(jobQuestionsSectionSrc, /Answer received &amp; Auto-Published/);
-assert.match(jobQuestionsSectionSrc, /🤖 Gemini AI/);
-assert.match(jobQuestionsSectionSrc, /Auto-published to this job/);
+assert.match(jobQuestionsSectionSrc, /Ask a Question/);
+assert.match(jobQuestionsSectionSrc, /Question Posted &amp; Under Review/);
+assert.match(jobQuestionsSectionSrc, /Verified Response/);
+assert.match(jobQuestionsSectionSrc, /DeviceAlertPrompt/);
 
 // 7. Verify helper logic on imported functions
 const { validateQuestionInput } = await import('../src/services/jobQuestions.js');

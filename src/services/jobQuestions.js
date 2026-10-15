@@ -104,7 +104,7 @@ const mapQuestion = (row) => {
     isAiAnswer,
     answeredByRole: row.answered_by
       ? 'VizagJobs Admin'
-      : (row.answer_body ? (row.job_id ? '🤖 Gemini AI (Verified from Job Post)' : '🤖 Gemini AI Career Assistant') : null),
+      : (row.answer_body ? (row.job_id ? 'Verified Response (Job Posting Details)' : 'Verified Career Guidance') : null),
     job: row.job
       ? {
           id: row.job.id,

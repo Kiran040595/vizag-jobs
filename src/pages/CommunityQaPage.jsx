@@ -162,7 +162,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
                 ✓ Auto-Published &amp; Students Notified
               </div>
               <h3 className="mt-2 text-lg font-bold text-slate-950 sm:text-xl">
-                {result.isAiAnswer ? 'Answered by Gemini AI' : 'Doubt Submitted'}
+                {result.isAiAnswer ? 'Question Answered' : 'Doubt Submitted'}
               </h3>
             </div>
 
@@ -178,7 +178,7 @@ function AskQuestionModal({ isOpen, onClose, defaultCategory = 'general', onSubm
                     ✓
                   </span>
                   <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">
-                    🤖 Gemini AI Career Assistant
+                    Verified Career Guidance
                   </p>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-slate-800 sm:text-sm">{result.answer}</p>
