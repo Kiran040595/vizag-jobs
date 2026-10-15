@@ -40,6 +40,14 @@ create index if not exists site_error_logs_open_idx on public.site_error_logs (c
 
 alter table public.site_error_logs enable row level security;
 
+-- Anyone can insert error reports (public client crash reporter)
+drop policy if exists "Anyone can insert error logs" on public.site_error_logs;
+create policy "Anyone can insert error logs"
+on public.site_error_logs
+for insert
+to anon, authenticated
+with check (true);
+
 -- Admins can view and update error logs
 drop policy if exists "Admins can read site error logs" on public.site_error_logs;
 create policy "Admins can read site error logs"
