@@ -110,13 +110,20 @@ export default async function handler(req, res) {
         reason: 'Throttled: identical error alert sent within the last 5 minutes.',
       };
     } else {
-      const recipient = (process.env.ALERT_EMAIL_RECIPIENT || 'kiran@jobsinvizag.in').trim();
+      const rawRecipientConfig = (process.env.ALERT_EMAIL_RECIPIENT || 'kkumardadi@gmail.com, kiran@jobsinvizag.in').trim();
       const fromEmail = (process.env.RESEND_FROM_EMAIL || 'Vizag Jobs Alerts <onboarding@resend.dev>').trim();
+      const isSandboxFrom = fromEmail.includes('@resend.dev');
+
+      // Resend test sandbox (onboarding@resend.dev) only allows delivery to the account email (kkumardadi@gmail.com)
+      const toRecipients = isSandboxFrom
+        ? ['kkumardadi@gmail.com']
+        : rawRecipientConfig.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean);
+
       const subject = `🚨 [Bug Alert] ${String(message).slice(0, 50)} on ${pathname}`;
 
       emailResult = {
         attempted: true,
-        recipient,
+        recipients: toRecipients,
         from: fromEmail,
       };
 
@@ -178,7 +185,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             from: fromEmail,
-            to: [recipient],
+            to: toRecipients,
             subject,
             html: htmlBody,
           }),
@@ -188,9 +195,38 @@ export default async function handler(req, res) {
         if (!resendRes.ok) {
           const errMsg = resendData?.message || resendData?.error || `HTTP ${resendRes.status}`;
           console.error('[Client Bug Alert] Resend API error:', resendRes.status, errMsg);
-          emailResult.sent = false;
-          emailResult.error = errMsg;
-          emailResult.status = resendRes.status;
+
+          // If Resend failed because recipient was not allowed in free sandbox, retry sending to kkumardadi@gmail.com
+          if (resendRes.status === 403 && (!toRecipients.includes('kkumardadi@gmail.com') || toRecipients.length > 1)) {
+            console.warn('[Client Bug Alert] Retrying delivery directly to kkumardadi@gmail.com...');
+            const retryRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'Vizag Jobs Alerts <onboarding@resend.dev>',
+                to: ['kkumardadi@gmail.com'],
+                subject,
+                html: htmlBody,
+              }),
+            });
+            const retryData = await retryRes.json().catch(() => ({}));
+            if (retryRes.ok) {
+              emailResult.sent = true;
+              emailResult.id = retryData?.id;
+              emailResult.deliveredTo = ['kkumardadi@gmail.com'];
+            } else {
+              emailResult.sent = false;
+              emailResult.error = retryData?.message || errMsg;
+              emailResult.status = retryRes.status;
+            }
+          } else {
+            emailResult.sent = false;
+            emailResult.error = errMsg;
+            emailResult.status = resendRes.status;
+          }
         } else {
           console.log('[Client Bug Alert] Email sent successfully via Resend:', resendData?.id);
           emailResult.sent = true;
