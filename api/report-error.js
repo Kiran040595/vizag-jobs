@@ -58,6 +58,7 @@ export default async function handler(req, res) {
       userAgent = 'Unknown',
       screen = 'Unknown',
       timestamp = new Date().toISOString(),
+      test = false,
     } = body;
 
     // Log to Vercel Runtime Logs so it's instantly searchable in Vercel Dashboard
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
     });
 
     const fingerprint = `${pathname}::${message}::${String(stack).split('\n')[0] || ''}`;
-    const isThrottled = shouldThrottle(fingerprint);
+    const isThrottled = test ? false : shouldThrottle(fingerprint);
 
     // Save to Supabase table if table exists
     try {
@@ -92,11 +93,32 @@ export default async function handler(req, res) {
     }
 
     // Send email alert via Resend
+    let emailResult = { attempted: false };
     const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
-    if (resendApiKey && !isThrottled) {
+
+    if (!resendApiKey) {
+      emailResult = {
+        attempted: false,
+        sent: false,
+        reason: 'RESEND_API_KEY environment variable is missing on Vercel.',
+      };
+      console.warn('[Client Bug Alert] RESEND_API_KEY is not set in Vercel environment variables.');
+    } else if (isThrottled) {
+      emailResult = {
+        attempted: false,
+        sent: false,
+        reason: 'Throttled: identical error alert sent within the last 5 minutes.',
+      };
+    } else {
       const recipient = (process.env.ALERT_EMAIL_RECIPIENT || 'kiran@jobsinvizag.in').trim();
       const fromEmail = (process.env.RESEND_FROM_EMAIL || 'Vizag Jobs Alerts <onboarding@resend.dev>').trim();
       const subject = `🚨 [Bug Alert] ${String(message).slice(0, 50)} on ${pathname}`;
+
+      emailResult = {
+        attempted: true,
+        recipient,
+        from: fromEmail,
+      };
 
       const htmlBody = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
@@ -148,7 +170,7 @@ export default async function handler(req, res) {
       `;
 
       try {
-        await fetch('https://api.resend.com/emails', {
+        const resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${resendApiKey}`,
@@ -161,12 +183,31 @@ export default async function handler(req, res) {
             html: htmlBody,
           }),
         });
+
+        const resendData = await resendRes.json().catch(() => ({}));
+        if (!resendRes.ok) {
+          const errMsg = resendData?.message || resendData?.error || `HTTP ${resendRes.status}`;
+          console.error('[Client Bug Alert] Resend API error:', resendRes.status, errMsg);
+          emailResult.sent = false;
+          emailResult.error = errMsg;
+          emailResult.status = resendRes.status;
+        } else {
+          console.log('[Client Bug Alert] Email sent successfully via Resend:', resendData?.id);
+          emailResult.sent = true;
+          emailResult.id = resendData?.id;
+        }
       } catch (emailErr) {
-        console.error('[Client Bug Alert] Failed to send email via Resend:', emailErr);
+        console.error('[Client Bug Alert] Failed to fetch Resend API:', emailErr);
+        emailResult.sent = false;
+        emailResult.error = emailErr.message;
       }
     }
 
-    return sendJson(res, 200, { ok: true, throttled: isThrottled });
+    return sendJson(res, 200, {
+      ok: true,
+      throttled: isThrottled,
+      email: emailResult,
+    });
   } catch (err) {
     console.error('[Client Bug Alert] Handler failure:', err);
     return sendJson(res, 500, { error: 'Failed to process error report.' });
