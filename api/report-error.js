@@ -85,6 +85,8 @@ export default async function handler(req, res) {
           pathname: String(pathname).slice(0, 255),
           user_agent: String(userAgent).slice(0, 500),
           screen_size: String(screen).slice(0, 50),
+          status: test ? 'ignored' : 'open',
+          resolution_notes: test ? 'Synthetic test ping / diagnostic' : null,
           created_at: timestamp,
         });
       }

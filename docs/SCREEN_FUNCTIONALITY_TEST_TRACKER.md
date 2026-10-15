@@ -670,3 +670,17 @@ Pushed batches this continuation: 6a7b765 student recovery/checklist; b465c1a ca
 
 Remaining: authenticated journeys/ownership/persistence and exports, valid password recovery flows, all negative/loading/error states, actual Android/iOS/keyboard/landscape/zoom checks, nested protected modals and overlay-collision review. Existing notification inbox/bell local work remains preserved and excluded from scoped commits. No new Tested/Verified claims. docs/MOBILE_UI_STATUS.md summary now distinguishes implementation coverage from acceptance evidence.
 - Final integration regression: node --test tests/*.test.mjs exited 0, 127 passed / 0 failed. Log: docs/qa/2026-10-14/ui-pass-tests.txt. Existing notification tests are included in the working-tree run; notification source changes are not part of the UI deliveries.
+
+## QA-2026-10-15: Production Error Reporting & Automated Resolution Pipeline
+
+- Scope: Endpoint `/api/report-error`, `src/lib/errorReporter.js`, `src/components/ErrorBoundary.jsx`, `scripts/bugs-queue.mjs`, `supabase/migrations/20261015120000_create_site_error_logs.sql`.
+- Deliverables:
+  - Real-time client-side error reporter capturing unhandled runtime errors, promise rejections, and React ErrorBoundary crashes.
+  - Vercel Serverless Function `/api/report-error` logging structured traces to Vercel runtime logs and dispatching alerts via Resend to `kkumardadi@gmail.com`.
+  - Database error queue in Supabase `site_error_logs` with statuses (`open`, `investigating`, `resolved`, `ignored`).
+  - Agent/Developer CLI runner `scripts/bugs-queue.mjs` (`npm run bugs:list`, `npm run bugs:resolve`, `npm run bugs:ignore`) enabling one-command retrieval and resolution of production bugs.
+- Verification:
+  - Live API diagnostic test executed against `https://jobsinvizag.in/api/report-error`: HTTP 200, Resend email ID `01a13d80-d4ab-7aa6-81d0-102fc528e29b` delivered to `kkumardadi@gmail.com`.
+  - Node test suite: `node --test tests/*.test.mjs` exited with 0 (129/129 passed).
+  - ESLint: 0 errors / 0 warnings across all project files.
+
