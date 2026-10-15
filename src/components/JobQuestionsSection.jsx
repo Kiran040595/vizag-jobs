@@ -72,27 +72,29 @@ function QuestionAskForm({ jobId, job = null, onSubmitted }) {
         askerUserId: activeUserId,
       });
 
-      if (res?.isAiAnswer && res?.answer && res?.question?.id) {
+      if (res?.isAiAnswer && res?.answer) {
         setAnsweredResult({
           question: body.trim(),
           answer: res.answer,
-          questionId: res.question.id,
+          questionId: res.question?.id || null,
           isAiAnswer: true,
         });
         setBody('');
 
-        // Fire notification so it shows up in the bell
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const accessToken = sessionData?.session?.access_token || activeSession?.access_token;
-          if (accessToken) {
-            await notifyReplyByEmailSafe(accessToken, {
-              kind: 'job_question',
-              id: res.question.id,
-            });
+        // Fire notification so it shows up in the bell if question ID exists
+        if (res.question?.id) {
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const accessToken = sessionData?.session?.access_token || activeSession?.access_token;
+            if (accessToken) {
+              await notifyReplyByEmailSafe(accessToken, {
+                kind: 'job_question',
+                id: res.question.id,
+              });
+            }
+          } catch {
+            // notification is best-effort; never block the user
           }
-        } catch {
-          // notification is best-effort; never block the user
         }
 
         onSubmitted?.();
