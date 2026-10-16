@@ -103,21 +103,24 @@ WHERE LOWER(TRIM(name)) = '${exc.replace(/'/g, "''")}';
   const verifySql = `
 SELECT name, careers_url, is_directory_approved
 FROM public.companies
-WHERE name IN ('Conduent', 'Miracle Software Systems', 'WNS', 'Symbiosis Technologies', 'Symbiosys Technologies', 'Granules India', 'Pfizer', 'Hetero', 'GMR Group', 'Adani Group', 'CSB Bank', 'Swiggy', 'Escape Academy')
+WHERE name IN ('Conduent', 'Miracle Software Systems', 'WNS', 'Symbiosys Technologies', 'Granules India', 'Pfizer', 'Hetero', 'GMR Group', 'Adani Group', 'CSB Bank', 'Apollo Hospitals', 'Bajaj Finance')
 ORDER BY name;
 `;
-  const verifyOut = execSync(`npx supabase db query --linked "${verifySql.trim()}"`, {
-    cwd: projectRoot,
-    encoding: 'utf8',
-    timeout: 30000,
-  });
-
+  const verifyFile = path.join(__dirname, 'verify_companies.sql');
+  fs.writeFileSync(verifyFile, verifySql, 'utf8');
   try {
-    const parsed = JSON.parse(verifyOut);
-    console.log('Verified database rows:');
-    console.table(parsed.rows || parsed);
-  } catch {
-    console.log(verifyOut);
+    const verifyOut = execSync(`npx supabase db query --linked --file "${verifyFile}"`, {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      timeout: 30000,
+    });
+    console.log('Verified database rows:\n', verifyOut);
+  } catch (err) {
+    console.warn('Verification query notice:', err.message);
+  } finally {
+    if (fs.existsSync(verifyFile)) {
+      fs.unlinkSync(verifyFile);
+    }
   }
 }
 

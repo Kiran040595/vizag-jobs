@@ -27,6 +27,11 @@ import {
   normalizeUrlForCompare,
   shouldSkipCompanyCareerJob,
 } from '../src/lib/companyCareerFetchAutomation.js';
+import {
+  parseWorkdayPortalUrl,
+  scrapeWorkdayCareerPortal,
+  resolveCanonicalCareerPortalUrl,
+} from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -133,11 +138,31 @@ function htmlToCleanMarkdown(html, baseUrl) {
   return clean.slice(0, 50_000); // safety length cap
 }
 
-async function scrapeCareerPage(url, firecrawlKey) {
+async function scrapeCareerPage(url, firecrawlKey, companyName) {
+  const resolvedUrl = resolveCanonicalCareerPortalUrl(url, companyName);
+
+  // Strategy 0: Workday CXS JSON API (Pfizer, etc.)
+  if (parseWorkdayPortalUrl(resolvedUrl)) {
+    try {
+      log(`Scraping via native Workday CXS API: ${resolvedUrl}`);
+      const wd = await scrapeWorkdayCareerPortal(resolvedUrl);
+      if (wd && (wd.content.trim().length >= 40 || (wd.structuredJobs && wd.structuredJobs.length > 0))) {
+        return {
+          content: wd.content,
+          source: 'workday_cxs',
+          resolvedUrl,
+          structuredJobs: wd.structuredJobs,
+        };
+      }
+    } catch (err) {
+      log(`Workday CXS API scrape failed: ${err.message}. Falling back...`);
+    }
+  }
+
   // Strategy 1: Firecrawl (if key available)
   if (firecrawlKey) {
     try {
-      log(`Scraping via Firecrawl: ${url}`);
+      log(`Scraping via Firecrawl: ${resolvedUrl}`);
       const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
         method: 'POST',
         headers: {
@@ -145,7 +170,7 @@ async function scrapeCareerPage(url, firecrawlKey) {
           Authorization: `Bearer ${firecrawlKey}`,
         },
         body: JSON.stringify({
-          url,
+          url: resolvedUrl,
           formats: ['markdown'],
           onlyMainContent: true,
         }),
@@ -155,20 +180,20 @@ async function scrapeCareerPage(url, firecrawlKey) {
         const data = await res.json();
         const md = data?.data?.markdown || '';
         if (md.trim().length > 100) {
-          return { content: md.slice(0, 50_000), source: 'firecrawl' };
+          return { content: md.slice(0, 50_000), source: 'firecrawl', resolvedUrl };
         }
       }
     } catch (err) {
-      log(`Firecrawl failed for ${url}: ${err.message}. Trying direct fetch fallback...`);
+      log(`Firecrawl failed for ${resolvedUrl}: ${err.message}. Trying direct fetch fallback...`);
     }
   }
 
   // Strategy 2: Direct HTTP fetch fallback
-  log(`Scraping via direct fetch: ${url}`);
+  log(`Scraping via direct fetch: ${resolvedUrl}`);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(resolvedUrl, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -181,14 +206,14 @@ async function scrapeCareerPage(url, firecrawlKey) {
       throw new Error(`HTTP ${res.status}`);
     }
     const html = await res.text();
-    const markdown = htmlToCleanMarkdown(html, url);
-    return { content: markdown, source: 'direct_html' };
+    const markdown = htmlToCleanMarkdown(html, resolvedUrl);
+    return { content: markdown, source: 'direct_html', resolvedUrl };
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function parseJobsWithGemini(company, pageContent) {
+async function parseJobsWithGemini(company, pageContent, lookbackDays = 6) {
   const keys = getGeminiApiKeys();
   if (keys.length === 0) {
     throw new Error('No GEMINI_API_KEY configured.');
@@ -204,6 +229,7 @@ async function parseJobsWithGemini(company, pageContent) {
     `CRITICAL LOCATION RULE:`,
     `- If a job is explicitly located in other cities (e.g. Hyderabad, Bangalore, Bengaluru, Chennai, Pune, Mumbai, Delhi, Noida, Gurgaon, USA), DO NOT EXTRACT IT.`,
     `- Only extract jobs where the location is Visakhapatnam / Vizag or local localities (e.g. Rushikonda, Duvvada, Gajuwaka, Gambheeram, Parawada, Sheela Nagar, Madhurawada, Pendurthi, Anakapalle) or where it is clearly a local opening for this office/remote.`,
+    `- DATE WINDOW: Only extract jobs posted within the last ${lookbackDays} days (or active vacancies currently open if posted date is unspecified). Do not include positions explicitly closed or posted more than ${lookbackDays} days ago.`,
     `- If no specific Vizag jobs are listed, return an empty array {"jobs": []}.`,
     `- Ensure apply_link is a valid URL (if a specific job link exists in markdown, use it; otherwise use ${company.careers_url}).`,
     `- Keep descriptions informative, professional, and clean.`,
@@ -264,21 +290,37 @@ async function parseJobsWithGemini(company, pageContent) {
 async function main() {
   const isDryRun = process.argv.includes('--dry-run');
   const targetCompanyArg = process.argv.find((_, i, arr) => arr[i - 1] === '--company');
+  const daysArgIndex = process.argv.indexOf('--days');
+  const lookbackDays =
+    daysArgIndex !== -1 && process.argv[daysArgIndex + 1]
+      ? Math.max(1, parseInt(process.argv[daysArgIndex + 1], 10))
+      : 6;
 
-  log(`Starting Direct Company Careers Pipeline (DryRun: ${isDryRun})...`);
+  log(`Starting Direct Company Careers Pipeline (DryRun: ${isDryRun}, LookbackDays: ${lookbackDays})...`);
 
   // 1. Load active companies from Supabase `companies` table, or fall back to catalog JSON
   let companies = [];
   try {
     const { createClient } = await import('@supabase/supabase-js');
-    const readKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const readKey = pipelineConfig.supabaseServiceRoleKey || pipelineConfig.supabaseAnonKey;
     if (pipelineConfig.supabaseUrl && readKey) {
       const client = createClient(pipelineConfig.supabaseUrl, readKey);
-      const { data: dbCompanies } = await client
-        .from('companies')
-        .select('*')
-        .eq('is_active_for_scrape', true)
-        .not('careers_url', 'is', null);
+      let dbCompanies = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: page, error } = await client
+          .from('companies')
+          .select('*')
+          .eq('is_active_for_scrape', true)
+          .not('careers_url', 'is', null)
+          .range(from, from + pageSize - 1);
+
+        if (error || !page || page.length === 0) break;
+        dbCompanies = dbCompanies.concat(page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
 
       if (Array.isArray(dbCompanies) && dbCompanies.length > 0) {
         log(`Loaded ${dbCompanies.length} active target(s) from Supabase 'companies' table.`);
@@ -357,18 +399,37 @@ async function main() {
     };
 
     try {
-      const { content, source } = await scrapeCareerPage(company.careers_url, firecrawlKey);
+      const { content, source, resolvedUrl, structuredJobs } = await scrapeCareerPage(
+        company.careers_url,
+        firecrawlKey,
+        company.name,
+      );
+      const effectiveCareersUrl = resolvedUrl || company.careers_url;
       log(`Fetched ${content.length} characters of page text via ${source}.`);
 
-      if (content.length < 50) {
+      let extractedJobs = [];
+      const geminiKeys = getGeminiApiKeys();
+      if (geminiKeys.length > 0 && content.length >= 50) {
+        log(`Analyzing with Gemini for Vizag roles (last ${lookbackDays} days)...`);
+        try {
+          extractedJobs = await parseJobsWithGemini(company, content, lookbackDays);
+        } catch (gemErr) {
+          log(`Gemini analysis warning: ${gemErr.message}`);
+        }
+      }
+
+      if (extractedJobs.length === 0 && Array.isArray(structuredJobs) && structuredJobs.length > 0) {
+        log(`Using ${structuredJobs.length} structured job(s) from portal API.`);
+        extractedJobs = structuredJobs;
+      }
+
+      if (extractedJobs.length === 0 && content.length < 50) {
         log(`Page content too short, skipping.`);
         companyReport.error = 'Page content too short';
         report.details.push(companyReport);
         continue;
       }
 
-      log(`Analyzing with Gemini for Vizag roles...`);
-      const extractedJobs = await parseJobsWithGemini(company, content);
       log(`Found ${extractedJobs.length} potential Vizag job(s).`);
 
       companyReport.jobsFound = extractedJobs.length;
@@ -381,8 +442,8 @@ async function main() {
           location: rawJob.location || 'Visakhapatnam',
           category: rawJob.category || company.category || 'General',
           source_name: 'Direct Company Website',
-          source_url: company.careers_url,
-          apply_link: rawJob.apply_link || company.careers_url,
+          source_url: effectiveCareersUrl,
+          apply_link: rawJob.apply_link || effectiveCareersUrl,
         };
 
         const { skip, reason } = shouldSkipCompanyCareerJob(job, company.careers_url, existing);

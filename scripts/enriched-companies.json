@@ -38,7 +38,7 @@
   {
     "name": "Bajaj Finance",
     "website": "https://www.bajajfinserv.in",
-    "careers_url": "https://www.bajajfinserv.in/insights/careers",
+    "careers_url": "https://www.bajajfinservmarkets.in/careers",
     "category": "Banking & Finance",
     "location": "Visakhapatnam",
     "is_active_for_scrape": true,
@@ -47,7 +47,7 @@
   {
     "name": "Bajaj Finserv",
     "website": "https://www.bajajfinserv.in",
-    "careers_url": "https://www.bajajfinserv.in/insights/careers",
+    "careers_url": "https://www.bajajfinservmarkets.in/careers",
     "category": "Banking & Finance",
     "location": "Kasimkota, Andhra Pradesh, India",
     "is_active_for_scrape": true,

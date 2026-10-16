@@ -167,7 +167,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Granules India': {
     website: 'https://www.granulesindia.com',
-    careers_url: 'https://www.granulesindia.com/careers/',
+    careers_url: 'https://careers.mygranules.com/',
     category: 'Healthcare',
   },
   'Eisai Pharmaceuticals India': {
@@ -187,7 +187,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Apollo Hospitals': {
     website: 'https://www.apollohospitals.com',
-    careers_url: 'https://www.apollohospitals.com/about-us/careers',
+    careers_url: 'https://www.apollohospitals.com/corporate/careers/',
     category: 'Healthcare',
   },
   'Care Hospitals': {
@@ -343,12 +343,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // Banking & Financial Services
   'Bajaj Finance': {
     website: 'https://www.bajajfinserv.in',
-    careers_url: 'https://www.bajajfinserv.in/insights/careers',
+    careers_url: 'https://www.bajajfinservmarkets.in/careers',
     category: 'Banking & Finance',
   },
   'Bajaj Finserv': {
     website: 'https://www.bajajfinserv.in',
-    careers_url: 'https://www.bajajfinserv.in/insights/careers',
+    careers_url: 'https://www.bajajfinservmarkets.in/careers',
     category: 'Banking & Finance',
   },
   'Kotak Mahindra Bank': {

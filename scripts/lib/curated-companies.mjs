@@ -321,7 +321,7 @@ export const CURATED_COMPANIES = {
   },
   'Granules India': {
     website: 'https://www.granulesindia.com',
-    careers_url: 'https://www.granulesindia.com/careers/',
+    careers_url: 'https://careers.mygranules.com/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
@@ -405,7 +405,7 @@ export const CURATED_COMPANIES = {
   },
   'Apollo Hospitals': {
     website: 'https://www.apollohospitals.com',
-    careers_url: 'https://www.apollohospitals.com/about-us/careers',
+    careers_url: 'https://www.apollohospitals.com/corporate/careers/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
@@ -425,13 +425,13 @@ export const CURATED_COMPANIES = {
   // Banking & Financial Services
   'Bajaj Finance': {
     website: 'https://www.bajajfinserv.in',
-    careers_url: 'https://www.bajajfinserv.in/insights/careers',
+    careers_url: 'https://www.bajajfinservmarkets.in/careers',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
   'Bajaj Finserv': {
     website: 'https://www.bajajfinserv.in',
-    careers_url: 'https://www.bajajfinserv.in/insights/careers',
+    careers_url: 'https://www.bajajfinservmarkets.in/careers',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },

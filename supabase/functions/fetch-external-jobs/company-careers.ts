@@ -128,6 +128,48 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     return PFIZER_DEFAULT_VIZAG_WORKDAY_URL;
   }
 
+  if (
+    lowerUrl.includes('granulesindia.com/careers') ||
+    (lowerName.includes('granules') && lowerUrl.includes('granulesindia.com'))
+  ) {
+    return 'https://careers.mygranules.com/';
+  }
+
+  if (
+    lowerUrl.includes('apollohospitals.com/about-us/careers') ||
+    (lowerName.includes('apollo') && lowerUrl.includes('apollohospitals.com/careers'))
+  ) {
+    return 'https://www.apollohospitals.com/corporate/careers/';
+  }
+
+  if (
+    lowerUrl.includes('bajajfinserv.in/insights/careers') ||
+    (lowerName.includes('bajaj') && lowerUrl.includes('bajajfinserv.in/careers'))
+  ) {
+    return 'https://www.bajajfinservmarkets.in/careers';
+  }
+
+  if (
+    lowerName.includes('miracle') ||
+    lowerUrl.includes('miraclesoftwaresystems.com')
+  ) {
+    return 'https://careers.miraclesoft.com/';
+  }
+
+  if (
+    lowerName.includes('fluentgrid') ||
+    lowerUrl.includes('fluentgrid.com')
+  ) {
+    return 'https://fluentgrid.com/careers/';
+  }
+
+  if (
+    lowerName.includes('symbiosys') ||
+    lowerUrl.includes('symbiosystech.com')
+  ) {
+    return 'https://symbiosystech.com/';
+  }
+
   return trimmed;
 }
 
