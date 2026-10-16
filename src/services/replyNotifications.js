@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
 
 const mapReplyNotification = (row) => {
   if (!row) return null;
@@ -110,6 +110,10 @@ export const replyNotificationKindLabel = (kind) => {
       return 'New application';
     case 'new_job':
       return 'New job';
+    case 'new_employer':
+      return 'New employer';
+    case 'new_employer_job':
+      return 'New employer job';
     case 'job_question':
       return 'Job question reply';
     case 'site_feedback':
@@ -118,3 +122,50 @@ export const replyNotificationKindLabel = (kind) => {
       return 'Notification';
   }
 };
+
+export const notifyAdminsNewEmployer = async ({
+  userId,
+  companyName,
+  contactName,
+  email,
+  phone,
+  industry,
+  location,
+}) => {
+  if (!isSupabaseConfigured || !supabase || !userId) {
+    return;
+  }
+
+  try {
+    const preview = [contactName, industry, location, email, phone].filter(Boolean).join(' · ');
+    await supabase.rpc('notify_admins', {
+      notif_kind: 'new_employer',
+      notif_ref_id: userId,
+      notif_title: `New employer registered: ${String(companyName || 'New employer').trim()}`,
+      notif_preview: preview || 'A new employer has registered on Vizag Jobs.',
+      notif_link: '/admin/employers',
+    });
+  } catch (err) {
+    console.debug('[ReplyNotifications] notify_admins RPC fallback notice:', err?.message);
+  }
+};
+
+export const notifyAdminsNewEmployerJob = async (job) => {
+  if (!isSupabaseConfigured || !supabase || !job?.id) {
+    return;
+  }
+
+  try {
+    const preview = [job.company || 'Employer', job.location || 'Visakhapatnam', 'Pending review'].filter(Boolean).join(' · ');
+    await supabase.rpc('notify_admins', {
+      notif_kind: 'new_employer_job',
+      notif_ref_id: job.id,
+      notif_title: `New employer job: ${String(job.title || 'Untitled opening').trim()}`,
+      notif_preview: preview,
+      notif_link: '/admin/jobs',
+    });
+  } catch (err) {
+    console.debug('[ReplyNotifications] notify_admins RPC fallback notice:', err?.message);
+  }
+};
+

@@ -5,6 +5,7 @@ import {
   serializeJobForm,
 } from './adminJobs';
 import { supabase } from '../lib/supabaseClient';
+import { notifyAdminsNewEmployerJob } from './replyNotifications';
 
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
 
@@ -205,6 +206,8 @@ export const createEmployerJob = async (values) => {
   if (error) {
     throw mapError(error, 'Could not submit the job for review.');
   }
+
+  notifyAdminsNewEmployerJob(data).catch(() => {});
 
   return data;
 };

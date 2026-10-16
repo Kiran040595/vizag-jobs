@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
+import QuestionNotificationBell from '../QuestionNotificationBell';
 
 const navItems = [
   { label: 'Quick Job', to: '/admin/quick-jobs/new' },
@@ -32,6 +33,7 @@ export default function AdminShell({ children, title, description }) {
             {description ? <p className="mt-2 text-sm text-slate-600">{description}</p> : null}
           </div>
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
+            <QuestionNotificationBell />
             <div className="min-w-0 max-w-full break-all rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
               Signed in as <span className="font-semibold text-slate-900">{user?.email}</span>
             </div>

@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { setPendingEmployerCompanyName, takePendingEmployerCompanyName } from '../lib/employerOAuth';
 import { getAuthRedirectUrl } from '../lib/site';
 import { upsertEmployerProfile } from '../services/employerJobs';
+import { notifyAdminsNewEmployer } from '../services/replyNotifications';
 import { deferAuthWork } from '../lib/deferAuthWork';
 import { hasStoredSupabaseSession } from '../lib/supabaseSessionHelper';
 
@@ -83,6 +84,12 @@ const applyPendingCompanyFromOAuth = async (user) => {
       contact_email: user.email,
       contact_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
     });
+    notifyAdminsNewEmployer({
+      userId: user.id,
+      companyName: pendingCompany,
+      contactName: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      email: user.email,
+    }).catch(() => {});
   }
 };
 
@@ -293,6 +300,15 @@ export function EmployerAuthProvider({ children }) {
           industry: trimmedIndustry,
           location: trimmedLocation,
         });
+        notifyAdminsNewEmployer({
+          userId: data.user.id,
+          companyName: trimmedCompany,
+          contactName: trimmedContact,
+          email,
+          phone: trimmedPhone,
+          industry: trimmedIndustry,
+          location: trimmedLocation,
+        }).catch(() => {});
       } catch (upsertError) {
         console.warn('Could not immediately upsert employer profile after signup:', upsertError);
       }

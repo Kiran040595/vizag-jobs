@@ -50,7 +50,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
 | S029 | `/admin` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
 | S030 | `/admin/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
-| S031 | `/admin/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
+| S031 | `/admin/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries; bell icon alert on new employer job submissions | In progress | In progress | QA-2026-10-16: Admin bell icon notification and unread badge on new employer job postings verified in AdminShell; links directly to review queue |
 | S032 | `/admin/admin-jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
 | S033 | `/admin/fetch` | Fetch each enabled source; start/collect runs; review, SEO optimize, deduplicate and publish; resume/retry failed run | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
 | S034 | `/admin/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
@@ -60,7 +60,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S038 | `/admin/blog/:postId/edit` | Create/edit blog; validate content/metadata; preview and publish; verify public article | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
 | S039 | `/admin/feedback` | Review feedback; reply, publish, ignore or delete; verify public visibility and reply notification | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
 | S040 | `/admin/questions` | Review questions; answer, publish, ignore or delete; verify public answer and reply notification | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
-| S041 | `/admin/employers` | Search/manage employers; create account and edit profile; link company; verify employer access | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
+| S041 | `/admin/employers` | Search/manage employers; create account and edit profile; link company; verify employer access; bell icon alert on new registrations | In progress | In progress | QA-2026-10-16: Admin bell icon notification and unread badge on new employer registrations verified in AdminShell; links directly to employer management |
 | S042 | `/admin/companies` | Manage companies and career URLs; fetch/review career jobs; approve and verify public directory | In progress | In progress | Full published directory audit & canonicalization verified: all 122 published companies audited; 0 404 errors; canonical rewrites implemented for all companies (Infosys, Amazon, Conduent, TCS, Pfizer, Miracle, Fluentgrid, Dr. Reddy's, etc.); public.companies synchronized via linked SQL; 29/29 tests pass in tests/company-career-fetch.test.mjs |
 | S043 | `/admin/bills` | Edit customer/services/quantity/prices; verify totals; preview, print and reset | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
 | S044 | `/admin/students` | Search/filter/page students; inspect profile; resume access; export and share selected candidates | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
@@ -718,5 +718,28 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Verified cross-source deduplication prevents duplicates against existing TCS Visakhapatnam roles in database (e.g. Teamcenter Developer, Java Full Stack Developer, Snowflake Developer).
   - Vite production build `npm run build` completed cleanly in 9.05s.
   - Unrelated local work (`QuestionNotificationBell.jsx`, `notificationInbox.js`, `tests/notification-inbox.test.mjs`) preserved untouched.
+
+## QA-2026-10-16: Admin Bell Notifications for Employer Registrations and Job Submissions
+
+- Scope: `supabase/migrations/20261016140000_admin_employer_notifications.sql`, `src/components/admin/AdminShell.jsx`, `src/components/QuestionNotificationBell.jsx`, `src/services/replyNotifications.js`, `src/services/employerJobs.js`, `src/context/EmployerAuthContext.jsx`, `tests/admin-bell-notifications.test.mjs`.
+- Deliverables:
+  - Database schema & trigger functions (`supabase/migrations/20261016140000_admin_employer_notifications.sql`):
+    - Extended `reply_notifications_kind_check` constraint with `'new_employer'` and `'new_employer_job'` kinds.
+    - Security-definer dispatch function `public.notify_admins(notif_kind, notif_ref_id, notif_title, notif_preview, notif_link)` notifying every administrator in `public.admin_users`.
+    - Trigger `on_employer_registered_notify_admin` on `public.employer_profiles` firing on new registrations, previewing employer contact details and linking directly to `/admin/employers`.
+    - Trigger `on_employer_job_posted_notify_admin` on `public.jobs` firing when non-admin employers post new listings (excluding scrapers with null creator and admin's own posts), linking directly to `/admin/jobs`.
+  - Admin Header Bell Icon UI:
+    - Added `QuestionNotificationBell` directly into `AdminShell.jsx` header next to user profile and sign-out controls, giving admins instant notification access from every admin screen on both desktop and mobile.
+    - Added custom styling in `QuestionNotificationBell.jsx` for `new_employer` (emerald accent) and `new_employer_job` (violet accent).
+    - Updated notification subtitle and empty state text for authenticated admins (`"Employer updates, jobs, and moderation"`).
+  - Application services & fallbacks:
+    - Updated `src/services/replyNotifications.js` with `'New employer'` and `'New employer job'` kind labels and `notifyAdminsNewEmployer` / `notifyAdminsNewEmployerJob` RPC dispatch helpers.
+    - Integrated proactive fallback dispatches into `src/services/employerJobs.js` and `src/context/EmployerAuthContext.jsx`.
+- Verification Evidence:
+  - Automated tests: `node tests/admin-bell-notifications.test.mjs` passed (7/7 tests passed, 0 failures).
+  - Notification inbox tests: `node tests/notification-inbox.test.mjs` passed (6/6 tests passed, 0 failures).
+  - Regression tests: `node tests/job-publish-notify.test.mjs` and `node tests/employer-registration.test.mjs` passed.
+  - Production build: `npm run build` completed cleanly in 7.06s with 0 errors.
+
 
 
