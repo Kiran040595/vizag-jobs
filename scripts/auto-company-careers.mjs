@@ -21,6 +21,8 @@ import {
   publishJob,
 } from './lib/pipeline-publish.mjs';
 import {
+  cleanCompanyForDedupe,
+  cleanTitleForDedupe,
   normalizeCompanyTitleKey,
   normalizeUrlForCompare,
   shouldSkipCompanyCareerJob,
@@ -200,8 +202,8 @@ async function parseJobsWithGemini(company, pageContent) {
     `TASK:`,
     `Extract all open job vacancies that are located in Visakhapatnam / Vizag, or remote positions applicable to candidates in Vizag.`,
     `CRITICAL LOCATION RULE:`,
-    `- If a job is explicitly located in other cities (e.g. Hyderabad, Bangalore, Chennai, Pune, USA), DO NOT EXTRACT IT.`,
-    `- Only extract jobs where the location is Visakhapatnam (Vizag) or where it is clearly a local opening for this office/remote.`,
+    `- If a job is explicitly located in other cities (e.g. Hyderabad, Bangalore, Bengaluru, Chennai, Pune, Mumbai, Delhi, Noida, Gurgaon, USA), DO NOT EXTRACT IT.`,
+    `- Only extract jobs where the location is Visakhapatnam / Vizag or local localities (e.g. Rushikonda, Duvvada, Gajuwaka, Gambheeram, Parawada, Sheela Nagar, Madhurawada, Pendurthi, Anakapalle) or where it is clearly a local opening for this office/remote.`,
     `- If no specific Vizag jobs are listed, return an empty array {"jobs": []}.`,
     `- Ensure apply_link is a valid URL (if a specific job link exists in markdown, use it; otherwise use ${company.careers_url}).`,
     `- Keep descriptions informative, professional, and clean.`,
@@ -394,25 +396,31 @@ async function main() {
 
         const ctKey = normalizeCompanyTitleKey(job.company, job.title);
 
-        if (isDryRun) {
-          log(`  [DRY-RUN WOULD PUBLISH] "${job.title}" (${job.location})`);
-          companyReport.published += 1;
-          report.publishedJobs += 1;
-          companyReport.jobs.push({ title: job.title, status: 'dry_run_published' });
-          if (ctKey) existing.companyTitleKeys.add(ctKey);
-        } else {
-          try {
-            const inserted = await publishJob(job, 'published');
-            log(`  [PUBLISHED] "${inserted.title}" -> /jobs/${inserted.slug}`);
+          const canonicalComp = cleanCompanyForDedupe(job.company);
+          const canonicalTitle = cleanTitleForDedupe(job.title);
+          const canonicalKey = canonicalComp && canonicalTitle ? `${canonicalComp}::${canonicalTitle}` : '';
+
+          if (isDryRun) {
+            log(`  [DRY-RUN WOULD PUBLISH] "${job.title}" (${job.location})`);
             companyReport.published += 1;
             report.publishedJobs += 1;
-            companyReport.jobs.push({ title: inserted.title, slug: inserted.slug, status: 'published' });
-
-            // Add to in-memory set to prevent duplicate within the same run
-            if (inserted.slug) existing.slugs.add(inserted.slug.toLowerCase());
-            if (inserted.apply_link) existing.applyLinks.add(normalizeUrlForCompare(inserted.apply_link));
+            companyReport.jobs.push({ title: job.title, status: 'dry_run_published' });
             if (ctKey) existing.companyTitleKeys.add(ctKey);
-          } catch (pubErr) {
+            if (canonicalKey) existing.companyTitleKeys.add(canonicalKey);
+          } else {
+            try {
+              const inserted = await publishJob(job, 'published');
+              log(`  [PUBLISHED] "${inserted.title}" -> /jobs/${inserted.slug}`);
+              companyReport.published += 1;
+              report.publishedJobs += 1;
+              companyReport.jobs.push({ title: inserted.title, slug: inserted.slug, status: 'published' });
+
+              // Add to in-memory set to prevent duplicate within the same run
+              if (inserted.slug) existing.slugs.add(inserted.slug.toLowerCase());
+              if (inserted.apply_link) existing.applyLinks.add(normalizeUrlForCompare(inserted.apply_link));
+              if (ctKey) existing.companyTitleKeys.add(ctKey);
+              if (canonicalKey) existing.companyTitleKeys.add(canonicalKey);
+            } catch (pubErr) {
             log(`  [ERROR PUBLISHING] "${job.title}": ${pubErr.message}`);
             companyReport.skipped += 1;
             report.skippedJobs += 1;

@@ -9,6 +9,10 @@ import {
 } from '../../src/lib/jobDisplayLabels.js';
 import { pipelineConfig } from './pipeline-env.mjs';
 import { getJobPublishBlockReason } from '../../src/lib/jobPublishQuality.js';
+import {
+  cleanCompanyForDedupe,
+  cleanTitleForDedupe,
+} from '../../src/lib/companyCareerFetchAutomation.js';
 
 const REQUIRED_DEFAULTS = { location: 'Visakhapatnam', experience: '' };
 const INVALID_APPLY_TOKENS = /^(null|undefined|none|n\/a|na)$/i;
@@ -214,6 +218,12 @@ export async function fetchExistingJobKeys() {
     const cleanTitle = normalizeText(row.title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     if (cleanComp && cleanTitle) {
       companyTitleKeys.add(`${cleanComp}::${cleanTitle}`);
+    }
+
+    const canonicalComp = cleanCompanyForDedupe(row.company);
+    const canonicalTitle = cleanTitleForDedupe(row.title);
+    if (canonicalComp && canonicalTitle) {
+      companyTitleKeys.add(`${canonicalComp}::${canonicalTitle}`);
     }
   }
 

@@ -63,6 +63,8 @@ import {
   PARSE_RAW_TEXT_JOBS_SCHEMA,
   type CompanyCareerTarget,
   type ExtractedCompanyCareerJob,
+  resolveCanonicalCareerPortalUrl,
+  parseWorkdayPortalUrl,
   resolveCompanyJobApplyLink,
   scrapeCompanyCareerPage,
 } from './company-careers.ts';

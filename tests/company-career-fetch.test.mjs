@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 
 import {
   normalizeUrlForCompare,
+  cleanCompanyForDedupe,
+  cleanTitleForDedupe,
   normalizeCompanyTitleKey,
+  isVizagEligibleJobLocation,
   resolveCompanyJobApplyLink,
   buildCompanyExistingJobIndex,
   shouldSkipCompanyCareerJob,
@@ -388,5 +391,90 @@ test('Company Career Fetch: Modular Approval Steps (Pre-Optimize & Post-Optimize
     assert.equal(published.id, 'job-pfizer-1');
     assert.ok(existingIndex.slugs.has('team-leader-pfizer-vizag'));
     assert.ok(existingIndex.companyTitleKeys.has('pfizer::team leader'));
+  });
+});
+
+test('Company Career Fetch: Strict Vizag Location Filtering & Cross-Source Deduplication', async (t) => {
+  await t.test('cleanCompanyForDedupe removes legal suffixes and noise', () => {
+    assert.equal(cleanCompanyForDedupe('Fluentgrid Limited'), 'fluentgrid');
+    assert.equal(cleanCompanyForDedupe('Miracle Software Systems Inc.'), 'miracle software');
+    assert.equal(cleanCompanyForDedupe('Patra India BPO Services Pvt Ltd'), 'patra india bpo');
+  });
+
+  await t.test('cleanTitleForDedupe strips location tags from job titles', () => {
+    assert.equal(cleanTitleForDedupe('Senior Java Developer (Vizag)'), 'senior java developer');
+    assert.equal(cleanTitleForDedupe('Full Stack Engineer - Visakhapatnam'), 'full stack engineer');
+    assert.equal(cleanTitleForDedupe('Data Analyst [Vizag / VSP]'), 'data analyst');
+  });
+
+  await t.test('isVizagEligibleJobLocation correctly accepts Vizag and rejects other metros', () => {
+    assert.equal(isVizagEligibleJobLocation('Visakhapatnam, Andhra Pradesh'), true);
+    assert.equal(isVizagEligibleJobLocation('Rushikonda IT SEZ, Vizag'), true);
+    assert.equal(isVizagEligibleJobLocation('Duvvada VSEZ'), true);
+    assert.equal(isVizagEligibleJobLocation('Remote - Open to Vizag'), true);
+
+    // Reject non-Vizag metros
+    assert.equal(isVizagEligibleJobLocation('Bengaluru, Karnataka'), false);
+    assert.equal(isVizagEligibleJobLocation('Hyderabad, Telangana'), false);
+    assert.equal(isVizagEligibleJobLocation('Pune, Maharashtra'), false);
+    assert.equal(isVizagEligibleJobLocation('Chennai, Tamil Nadu'), false);
+    assert.equal(isVizagEligibleJobLocation('Noida, Uttar Pradesh'), false);
+  });
+
+  await t.test('strips tracking query params from apply links', () => {
+    assert.equal(
+      normalizeUrlForCompare('https://fluentgrid.com/careers/job-123?utm_source=linkedin&utm_medium=post'),
+      'https://fluentgrid.com/careers/job-123'
+    );
+    assert.equal(
+      normalizeUrlForCompare('https://fluentgrid.com/careers/job-123/?ref=indeed&fbclid=abc123xyz'),
+      'https://fluentgrid.com/careers/job-123'
+    );
+  });
+
+  await t.test('shouldSkipCompanyCareerJob rejects jobs located in other cities', () => {
+    const existingIndex = buildCompanyExistingJobIndex([]);
+    const res = shouldSkipCompanyCareerJob(
+      {
+        title: 'Backend Engineer',
+        company: 'Fluentgrid',
+        location: 'Bengaluru, Karnataka',
+        apply_link: 'https://fluentgrid.com/careers/job-456',
+      },
+      'https://fluentgrid.com/careers',
+      existingIndex
+    );
+
+    assert.equal(res.skip, true);
+    assert.match(res.reason, /outside visakhapatnam/i);
+  });
+
+  await t.test('cross-source dedupe: detects duplicate when existing job from Naukri has "Limited" in company name', () => {
+    // Simulated existing job imported from Naukri with formal company name and city in title
+    const existingIndex = buildCompanyExistingJobIndex([
+      {
+        slug: 'fluentgrid-limited-senior-java-developer-vizag',
+        company: 'Fluentgrid Limited',
+        title: 'Senior Java Developer (Vizag)',
+        apply_link: 'https://www.naukri.com/job-listings-123',
+      },
+    ]);
+
+    // Incoming job from direct career portal scrape with clean company name and standard title
+    const portalJob = {
+      title: 'Senior Java Developer',
+      company: 'Fluentgrid',
+      location: 'Visakhapatnam',
+      apply_link: 'https://fluentgrid.com/careers/java-dev',
+    };
+
+    const res = shouldSkipCompanyCareerJob(
+      portalJob,
+      'https://fluentgrid.com/careers',
+      existingIndex
+    );
+
+    assert.equal(res.skip, true);
+    assert.match(res.reason, /role already published/i);
   });
 });

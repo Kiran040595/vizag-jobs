@@ -17,7 +17,51 @@ const sleepMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export function normalizeUrlForCompare(url) {
   const raw = String(url || '').trim().toLowerCase();
   if (!raw) return '';
-  return raw.replace(/\/+$/, '');
+  try {
+    const parsed = new URL(raw);
+    const trackingParams = [
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_term',
+      'utm_content',
+      'ref',
+      'source',
+      'fbclid',
+      'gclid',
+    ];
+    for (const p of trackingParams) {
+      parsed.searchParams.delete(p);
+    }
+    const cleanPath = parsed.pathname.replace(/\/+$/, '');
+    parsed.pathname = cleanPath || '/';
+    if (!parsed.search || parsed.search === '?') {
+      return `${parsed.origin}${cleanPath}`.toLowerCase();
+    }
+    return parsed.toString().toLowerCase().replace(/\/+$/, '');
+  } catch {
+    return raw.replace(/\/+$/, '');
+  }
+}
+
+export function cleanCompanyForDedupe(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(
+      /\b(pvt\.?\s*ltd\.?|private\s+limited|limited|ltd\.?|llp|inc\.?|corp\.?|corporation|technologies|solutions|services|systems)\b/gi,
+      '',
+    )
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+export function cleanTitleForDedupe(title) {
+  return String(title || '')
+    .toLowerCase()
+    .replace(/\b(visakhapatnam|vishakhapatnam|vizag|vsp|andhra\s+pradesh)\b/gi, '')
+    .replace(/[()[\]{}]+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }
 
 export function normalizeCompanyTitleKey(company, title) {
@@ -31,6 +75,32 @@ export function normalizeCompanyTitleKey(company, title) {
     .trim();
   if (!cleanCompany || !cleanTitle) return '';
   return `${cleanCompany}::${cleanTitle}`;
+}
+
+const VIZAG_LOCATION_KEYWORDS =
+  /\b(visakhapatnam|vishakhapatnam|vizag|vsp|rushikonda|duvvada|gajuwaka|gambheeram|parawada|sheela\s*nagar|madhurawada|pendurthi|anakapalle|anakapalli|bhimili|bheemili|vsez)\b/i;
+
+const OTHER_METRO_KEYWORDS =
+  /\b(bengaluru|bangalore|hyderabad|secunderabad|chennai|pune|mumbai|delhi|new\s+delhi|noida|greater\s+noida|gurgaon|gurugram|kolkata|ahmedabad|kochi|cochin|trivandrum|thiruvananthapuram|coimbatore|indore|chandigarh|mohali|jaipur|usa|united\s+states|dubai|uae|singapore)\b/i;
+
+export function isVizagEligibleJobLocation(location = '', options = {}) {
+  const loc = String(location || '').trim();
+  if (!loc) {
+    return Boolean(options.isVizagCompany);
+  }
+  if (VIZAG_LOCATION_KEYWORDS.test(loc)) {
+    return true;
+  }
+  if (OTHER_METRO_KEYWORDS.test(loc)) {
+    return false;
+  }
+  if (/\b(remote|work\s+from\s+home|wfh)\b/i.test(loc)) {
+    return true;
+  }
+  if (options.isVizagCompany || /^(andhra\s+pradesh|india|full-time|on-site)$/i.test(loc)) {
+    return true;
+  }
+  return false;
 }
 
 export function resolveCompanyJobApplyLink(job, fallbackCareersUrl = '') {
@@ -59,6 +129,12 @@ export function buildCompanyExistingJobIndex(existingJobs = []) {
     if (ctKey) {
       companyTitleKeys.add(ctKey);
     }
+
+    const canonicalCompany = cleanCompanyForDedupe(row?.company);
+    const canonicalTitle = cleanTitleForDedupe(row?.title);
+    if (canonicalCompany && canonicalTitle) {
+      companyTitleKeys.add(`${canonicalCompany}::${canonicalTitle}`);
+    }
   }
 
   return { slugs, applyLinks, companyTitleKeys };
@@ -76,6 +152,11 @@ export function shouldSkipCompanyCareerJob(job, companyCareersUrl, existingIndex
     return { skip: true, reason: 'missing title or company' };
   }
 
+  const location = String(job?.location || '').trim();
+  if (location && !isVizagEligibleJobLocation(location, { isVizagCompany: true })) {
+    return { skip: true, reason: `location "${location}" is outside Visakhapatnam / Vizag` };
+  }
+
   const applyRaw = resolveCompanyJobApplyLink(job, companyCareersUrl);
   const applyNorm = normalizeUrlForCompare(applyRaw);
   if (!applyNorm) {
@@ -88,7 +169,14 @@ export function shouldSkipCompanyCareerJob(job, companyCareersUrl, existingIndex
   }
 
   const ctKey = normalizeCompanyTitleKey(company, title);
-  if (ctKey && existingIndex?.companyTitleKeys?.has(ctKey)) {
+  const canonicalCompany = cleanCompanyForDedupe(company);
+  const canonicalTitle = cleanTitleForDedupe(title);
+  const canonicalKey = canonicalCompany && canonicalTitle ? `${canonicalCompany}::${canonicalTitle}` : '';
+
+  if (
+    (ctKey && existingIndex?.companyTitleKeys?.has(ctKey)) ||
+    (canonicalKey && existingIndex?.companyTitleKeys?.has(canonicalKey))
+  ) {
     return { skip: true, reason: 'role already published for this company' };
   }
 
