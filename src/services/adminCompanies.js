@@ -28,12 +28,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // IT & Software
   'Tata Consultancy Services': {
     website: 'https://www.tcs.com',
-    careers_url: 'https://www.tcs.com/careers',
+    careers_url: 'https://www.tcs.com/careers/india',
     category: 'IT & Software',
   },
   'TCS': {
     website: 'https://www.tcs.com',
-    careers_url: 'https://www.tcs.com/careers',
+    careers_url: 'https://www.tcs.com/careers/india',
     category: 'IT & Software',
   },
   'Infosys': {

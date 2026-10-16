@@ -5,19 +5,19 @@ export const CURATED_COMPANIES = {
   // IT & Tech
   'Tata Consultancy Services': {
     website: 'https://www.tcs.com',
-    careers_url: 'https://www.tcs.com/careers',
+    careers_url: 'https://www.tcs.com/careers/india',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
   'TCS': {
     website: 'https://www.tcs.com',
-    careers_url: 'https://www.tcs.com/careers',
+    careers_url: 'https://www.tcs.com/careers/india',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
   'TCS Visakhapatnam': {
     website: 'https://www.tcs.com',
-    careers_url: 'https://www.tcs.com/careers',
+    careers_url: 'https://www.tcs.com/careers/india',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },

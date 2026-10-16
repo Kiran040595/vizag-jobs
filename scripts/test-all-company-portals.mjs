@@ -79,7 +79,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Tata Consultancy Services',
-    careers_url: 'https://www.tcs.com/careers',
+    careers_url: 'https://www.tcs.com/careers/india',
     category: 'IT & Software',
     location: 'Visakhapatnam',
   },

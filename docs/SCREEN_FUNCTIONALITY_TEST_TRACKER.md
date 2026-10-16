@@ -707,14 +707,15 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
     - Granules India: updated to official portal `https://careers.mygranules.com/` (HTTP 200).
     - Apollo Hospitals: updated to official portal `https://www.apollohospitals.com/corporate/careers/` (HTTP 200, Vizag locations present).
     - Bajaj Finance / Finserv: updated to `https://www.bajajfinservmarkets.in/careers` (HTTP 200).
-  - Implemented automatic canonical URL resolution (`resolveCanonicalCareerPortalUrl`) in Edge Function and automation pipeline for Pfizer, Granules India, Apollo Hospitals, Bajaj Finance, Miracle Software Systems, Fluentgrid, and Symbiosys.
+  - Implemented automatic canonical URL resolution (`resolveCanonicalCareerPortalUrl`) in Edge Function and automation pipeline for Pfizer, Granules India, Apollo Hospitals, Bajaj Finance, Miracle Software Systems, Fluentgrid, Symbiosys, and Tata Consultancy Services (TCS India `https://www.tcs.com/careers/india`).
   - Linked Supabase PostgreSQL migration executed (`scripts/apply-db-career-fixes.mjs`) updating `public.companies` table in production with verified URLs and approved flags.
   - Upgraded `scripts/auto-company-careers.mjs` with native Workday CXS JSON API integration, canonical URL resolution, and Supabase pagination (1,325 active targets indexed).
   - Built comprehensive audit runner `scripts/test-all-company-portals.mjs` verifying all 41 published companies.
 - Verification Evidence:
   - 41/41 published companies audited: 0 HTTP 404 errors (down from 3).
   - Pfizer Workday CXS scraper extracted 8 active, verified Visakhapatnam job postings with direct Workday apply links.
-  - Apollo Hospitals, Granules India, Bajaj Finance, Care Hospitals, and Miracle Software Systems verified without runtime errors.
+  - Apollo Hospitals, Granules India, Bajaj Finance, Care Hospitals, Miracle Software Systems, and Tata Consultancy Services verified without runtime errors.
+  - Verified cross-source deduplication prevents duplicates against existing TCS Visakhapatnam roles in database (e.g. Teamcenter Developer, Java Full Stack Developer, Snowflake Developer).
   - Vite production build `npm run build` completed cleanly in 9.05s.
   - Unrelated local work (`QuestionNotificationBell.jsx`, `notificationInbox.js`, `tests/notification-inbox.test.mjs`) preserved untouched.
 

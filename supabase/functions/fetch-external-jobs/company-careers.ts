@@ -170,6 +170,15 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     return 'https://symbiosystech.com/';
   }
 
+  if (
+    lowerName.includes('tata consultancy') ||
+    lowerName === 'tcs' ||
+    lowerUrl === 'https://www.tcs.com/careers' ||
+    lowerUrl === 'https://www.tcs.com/careers/'
+  ) {
+    return 'https://www.tcs.com/careers/india';
+  }
+
   return trimmed;
 }
 
