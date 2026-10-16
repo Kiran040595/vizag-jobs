@@ -16,6 +16,7 @@ import {
   runSingleCompanyCareerPipeline,
 } from '../src/lib/companyCareerFetchAutomation.js';
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
+import { resolveCanonicalCareerPortalUrl } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
 test('Company Career Fetch: URL & Title Key Normalization', async (t) => {
   await t.test('normalizes URLs by trimming and stripping trailing slashes', () => {
@@ -476,5 +477,69 @@ test('Company Career Fetch: Strict Vizag Location Filtering & Cross-Source Dedup
 
     assert.equal(res.skip, true);
     assert.match(res.reason, /role already published/i);
+  });
+});
+
+test('Company Career Fetch: Canonical Career Portal URL Resolution for Published Companies', async (t) => {
+  await t.test('resolves TCS to dedicated India careers portal', () => {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.tcs.com/careers', 'Tata Consultancy Services'),
+      'https://www.tcs.com/careers/india'
+    );
+  });
+
+  await t.test('resolves Infosys to direct joblist portal', () => {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.infosys.com/careers/', 'Infosys'),
+      'https://career.infosys.com/joblist'
+    );
+  });
+
+  await t.test('resolves Amazon to Visakhapatnam location search portal', () => {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.amazon.jobs', 'Amazon'),
+      'https://www.amazon.jobs/en/search?base_query=Visakhapatnam'
+    );
+  });
+
+  await t.test('resolves Conduent to India portal instead of US', () => {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://careers.conduent.com/us/en', 'Conduent'),
+      'https://careers.conduent.com/in/en'
+    );
+  });
+
+  await t.test('resolves Pfizer to Workday CXS JSON API URL', () => {
+    assert.match(
+      resolveCanonicalCareerPortalUrl('https://www.pfizer.com/about/careers', 'Pfizer'),
+      /myworkdayjobs\.com/
+    );
+  });
+
+  await t.test('resolves 404/broken URLs to verified active career targets', () => {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.acnhealthcare.com/careers', 'ACN Healthcare'),
+      'https://www.acnhealthcare.com/Careers.html'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://arbhasoft.com/careers', 'Arbhasoft'),
+      'https://arbhasoft.com/career/'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://celestinfo.com/careers', 'Celestinfo Software Solutions'),
+      'https://celestinfo.com/careers.html'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://edge3d.in/careers', 'EDGE 3D TECHNOLOGIES Pvt. Ltd.'),
+      'https://www.edge3d.io/'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://urcc.in/careers', 'URC Construction (P) Ltd'),
+      'https://www.urcindia.com/'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://sitarammotors.royalenfield.com', 'SITARAM MOTORS'),
+      'https://www.sitarammotors.com/'
+    );
   });
 });

@@ -179,6 +179,181 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     return 'https://www.tcs.com/careers/india';
   }
 
+  if (
+    lowerName.includes('infosys') &&
+    (lowerUrl.includes('infosys.com/careers') || !lowerUrl.includes('career.infosys.com'))
+  ) {
+    return 'https://career.infosys.com/joblist';
+  }
+
+  if (
+    lowerName.includes('amazon') &&
+    (lowerUrl === 'https://www.amazon.jobs' || lowerUrl === 'https://www.amazon.jobs/' || !lowerUrl.includes('base_query'))
+  ) {
+    return 'https://www.amazon.jobs/en/search?base_query=Visakhapatnam';
+  }
+
+  if (
+    lowerName.includes('conduent') &&
+    lowerUrl.includes('careers.conduent.com/us/en')
+  ) {
+    return 'https://careers.conduent.com/in/en';
+  }
+
+  if (
+    lowerName.includes('acn healthcare') ||
+    lowerUrl.includes('acnhealthcare.com/careers')
+  ) {
+    return 'https://www.acnhealthcare.com/Careers.html';
+  }
+
+  if (
+    lowerName.includes('arbhasoft') ||
+    lowerUrl.includes('arbhasoft.com/careers')
+  ) {
+    return 'https://arbhasoft.com/career/';
+  }
+
+  if (
+    lowerName.includes('celestinfo') ||
+    lowerUrl.includes('celestinfo.com/careers')
+  ) {
+    return 'https://celestinfo.com/careers.html';
+  }
+
+  if (
+    lowerName.includes('cerebra consulting') ||
+    lowerUrl.includes('cerebraconsulting.com')
+  ) {
+    return 'https://cerebra-consulting.com/';
+  }
+
+  if (
+    lowerName.includes('credible consultancy') ||
+    lowerUrl.includes('crediblejobs.in/careers')
+  ) {
+    return 'https://www.crediblejobs.in/p/current-openings.html';
+  }
+
+  if (
+    lowerName.includes('cloudxtreme') ||
+    lowerUrl.includes('cloudxtreme.com/careers')
+  ) {
+    return 'https://cloudxtreme.com/join-us/';
+  }
+
+  if (
+    lowerName.includes('edge 3d') ||
+    lowerUrl.includes('edge3d.in')
+  ) {
+    return 'https://www.edge3d.io/';
+  }
+
+  if (
+    lowerName.includes('eprosoft') ||
+    lowerUrl.includes('eprosoft.com/careers')
+  ) {
+    return 'https://www.eprosoft.com/';
+  }
+
+  if (
+    lowerName.includes('growsin') ||
+    lowerUrl.includes('growsin.com/careers')
+  ) {
+    return 'https://growsin.com/';
+  }
+
+  if (
+    lowerName.includes('niyukti') ||
+    lowerUrl.includes('niyukti.com')
+  ) {
+    return 'https://niyukti.ai/';
+  }
+
+  if (
+    lowerName.includes('onliest') ||
+    lowerUrl.includes('onliestllc.com')
+  ) {
+    return 'https://www.shop-onliest.com/';
+  }
+
+  if (
+    lowerName.includes('sitaram motors') ||
+    lowerUrl.includes('sitarammotors.royalenfield.com')
+  ) {
+    return 'https://www.sitarammotors.com/';
+  }
+
+  if (
+    lowerName.includes('skillventory') ||
+    lowerUrl.includes('skillventory.com/careers')
+  ) {
+    return 'https://jobs.skillventory.com/';
+  }
+
+  if (
+    lowerName.includes('sri tech') ||
+    lowerUrl.includes('sritechsolutions.com/careers')
+  ) {
+    return 'https://sritechsolutions.com/job-openings/';
+  }
+
+  if (
+    lowerName.includes('synstack') ||
+    lowerUrl.includes('synstack.in')
+  ) {
+    return 'https://www.synstacktech.com/';
+  }
+
+  if (
+    lowerName.includes('teks academy') ||
+    lowerUrl.includes('teksacademy.com/contact-us')
+  ) {
+    return 'https://teksacademy.com/';
+  }
+
+  if (
+    lowerName.includes('sims college') ||
+    lowerUrl.includes('simsvizag.com/contact-us')
+  ) {
+    return 'http://www.simsvizag.com/career';
+  }
+
+  if (
+    lowerName.includes('tekwissen') ||
+    lowerUrl.includes('tekwissen.com/careers')
+  ) {
+    return 'https://tekwissen.com/career/india/';
+  }
+
+  if (
+    lowerName.includes('tilicho labs') ||
+    lowerUrl.includes('tilicholabs.com/careers')
+  ) {
+    return 'https://www.tilicholabs.com/';
+  }
+
+  if (
+    lowerName.includes('transasia') ||
+    lowerUrl.includes('erbamannheim.com')
+  ) {
+    return 'https://transasia.co.in/';
+  }
+
+  if (
+    lowerName.includes('urc construction') ||
+    lowerUrl.includes('urcc.in')
+  ) {
+    return 'https://www.urcindia.com/';
+  }
+
+  if (
+    lowerName.includes('winspire tech') ||
+    lowerUrl.includes('winspiretech.com')
+  ) {
+    return 'https://winspiretech.co/careers/';
+  }
+
   return trimmed;
 }
 

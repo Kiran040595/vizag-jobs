@@ -38,7 +38,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Infosys': {
     website: 'https://www.infosys.com',
-    careers_url: 'https://www.infosys.com/careers/',
+    careers_url: 'https://career.infosys.com/joblist',
     category: 'IT & Software',
   },
   'Cognizant': {
@@ -53,7 +53,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Conduent': {
     website: 'https://www.conduent.com',
-    careers_url: 'https://careers.conduent.com/us/en',
+    careers_url: 'https://careers.conduent.com/in/en',
     category: 'IT & Software',
   },
   'WNS': {
@@ -73,12 +73,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Fluentgrid Limited': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/join-us/',
+    careers_url: 'https://fluentgrid.com/careers/',
     category: 'IT & Software',
   },
   'Fluentgrid': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/join-us/',
+    careers_url: 'https://fluentgrid.com/careers/',
     category: 'IT & Software',
   },
   'Symbiosis Technologies': {
@@ -129,6 +129,71 @@ export const KNOWN_COMPANY_DEFAULTS = {
   'XTGlobal': {
     website: 'https://www.xtglobal.com',
     careers_url: 'https://xtglobal.com/careers/',
+    category: 'IT & Software',
+  },
+  'Amazon': {
+    website: 'https://www.amazon.in',
+    careers_url: 'https://www.amazon.jobs/en/search?base_query=Visakhapatnam',
+    category: 'IT & Software',
+  },
+  'Synstack Technologies': {
+    website: 'https://www.synstacktech.com',
+    careers_url: 'https://www.synstacktech.com/',
+    category: 'IT & Software',
+  },
+  'Cerebra Consulting Inc.': {
+    website: 'https://cerebra-consulting.com',
+    careers_url: 'https://cerebra-consulting.com/',
+    category: 'IT & Software',
+  },
+  'SRI Tech Solutions Inc.': {
+    website: 'https://sritechsolutions.com',
+    careers_url: 'https://sritechsolutions.com/job-openings/',
+    category: 'IT & Software',
+  },
+  'TekWissen India': {
+    website: 'https://tekwissen.com',
+    careers_url: 'https://tekwissen.com/career/india/',
+    category: 'IT & Software',
+  },
+  'Niyukti Systems, Inc': {
+    website: 'https://niyukti.ai',
+    careers_url: 'https://niyukti.ai/',
+    category: 'IT & Software',
+  },
+  'Celestinfo Software Solutions Pvt. Ltd.': {
+    website: 'https://celestinfo.com',
+    careers_url: 'https://celestinfo.com/careers.html',
+    category: 'IT & Software',
+  },
+  'EDGE 3D TECHNOLOGIES Pvt. Ltd.': {
+    website: 'https://www.edge3d.io',
+    careers_url: 'https://www.edge3d.io/',
+    category: 'IT & Software',
+  },
+  'Arbhasoft': {
+    website: 'https://arbhasoft.com',
+    careers_url: 'https://arbhasoft.com/career/',
+    category: 'IT & Software',
+  },
+  'eProSoft': {
+    website: 'https://www.eprosoft.com',
+    careers_url: 'https://www.eprosoft.com/',
+    category: 'IT & Software',
+  },
+  'Winspire Tech': {
+    website: 'https://winspiretech.co',
+    careers_url: 'https://winspiretech.co/careers/',
+    category: 'IT & Software',
+  },
+  'Tilicho Labs': {
+    website: 'https://www.tilicholabs.com',
+    careers_url: 'https://www.tilicholabs.com/',
+    category: 'IT & Software',
+  },
+  'Cloudxtreme': {
+    website: 'https://cloudxtreme.com',
+    careers_url: 'https://cloudxtreme.com/join-us/',
     category: 'IT & Software',
   },
 
@@ -217,7 +282,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Transasia Bio-Medicals Ltd.': {
     website: 'https://transasia.co.in',
-    careers_url: 'https://erbamannheim.com/careers',
+    careers_url: 'https://transasia.co.in/',
+    category: 'Healthcare',
+  },
+  'ACN Healthcare': {
+    website: 'https://www.acnhealthcare.com',
+    careers_url: 'https://www.acnhealthcare.com/Careers.html',
     category: 'Healthcare',
   },
   'Benovymed Healthcare': {
@@ -288,8 +358,8 @@ export const KNOWN_COMPANY_DEFAULTS = {
     category: 'Manufacturing',
   },
   'URC Construction (P) Ltd': {
-    website: 'https://urcc.in',
-    careers_url: 'https://urcc.in/careers',
+    website: 'https://www.urcindia.com',
+    careers_url: 'https://www.urcindia.com/',
     category: 'Manufacturing',
   },
 
@@ -316,7 +386,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Teks Academy': {
     website: 'https://teksacademy.com',
-    careers_url: 'https://teksacademy.com/contact-us/',
+    careers_url: 'https://teksacademy.com/',
     category: 'Education',
   },
   'Kiya World School': {
@@ -336,7 +406,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'SIMS College': {
     website: 'http://www.simsvizag.com',
-    careers_url: 'http://www.simsvizag.com/contact-us.html',
+    careers_url: 'http://www.simsvizag.com/career',
     category: 'Education',
   },
 
@@ -450,7 +520,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'SITARAM MOTORS': {
     website: 'https://sitarammotors.royalenfield.com',
-    careers_url: 'https://sitarammotors.royalenfield.com',
+    careers_url: 'https://www.sitarammotors.com/',
     category: 'Hospitality & Retail',
   },
   'Decorpot': {
@@ -497,6 +567,31 @@ export const KNOWN_COMPANY_DEFAULTS = {
     website: 'https://www.armaniexchange.com',
     careers_url: 'https://career5.successfactors.eu/career?company=3397177P',
     category: 'Hospitality & Retail',
+  },
+  'Cactus Communications': {
+    website: 'https://cactusglobal.com',
+    careers_url: 'https://cactusglobal.com/careers/',
+    category: 'IT & Software',
+  },
+  'Onliest LLC': {
+    website: 'https://www.shop-onliest.com',
+    careers_url: 'https://www.shop-onliest.com/',
+    category: 'IT & Software',
+  },
+  'Growsin': {
+    website: 'https://growsin.com',
+    careers_url: 'https://growsin.com/',
+    category: 'Sales & Marketing',
+  },
+  'Skillventory': {
+    website: 'https://skillventory.com',
+    careers_url: 'https://jobs.skillventory.com/',
+    category: 'HR & Admin',
+  },
+  'Credible Consultancy': {
+    website: 'https://www.crediblejobs.in',
+    careers_url: 'https://www.crediblejobs.in/p/current-openings.html',
+    category: 'HR & Admin',
   },
 };
 

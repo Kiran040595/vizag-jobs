@@ -1,7 +1,7 @@
 [
   {
     "name": "Conduent",
-    "careers_url": "https://careers.conduent.com/us/en",
+    "careers_url": "https://careers.conduent.com/in/en",
     "category": "BPO",
     "location_hint": "Visakhapatnam, IT SEZ Hill No. 2 Rushikonda",
     "active": true
@@ -15,7 +15,7 @@
   },
   {
     "name": "Infosys",
-    "careers_url": "https://www.infosys.com/careers.html",
+    "careers_url": "https://career.infosys.com/joblist",
     "category": "IT",
     "location_hint": "Visakhapatnam, Rushikonda IT Park",
     "active": true
