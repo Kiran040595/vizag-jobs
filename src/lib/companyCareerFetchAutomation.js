@@ -309,6 +309,7 @@ export async function fetchAndClassifyCompanyJobs({
     scrapedChars: Number(fetchData?.scraped_chars) || 0,
     jobs: classifiedJobs,
     existingIndex,
+    message: fetchData?.message || null,
   };
 }
 

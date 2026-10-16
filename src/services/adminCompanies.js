@@ -276,8 +276,8 @@ export const KNOWN_COMPANY_DEFAULTS = {
     category: 'Healthcare',
   },
   'Deccan Fine Chemicals': {
-    website: 'https://deccanfinechemicals.com',
-    careers_url: 'https://deccanfinechemicals.com/career',
+    website: 'https://www.deccanchemicals.com',
+    careers_url: 'https://www.deccanchemicals.com/',
     category: 'Healthcare',
   },
   'Transasia Bio-Medicals Ltd.': {
@@ -530,7 +530,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'HomeLane': {
     website: 'https://www.homelane.com',
-    careers_url: 'https://homelane.darwinbox.in/ms/candidatev2/a6817a5ec3524e/careers/allJobs',
+    careers_url: 'https://www.homelane.com/careers',
     category: 'Hospitality & Retail',
   },
   'Livspace': {

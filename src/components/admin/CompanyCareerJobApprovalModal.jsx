@@ -487,7 +487,25 @@ export default function CompanyCareerJobApprovalModal({
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
           {jobs.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">
-              No Visakhapatnam / Vizag job vacancies found on this company page.
+              <p className="font-semibold text-slate-800">
+                No active Visakhapatnam / Vizag job vacancies found on {companyName}&apos;s careers portal.
+              </p>
+              {initialData?.message ? (
+                <p className="mt-2 text-xs text-slate-500 max-w-md mx-auto">{initialData.message}</p>
+              ) : null}
+              {careersUrl ? (
+                <div className="mt-4">
+                  <a
+                    href={careersUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                  >
+                    <span>Visit {companyName} Careers Portal</span>
+                    <span>↗</span>
+                  </a>
+                </div>
+              ) : null}
             </div>
           ) : step === 'review_fetch' ? (
             /* STEP 1: Pre-Optimize Approval List */

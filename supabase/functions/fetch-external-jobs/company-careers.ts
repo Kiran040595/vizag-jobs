@@ -236,6 +236,29 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
   }
 
   if (
+    lowerName.includes('cult fit') ||
+    lowerName.includes('cult.fit') ||
+    lowerUrl.includes('cult.fit/careers')
+  ) {
+    return 'https://careers.cult.fit/cult/';
+  }
+
+  if (
+    lowerName.includes('deccan fine chemicals') ||
+    lowerName.includes('deccan chemicals') ||
+    lowerUrl.includes('deccanfinechemicals.com')
+  ) {
+    return 'https://www.deccanchemicals.com/';
+  }
+
+  if (
+    lowerName.includes('homelane') ||
+    lowerUrl.includes('homelane.darwinbox.in')
+  ) {
+    return 'https://www.homelane.com/careers';
+  }
+
+  if (
     lowerName.includes('cloudxtreme') ||
     lowerUrl.includes('cloudxtreme.com/careers')
   ) {
@@ -729,10 +752,12 @@ export async function scrapeCompanyCareerPage(
   } = {},
 ): Promise<{
   content: string;
-  source: 'workday_cxs' | 'firecrawl' | 'direct_html' | 'scrapfly';
+  source: 'workday_cxs' | 'firecrawl' | 'direct_html' | 'scrapfly' | 'direct_portal';
   resolvedUrl: string;
   count?: number;
   structuredJobs?: ExtractedCompanyCareerJob[];
+  requiresDirectVisit?: boolean;
+  reason?: string;
 }> {
   const resolvedUrl = resolveCanonicalCareerPortalUrl(url, options.companyName);
   let lastError: Error | null = null;
@@ -772,14 +797,24 @@ export async function scrapeCompanyCareerPage(
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20_000);
+    const timer = setTimeout(() => controller.abort(), 25_000);
     try {
       const res = await fetch(resolvedUrl, {
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
         },
         signal: controller.signal,
       });
@@ -814,7 +849,15 @@ export async function scrapeCompanyCareerPage(
     }
   }
 
-  throw lastError ?? new Error(`Could not scrape career page: ${resolvedUrl}`);
+  // Graceful fallback: Do not throw 502 Bad Gateway to the user when bot protection,
+  // single-page app frameworks, or expired SSL prevents automated extraction.
+  return {
+    content: '',
+    source: 'direct_portal',
+    resolvedUrl,
+    requiresDirectVisit: true,
+    reason: lastError?.message || `Could not scrape career page: ${resolvedUrl}`,
+  };
 }
 
 export function resolveCompanyJobApplyLink(rawApplyLink: unknown, careersUrl: string): string {

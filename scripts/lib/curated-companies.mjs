@@ -380,8 +380,8 @@ export const CURATED_COMPANIES = {
     is_active_for_scrape: true,
   },
   'Deccan Fine Chemicals': {
-    website: 'https://deccanfinechemicals.com',
-    careers_url: 'https://deccanfinechemicals.com/career',
+    website: 'https://www.deccanchemicals.com',
+    careers_url: 'https://www.deccanchemicals.com/',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },
@@ -669,7 +669,7 @@ export const CURATED_COMPANIES = {
   },
   'HomeLane': {
     website: 'https://www.homelane.com',
-    careers_url: 'https://homelane.darwinbox.in/ms/candidatev2/a6817a5ec3524e/careers/allJobs',
+    careers_url: 'https://www.homelane.com/careers',
     category: 'Sales & Marketing',
     is_active_for_scrape: true,
   },

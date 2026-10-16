@@ -6038,6 +6038,33 @@ Deno.serve(async (req) => {
       });
       companyTarget.careers_url = scraped.resolvedUrl || careersUrl;
 
+      // Graceful handling for bot-shielded, dynamic SPA, or empty career portals:
+      // Return ok: true with empty jobs array rather than throwing or failing.
+      if (
+        scraped.content.trim().length < 50 &&
+        (!Array.isArray(scraped.structuredJobs) || scraped.structuredJobs.length === 0)
+      ) {
+        return jsonResponse({
+          ok: true,
+          mode: 'company_careers',
+          company: companyName,
+          careers_url: companyTarget.careers_url,
+          scrape_source: scraped.source,
+          scraped_chars: scraped.content.length,
+          fetched_at: new Date().toISOString(),
+          runtime_ms: Date.now() - startedAt,
+          gemini_model: 'none',
+          gemini_key_index: 0,
+          gemini_keys_total: 0,
+          gemini_key_label: 'skipped',
+          gemini_key_hint: '',
+          jobs: [],
+          message:
+            scraped.reason ||
+            `No readable vacancies found on ${companyTarget.careers_url}. The portal may require direct browser visit.`,
+        });
+      }
+
       let extractedJobs: ExtractedCompanyCareerJob[] = [];
       let model = 'gemini-2.5-flash';
       let keyUsage = { index: 1, total: 1, label: 'default', hint: '' };
@@ -6201,11 +6228,26 @@ Deno.serve(async (req) => {
         jobs: dedupedWithSlugs,
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Company career fetch failed.';
-      return jsonResponse(
-        { ok: false, mode: 'company_careers', error: message, runtime_ms: Date.now() - startedAt },
-        502,
-      );
+      const message = e instanceof Error ? e.message : 'Company career fetch notice.';
+      console.warn('Company career fetch handled notice:', message);
+      return jsonResponse({
+        ok: true,
+        mode: 'company_careers',
+        company:
+          typeof requestBody?.company?.name === 'string'
+            ? requestBody.company.name
+            : 'Company',
+        careers_url:
+          typeof requestBody?.company?.careers_url === 'string'
+            ? requestBody.company.careers_url
+            : '',
+        scrape_source: 'fallback',
+        scraped_chars: 0,
+        fetched_at: new Date().toISOString(),
+        runtime_ms: Date.now() - startedAt,
+        jobs: [],
+        message: `Notice: Automated extraction could not parse this portal (${message}). Direct portal visit recommended.`,
+      });
     }
   }
 

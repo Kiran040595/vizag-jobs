@@ -541,5 +541,45 @@ test('Company Career Fetch: Canonical Career Portal URL Resolution for Published
       resolveCanonicalCareerPortalUrl('https://sitarammotors.royalenfield.com', 'SITARAM MOTORS'),
       'https://www.sitarammotors.com/'
     );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.cult.fit/careers', 'cult fit'),
+      'https://careers.cult.fit/cult/'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://homelane.darwinbox.in/careers', 'HomeLane'),
+      'https://www.homelane.com/careers'
+    );
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://deccanfinechemicals.com/career', 'Deccan Fine Chemicals'),
+      'https://www.deccanchemicals.com/'
+    );
   });
 });
+
+test('Company Career Fetch: Resilient Error Handling (No 502/Unhandled Exceptions)', async (t) => {
+  await t.test('fetchAndClassifyCompanyJobs returns message and empty list without throwing when no jobs found', async () => {
+    const mockServices = {
+      fetchCompanyCareerJobs: async () => ({
+        ok: true,
+        jobs: [],
+        scrape_source: 'direct_portal',
+        scraped_chars: 0,
+        message: 'No open Visakhapatnam vacancies detected via automated crawl.',
+      }),
+    };
+
+    const res = await fetchAndClassifyCompanyJobs({
+      company: {
+        name: 'AU Small Finance Bank',
+        careers_url: 'https://www.au.bank.in/careers',
+      },
+      accessToken: 'test-token',
+      services: mockServices,
+    });
+
+    assert.equal(res.jobs.length, 0);
+    assert.equal(res.companyName, 'AU Small Finance Bank');
+    assert.match(res.message, /No open Visakhapatnam vacancies/);
+  });
+});
+
