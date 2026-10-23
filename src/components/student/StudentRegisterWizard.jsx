@@ -17,7 +17,8 @@ import {
   resolveSkillToken,
 } from '../../lib/studentProfileOptions';
 import { isValidStudentPhone, normalizeStudentPhone } from '../../lib/studentPhoneAuth';
-import { fetchLiveJobRoles } from '../../services/jobRoles';
+import { fetchStudentRoleSuggestions } from '../../services/jobRoles';
+import { roleKey } from '../../lib/studentRoles';
 import StudentRegistrationConsent from './StudentRegistrationConsent';
 import {
   POPULAR_CERTIFICATIONS,
@@ -99,18 +100,23 @@ export default function StudentRegisterWizard({
 
   useEffect(() => {
     let cancelled = false;
-    fetchLiveJobRoles(60).then((roles) => {
-      if (!cancelled) setLiveRoles(roles);
-    });
+    const timer = setTimeout(() => {
+      fetchStudentRoleSuggestions(form.primary_target_role).then((roles) => {
+        if (!cancelled) setLiveRoles(roles);
+      });
+    }, 200);
 
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [form.primary_target_role]);
+
+  useEffect(() => {
     setSavedCustomSectors(loadSavedCustomSectors());
     setSavedCustomSkills(loadSavedCustomSkills());
     setSavedCustomRoles(loadSavedCustomRoles());
     setSavedCustomCerts(loadSavedCustomCertifications());
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const validateStep1 = () => {
@@ -252,7 +258,11 @@ export default function StudentRegisterWizard({
       ...POPULAR_VIZAG_ROLES,
       ...savedCustomRoles,
     ];
-    return filterSuggestions(val, candidates, 6);
+    const uniqueRoles = new Map();
+    for (const label of candidates) {
+      if (!uniqueRoles.has(roleKey(label))) uniqueRoles.set(roleKey(label), label);
+    }
+    return filterSuggestions(val, [...uniqueRoles.values()], 6);
   }, [form.primary_target_role, liveRoles, savedCustomRoles]);
 
   const handleSelectRole = (roleText) => {
@@ -746,6 +756,7 @@ export default function StudentRegisterWizard({
             <input
               type="text"
               aria-label="Primary Target Role *" name="primary_target_role"
+              maxLength={120}
               value={form.primary_target_role}
               onChange={(e) => {
                 onFormChange(e);
@@ -783,8 +794,8 @@ export default function StudentRegisterWizard({
                     onClick={() => handleSelectRole(roleText)}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-800 transition hover:bg-indigo-50 hover:text-indigo-700"
                   >
-                    <span>{roleText}</span>
-                    <span className="text-[10px] text-slate-400">Select ↵</span>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{roleText}</span>
+                    <span className="shrink-0 text-[10px] text-slate-400">Select ↵</span>
                   </button>
                 ))}
               </div>

@@ -11,6 +11,7 @@ import StudentExportDialog from '../components/admin/StudentExportDialog';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
 import { formatSkillLabel, normalizeSkillValue } from '../lib/studentProfileOptions';
+import { countStudentRoles, roleKey, studentMatchesRole, studentRoleLabels } from '../lib/studentRoles';
 import {
   fetchAdminStudentProfiles,
   formatStudentRegisteredAt,
@@ -58,11 +59,7 @@ const studentsForCategory = (students, categoryValue) =>
   students.filter((student) => student.targetJobCategories?.includes(categoryValue));
 
 const studentsForRole = (students, roleValue) =>
-  students.filter(
-    (student) =>
-      String(student.primaryTargetRole || '').trim().toLowerCase() ===
-      String(roleValue || '').trim().toLowerCase(),
-  );
+  students.filter(student => studentMatchesRole(student, roleValue));
 
 export default function AdminStudentsPage() {
   useAdminAuth();
@@ -135,11 +132,7 @@ export default function AdminStudentsPage() {
       const matchesCategory =
         !categoryFilter || student.targetJobCategories?.includes(categoryFilter);
 
-      const matchesRole =
-        !roleFilter ||
-        String(student.primaryTargetRole || '').trim().toLowerCase() ===
-          String(roleFilter).trim().toLowerCase() ||
-        student.interestedRoles?.some(role => role.toLowerCase() === String(roleFilter).trim().toLowerCase());
+      const matchesRole = studentMatchesRole(student, roleFilter);
 
       const matchesYear =
         !graduationYearFilter ||
@@ -220,7 +213,7 @@ export default function AdminStudentsPage() {
     const activeStudents = students.filter((student) => student.isActive);
     return {
       categories: countByValue(activeStudents, (student) => student.targetJobCategories || []),
-      roles: countByValue(activeStudents, (student) => [student.primaryTargetRole].filter(Boolean)),
+      roles: countStudentRoles(students),
     };
   }, [students]);
 
@@ -432,7 +425,7 @@ export default function AdminStudentsPage() {
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-bold text-slate-950">Top target roles</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Primary roles students entered. Click to filter, or Excel to download that role.
+              Primary and interested roles across registered students. Click to filter, or Excel to download that role.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {availabilityBreakdown.roles.length > 0 ? (
@@ -443,7 +436,7 @@ export default function AdminStudentsPage() {
                   return (
                     <div
                       key={item.value}
-                      className="inline-flex overflow-hidden rounded-full border border-indigo-200"
+                      className="inline-flex min-w-0 max-w-full overflow-hidden rounded-full border border-indigo-200"
                     >
                       <button
                         type="button"
@@ -456,7 +449,7 @@ export default function AdminStudentsPage() {
                               : item.value,
                           );
                         }}
-                        className={`min-h-11 px-3 py-1.5 text-sm font-semibold transition ${
+                        className={`min-h-11 min-w-0 px-3 py-1.5 text-sm font-semibold [overflow-wrap:anywhere] transition ${
                           selected
                             ? 'bg-indigo-500 text-white'
                             : 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100'
@@ -469,7 +462,7 @@ export default function AdminStudentsPage() {
                         title={`Download Excel for ${item.value}`}
                         onClick={() =>
                           openExport(
-                            studentsForRole(students.filter((row) => row.isActive), item.value),
+                            studentsForRole(students, item.value),
                             item.value,
                           )
                         }
@@ -670,6 +663,26 @@ export default function AdminStudentsPage() {
                 ))}
               </select>
             </div>
+            <label className="block min-w-0 text-sm font-semibold text-slate-700">
+              Target or interested role
+              <select
+                aria-label="Target or interested role"
+                value={roleFilter ? roleKey(roleFilter) : ''}
+                onChange={event => {
+                  setCategoryFilter('');
+                  setRoleFilter(event.target.value);
+                }}
+                className="mt-1 min-h-11 min-w-0 w-full max-w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900"
+              >
+                <option value="">All roles</option>
+                {roleFilter && !availabilityBreakdown.roles.some(item => roleKey(item.value) === roleKey(roleFilter)) && (
+                  <option value={roleKey(roleFilter)}>{roleFilter} (0)</option>
+                )}
+                {availabilityBreakdown.roles.map(item => (
+                  <option key={roleKey(item.value)} value={roleKey(item.value)}>{item.value} ({item.count})</option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {/* Active Filter Badges */}
@@ -1004,7 +1017,11 @@ export default function AdminStudentsPage() {
                       </div>
                       <div>
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Target role</dt>
-                        <dd className="mt-0.5 text-slate-800">{student.primaryTargetRole || 'Not provided'}</dd>
+                        <dd className="mt-0.5 break-words text-slate-800">{student.primaryTargetRole || 'Not provided'}</dd>
+                      </div>
+                      <div className="min-w-0 sm:col-span-2">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">All interested roles</dt>
+                        <dd className="mt-0.5 break-words text-slate-800">{studentRoleLabels(student).join(', ') || 'Not provided'}</dd>
                       </div>
                       <div>
                         <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Role experience</dt>

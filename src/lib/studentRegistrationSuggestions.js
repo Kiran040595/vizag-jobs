@@ -191,7 +191,7 @@ export const loadSavedCustomRoles = () => {
   }
 };
 
-/** Save a newly typed role so future students see it */
+/** Browser-local convenience only; shared suggestions are captured by the profile DB trigger. */
 export const saveCustomRole = (roleName) => {
   const clean = String(roleName || '').trim().replace(/\s+/g, ' ');
   if (!clean || clean.length < 2) return loadSavedCustomRoles();

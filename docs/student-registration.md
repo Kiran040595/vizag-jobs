@@ -1,5 +1,62 @@
 # Student registration
 
+## Shared student role catalog (2026-10-23)
+
+Saving a student profile captures its primary target role and interested roles in
+`public.student_role_catalog` in the same database transaction. Existing profiles
+are backfilled by `supabase/migrations/20261023120000_shared_student_roles.sql`.
+Labels are deduplicated by case and whitespace, while punctuation is preserved
+(C++ and C# remain different roles). The catalog retains previously entered labels
+when a student changes roles. It contains role labels only, with no student IDs,
+contact details, or candidate counts exposed publicly.
+
+Registration and profile editing call `student_role_suggestions(search_text,
+limit_count)` as the primary role is typed. Search is applied before limiting
+results, so a rare role outside the initial suggestions remains discoverable on
+another browser/device. Published job roles are included. Browser-local role
+history is only a convenience, not the shared source. If the migration is missing
+or the database is unavailable, existing job/preset suggestions and manual entry
+remain usable; cross-student reuse requires the migration.
+
+Admin Students has an all-role selector covering primary and secondary roles,
+including roles outside the twelve shortcut chips. Counts deduplicate each
+candidate per role. The role chips, selector, and role-specific Excel shortcut use
+the same matching rules and include registered candidates regardless of active
+status. Other filters can further narrow the main list; its normal filtered export
+uses that narrowed list. The role-chip Excel shortcut exports that whole role group.
+Candidate details display both the primary role and all interested roles.
+
+### Deployment and acceptance
+
+The linked project is `fbyyfyhdglcpkhxskffj` (`supabase-citrine-cloud`). On 2026-10-23,
+read-only checks confirmed the prerequisite columns and role cleaner exist, and
+the new catalog does not yet exist. The normal `supabase db push --linked --dry-run`
+is blocked by pre-existing remote/local migration-history differences. Do not
+repair unrelated history or apply unrelated pending migrations for this feature.
+
+Deployment is pending explicit approval: automatic approval review rejected the
+shared-database mutation. After approval, apply only this migration with
+`npx supabase db query --linked --file supabase/migrations/20261023120000_shared_student_roles.sql`,
+verify the catalog/function/trigger, and record only version `20261023120000` as
+applied in migration history. Deploy the frontend through the normal release flow.
+
+Local verification:
+
+- `node --test tests/*.test.mjs`: 158 tests passed.
+- `node scripts/test-shared-student-roles.mjs <path-to-@electric-sql/pglite/dist/index.js>`:
+  executes the actual migration against PostgreSQL with fixtures and verifies
+  backfill, insert/update triggers, independent anonymous/authenticated reads,
+  deduplication, more than 200 roles, rare-role search, punctuation, rollback,
+  published-job-only suggestions, and denial of direct table reads/writes.
+- Lint and production bundle build are recorded in the functionality tracker.
+
+Full acceptance still requires an approved deployment and authenticated browser
+journeys: register/save a new role in browser A, find it during registration in
+browser B with no shared browser storage, verify the new candidate in Admin
+Students, filter a primary and secondary role, compare exports and counts, and
+repeat with a role outside the top twelve. Repeat the affected layouts at mobile
+widths. Local automated checks are not a full registration/admin E2E pass.
+
 Lean student accounts for job seekers in Vizag. Designed to stay within Supabase **free tier** database limits (~500 MB).
 
 ## Student features

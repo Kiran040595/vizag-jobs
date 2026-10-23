@@ -1,7 +1,6 @@
 import CandidateDetailsFields from './CandidateDetailsFields';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  buildLiveRoleOptions,
   formatJobCategoryLabel,
   resolveTargetJobCategoryToken,
   STUDENT_AVAILABILITY_OPTIONS,
@@ -18,7 +17,8 @@ import {
   STUDENT_GRADUATION_YEAR_OPTIONS,
   STUDENT_SKILL_OPTIONS,
 } from '../../lib/studentProfileOptions';
-import { fetchLiveJobRoles } from '../../services/jobRoles';
+import { fetchStudentRoleSuggestions } from '../../services/jobRoles';
+import { roleKey } from '../../lib/studentRoles';
 
 const INPUT_CLASS =
   'mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -64,18 +64,21 @@ export default function StudentProfileFields({
   const skillGroups = useMemo(() => groupSkillOptions(), []);
   const [customCategoryDraft, setCustomCategoryDraft] = useState('');
   const [customSkillDraft, setCustomSkillDraft] = useState('');
-  const [liveRoleOptions, setLiveRoleOptions] = useState([]);
+  const [sharedRoleLabels, setSharedRoleLabels] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
-    fetchLiveJobRoles(60).then((roles) => {
-      if (cancelled) return;
-      setLiveRoleOptions(buildLiveRoleOptions(roles, 40));
-    });
+    const timer = setTimeout(() => {
+      fetchStudentRoleSuggestions(form.primary_target_role).then((roles) => {
+        if (cancelled) return;
+        setSharedRoleLabels(roles.map(item => item.role));
+      });
+    }, 200);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [form.primary_target_role]);
 
   const locationOptions = [
     ...STUDENT_PREFERRED_LOCATION_OPTIONS,
@@ -129,7 +132,7 @@ export default function StudentProfileFields({
 
   return (
     <div className="grid gap-5 sm:grid-cols-2">
-      <CandidateDetailsFields form={form} onChange={onChange} roles={liveRoleOptions} />
+      <CandidateDetailsFields form={form} onChange={onChange} roles={sharedRoleLabels.map(role => ({ role }))} />
       <label className="block sm:col-span-2">
         <span className="text-sm font-semibold text-slate-700">Full name *</span>
         <input
@@ -337,6 +340,7 @@ export default function StudentProfileFields({
         <input
           id={`${idPrefix}-primary-target-role`}
           name="primary_target_role"
+          maxLength={120}
           value={form.primary_target_role}
           onChange={onChange}
           required
@@ -345,8 +349,8 @@ export default function StudentProfileFields({
           placeholder="Backend Developer, Telecaller, Mechanical Technician, Nurse, Accountant..."
         />
         <datalist id={`${idPrefix}-primary-role-suggestions`}>
-          {liveRoleOptions.map((option) => (
-            <option key={option.value} value={option.label} />
+          {sharedRoleLabels.map((label) => (
+            <option key={roleKey(label)} value={label} />
           ))}
         </datalist>
       </label>

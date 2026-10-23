@@ -69,7 +69,7 @@ export default function CandidateDetailsFields({ form, onChange, section = 'all'
               const selected = listValues(form.interested_roles).includes(label);
               return (
                 <button key={label} type="button" aria-pressed={selected}
-                  className={`min-h-11 max-w-full rounded-full border px-3 py-2 text-sm ${selected ? 'border-indigo-500 bg-indigo-50' : ''}`}
+                  className={`min-h-11 max-w-full rounded-full border px-3 py-2 text-sm [overflow-wrap:anywhere] ${selected ? 'border-indigo-500 bg-indigo-50' : ''}`}
                   onClick={() => changeField('interested_roles', selected
                     ? listValues(form.interested_roles).filter(value => value !== label)
                     : [...listValues(form.interested_roles), label].slice(0, 16))}>
