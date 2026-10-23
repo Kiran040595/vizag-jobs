@@ -123,20 +123,29 @@ export const assignCandidatesToJob = async ({
     };
   });
 
-  const { data, error } = await supabase
-    .from('job_suitable_profiles')
-    .upsert(rowsToUpsert, {
-      onConflict: 'job_id,student_user_id',
-    })
-    .select('*');
+  const BATCH_SIZE = 100;
+  let allInserted = [];
 
-  if (error) {
-    throw new Error(error.message || 'Could not assign candidates to this job.');
+  for (let i = 0; i < rowsToUpsert.length; i += BATCH_SIZE) {
+    const chunk = rowsToUpsert.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .from('job_suitable_profiles')
+      .upsert(chunk, {
+        onConflict: 'job_id,student_user_id',
+      })
+      .select('*');
+
+    if (error) {
+      throw new Error(error.message || 'Could not assign candidates to this job.');
+    }
+    if (data) {
+      allInserted = allInserted.concat(data);
+    }
   }
 
   return {
-    count: data ? data.length : rowsToUpsert.length,
-    profiles: (data || []).map(mapSuitableProfile),
+    count: allInserted.length || rowsToUpsert.length,
+    profiles: allInserted.map(mapSuitableProfile),
   };
 };
 

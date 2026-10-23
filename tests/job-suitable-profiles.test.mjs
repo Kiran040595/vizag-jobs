@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
+
+process.env.VITE_SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://dummy.supabase.co';
+process.env.VITE_SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'dummy-key';
+
+const { supabase } = await import('../src/lib/supabaseClient.js');
+const {
   buildCandidateSnapshot,
   mapSuitableProfile,
-} from '../src/services/jobSuitableProfiles.js';
+  assignCandidatesToJob,
+} = await import('../src/services/jobSuitableProfiles.js');
 import {
   formatApplicationStatus,
   normalizeApplicationStatus,
@@ -144,3 +150,68 @@ test('application export columns include admin recommendation notes', () => {
   );
   assert.equal(col.getValue({}), '');
 });
+
+test('assignCandidatesToJob validates required parameters', async () => {
+  await assert.rejects(
+    assignCandidatesToJob({ jobId: '', candidateUserIds: ['user-1'] }),
+    /A target job must be selected/,
+  );
+  await assert.rejects(
+    assignCandidatesToJob({ jobId: 'job-1', candidateUserIds: [] }),
+    /At least one candidate must be selected/,
+  );
+});
+
+test('assignCandidatesToJob executes bulk upserts in batches of 100', async () => {
+  const originalFrom = supabase.from;
+  const originalAuth = supabase.auth;
+
+  const upsertChunks = [];
+
+  supabase.auth = {
+    getUser: async () => ({ data: { user: { id: 'admin-tester-1' } } }),
+  };
+
+  supabase.from = (table) => {
+    assert.equal(table, 'job_suitable_profiles');
+    return {
+      upsert: (chunk, opts) => {
+        upsertChunks.push({ count: chunk.length, onConflict: opts?.onConflict });
+        return {
+          select: async () => ({
+            data: chunk.map((r, i) => ({ id: `assigned-${i}`, ...r })),
+            error: null,
+          }),
+        };
+      },
+    };
+  };
+
+  try {
+    // 245 candidates: should create 3 chunks (100, 100, 45)
+    const candidates = Array.from({ length: 245 }, (_, i) => ({
+      userId: `cand-${i + 1}`,
+      fullName: `Candidate ${i + 1}`,
+      primaryTargetRole: 'GIS Developer',
+      skills: ['GIS', 'Python'],
+    }));
+
+    const result = await assignCandidatesToJob({
+      jobId: 'target-job-uuid-1',
+      candidateUserIds: candidates.map((c) => c.userId),
+      adminNotes: 'Batch assignment test',
+      candidateProfiles: candidates,
+    });
+
+    assert.equal(result.count, 245);
+    assert.equal(upsertChunks.length, 3, '245 candidates should be processed in 3 batches');
+    assert.equal(upsertChunks[0].count, 100);
+    assert.equal(upsertChunks[1].count, 100);
+    assert.equal(upsertChunks[2].count, 45);
+    assert.equal(upsertChunks[0].onConflict, 'job_id,student_user_id');
+  } finally {
+    supabase.from = originalFrom;
+    supabase.auth = originalAuth;
+  }
+});
+

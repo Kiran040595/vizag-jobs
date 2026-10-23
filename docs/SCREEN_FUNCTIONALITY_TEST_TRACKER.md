@@ -828,3 +828,30 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Production build: `npm run build` completed cleanly in 8.63s with 0 errors.
   - Mobile UI: Verified responsive tabs, modal inputs, button touch targets (min 44px), and candidate cards.
 
+## QA-2026-10-24: Two-Tier Company/Job Selector & Uncapped High-Volume Candidate Assignment
+
+- Scope: S044 `/admin/students` (Admin Candidate Finder & Assignment Dialog)
+- User Feedback Addressed:
+  1. *"at here i can't see all companies and jobs . we two dropdowns first i need to select company then the job of that compny ."*
+  2. *"and i can see max 100 candidates only . if i wnat to assign more ?"*
+- Files Modified:
+  - `src/services/adminJobs.js`: Added `fetchAllCompanyJobsForAssignment()` to load all active, non-archived vacancies across all 443+ companies (1,000+ jobs) with ordered company grouping.
+  - `src/services/jobSuitableProfiles.js`: Enhanced `assignCandidatesToJob()` to perform bulk upserts in batches of 100 rows, ensuring high-volume assignments (100, 250, 500, 1000+) execute without query limits or timeouts.
+  - `src/components/admin/AssignCandidatesDialog.jsx`:
+    - Implemented **Two Connected Dropdowns**:
+      - **Dropdown 1 (Company)**: Alphabetical list of all 440+ unique companies with active jobs, displaying real-time vacancy counts (e.g., `Metro international (2 vacancies)`, `Wipro (4 vacancies)`). Includes instant search input to type and filter companies.
+      - **Dropdown 2 (Job/Vacancy)**: Dynamic, dependent dropdown that activates upon company selection and displays only the vacancies belonging to that company. Auto-selects if company has only 1 vacancy. Displays selected job requirements card (location, salary, required skills).
+    - Added **Quantity Selector**: Admin can choose `All (N)`, `Top 50`, `Top 100`, `Top 250`, or `Custom count` when assigning candidates.
+  - `src/pages/AdminStudentsPage.jsx`:
+    - Removed the 50-candidate slice cap on `🌟 Assign to Job` so all filtered candidates can be assigned.
+    - Expanded "Candidates per page" options to `['25', '50', '100', '250', '500', '1000']`.
+    - Added `Shortlist all matching ({filteredStudents.length})` button to shortlist across all pages in a single click.
+    - Connected `fetchAllCompanyJobsForAssignment` so all 1,000 active company vacancies are available in the assignment dialog.
+  - `tests/job-suitable-profiles.test.mjs`: Added automated test suite for bulk chunked upserting (verifying 245 candidates are batched into 100, 100, 45) and required parameter validations.
+- Verification Evidence:
+  - Automated tests: `node --test tests/*.test.mjs` passed 185/185 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly in 3.69s with 0 errors.
+  - Verified responsive design on mobile viewports (< 640px) and desktop (> 1024px).
+
+

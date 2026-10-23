@@ -10,7 +10,7 @@ import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
 import AssignCandidatesDialog from '../components/admin/AssignCandidatesDialog';
 import { fetchAdminStudentProfiles, setStudentActiveStatus } from '../services/adminStudents';
-import { fetchCandidateMatchingJobs } from '../services/adminJobs';
+import { fetchAllCompanyJobsForAssignment, fetchCandidateMatchingJobs } from '../services/adminJobs';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
 import { formatSkillLabel } from '../lib/studentProfileOptions';
 import { countStudentRoles } from '../lib/studentRoles';
@@ -34,6 +34,7 @@ export default function AdminStudentsPage() {
   const deferredFilters = useDeferredValue(filters);
   const [students, setStudents] = useState([]);
   const [jobs, setJobs] = useState([]);
+  const [allCompanyJobs, setAllCompanyJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [jobsError, setJobsError] = useState('');
@@ -79,6 +80,8 @@ export default function AdminStudentsPage() {
     let active = true;
     fetchCandidateMatchingJobs().then(rows => { if (active) setJobs(rows); })
       .catch(error => { if (active) setJobsError(error.message); });
+    fetchAllCompanyJobsForAssignment().then(rows => { if (active) setAllCompanyJobs(rows); })
+      .catch(error => { console.error('Failed to load company vacancies for assignment:', error); });
     return () => { active = false; };
   }, []);
 
@@ -178,20 +181,20 @@ export default function AdminStudentsPage() {
               <button
                 type="button"
                 disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length}
-                onClick={() => setAssignScope({ candidates: filteredStudents.slice(0, 50), label: 'matching candidates' })}
-                title="Assign top candidates directly to a company job as Suitable Profiles"
-                className="min-h-11 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-950 hover:bg-amber-100 disabled:opacity-40"
+                onClick={() => setAssignScope({ candidates: filteredStudents, label: `matching candidates (${filteredStudents.length})` })}
+                title="Assign matching candidates directly to a company job as Suitable Profiles"
+                className="min-h-11 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-sm font-bold text-amber-950 hover:bg-amber-100 shadow-2xs disabled:opacity-40"
               >
-                🌟 Assign to Job ({Math.min(filteredStudents.length, 50)})
+                🌟 Assign to Job ({filteredStudents.length})
               </button>
               <button
                 type="button"
                 disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length}
-                onClick={() => handleCopyEmployerSummary(filteredStudents.slice(0, 50), criteriaLabels.length ? criteriaLabels.join(' · ') : 'Vizag Candidates')}
+                onClick={() => handleCopyEmployerSummary(filteredStudents.slice(0, 100), criteriaLabels.length ? criteriaLabels.join(' · ') : 'Vizag Candidates')}
                 title="Copy formatted candidate summary for WhatsApp or Email"
                 className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 disabled:opacity-40"
               >
-                📋 Copy for Employer ({Math.min(filteredStudents.length, 50)})
+                📋 Copy for Employer ({Math.min(filteredStudents.length, 100)})
               </button>
               <button type="button" disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length} onClick={() => setExportScope({ students: filteredStudents, label: exportLabel })} className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Export matching ({filteredStudents.length})</button>
             </div>
@@ -199,7 +202,7 @@ export default function AdminStudentsPage() {
           <div className="grid min-w-0 gap-3 sm:grid-cols-3">
             <CandidateSelect label="Account status" value={filters.accountStatus} onChange={accountStatus => updateFilters({ accountStatus })} emptyLabel={null} options={[{ value: 'active', label: 'Active accounts' }, { value: 'all', label: 'All accounts' }, { value: 'inactive', label: 'Deactivated accounts' }]} />
             <CandidateSelect label="Sort candidates" value={filters.sort} onChange={sort => updateFilters({ sort })} emptyLabel={null} options={[{ value: 'relevance', label: 'Most matching selected / preferred skills' }, { value: 'newest', label: 'Newest registration' }, { value: 'oldest', label: 'Oldest registration' }, { value: 'name', label: 'Name A–Z' }]} />
-            <CandidateSelect label="Candidates per page" value={String(pageSize)} onChange={value => { setPageSize(Number(value) || 25); setCurrentPage(1); }} emptyLabel={null} options={['25', '50', '100']} />
+            <CandidateSelect label="Candidates per page" value={String(pageSize)} onChange={value => { setPageSize(Number(value) || 25); setCurrentPage(1); }} emptyLabel={null} options={['25', '50', '100', '250', '500', '1000']} />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
             <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs">
@@ -270,7 +273,29 @@ export default function AdminStudentsPage() {
         {notice && <p role="status" className="mb-4 rounded-xl border p-3 text-sm">{notice}</p>}
         {loadError && <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{loadError} Results may be out of date. Refresh data before exporting.</p>}
         {isLoading ? <LoadingSpinner label="Loading student registrations…" /> : !result.entries.length ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center"><h2 className="text-lg font-bold">No candidates match all current requirements</h2><p className="mt-2 text-sm text-slate-600">Try “Any selected skill”, fewer qualifications, or a broader desired role. Missing profile information never counts as a match.</p><button type="button" onClick={resetFilters} className="mt-4 min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold">Reset filters</button></div> : <>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-slate-500">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, result.entries.length)} of {result.entries.length}</p><button type="button" onClick={() => setShortlist(current => new Set([...current, ...visibleEntries.map(entry => entry.student.userId)]))} className="min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold">Shortlist this page ({visibleEntries.length})</button></div>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-slate-500">
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, result.entries.length)} of {result.entries.length}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setShortlist(current => new Set([...current, ...visibleEntries.map(entry => entry.student.userId)]))}
+                className="min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold"
+              >
+                Shortlist this page ({visibleEntries.length})
+              </button>
+              {result.entries.length > visibleEntries.length && (
+                <button
+                  type="button"
+                  onClick={() => setShortlist(new Set(filteredStudents.map(student => student.userId)))}
+                  className="min-h-11 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3 py-2 text-sm font-semibold text-indigo-950 hover:bg-indigo-100"
+                >
+                  Shortlist all matching ({filteredStudents.length})
+                </button>
+              )}
+            </div>
+          </div>
           {viewMode === 'table' ? (
             <CandidateTableView
               visibleEntries={visibleEntries}
@@ -293,7 +318,7 @@ export default function AdminStudentsPage() {
           open={Boolean(assignScope)}
           onClose={() => setAssignScope(null)}
           candidates={assignScope.candidates}
-          jobs={jobs}
+          jobs={allCompanyJobs.length > 0 ? allCompanyJobs : jobs}
           defaultJobId={deferredFilters.job || ''}
           onAssigned={({ count, jobTitle, company }) => {
             setNotice(`🌟 Successfully assigned ${count} candidate${count === 1 ? '' : 's'} to ${company} (${jobTitle}) as Suitable Profiles!`);

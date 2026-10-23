@@ -882,6 +882,18 @@ export const fetchCandidateMatchingJobs = async () => {
   return data || [];
 };
 
+/** All active company vacancies across all companies for assigning suitable candidates. */
+export const fetchAllCompanyJobsForAssignment = async () => {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const { data, error } = await supabase.from(JOBS_TABLE)
+    .select('id,title,company,location,salary,status,posted_at,accepted_degrees,accepted_branches,required_education_status,required_experience,required_skills,preferred_skills,required_candidate_locations,accepts_relocation,requirements_verified')
+    .neq('status', 'archived')
+    .order('company', { ascending: true })
+    .order('posted_at', { ascending: false });
+  if (error) throw mapError(error, 'Could not load company vacancies.');
+  return data || [];
+};
+
 /** Manually posted admin listings (excludes employer + external-fetch jobs). */
 export const fetchAdminCreatedJobs = () => fetchAdminJobs({ scope: 'admin' });
 
