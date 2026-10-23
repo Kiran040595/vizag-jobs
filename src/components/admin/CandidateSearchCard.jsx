@@ -63,7 +63,7 @@ export default function CandidateSearchCard({
       `Phone: ${student.phone || 'Not provided'}`,
       `Email: ${student.contactEmail || 'Not provided'}`,
       `Seeking: ${student.primaryTargetRole || 'Not specified'}`,
-      `Qualification: ${[student.degree, student.branch, student.graduationYear ? `Class of ${student.graduationYear}` : '', student.college].filter(Boolean).join(' · ')}`,
+      `Qualification: ${[student.degree, student.branch, student.graduationYear ? `Batch ${student.graduationYear}` : '', student.college].filter(Boolean).join(' · ')}`,
       `Skills: ${student.skills?.join(', ') || 'None'}`,
       student.resumePath ? `Resume: Attached (${student.resumePath})` : null,
     ].filter(Boolean).join('\n');
@@ -132,7 +132,7 @@ export default function CandidateSearchCard({
               🎓 {[student.degree || 'Qualification not provided', student.branch].filter(Boolean).join(' in ')}
             </span>
             {[
-              student.graduationYear ? `Class of ${student.graduationYear}` : '',
+              student.graduationYear ? `Batch ${student.graduationYear}` : '',
               student.educationStatus === 'studying'
                 ? '(Currently Studying)'
                 : student.educationStatus === 'completed'

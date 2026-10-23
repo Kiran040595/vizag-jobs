@@ -35,8 +35,9 @@ const POPULAR_TARGET_ROLES = [
   'React Developer',
   'Python Developer',
   'Full Stack Developer',
-  'Accountant',
   'Telecaller',
+  'GIS Developer',
+  'Accountant',
   'Digital Marketing',
   'Sales Executive',
   'Data Analyst',
@@ -218,8 +219,30 @@ export default function CandidateFinderFilters({
 
           <span className="text-slate-300">|</span>
 
+          {/* Passout Batch Quick Filters */}
+          {years.slice(0, 3).map((y) => {
+            const isSelected = filters.year === y.value;
+            return (
+              <button
+                key={y.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ year: isSelected ? '' : y.value })}
+                className={`min-h-9 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                  isSelected
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs'
+                    : 'border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-900'
+                }`}
+              >
+                🎓 Batch {y.value}
+              </button>
+            );
+          })}
+
+          <span className="text-slate-300">|</span>
+
           {/* Popular Target Roles Quick Pills */}
-          {POPULAR_TARGET_ROLES.slice(0, 7).map((role) => {
+          {POPULAR_TARGET_ROLES.slice(0, 8).map((role) => {
             const isSelected = filters.roleQuery.toLowerCase() === role.toLowerCase();
             return (
               <button
@@ -392,10 +415,18 @@ export default function CandidateFinderFilters({
           <input
             aria-label="Desired role contains"
             className={INPUT}
+            list="candidate-role-query-options"
             value={filters.roleQuery}
             onChange={(event) => onChange({ roleQuery: event.target.value })}
-            placeholder="e.g. Developer, Accountant, Telecaller"
+            placeholder="e.g. GIS, Developer, Telecaller, Accountant"
           />
+          <datalist id="candidate-role-query-options">
+            {(roles || []).map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label || r.value}
+              </option>
+            ))}
+          </datalist>
           <span className="mt-1 block text-xs font-normal text-slate-500">
             Searches primary and interested desired roles.
           </span>

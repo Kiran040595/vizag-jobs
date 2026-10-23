@@ -182,7 +182,7 @@ export default function CandidateTableView({
                   </div>
                   <div className="mt-0.5 text-xs text-slate-500 [overflow-wrap:anywhere]">
                     {[
-                      student.graduationYear ? `Class of ${student.graduationYear}` : '',
+                      student.graduationYear ? `Batch ${student.graduationYear}` : '',
                       student.educationStatus === 'studying'
                         ? 'Studying'
                         : student.educationStatus === 'completed'
