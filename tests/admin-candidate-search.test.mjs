@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EMPTY_CANDIDATE_FILTERS, candidateMatchesExperience, candidateMatchesSearch, candidateMissingFacts, candidateSkillKey, findAdminCandidates, readCandidateFilters, writeCandidateFilters } from '../src/lib/adminCandidateSearch.js';
+import { EMPTY_CANDIDATE_FILTERS, candidateMatchesExperience, candidateMatchesSearch, candidateMissingFacts, candidateSkillKey, findAdminCandidates, formatCandidateListForEmployer, readCandidateFilters, writeCandidateFilters } from '../src/lib/adminCandidateSearch.js';
 import { mapStudentProfileRow } from '../src/lib/adminStudentProfile.js';
 import { validateStudentProfilePayload } from '../src/lib/studentProfileValidation.js';
-import { buildStudentExportRows } from '../src/lib/studentExport.js';
+import { EMPLOYER_EXPORT_COLUMN_IDS, buildStudentExportRows } from '../src/lib/studentExport.js';
 
 const row = (id, overrides = {}) => mapStudentProfileRow({
   user_id: id, full_name: `Candidate ${id}`, college: 'Test Institute', degree: 'B.Tech',
@@ -138,3 +138,74 @@ test('search query matches fresher keyword and batch year; preferredLocation fil
   assert.equal(result.entries.length, 1);
   assert.ok(result.entries[0].reasons.some(r => r.includes('Preferred work location')));
 });
+
+test('college filtering matches specific institution or university accurately', () => {
+  const gitam = row('gitam', { college: 'GITAM University' });
+  const au = row('au', { college: 'Andhra University' });
+  const anits = row('anits', { college: 'ANITS' });
+  const pool = [gitam, au, anits];
+
+  const gitamResult = findAdminCandidates(pool, filters({ college: 'GITAM' }));
+  assert.deepEqual(ids(gitamResult), ['gitam']);
+  assert.ok(gitamResult.entries[0].reasons.some(r => r.includes('College: GITAM University')));
+
+  const auResult = findAdminCandidates(pool, filters({ college: 'Andhra University' }));
+  assert.deepEqual(ids(auResult), ['au']);
+});
+
+test('resume filter separates candidates with and without attached resume CV', () => {
+  const withResume = row('with-cv', { resume_path: 'user-1/resume.pdf' });
+  const withoutResume = row('no-cv', { resume_path: null });
+  const pool = [withResume, withoutResume];
+
+  assert.equal(withResume.hasResume, true);
+  assert.equal(withoutResume.hasResume, false);
+
+  const yesResult = findAdminCandidates(pool, filters({ hasResume: 'yes' }));
+  assert.deepEqual(ids(yesResult), ['with-cv']);
+  assert.ok(yesResult.entries[0].reasons.some(r => r.includes('Resume attached')));
+
+  const noResult = findAdminCandidates(pool, filters({ hasResume: 'no' }));
+  assert.deepEqual(ids(noResult), ['no-cv']);
+
+  const allResult = findAdminCandidates(pool, filters({ hasResume: 'all' }));
+  assert.equal(allResult.entries.length, 2);
+});
+
+test('formatCandidateListForEmployer generates professional text summary for company sharing', () => {
+  const cand = row('shareable', {
+    full_name: 'Sai Krishna',
+    phone: '9876543210',
+    primary_target_role: 'Full Stack Developer',
+    degree: 'B.Tech',
+    branch: 'Computer Science (CSE)',
+    graduation_year: 2026,
+    college: 'GITAM University',
+    skills: ['react', 'nodejs', 'sql'],
+    resume_path: 'sai/resume.pdf',
+    current_city: 'Visakhapatnam',
+  });
+
+  const formatted = formatCandidateListForEmployer([cand], 'React Candidates for Acme Corp');
+  assert.ok(formatted.includes('React Candidates for Acme Corp'));
+  assert.ok(formatted.includes('Sai Krishna'));
+  assert.ok(formatted.includes('Full Stack Developer'));
+  assert.ok(formatted.includes('B.Tech · Computer Science (CSE) · Batch 2026'));
+  assert.ok(formatted.includes('GITAM University'));
+  assert.ok(formatted.includes('React, Node.js, SQL'));
+  assert.ok(formatted.includes('📄 Resume: Available'));
+  assert.ok(formatted.includes('https://wa.me/919876543210'));
+});
+
+test('EMPLOYER_EXPORT_COLUMN_IDS provides company-ready fields and excludes admin-only columns', () => {
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('fullName'));
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('phone'));
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('whatsappLink'));
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('primaryTargetRole'));
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('degree'));
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('college'));
+  assert.ok(EMPLOYER_EXPORT_COLUMN_IDS.includes('resume'));
+  assert.ok(!EMPLOYER_EXPORT_COLUMN_IDS.includes('userId'));
+  assert.ok(!EMPLOYER_EXPORT_COLUMN_IDS.includes('isActive'));
+});
+

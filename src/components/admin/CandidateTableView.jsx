@@ -1,4 +1,5 @@
 import { candidateSkillKey } from '../../lib/adminCandidateSearch';
+import { createResumeSignedUrl } from '../../services/studentResume';
 import { formatSkillLabel } from '../../lib/studentProfileOptions';
 import { studentRoleLabels } from '../../lib/studentRoles';
 
@@ -15,6 +16,17 @@ export default function CandidateTableView({
   const isSkillMatched = (skill) => {
     const key = candidateSkillKey(skill);
     return filters.skills.some((value) => candidateSkillKey(value) === key);
+  };
+
+  const handleViewResume = async (resumePath) => {
+    if (!resumePath) return;
+    try {
+      const url = await createResumeSignedUrl(resumePath, 604800);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      else alert('Could not generate resume link.');
+    } catch (err) {
+      alert(err?.message || 'Could not open resume.');
+    }
   };
 
   return (
@@ -223,6 +235,16 @@ export default function CandidateTableView({
                       >
                         💬 WhatsApp
                       </a>
+                    )}
+                    {student.resumePath && (
+                      <button
+                        type="button"
+                        onClick={() => handleViewResume(student.resumePath)}
+                        className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-purple-300 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-900 shadow-xs hover:bg-purple-100 transition"
+                        title="View candidate resume in a new tab"
+                      >
+                        📄 Resume
+                      </button>
                     )}
                     <button
                       type="button"

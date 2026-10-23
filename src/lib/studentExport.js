@@ -73,6 +73,16 @@ export const STUDENT_EXPORT_COLUMNS = /** @type {StudentExportColumn[]} */ ([
     },
   },
   {
+    id: 'whatsappLink',
+    label: 'WhatsApp chat link',
+    group: 'Contact',
+    defaultSelected: true,
+    getValue: (student) => {
+      const digits = normalizeWhatsAppDigits(student.phone);
+      return digits ? `https://wa.me/91${digits}` : '';
+    },
+  },
+  {
     id: 'college',
     label: 'College',
     group: 'Education',
@@ -159,6 +169,13 @@ export const STUDENT_EXPORT_COLUMNS = /** @type {StudentExportColumn[]} */ ([
       (student.skillLabels?.length ? student.skillLabels : student.skills || []).join('; '),
   },
   {
+    id: 'resume',
+    label: 'Resume attached',
+    group: 'Profile',
+    defaultSelected: true,
+    getValue: (student) => (student.resumePath ? `Attached (${student.resumePath})` : 'Not uploaded'),
+  },
+  {
     id: 'certifications',
     label: 'Certifications',
     group: 'Profile',
@@ -187,6 +204,14 @@ export const STUDENT_EXPORT_COLUMNS = /** @type {StudentExportColumn[]} */ ([
     getValue: (student) => formatRegisteredAt(student.createdAt),
   },
 ]);
+
+export const EMPLOYER_EXPORT_COLUMN_IDS = [
+  'fullName', 'primaryTargetRole', 'skills', 'degree', 'branch', 'college',
+  'graduationYear', 'isFresher', 'roleExperience', 'currentCity', 'preferredLocations',
+  'availability', 'expectedSalary', 'phone', 'whatsappLink', 'resume',
+];
+
+export const getEmployerExportColumnIds = () => [...EMPLOYER_EXPORT_COLUMN_IDS];
 
 export const getDefaultStudentExportColumnIds = () =>
   STUDENT_EXPORT_COLUMNS.filter((column) => column.defaultSelected).map((column) => column.id);

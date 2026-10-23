@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { formatStudentRegisteredAt } from '../../services/adminStudents';
+import { createResumeSignedUrl } from '../../services/studentResume';
 import { candidateSkillKey } from '../../lib/adminCandidateSearch';
 import { formatSkillLabel } from '../../lib/studentProfileOptions';
 import { studentRoleLabels } from '../../lib/studentRoles';
@@ -23,6 +24,7 @@ export default function CandidateSearchCard({
 }) {
   const { student, reasons, eligibility, missingFacts } = entry;
   const [copied, setCopied] = useState(false);
+  const [loadingResume, setLoadingResume] = useState(false);
   const experience =
     student.roleExperienceLabel ||
     (student.isFresher === true
@@ -38,15 +40,33 @@ export default function CandidateSearchCard({
     }. Are you available for an interview discussion?`
   );
 
+  const handleViewResume = async () => {
+    if (!student.resumePath) return;
+    setLoadingResume(true);
+    try {
+      const url = await createResumeSignedUrl(student.resumePath, 604800);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('Could not generate resume link.');
+      }
+    } catch (err) {
+      alert(err?.message || 'Could not open resume.');
+    } finally {
+      setLoadingResume(false);
+    }
+  };
+
   const handleCopyContact = async () => {
     const summary = [
       `Name: ${student.fullName}`,
       `Phone: ${student.phone || 'Not provided'}`,
       `Email: ${student.contactEmail || 'Not provided'}`,
       `Seeking: ${student.primaryTargetRole || 'Not specified'}`,
-      `Qualification: ${[student.degree, student.branch, student.graduationYear].filter(Boolean).join(' · ')}`,
+      `Qualification: ${[student.degree, student.branch, student.graduationYear ? `Class of ${student.graduationYear}` : '', student.college].filter(Boolean).join(' · ')}`,
       `Skills: ${student.skills?.join(', ') || 'None'}`,
-    ].join('\n');
+      student.resumePath ? `Resume: Attached (${student.resumePath})` : null,
+    ].filter(Boolean).join('\n');
 
     try {
       await navigator.clipboard.writeText(summary);
@@ -156,6 +176,11 @@ export default function CandidateSearchCard({
             {(student.expectedSalaryMin || student.expectedSalaryMax) && (
               <span className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 font-semibold text-purple-900">
                 💰 Expected: ₹{student.expectedSalaryMin || '...'} – ₹{student.expectedSalaryMax || '...'}/mo
+              </span>
+            )}
+            {student.resumePath && (
+              <span className="rounded-lg border border-purple-300 bg-purple-50 px-2.5 py-1 font-bold text-purple-900">
+                📄 Resume Available
               </span>
             )}
           </div>
@@ -277,6 +302,17 @@ export default function CandidateSearchCard({
           >
             ✉️ Email
           </a>
+        )}
+        {student.resumePath && (
+          <button
+            type="button"
+            onClick={handleViewResume}
+            disabled={loadingResume}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-purple-300 bg-purple-50 px-3.5 py-2 text-xs font-bold text-purple-900 shadow-xs hover:bg-purple-100 transition disabled:opacity-50"
+            title="View candidate resume in a new tab"
+          >
+            {loadingResume ? '⏳ Opening...' : '📄 View Resume'}
+          </button>
         )}
         <button
           type="button"

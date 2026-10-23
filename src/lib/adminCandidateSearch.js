@@ -13,9 +13,10 @@ export const candidateSkills = student => unique(student.skills || [], candidate
 
 export const EMPTY_CANDIDATE_FILTERS = {
   search: '', skills: [], skillMode: 'all', degrees: [], roleQuery: '', role: '',
-  category: '', branch: '', year: '', experience: '', city: '', area: '',
-  preferredLocation: '', educationStatus: '', relocation: '', availability: '', certification: '',
-  accountStatus: 'active', dataStatus: '', job: '', jobStatus: 'eligible', sort: 'relevance',
+  category: '', branch: '', year: '', experience: '', college: '', hasResume: 'all',
+  city: '', area: '', preferredLocation: '', educationStatus: '', relocation: '',
+  availability: '', certification: '', accountStatus: 'active', dataStatus: '',
+  job: '', jobStatus: 'eligible', sort: 'relevance',
 };
 
 export const MISSING_CANDIDATE_FACTS = {
@@ -37,6 +38,9 @@ export const readCandidateFilters = params => {
   filters.roleQuery = params.get('roleQuery') || '';
   filters.year = params.get('year') || params.get('batch') || '';
   filters.experience = params.get('experience') || params.get('fresher') || params.get('exp') || '';
+  filters.college = params.get('college') || params.get('institution') || '';
+  filters.hasResume = params.get('hasResume') || params.get('resume') || 'all';
+  if (!['all', 'yes', 'no'].includes(filters.hasResume)) filters.hasResume = 'all';
   filters.city = params.get('city') || params.get('currentCity') || '';
   filters.preferredLocation = params.get('preferredLocation') || params.get('prefLocation') || params.get('workLocation') || '';
   if (!['active', 'inactive', 'all'].includes(filters.accountStatus)) filters.accountStatus = 'active';
@@ -101,6 +105,9 @@ export const matchesCandidateRequirements = (student, filters) => {
   if (filters.degrees.length && !filters.degrees.some(value => qualificationKey(student.degree) === qualificationKey(value))) return false;
   if (filters.branch && text(student.branch) !== text(filters.branch)) return false;
   if (filters.year && String(student.graduationYear || '') !== filters.year) return false;
+  if (filters.college && (!text(student.college) || !text(student.college).includes(text(filters.college)))) return false;
+  if (filters.hasResume === 'yes' && !student.resumePath) return false;
+  if (filters.hasResume === 'no' && student.resumePath) return false;
   if (!candidateMatchesExperience(student, filters.experience)) return false;
   const skills = new Set(candidateSkills(student).map(candidateSkillKey));
   if (filters.skills.length) {
@@ -132,6 +139,8 @@ export const candidateMatchReasons = (student, filters, job) => {
   if (filters.search) reasons.push(`All search terms found: ${filters.search}`);
   if (filters.degrees.length) reasons.push(`Qualification: ${student.degree}`);
   if (filters.role || filters.roleQuery) reasons.push(`Role: ${matchingDesiredRoles(student, filters).join(', ')}`);
+  if (filters.college) reasons.push(`College: ${student.college}`);
+  if (filters.hasResume === 'yes') reasons.push('Resume attached');
   if (filters.city || filters.area) reasons.push(`Current location: ${[student.currentCity, student.currentArea].filter(Boolean).join(', ')}`);
   if (filters.preferredLocation) reasons.push(`Preferred work location: ${filters.preferredLocation}`);
   if (filters.experience) reasons.push(`Experience: ${student.roleExperienceLabel || (student.isFresher === true ? 'Fresher' : student.isFresher === false ? 'Experienced' : 'Not provided')}`);
@@ -170,9 +179,17 @@ export const candidateFilterLabels = filters => {
   if (filters.search) labels.push(`Search: ${filters.search}`);
   if (filters.skills.length) labels.push(`${filters.skillMode === 'any' ? 'Any' : 'All'} skills: ${filters.skills.map(formatSkillLabel).join(', ')}`);
   if (filters.degrees.length) labels.push(`Qualification: ${filters.degrees.join(' or ')}`);
-  for (const [field, label] of [['roleQuery', 'Role contains'], ['role', 'Exact role'], ['category', 'Sector'], ['branch', 'Branch'], ['year', 'Batch'], ['experience', 'Experience'], ['preferredLocation', 'Work location'], ['city', 'Current city'], ['area', 'Area'], ['educationStatus', 'Education'], ['relocation', 'Relocation'], ['availability', 'Joining'], ['certification', 'Certification'], ['dataStatus', 'Profile facts']]) {
+  for (const [field, label] of [
+    ['roleQuery', 'Role contains'], ['role', 'Exact role'], ['category', 'Sector'],
+    ['branch', 'Branch'], ['year', 'Batch'], ['college', 'College'],
+    ['hasResume', 'Resume'], ['experience', 'Experience'], ['preferredLocation', 'Work location'],
+    ['city', 'Current city'], ['area', 'Area'], ['educationStatus', 'Education'],
+    ['relocation', 'Relocation'], ['availability', 'Joining'], ['certification', 'Certification'],
+    ['dataStatus', 'Profile facts'],
+  ]) {
     if (filters[field] && filters[field] !== EMPTY_CANDIDATE_FILTERS[field]) {
       const value = field === 'experience' ? (filters[field] === 'experienced' ? 'Experienced' : formatRoleExperienceLabel(filters[field]))
+        : field === 'hasResume' ? (filters[field] === 'yes' ? 'Attached only' : 'Without resume')
         : field === 'availability' ? formatAvailabilityLabel(filters[field])
           : field === 'category' ? formatJobCategoryLabel(filters[field])
             : field === 'relocation' ? filters[field] === 'true' ? 'Yes' : 'No'
@@ -185,3 +202,33 @@ export const candidateFilterLabels = filters => {
   if (filters.accountStatus !== 'active') labels.push(`Accounts: ${filters.accountStatus}`);
   return labels;
 };
+
+/** Formats a candidate list into a clean, ready-to-share message for company HR via WhatsApp or Email without requiring company registration. */
+export const formatCandidateListForEmployer = (students, title = 'Vizag Jobs - Candidate Shortlist') => {
+  if (!students || students.length === 0) return '';
+  const header = `📋 ${title}\nTotal Candidates: ${students.length}\n`;
+  const items = students.map((s, index) => {
+    const qual = [s.degree, s.branch, s.graduationYear ? `Batch ${s.graduationYear}` : ''].filter(Boolean).join(' · ');
+    const college = s.college ? ` at ${s.college}` : '';
+    const exp = s.roleExperienceLabel || (s.isFresher === true ? 'Fresher' : s.isFresher === false ? 'Experienced' : '');
+    const skills = s.skillLabels?.length ? s.skillLabels.join(', ') : (s.skills || []).join(', ');
+    const loc = [s.currentCity, s.currentArea].filter(Boolean).join(', ');
+    const prefLoc = s.preferredLocations?.length ? s.preferredLocations.join(', ') : '';
+    const phoneDigits = s.phone ? s.phone.replace(/\D/g, '') : '';
+    const lines = [
+      `${index + 1}. ${s.fullName || 'Candidate'}${exp ? ` (${exp})` : ''}`,
+      `   • Seeking: ${s.primaryTargetRole || 'Not specified'}`,
+      qual ? `   • Qualification: ${qual}${college}` : null,
+      skills ? `   • Key Skills: ${skills}` : null,
+      loc ? `   • Location: ${loc}${prefLoc ? ` (Prefers: ${prefLoc})` : ''}` : (prefLoc ? `   • Preferred Work Location: ${prefLoc}` : null),
+      s.availabilityLabel ? `   • Joining: ${s.availabilityLabel}` : null,
+      s.expectedSalaryMin || s.expectedSalaryMax ? `   • Expected Salary: ₹${[s.expectedSalaryMin, s.expectedSalaryMax].filter(Boolean).join(' - ₹')}/mo` : null,
+      s.phone ? `   • Phone: +91 ${s.phone}` : null,
+      phoneDigits ? `   • WhatsApp: https://wa.me/91${phoneDigits}` : null,
+      s.resumePath ? '   • 📄 Resume: Available' : '   • 📄 Resume: Not attached',
+    ].filter(Boolean);
+    return lines.join('\n');
+  });
+  return `${header}\n${items.join('\n\n')}\n\nShared via Jobs in Vizag (https://vizagjobs.com)`;
+};
+

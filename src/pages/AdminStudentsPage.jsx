@@ -15,7 +15,7 @@ import { formatSkillLabel } from '../lib/studentProfileOptions';
 import { countStudentRoles } from '../lib/studentRoles';
 import {
   EMPTY_CANDIDATE_FILTERS, candidateFilterLabels, candidateMissingFacts, candidateSkillKey,
-  findAdminCandidates, readCandidateFilters, writeCandidateFilters,
+  findAdminCandidates, formatCandidateListForEmployer, readCandidateFilters, writeCandidateFilters,
 } from '../lib/adminCandidateSearch';
 
 const countOptions = (students, getValues) => {
@@ -104,6 +104,7 @@ export default function AdminStudentsPage() {
       degrees: countOptions(scoped, student => [student.degree]),
       branches: countOptions(scoped, student => [student.branch]).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
       years: countOptions(scoped, student => [student.graduationYear ? String(student.graduationYear) : '']).sort((a, b) => Number(b.value) - Number(a.value)).map(item => ({ ...item, label: `Batch ${item.value} (${item.count})` })),
+      colleges: countOptions(scoped, student => [student.college]).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
       locations: countOptions(scoped, student => student.preferredLocations || []).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
     };
   }, [students, filters.accountStatus]);
@@ -132,6 +133,21 @@ export default function AdminStudentsPage() {
     finally { setBusyUserId(''); }
   };
 
+  const handleCopyEmployerSummary = async (candidates, title) => {
+    try {
+      const text = formatCandidateListForEmployer(candidates, title);
+      await navigator.clipboard.writeText(text);
+      setNotice(`📋 Copied summary of ${candidates.length} candidate${candidates.length === 1 ? '' : 's'} for employer to clipboard!`);
+    } catch {
+      setNotice('Could not copy to clipboard. Please check browser permissions.');
+    }
+  };
+
+  const handleShareWhatsApp = (candidates, title) => {
+    const text = formatCandidateListForEmployer(candidates, title);
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
+
   return <>
     <SEO title="Student candidate finder" noindex />
     <AdminShell title="Student candidate finder" description="Find students by the skills, qualifications and roles that matter for your vacancy.">
@@ -155,7 +171,19 @@ export default function AdminStudentsPage() {
         <div className="mb-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p role="status" aria-live="polite" className="font-bold text-slate-950">{isLoading ? 'Loading candidates…' : `${result.entries.length} matching candidates`}</p>
-            <div className="flex flex-wrap gap-2"><button type="button" onClick={loadStudents} className="min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold">Refresh data</button><button type="button" disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length} onClick={() => setExportScope({ students: filteredStudents, label: exportLabel })} className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Export matching ({filteredStudents.length})</button></div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={loadStudents} className="min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold">Refresh data</button>
+              <button
+                type="button"
+                disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length}
+                onClick={() => handleCopyEmployerSummary(filteredStudents.slice(0, 50), criteriaLabels.length ? criteriaLabels.join(' · ') : 'Vizag Candidates')}
+                title="Copy formatted candidate summary for WhatsApp or Email"
+                className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 disabled:opacity-40"
+              >
+                📋 Copy for Employer ({Math.min(filteredStudents.length, 50)})
+              </button>
+              <button type="button" disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length} onClick={() => setExportScope({ students: filteredStudents, label: exportLabel })} className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Export matching ({filteredStudents.length})</button>
+            </div>
           </div>
           <div className="grid min-w-0 gap-3 sm:grid-cols-3">
             <CandidateSelect label="Account status" value={filters.accountStatus} onChange={accountStatus => updateFilters({ accountStatus })} emptyLabel={null} options={[{ value: 'active', label: 'Active accounts' }, { value: 'all', label: 'All accounts' }, { value: 'inactive', label: 'Deactivated accounts' }]} />
@@ -201,6 +229,20 @@ export default function AdminStudentsPage() {
               {selectedOutsideFilters > 0 && <p className="text-xs text-indigo-800">{selectedOutsideFilters} shortlisted candidates are outside the current filters. Shortlist export includes them.</p>}
             </div>
             <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleCopyEmployerSummary(selectedStudents, 'Shortlisted Vizag Candidates')}
+                className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
+              >
+                📋 Copy for Employer
+              </button>
+              <button
+                type="button"
+                onClick={() => handleShareWhatsApp(selectedStudents, 'Shortlisted Vizag Candidates')}
+                className="min-h-11 rounded-xl border border-emerald-600 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                💬 WhatsApp to Employer
+              </button>
               <button type="button" disabled={!canExport} onClick={() => setExportScope({ students: selectedStudents, label: 'Selected candidate shortlist' })} className="min-h-11 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40">Export shortlist ({selectedStudents.length})</button>
               <button type="button" onClick={() => setShortlist(new Set())} className="min-h-11 rounded-xl border border-indigo-200 px-3 py-2 text-sm font-semibold">Clear shortlist</button>
             </div>

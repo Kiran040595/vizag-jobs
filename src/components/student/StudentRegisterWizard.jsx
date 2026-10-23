@@ -77,6 +77,10 @@ export default function StudentRegisterWizard({
   isSubmitting,
   submitError,
   loginPath,
+  resumeFile = null,
+  resumeError = '',
+  onResumeChange,
+  onRemoveResume,
 }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Errors, setStep1Errors] = useState({});
@@ -1095,6 +1099,57 @@ export default function StudentRegisterWizard({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Resume Upload (Optional) */}
+          <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="student-resume-upload" className="block text-sm font-bold text-slate-800">
+                📄 Resume / CV (Optional)
+              </label>
+              <span className="text-xs font-medium text-indigo-700 bg-indigo-100/80 px-2.5 py-0.5 rounded-full">
+                Recommended for fast hiring
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-600">
+              Attach your latest resume (PDF or Word, max 5 MB). Verified employers and recruiters in Vizag will prioritize your profile.
+            </p>
+
+            {resumeFile ? (
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-200 bg-white p-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-xl">📄</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{resumeFile.name}</p>
+                    <p className="text-xs text-slate-500">{(resumeFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                  </div>
+                </div>
+                {onRemoveResume && (
+                  <button
+                    type="button"
+                    onClick={onRemoveResume}
+                    className="rounded-lg border border-rose-200 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3">
+                <input
+                  id="student-resume-upload"
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={onResumeChange}
+                  className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2.5 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-500 cursor-pointer"
+                />
+              </div>
+            )}
+            {resumeError && (
+              <p role="alert" className="mt-2 text-xs font-semibold text-rose-600">
+                {resumeError}
+              </p>
+            )}
           </div>
 
           {/* Consents Component */}

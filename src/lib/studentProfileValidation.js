@@ -124,5 +124,6 @@ export const validateStudentProfilePayload = (profile, { requireMatchingDetails 
     availability,
     expected_salary_min: expectedSalaryMin,
     expected_salary_max: expectedSalaryMax,
+    ...(profile.resume_path ? { resume_path: String(profile.resume_path).trim() } : {}),
   };
 };

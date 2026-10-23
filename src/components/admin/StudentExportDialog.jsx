@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   downloadStudentExcel,
   getDefaultStudentExportColumnIds,
+  getEmployerExportColumnIds,
   STUDENT_EXPORT_COLUMNS,
 } from '../../lib/studentExport';
 
@@ -50,6 +51,11 @@ export default function StudentExportDialog({
     setSelectedIds(getDefaultStudentExportColumnIds());
   };
 
+  const selectEmployerPreset = () => {
+    setError('');
+    setSelectedIds(getEmployerExportColumnIds());
+  };
+
   const selectAll = () => {
     setError('');
     setSelectedIds(STUDENT_EXPORT_COLUMNS.map((column) => column.id));
@@ -95,6 +101,13 @@ export default function StudentExportDialog({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={selectEmployerPreset}
+            className="rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-900 hover:bg-indigo-100 transition shadow-xs"
+          >
+            🏢 Company Candidate Roster
+          </button>
           <button
             type="button"
             onClick={selectDefaults}

@@ -3,6 +3,7 @@ import { upsertStudentProfile } from '../../services/studentJobs';
 import { recordStudentRegistrationConsents } from '../../services/studentConsent';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
 import { EMPTY_STUDENT_CONSENTS, hasStudentRegistrationConsents, validateStudentConsents } from '../../lib/studentConsent';
+import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume, validateResumeFile } from '../../services/studentResume';
 import StudentProfileFields, { EMPTY_STUDENT_PROFILE_FORM } from './StudentProfileFields';
 import StudentRegistrationConsent from './StudentRegistrationConsent';
 import StudentSkillMatchNotice from './StudentSkillMatchNotice';
@@ -14,6 +15,9 @@ export default function StudentProfileForm({ onSaved }) {
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [consents, setConsents] = useState(EMPTY_STUDENT_CONSENTS);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeError, setResumeError] = useState('');
+  const [isOpeningResume, setIsOpeningResume] = useState(false);
   const needsConsent = profile ? !hasStudentRegistrationConsents(profile) : true;
 
   useEffect(() => {
@@ -128,6 +132,36 @@ export default function StudentProfileForm({ onSaved }) {
     });
   };
 
+  const handleResumeFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const errorMsg = validateResumeFile(file);
+    if (errorMsg) {
+      setResumeError(errorMsg);
+      setResumeFile(null);
+    } else {
+      setResumeError('');
+      setResumeFile(file);
+    }
+  };
+
+  const handleViewCurrentResume = async () => {
+    if (!profile?.resume_path) return;
+    setIsOpeningResume(true);
+    try {
+      const url = await createResumeSignedUrl(profile.resume_path, 3600);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        setError('Resume link could not be generated.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not open resume.');
+    } finally {
+      setIsOpeningResume(false);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -139,10 +173,19 @@ export default function StudentProfileForm({ onSaved }) {
         validateStudentConsents(consents);
         await recordStudentRegistrationConsents(consents);
       }
-      const saved = await upsertStudentProfile(form);
+      let resumePath = profile?.resume_path || null;
+      if (resumeFile && user?.id) {
+        resumePath = await uploadStudentResume(resumeFile, user.id);
+        await saveResumePathOnProfile(resumePath);
+      }
+      const saved = await upsertStudentProfile({
+        ...form,
+        ...(resumePath ? { resume_path: resumePath } : {}),
+      });
       if (user?.id) {
         await refreshStudentAccess(user.id);
       }
+      setResumeFile(null);
       setNotice('Student profile saved. You can now apply to jobs.');
       onSaved?.(saved);
     } catch (submitError) {
@@ -185,6 +228,61 @@ export default function StudentProfileForm({ onSaved }) {
         />
 
         <StudentSkillMatchNotice />
+
+        {/* Resume section */}
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-slate-800">📄 Resume / CV</h3>
+            {profile?.resume_path ? (
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                ✓ Resume Attached
+              </span>
+            ) : (
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                No Resume Uploaded
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-slate-600">
+            Upload your resume (PDF or Word, max 5 MB). Verified employers and admins will review it when matching you to open vacancies.
+          </p>
+
+          {profile?.resume_path && !resumeFile && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleViewCurrentResume}
+                disabled={isOpeningResume}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+              >
+                {isOpeningResume ? 'Opening resume…' : '📄 View Current Resume'}
+              </button>
+            </div>
+          )}
+
+          <div className="mt-3">
+            <label htmlFor="student-profile-resume" className="block text-xs font-semibold text-slate-600 mb-1">
+              {profile?.resume_path ? 'Upload new resume to replace existing:' : 'Upload your resume:'}
+            </label>
+            <input
+              id="student-profile-resume"
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleResumeFileChange}
+              className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-500 cursor-pointer"
+            />
+            {resumeFile && (
+              <p className="mt-1.5 text-xs text-indigo-700 font-medium">
+                Selected for upload: {resumeFile.name} ({(resumeFile.size / (1024 * 1024)).toFixed(2)} MB)
+              </p>
+            )}
+            {resumeError && (
+              <p role="alert" className="mt-1.5 text-xs font-semibold text-rose-600">
+                {resumeError}
+              </p>
+            )}
+          </div>
+        </div>
 
         {needsConsent ? (
           <StudentRegistrationConsent

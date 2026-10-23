@@ -98,6 +98,8 @@ export const mapStudentProfileRow = (row) => {
     availabilityLabel: formatAvailabilityLabel(availability),
     expectedSalaryMin,
     expectedSalaryMax,
+    hasResume: Boolean(row.resume_path),
+    resumePath: row.resume_path || null,
     isFresher,
     isActive: Boolean(row.is_active),
     hasRegistrationConsents,
@@ -131,6 +133,7 @@ export const studentSearchBlob = (student) =>
     student.isFresher === true ? 'fresher' : student.isFresher === false ? 'experienced' : '',
     student.preferredLocations?.join(' '),
     student.availabilityLabel,
+    student.resumePath ? 'resume cv attached' : '',
     student.userId,
   ]
     .filter(Boolean)

@@ -21,6 +21,7 @@ import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 import { validateStudentProfilePayload } from '../lib/studentProfileValidation';
 import { upsertStudentProfile } from '../services/studentJobs';
 import { recordStudentRegistrationConsents } from '../services/studentConsent';
+import { saveResumePathOnProfile, uploadStudentResume, validateResumeFile } from '../services/studentResume';
 
 const INITIAL_STUDENT_REGISTER_FORM = {
   ...EMPTY_STUDENT_PROFILE_FORM,
@@ -46,6 +47,8 @@ export default function StudentRegisterPage() {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [consents, setConsents] = useState(EMPTY_STUDENT_CONSENTS);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeError, setResumeError] = useState('');
 
   const returnPath = resolvePostAuthDestination(searchParams, { profileComplete });
   const nextPath = searchParams.get('next') || '';
@@ -206,6 +209,24 @@ export default function StudentRegisterPage() {
     });
   };
 
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const errorMsg = validateResumeFile(file);
+    if (errorMsg) {
+      setResumeError(errorMsg);
+      setResumeFile(null);
+    } else {
+      setResumeError('');
+      setResumeFile(file);
+    }
+  };
+
+  const handleRemoveResume = () => {
+    setResumeFile(null);
+    setResumeError('');
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitError('');
@@ -213,6 +234,10 @@ export default function StudentRegisterPage() {
 
     try {
       validateStudentConsents(consents);
+      if (resumeFile) {
+        const errorMsg = validateResumeFile(resumeFile);
+        if (errorMsg) throw new Error(errorMsg);
+      }
       const profilePayload = {
         ...form,
         certifications: form.certifications || '',
@@ -223,8 +248,15 @@ export default function StudentRegisterPage() {
       // Auth can succeed before profile persistence. Keep failures on this form and
       // retry the profile save without creating a second account or losing input.
       if (session?.user?.user_metadata?.user_type === 'student') {
+        let resumePath = null;
+        if (resumeFile) {
+          resumePath = await uploadStudentResume(resumeFile, session.user.id);
+        }
         await recordStudentRegistrationConsents(consents, { userId: session.user.id });
-        await upsertStudentProfile(profilePayload);
+        await upsertStudentProfile({
+          ...profilePayload,
+          ...(resumePath ? { resume_path: resumePath } : {}),
+        });
         await refreshStudentAccess(session.user.id);
         return;
       }
@@ -238,7 +270,15 @@ export default function StudentRegisterPage() {
         consents,
         returnPath: postAuthPath,
       });
-      if (result?.session) {
+      if (result?.session?.user) {
+        if (resumeFile) {
+          try {
+            const resumePath = await uploadStudentResume(resumeFile, result.session.user.id);
+            await saveResumePathOnProfile(resumePath);
+          } catch (uploadErr) {
+            console.warn('Failed to upload resume during registration:', uploadErr);
+          }
+        }
         return;
       }
       throw new Error('Account created but sign-in did not complete. Try signing in.');
@@ -299,6 +339,10 @@ export default function StudentRegisterPage() {
             isSubmitting={isSubmitting}
             submitError={submitError}
             loginPath={loginPath}
+            resumeFile={resumeFile}
+            resumeError={resumeError}
+            onResumeChange={handleResumeChange}
+            onRemoveResume={handleRemoveResume}
           />
         </div>
 

@@ -53,6 +53,7 @@ export default function CandidateFinderFilters({
   degrees,
   branches,
   years,
+  colleges = [],
   locations = [],
   jobs,
   jobCounts,
@@ -197,6 +198,22 @@ export default function CandidateFinderFilters({
             }`}
           >
             📍 Vizag Location
+          </button>
+
+          {/* Resume Quick Filter */}
+          <button
+            type="button"
+            aria-pressed={filters.hasResume === 'yes'}
+            onClick={() =>
+              onChange({ hasResume: filters.hasResume === 'yes' ? 'all' : 'yes' })
+            }
+            className={`min-h-9 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+              filters.hasResume === 'yes'
+                ? 'border-purple-600 bg-purple-600 text-white shadow-xs'
+                : 'border-purple-200 bg-purple-50 text-purple-900 hover:bg-purple-100'
+            }`}
+          >
+            📄 Has Resume Only
           </button>
 
           <span className="text-slate-300">|</span>
@@ -445,6 +462,38 @@ export default function CandidateFinderFilters({
             Where candidate currently resides.
           </span>
         </label>
+
+        <label className="min-w-0 text-sm font-semibold text-slate-700">
+          College / Institution
+          <input
+            aria-label="College / Institution"
+            className={INPUT}
+            list="college-institution-options"
+            value={filters.college || ''}
+            onChange={(event) => onChange({ college: event.target.value })}
+            placeholder="e.g. Gayatri, GITAM, AU, ANITS"
+          />
+          <datalist id="college-institution-options">
+            {colleges.map((col) => (
+              <option key={col.value || col} value={col.value || col} />
+            ))}
+          </datalist>
+          <span className="mt-1 block text-xs font-normal text-slate-500">
+            Filters by candidate's college or institute.
+          </span>
+        </label>
+
+        <CandidateSelect
+          label="Resume attached"
+          value={filters.hasResume || 'all'}
+          onChange={(hasResume) => onChange({ hasResume })}
+          options={[
+            { value: 'all', label: 'All candidates' },
+            { value: 'yes', label: '📄 Resume attached only' },
+            { value: 'no', label: 'Without resume' },
+          ]}
+          emptyLabel={null}
+        />
 
         <CandidateSelect
           label="Joining availability"
