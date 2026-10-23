@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import CandidateFinderFilters, { CandidateSelect } from '../components/admin/CandidateFinderFilters';
 import CandidateSearchCard from '../components/admin/CandidateSearchCard';
+import CandidateTableView from '../components/admin/CandidateTableView';
 import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
 import { fetchAdminStudentProfiles, setStudentActiveStatus } from '../services/adminStudents';
@@ -42,6 +43,7 @@ export default function AdminStudentsPage() {
   const [exportScope, setExportScope] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [viewMode, setViewMode] = useState('cards');
   const updateFilters = patch => {
     const next = { ...filtersRef.current, ...patch };
     filtersRef.current = next;
@@ -102,6 +104,7 @@ export default function AdminStudentsPage() {
       degrees: countOptions(scoped, student => [student.degree]),
       branches: countOptions(scoped, student => [student.branch]).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
       years: countOptions(scoped, student => [student.graduationYear ? String(student.graduationYear) : '']).sort((a, b) => Number(b.value) - Number(a.value)).map(item => ({ ...item, label: `Batch ${item.value} (${item.count})` })),
+      locations: countOptions(scoped, student => student.preferredLocations || []).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
     };
   }, [students, filters.accountStatus]);
   const criteriaLabels = candidateFilterLabels(deferredFilters);
@@ -159,7 +162,35 @@ export default function AdminStudentsPage() {
             <CandidateSelect label="Sort candidates" value={filters.sort} onChange={sort => updateFilters({ sort })} emptyLabel={null} options={[{ value: 'relevance', label: 'Most matching selected / preferred skills' }, { value: 'newest', label: 'Newest registration' }, { value: 'oldest', label: 'Oldest registration' }, { value: 'name', label: 'Name A–Z' }]} />
             <CandidateSelect label="Candidates per page" value={String(pageSize)} onChange={value => { setPageSize(Number(value) || 25); setCurrentPage(1); }} emptyLabel={null} options={['25', '50', '100']} />
           </div>
-          {criteriaLabels.length > 0 && <p className="text-xs text-slate-600 [overflow-wrap:anywhere]">Applied: {criteriaLabels.join(' · ')}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                aria-pressed={viewMode === 'cards'}
+                className={`min-h-9 rounded-lg px-3 py-1 font-bold transition ${
+                  viewMode === 'cards'
+                    ? 'bg-white text-indigo-950 shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                🗂️ Cards View
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                aria-pressed={viewMode === 'table'}
+                className={`min-h-9 rounded-lg px-3 py-1 font-bold transition ${
+                  viewMode === 'table'
+                    ? 'bg-white text-indigo-950 shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                📊 Recruiter Table View
+              </button>
+            </div>
+            {criteriaLabels.length > 0 && <p className="text-xs text-slate-600 [overflow-wrap:anywhere]">Applied: {criteriaLabels.join(' · ')}</p>}
+          </div>
           <p className="text-xs text-slate-500">Only recorded facts are matched. Skills/qualifications aid discovery; they do not guarantee suitability. Demographic information is excluded from matching and sorting.</p>
         </div>
 
@@ -180,7 +211,20 @@ export default function AdminStudentsPage() {
         {loadError && <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-900">{loadError} Results may be out of date. Refresh data before exporting.</p>}
         {isLoading ? <LoadingSpinner label="Loading student registrations…" /> : !result.entries.length ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center"><h2 className="text-lg font-bold">No candidates match all current requirements</h2><p className="mt-2 text-sm text-slate-600">Try “Any selected skill”, fewer qualifications, or a broader desired role. Missing profile information never counts as a match.</p><button type="button" onClick={resetFilters} className="mt-4 min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold">Reset filters</button></div> : <>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-slate-500">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, result.entries.length)} of {result.entries.length}</p><button type="button" onClick={() => setShortlist(current => new Set([...current, ...visibleEntries.map(entry => entry.student.userId)]))} className="min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold">Shortlist this page ({visibleEntries.length})</button></div>
-          <div className="space-y-3">{visibleEntries.map(entry => <CandidateSearchCard key={entry.student.userId} entry={entry} filters={deferredFilters} selected={shortlist.has(entry.student.userId)} onSelect={() => toggleShortlist(entry.student.userId)} onSkill={toggleSkill} onShare={() => setShareStudent(entry.student)} onToggleActive={() => toggleActive(entry.student)} busy={busyUserId === entry.student.userId} />)}</div>
+          {viewMode === 'table' ? (
+            <CandidateTableView
+              visibleEntries={visibleEntries}
+              filters={deferredFilters}
+              shortlist={shortlist}
+              onToggleShortlist={toggleShortlist}
+              onSkill={toggleSkill}
+              onShare={setShareStudent}
+              onToggleActive={toggleActive}
+              busyUserId={busyUserId}
+            />
+          ) : (
+            <div className="space-y-3">{visibleEntries.map(entry => <CandidateSearchCard key={entry.student.userId} entry={entry} filters={deferredFilters} selected={shortlist.has(entry.student.userId)} onSelect={() => toggleShortlist(entry.student.userId)} onSkill={toggleSkill} onShare={() => setShareStudent(entry.student)} onToggleActive={() => toggleActive(entry.student)} busy={busyUserId === entry.student.userId} />)}</div>
+          )}
           {pageCount > 1 && <nav aria-label="Candidate result pages" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-3"><span className="text-sm">Page {page} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={page <= 1} onClick={() => setCurrentPage(page - 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Previous</button><button type="button" disabled={page >= pageCount} onClick={() => setCurrentPage(page + 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Next</button></div></nav>}
         </>}
       </section>

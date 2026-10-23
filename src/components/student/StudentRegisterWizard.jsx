@@ -1052,6 +1052,51 @@ export default function StudentRegisterWizard({
             </div>
           </div>
 
+          {/* Expected Monthly Salary (Optional) */}
+          <div>
+            <div className="flex flex-wrap gap-2 items-center justify-between">
+              <label className="block text-sm font-semibold text-slate-700">
+                Expected Monthly Salary (₹)
+              </label>
+              <span className="text-xs text-slate-400">Optional</span>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Helps recruiters in Vizag match jobs within your salary expectations:
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500">Minimum (₹ / mo)</label>
+                <input
+                  type="number"
+                  aria-label="Expected minimum monthly salary"
+                  name="expected_salary_min"
+                  min={0}
+                  max={1000000}
+                  step={1000}
+                  value={form.expected_salary_min || ''}
+                  onChange={onFormChange}
+                  placeholder="e.g. 15000"
+                  className="mt-1 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500">Maximum (₹ / mo)</label>
+                <input
+                  type="number"
+                  aria-label="Expected maximum monthly salary"
+                  name="expected_salary_max"
+                  min={0}
+                  max={1000000}
+                  step={1000}
+                  value={form.expected_salary_max || ''}
+                  onChange={onFormChange}
+                  placeholder="e.g. 25000"
+                  className="mt-1 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Consents Component */}
           <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
             <StudentRegistrationConsent values={consents} onChange={onConsentsChange} />

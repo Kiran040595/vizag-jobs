@@ -1,22 +1,12 @@
 import { studentSearchBlob } from './adminStudentProfile.js';
 import { evaluateJobEligibility, normalizeCandidateLocation } from './candidateEligibility.js';
-import { formatSkillLabel, normalizeSkillValue } from './studentProfileOptions.js';
-import { studentMatchesRole, studentRoleLabels, roleKey } from './studentRoles.js';
+import { formatSkillLabel } from './studentProfileOptions.js';
+import { studentRoleLabels, roleKey } from './studentRoles.js';
+import { skillMatchKey } from './skillMatching.js';
 import { formatAvailabilityLabel, formatJobCategoryLabel, formatRoleExperienceLabel } from './studentCareerPreferences.js';
 
 const text = value => String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-const skillAliases = new Map([
-  ['react.js', 'react'], ['reactjs', 'react'], ['react js', 'react'],
-  ['node.js', 'nodejs'], ['node js', 'nodejs'],
-  ['js', 'javascript'], ['javascript', 'javascript'],
-  ['.net', 'dotnet'], ['.net framework', 'dotnet'],
-  ['excel', 'ms excel'], ['microsoft excel', 'ms excel'],
-  ['html & css', 'html css'],
-]);
-export const candidateSkillKey = value => {
-  const key = normalizeSkillValue(value);
-  return skillAliases.get(key) || key;
-};
+export const candidateSkillKey = skillMatchKey;
 export const qualificationKey = value => text(value).replace(/[.\s]+/g, '');
 const unique = (values, key = text) => [...new Map(values.filter(Boolean).map(value => [key(value), value])).values()];
 export const candidateSkills = student => unique(student.skills || [], candidateSkillKey);
@@ -24,7 +14,7 @@ export const candidateSkills = student => unique(student.skills || [], candidate
 export const EMPTY_CANDIDATE_FILTERS = {
   search: '', skills: [], skillMode: 'all', degrees: [], roleQuery: '', role: '',
   category: '', branch: '', year: '', experience: '', city: '', area: '',
-  educationStatus: '', relocation: '', availability: '', certification: '',
+  preferredLocation: '', educationStatus: '', relocation: '', availability: '', certification: '',
   accountStatus: 'active', dataStatus: '', job: '', jobStatus: 'eligible', sort: 'relevance',
 };
 
@@ -48,6 +38,7 @@ export const readCandidateFilters = params => {
   filters.year = params.get('year') || params.get('batch') || '';
   filters.experience = params.get('experience') || params.get('fresher') || params.get('exp') || '';
   filters.city = params.get('city') || params.get('currentCity') || '';
+  filters.preferredLocation = params.get('preferredLocation') || params.get('prefLocation') || params.get('workLocation') || '';
   if (!['active', 'inactive', 'all'].includes(filters.accountStatus)) filters.accountStatus = 'active';
   if (!['all', 'any'].includes(filters.skillMode)) filters.skillMode = 'all';
   if (!['eligible', 'needs_information', 'ineligible', 'unverified', 'all'].includes(filters.jobStatus)) filters.jobStatus = 'eligible';
@@ -77,6 +68,12 @@ export const candidateMissingFacts = student => [
 ].filter(Boolean);
 
 const queryTerms = query => [...text(query).matchAll(/"([^"]+)"|(\S+)/g)].map(match => match[1] || match[2]);
+const matchingDesiredRoles = (student, filters) => {
+  const terms = queryTerms(filters.roleQuery);
+  return studentRoleLabels(student).filter(role =>
+    (!filters.role || roleKey(role) === roleKey(filters.role)) &&
+    terms.every(term => roleKey(role).includes(term)));
+};
 export const candidateMatchesSearch = (student, query) => {
   if (!text(query)) return true;
   const skills = candidateSkills(student).map(candidateSkillKey);
@@ -99,11 +96,7 @@ export const matchesCandidateRequirements = (student, filters) => {
   if (filters.accountStatus === 'active' && !student.isActive) return false;
   if (filters.accountStatus === 'inactive' && student.isActive) return false;
   if (!candidateMatchesSearch(student, filters.search)) return false;
-  if (!studentMatchesRole(student, filters.role)) return false;
-  if (filters.roleQuery) {
-    const roles = studentRoleLabels(student).map(roleKey).join(' ');
-    if (!queryTerms(filters.roleQuery).every(term => roles.includes(term))) return false;
-  }
+  if ((filters.role || filters.roleQuery) && !matchingDesiredRoles(student, filters).length) return false;
   if (filters.category && !student.targetJobCategories?.includes(filters.category)) return false;
   if (filters.degrees.length && !filters.degrees.some(value => qualificationKey(student.degree) === qualificationKey(value))) return false;
   if (filters.branch && text(student.branch) !== text(filters.branch)) return false;
@@ -117,6 +110,7 @@ export const matchesCandidateRequirements = (student, filters) => {
   // Current residence and preferred work locations are different facts.
   if (filters.city && (!text(student.currentCity) || !normalizeCandidateLocation(student.currentCity).includes(normalizeCandidateLocation(filters.city)))) return false;
   if (filters.area && (!text(student.currentArea) || !normalizeCandidateLocation(student.currentArea).includes(normalizeCandidateLocation(filters.area)))) return false;
+  if (filters.preferredLocation && (!student.preferredLocations || !student.preferredLocations.some(loc => normalizeCandidateLocation(loc).includes(normalizeCandidateLocation(filters.preferredLocation))))) return false;
   if (filters.educationStatus && student.educationStatus !== filters.educationStatus) return false;
   if (filters.relocation && String(student.willingToRelocate ?? '') !== filters.relocation) return false;
   if (filters.availability && student.availability !== filters.availability) return false;
@@ -137,8 +131,9 @@ export const candidateMatchReasons = (student, filters, job) => {
   const reasons = selectedSkills.map(value => `Skill: ${formatSkillLabel(value)}`);
   if (filters.search) reasons.push(`All search terms found: ${filters.search}`);
   if (filters.degrees.length) reasons.push(`Qualification: ${student.degree}`);
-  if (filters.role || filters.roleQuery) reasons.push(`Role: ${studentRoleLabels(student).filter(role => filters.role ? roleKey(role) === roleKey(filters.role) : queryTerms(filters.roleQuery).some(term => text(role).includes(term))).join(', ')}`);
+  if (filters.role || filters.roleQuery) reasons.push(`Role: ${matchingDesiredRoles(student, filters).join(', ')}`);
   if (filters.city || filters.area) reasons.push(`Current location: ${[student.currentCity, student.currentArea].filter(Boolean).join(', ')}`);
+  if (filters.preferredLocation) reasons.push(`Preferred work location: ${filters.preferredLocation}`);
   if (filters.experience) reasons.push(`Experience: ${student.roleExperienceLabel || (student.isFresher === true ? 'Fresher' : student.isFresher === false ? 'Experienced' : 'Not provided')}`);
   if (filters.availability) reasons.push(`Joining: ${student.availabilityLabel}`);
   if (filters.educationStatus) reasons.push(`Education: ${student.educationStatus}`);
@@ -175,7 +170,7 @@ export const candidateFilterLabels = filters => {
   if (filters.search) labels.push(`Search: ${filters.search}`);
   if (filters.skills.length) labels.push(`${filters.skillMode === 'any' ? 'Any' : 'All'} skills: ${filters.skills.map(formatSkillLabel).join(', ')}`);
   if (filters.degrees.length) labels.push(`Qualification: ${filters.degrees.join(' or ')}`);
-  for (const [field, label] of [['roleQuery', 'Role contains'], ['role', 'Exact role'], ['category', 'Sector'], ['branch', 'Branch'], ['year', 'Batch'], ['experience', 'Experience'], ['city', 'Current city'], ['area', 'Area'], ['educationStatus', 'Education'], ['relocation', 'Relocation'], ['availability', 'Joining'], ['certification', 'Certification'], ['dataStatus', 'Profile facts']]) {
+  for (const [field, label] of [['roleQuery', 'Role contains'], ['role', 'Exact role'], ['category', 'Sector'], ['branch', 'Branch'], ['year', 'Batch'], ['experience', 'Experience'], ['preferredLocation', 'Work location'], ['city', 'Current city'], ['area', 'Area'], ['educationStatus', 'Education'], ['relocation', 'Relocation'], ['availability', 'Joining'], ['certification', 'Certification'], ['dataStatus', 'Profile facts']]) {
     if (filters[field] && filters[field] !== EMPTY_CANDIDATE_FILTERS[field]) {
       const value = field === 'experience' ? (filters[field] === 'experienced' ? 'Experienced' : formatRoleExperienceLabel(filters[field]))
         : field === 'availability' ? formatAvailabilityLabel(filters[field])

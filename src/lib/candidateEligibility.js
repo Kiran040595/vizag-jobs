@@ -1,5 +1,6 @@
 import { isAllowedBranch, isAllowedDegree, parseSkillSelection, resolveSkillToken } from './studentProfileOptions.js';
 import { normalizeCareerText } from './studentCareerPreferences.js';
+import { skillMatchKey } from './skillMatching.js';
 
 export const EDUCATION_STATUSES = ['studying', 'completed'];
 export const GENDER_OPTIONS = ['female', 'male', 'other', 'prefer_not_to_say'];
@@ -61,9 +62,9 @@ export const evaluateJobEligibility = (job, profile = {}) => {
   check(profile.education_status ?? profile.educationStatus, req.required_education_status ? [req.required_education_status] : [], 'Education status');
   const fresher = profile.is_fresher ?? profile.isFresher;
   check(typeof fresher === 'boolean' ? (fresher ? 'fresher' : 'experienced') : '', req.required_experience ? [req.required_experience] : [], 'Experience');
-  const skills = parseSkillSelection(profile.skills);
-  if (req.required_skills.length && !skills.length) missing.push('Skills');
-  else for (const skill of req.required_skills) if (!skills.includes(skill)) reasons.push(`Required skill: ${skill}`);
+  const skills = new Set(parseSkillSelection(profile.skills).map(skillMatchKey));
+  if (req.required_skills.length && !skills.size) missing.push('Skills');
+  else for (const skill of req.required_skills) if (!skills.has(skillMatchKey(skill))) reasons.push(`Required skill: ${skill}`);
   if (req.required_candidate_locations.length) {
     const city = profile.current_city ?? profile.currentCity;
     const area = profile.current_area ?? profile.currentArea;

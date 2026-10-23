@@ -107,3 +107,12 @@ test('mandatory skills retain C/R and reject invalid input instead of silently d
   assert.deepEqual(normalizeJobRequirements({ required_skills: 'C\nR' }).required_skills, ['c', 'r']);
   assert.throws(() => normalizeJobRequirements({ required_skills: 'x'.repeat(49) }));
 });
+
+test('mandatory skill aliases preserve language distinctions and missing evidence', () => {
+  const requirement = skills => ({ requirements_verified: true, required_skills: skills });
+  assert.equal(evaluateJobEligibility(requirement(['React', 'Node.js', 'JavaScript']), { skills: ['React.js', 'nodejs', 'JS'] }).status, 'eligible');
+  assert.equal(evaluateJobEligibility(requirement(['C']), { skills: ['C++'] }).status, 'ineligible');
+  assert.equal(evaluateJobEligibility(requirement(['C++']), { skills: ['C#'] }).status, 'ineligible');
+  assert.equal(evaluateJobEligibility(requirement(['Java']), { skills: ['JavaScript'] }).status, 'ineligible');
+  assert.equal(evaluateJobEligibility(requirement(['React']), { skills: [] }).status, 'needs_information');
+});

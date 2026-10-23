@@ -51,6 +51,21 @@ test('search words match across fields; role search does not borrow from unrelat
   assert.equal(findAdminCandidates(students, filters({ roleQuery: 'Accountant' })).entries.length, 0);
 });
 
+test('desired role words must describe one recorded role, not a mixture of different roles', () => {
+  const separate = row('different-roles', { primary_target_role: 'Java Frontend Developer', interested_roles: ['Python Backend Developer'] });
+  assert.equal(findAdminCandidates([separate], filters({ roleQuery: 'Java Backend' })).entries.length, 0);
+  assert.equal(findAdminCandidates([separate], filters({ roleQuery: 'Python Backend' })).entries.length, 1);
+  assert.equal(findAdminCandidates([separate], filters({ role: 'Java Frontend Developer', roleQuery: 'Backend' })).entries.length, 0);
+});
+
+test('manual skills and reviewed-job requirements agree on explicit skill aliases', () => {
+  const candidate = row('aliases', { skills: ['React.js', 'Node.js', 'JS'] });
+  const reviewed = { id: 'alias-job', requirements_verified: true, required_skills: ['react', 'nodejs', 'javascript'] };
+  const result = findAdminCandidates([candidate], filters({ skills: ['react', 'nodejs', 'javascript'], job: 'alias-job' }), reviewed);
+  assert.equal(result.entries.length, 1);
+  assert.equal(result.entries[0].eligibility.status, 'eligible');
+});
+
 test('experience buckets match the values registration actually saves and unknown is not experienced', () => {
   for (const value of ['0_6_months', '6_12_months', '1_2_years', '2_4_years', '4_plus_years']) assert.equal(candidateMatchesExperience(row('exp', { role_experience_level: value }), value), true);
   assert.equal(candidateMatchesExperience(students[4], 'experienced'), false);
@@ -64,6 +79,8 @@ test('missing facts are explicit; preferred location never establishes current r
   assert.equal(findAdminCandidates([students[4]], filters({ availability: 'immediate' })).entries.length, 0);
   const away = row('away', { current_city: 'Hyderabad', preferred_locations: ['Vizag'] });
   assert.equal(findAdminCandidates([away], filters({ city: 'Vizag' })).entries.length, 0);
+  assert.equal(findAdminCandidates([away], filters({ preferredLocation: 'Vizag' })).entries.length, 1);
+  assert.equal(candidateMatchesSearch(students[0], '2026'), true);
   assert.deepEqual(ids(findAdminCandidates(students, filters({ dataStatus: 'missing' }))), ['missing']);
   assert.deepEqual(ids(findAdminCandidates(students, filters({ dataStatus: 'missing_skills' }))), ['missing']);
   assert.deepEqual(ids(findAdminCandidates(students, filters({ dataStatus: 'missing_qualification' }))), []);
@@ -110,4 +127,14 @@ test('new registrations require recruiting facts while legacy profile edits rema
   assert.throws(() => validateStudentProfilePayload(profile, { requireMatchingDetails: true }), /current city/);
   assert.throws(() => validateStudentProfilePayload({ ...profile, current_city: 'Vizag' }, { requireMatchingDetails: true }), /currently studying/);
   assert.equal(validateStudentProfilePayload({ ...profile, current_city: 'Vizag', education_status: 'completed' }, { requireMatchingDetails: true }).education_status, 'completed');
+});
+
+test('search query matches fresher keyword and batch year; preferredLocation filters candidate work preferences', () => {
+  const fresherCandidate = row('fresher-batch', { is_fresher: true, role_experience_level: null, graduation_year: 2025, preferred_locations: ['Visakhapatnam'] });
+  assert.equal(candidateMatchesSearch(fresherCandidate, 'fresher'), true);
+  assert.equal(candidateMatchesSearch(fresherCandidate, '2025'), true);
+  assert.equal(candidateMatchesSearch(fresherCandidate, 'batch 2025'), true);
+  const result = findAdminCandidates([fresherCandidate], filters({ preferredLocation: 'Visakhapatnam' }));
+  assert.equal(result.entries.length, 1);
+  assert.ok(result.entries[0].reasons.some(r => r.includes('Preferred work location')));
 });
