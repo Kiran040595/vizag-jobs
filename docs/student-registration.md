@@ -29,16 +29,22 @@ Candidate details display both the primary role and all interested roles.
 ### Deployment and acceptance
 
 The linked project is `fbyyfyhdglcpkhxskffj` (`supabase-citrine-cloud`). On 2026-10-23,
-read-only checks confirmed the prerequisite columns and role cleaner exist, and
-the new catalog does not yet exist. The normal `supabase db push --linked --dry-run`
-is blocked by pre-existing remote/local migration-history differences. Do not
-repair unrelated history or apply unrelated pending migrations for this feature.
+after explicit user approval, deployed only this migration with
+`npx supabase db query --linked --file supabase/migrations/20261023120000_shared_student_roles.sql`
+and recorded only version `20261023120000` as applied using
+`npx supabase migration repair --linked --status applied 20261023120000`.
+The normal migration dry run had exposed pre-existing remote/local history
+differences; unrelated history and pending migrations were left unchanged.
 
-Deployment is pending explicit approval: automatic approval review rejected the
-shared-database mutation. After approval, apply only this migration with
-`npx supabase db query --linked --file supabase/migrations/20261023120000_shared_student_roles.sql`,
-verify the catalog/function/trigger, and record only version `20261023120000` as
-applied in migration history. Deploy the frontend through the normal release flow.
+Deployment checks found 729 catalog role labels, zero missing backfill roles,
+the profile capture trigger enabled, catalog RLS enabled, direct catalog access
+denied, and suggestion execution granted to anonymous/authenticated callers.
+`node scripts/verify-shared-student-roles.mjs` passed against the deployed public
+API with independent stateless requests, role-only result fields, deduplication,
+the 200-result cap, and direct catalog access denied. This script is read-only
+and prints no role labels, credentials, or student information. Frontend code
+was pushed to `origin/develop` in `fd313e9`; frontend release follows the normal
+release flow.
 
 Local verification:
 
@@ -50,7 +56,7 @@ Local verification:
   published-job-only suggestions, and denial of direct table reads/writes.
 - Lint and production bundle build are recorded in the functionality tracker.
 
-Full acceptance still requires an approved deployment and authenticated browser
+Full acceptance still requires authenticated browser
 journeys: register/save a new role in browser A, find it during registration in
 browser B with no shared browser storage, verify the new candidate in Admin
 Students, filter a primary and secondary role, compare exports and counts, and
