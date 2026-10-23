@@ -23,6 +23,18 @@ export const ADMIN_STATUS_OPTIONS = [
   'rejected',
 ];
 
+/** Statuses recruiters can set for admin-curated suitable profiles. */
+export const SUITABLE_PROFILE_STATUS_OPTIONS = [
+  'suitable',
+  'viewed',
+  'contacted',
+  'screened',
+  'interview_scheduled',
+  'processing',
+  'hired',
+  'rejected',
+];
+
 /** Map legacy DB values to the current status model (for reads before migration). */
 export const LEGACY_APPLICATION_STATUS_MAP = {
   submitted: 'applied',
@@ -59,6 +71,10 @@ export const formatApplicationStatus = (status) => {
       return 'Withdrawn';
     case 'external_click':
       return 'External Apply Click';
+    case 'suitable':
+      return 'Suitable Profile';
+    case 'contacted':
+      return 'Contacted';
     default:
       return status;
   }
@@ -84,6 +100,10 @@ export const getApplicationStatusDescription = (status) => {
       return 'This application was not moved forward for this role.';
     case 'withdrawn':
       return 'You withdrew this application.';
+    case 'suitable':
+      return 'Profile recommended by Vizag Jobs admin as a suitable candidate for this role.';
+    case 'contacted':
+      return 'Candidate has been contacted by the recruiter via Call or WhatsApp.';
     default:
       return 'Application status update.';
   }
@@ -100,6 +120,8 @@ export const APPLICATION_STATUS_STYLES = {
   rejected: 'border-rose-200 bg-rose-50 text-rose-700',
   withdrawn: 'border-slate-200 bg-slate-50 text-slate-600',
   external_click: 'border-cyan-200 bg-cyan-50 text-cyan-800',
+  suitable: 'border-amber-300 bg-amber-50 text-amber-900',
+  contacted: 'border-sky-200 bg-sky-50 text-sky-800',
 };
 
 export const getApplicationStatusStyle = (status) =>

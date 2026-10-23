@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ADMIN_STATUS_OPTIONS,
+  SUITABLE_PROFILE_STATUS_OPTIONS,
   formatApplicationStatus,
 } from '../../lib/applicationStatus';
 import {
@@ -102,6 +103,7 @@ export default function JobApplicationTable({
       await onStatusChange(application.id, nextStatus, {
         jobId: application.jobId || job?.id,
         studentUserId: application.studentUserId,
+        isSuitableProfile: application.isSuitableProfile,
       });
       pushToast({
         message: `Status updated to ${formatApplicationStatus(nextStatus)}.`,
@@ -141,7 +143,9 @@ export default function JobApplicationTable({
               const whatsappUrl = snapshot.phone
                 ? buildWhatsAppContactUrl(
                     snapshot.phone,
-                    `Hello ${name},\n\nWe reviewed your application for *${jobTitle}* at *${companyName}* on Vizag Jobs. We would like to connect with you regarding the next steps in our hiring process.`,
+                    app.isSuitableProfile
+                      ? `Hello ${name},\n\nYour profile was matched and recommended for *${jobTitle}* at *${companyName}* on Vizag Jobs. We would like to connect with you regarding the next steps in our hiring process.`
+                      : `Hello ${name},\n\nWe reviewed your application for *${jobTitle}* at *${companyName}* on Vizag Jobs. We would like to connect with you regarding the next steps in our hiring process.`,
                   )
                 : null;
 
@@ -156,14 +160,25 @@ export default function JobApplicationTable({
                         {initials}
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900">{name}</div>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                          <span>{name}</span>
+                          {app.isSuitableProfile ? (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[10px] font-bold text-amber-900">
+                              🌟 Suitable
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                           {typeof snapshot.isFresher === 'boolean' ? (
                             <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-600">
                               {snapshot.isFresher ? 'Fresher' : 'Exp'}
                             </span>
                           ) : null}
-                          <span>Applied {formatApplicationTime(app.submittedAt)}</span>
+                          <span>
+                            {app.isSuitableProfile
+                              ? `Assigned ${formatApplicationTime(app.createdAt || app.submittedAt)}`
+                              : `Applied ${formatApplicationTime(app.submittedAt)}`}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -274,7 +289,7 @@ export default function JobApplicationTable({
                       {app.status === 'external_click' ? (
                         <option value="external_click">Applied / New Click</option>
                       ) : null}
-                      {STATUS_OPTIONS.map((st) => (
+                      {(app.isSuitableProfile ? SUITABLE_PROFILE_STATUS_OPTIONS : STATUS_OPTIONS).map((st) => (
                         <option key={st} value={st}>
                           {formatApplicationStatus(st)}
                         </option>

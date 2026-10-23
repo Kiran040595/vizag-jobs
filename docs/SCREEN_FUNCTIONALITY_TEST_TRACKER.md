@@ -791,3 +791,40 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
   - Vite production build: `npx vite build` completed cleanly in 8.54s with 0 errors.
   - Mobile & desktop responsive layout verified for both cards and recruiter table views.
+
+## QA-2026-10-24: Admin Candidate Assignment to Company Jobs ("Suitable Profiles")
+
+- Scope: S016 `/employer/jobs`, S019 `/employer/jobs/:jobId/applications`, S044 `/admin/students`
+- Files Created/Modified:
+  - `supabase/migrations/20261024120000_job_suitable_profiles.sql` [NEW]
+  - `src/services/jobSuitableProfiles.js` [NEW]
+  - `src/components/admin/AssignCandidatesDialog.jsx` [NEW]
+  - `src/pages/AdminStudentsPage.jsx` [MODIFIED]
+  - `src/pages/EmployerJobApplicationsPage.jsx` [MODIFIED]
+  - `src/pages/EmployerJobsListPage.jsx` [MODIFIED]
+  - `src/components/jobApplications/JobApplicationCard.jsx` [MODIFIED]
+  - `src/components/jobApplications/JobApplicationTable.jsx` [MODIFIED]
+  - `src/lib/applicationStatus.js` [MODIFIED]
+  - `src/lib/applicationExport.js` [MODIFIED]
+  - `tests/job-suitable-profiles.test.mjs` [NEW]
+- Deliverables & Capabilities:
+  - Database Schema & RLS:
+    - Created dedicated `job_suitable_profiles` table separated from `job_applications`, ensuring student personal applied history remains clean while allowing admins to curate candidates directly for companies.
+    - Added comprehensive constraints, unique `(job_id, student_user_id)` index, `updated_at` trigger, and RLS policies ensuring both admins and authorized employers (`can_view_job_applications`) can view and update candidate stages, recruiter notes, and interview details.
+    - Updated storage policy on `student-resumes` bucket so employers can download/view resumes referenced in `job_suitable_profiles`.
+  - Admin Candidate Assignment UI:
+    - Added `🌟 Assign to Job` action in `AdminStudentsPage.jsx` across both the search results header (assign up to top 50 filtered candidates) and the candidate shortlist action bar.
+    - Built accessible native modal `AssignCandidatesDialog.jsx` with instant company/job search, candidate count pills, custom admin recommendation notes input (e.g., *"Matched GIS developer vacancy with Python skills"*), and bulk upsert execution.
+  - Employer Dashboard & Pipeline:
+    - Upgraded `EmployerJobApplicationsPage.jsx` with tabbed architecture: `📥 Direct Applicants` vs `🌟 Suitable Profiles`.
+    - Added prominent admin curation banner and distinct funnel stages for suitable profiles (`🌟 Suitable`, `📞 Contacted`, `✓ Shortlisted`, `📅 Interview Scheduled`, `Processing`, `★ Hired`, `✕ Rejected`).
+    - Added admin recommendation note callout on candidate cards (`JobApplicationCard.jsx`) and highlighted `🌟 Suitable` badge in table view (`JobApplicationTable.jsx`).
+    - Added 1-click `📞 Mark Contacted` action, contextual WhatsApp greeting mentioning the admin recommendation for that specific position, and synchronized recruiter notes/interview scheduler.
+    - Added suitable profile count badge and 1-click view link on employer job cards in `EmployerJobsListPage.jsx`.
+    - Extended Excel export (`applicationExport.js`) to include admin recommendation notes.
+- Verification Evidence:
+  - Automated tests: `tests/job-suitable-profiles.test.mjs` passed 5/5 tests. Full test suite `node --test tests/*.test.mjs` passed 183/183 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly in 8.63s with 0 errors.
+  - Mobile UI: Verified responsive tabs, modal inputs, button touch targets (min 44px), and candidate cards.
+

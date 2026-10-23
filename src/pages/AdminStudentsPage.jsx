@@ -8,6 +8,7 @@ import CandidateSearchCard from '../components/admin/CandidateSearchCard';
 import CandidateTableView from '../components/admin/CandidateTableView';
 import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
+import AssignCandidatesDialog from '../components/admin/AssignCandidatesDialog';
 import { fetchAdminStudentProfiles, setStudentActiveStatus } from '../services/adminStudents';
 import { fetchCandidateMatchingJobs } from '../services/adminJobs';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
@@ -41,6 +42,7 @@ export default function AdminStudentsPage() {
   const [shortlist, setShortlist] = useState(() => new Set());
   const [shareStudent, setShareStudent] = useState(null);
   const [exportScope, setExportScope] = useState(null);
+  const [assignScope, setAssignScope] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [viewMode, setViewMode] = useState('cards');
@@ -176,6 +178,15 @@ export default function AdminStudentsPage() {
               <button
                 type="button"
                 disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length}
+                onClick={() => setAssignScope({ candidates: filteredStudents.slice(0, 50), label: 'matching candidates' })}
+                title="Assign top candidates directly to a company job as Suitable Profiles"
+                className="min-h-11 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-950 hover:bg-amber-100 disabled:opacity-40"
+              >
+                🌟 Assign to Job ({Math.min(filteredStudents.length, 50)})
+              </button>
+              <button
+                type="button"
+                disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length}
                 onClick={() => handleCopyEmployerSummary(filteredStudents.slice(0, 50), criteriaLabels.length ? criteriaLabels.join(' · ') : 'Vizag Candidates')}
                 title="Copy formatted candidate summary for WhatsApp or Email"
                 className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100 disabled:opacity-40"
@@ -231,6 +242,13 @@ export default function AdminStudentsPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                onClick={() => setAssignScope({ candidates: selectedStudents, label: 'shortlisted candidates' })}
+                className="min-h-11 rounded-xl border border-amber-400 bg-amber-500 px-3.5 py-2 text-sm font-black text-slate-950 hover:bg-amber-400 shadow-2xs"
+              >
+                🌟 Assign Shortlist to Job ({selectedStudents.length})
+              </button>
+              <button
+                type="button"
                 onClick={() => handleCopyEmployerSummary(selectedStudents, 'Shortlisted Vizag Candidates')}
                 className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
               >
@@ -270,6 +288,18 @@ export default function AdminStudentsPage() {
           {pageCount > 1 && <nav aria-label="Candidate result pages" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-3"><span className="text-sm">Page {page} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={page <= 1} onClick={() => setCurrentPage(page - 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Previous</button><button type="button" disabled={page >= pageCount} onClick={() => setCurrentPage(page + 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Next</button></div></nav>}
         </>}
       </section>
+      {assignScope && (
+        <AssignCandidatesDialog
+          open={Boolean(assignScope)}
+          onClose={() => setAssignScope(null)}
+          candidates={assignScope.candidates}
+          jobs={jobs}
+          defaultJobId={deferredFilters.job || ''}
+          onAssigned={({ count, jobTitle, company }) => {
+            setNotice(`🌟 Successfully assigned ${count} candidate${count === 1 ? '' : 's'} to ${company} (${jobTitle}) as Suitable Profiles!`);
+          }}
+        />
+      )}
       {shareStudent && <ShareStudentDialog key={shareStudent.userId} open student={shareStudent} onClose={() => setShareStudent(null)} />}
       <StudentExportDialog open={Boolean(exportScope)} onClose={() => setExportScope(null)} students={exportScope?.students || []} scopeLabel={exportScope?.label || ''} />
     </AdminShell>

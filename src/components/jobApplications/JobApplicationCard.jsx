@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ADMIN_STATUS_OPTIONS,
+  SUITABLE_PROFILE_STATUS_OPTIONS,
   formatApplicationStatus,
   getApplicationStatusStyle,
 } from '../../lib/applicationStatus';
@@ -11,6 +12,7 @@ import {
   scheduleApplicationInterview,
   cancelApplicationInterview,
 } from '../../services/jobApplications';
+import { updateSuitableProfileStage } from '../../services/jobSuitableProfiles';
 import {
   buildInterviewWhatsAppPassUrl,
   buildWhatsAppContactUrl,
@@ -166,7 +168,9 @@ export default function JobApplicationCard({
   const directWhatsAppUrl = snapshot.phone
     ? buildWhatsAppContactUrl(
         snapshot.phone,
-        `Hello ${candidateName},\n\nWe reviewed your application for *${jobTitle}* at *${companyName}* on Vizag Jobs.\n\nWe would like to connect with you regarding the next steps in our hiring process. Please let us know your availability for a quick discussion.`,
+        application.isSuitableProfile
+          ? `Hello ${candidateName},\n\nYour profile was matched and recommended for *${jobTitle}* at *${companyName}* on Vizag Jobs.\n\nWe would like to connect regarding an interview discussion. Please let us know your availability.`
+          : `Hello ${candidateName},\n\nWe reviewed your application for *${jobTitle}* at *${companyName}* on Vizag Jobs.\n\nWe would like to connect with you regarding the next steps in our hiring process. Please let us know your availability for a quick discussion.`,
       )
     : null;
 
@@ -192,6 +196,7 @@ export default function JobApplicationCard({
       await onStatusChange(application.id, nextStatus, {
         jobId: application.jobId || resolvedJob?.id,
         studentUserId: application.studentUserId,
+        isSuitableProfile: application.isSuitableProfile,
       });
       pushToast({
         message: `Status updated to ${formatApplicationStatus(nextStatus)}.`,
@@ -208,6 +213,7 @@ export default function JobApplicationCard({
       await onStatusChange(application.id, nextStatus, {
         jobId: application.jobId || resolvedJob?.id,
         studentUserId: application.studentUserId,
+        isSuitableProfile: application.isSuitableProfile,
       });
       pushToast({
         message: `Candidate moved to ${formatApplicationStatus(nextStatus)}.`,
@@ -221,12 +227,22 @@ export default function JobApplicationCard({
   const handleSaveNotes = async () => {
     try {
       setIsSavingNotes(true);
-      const updated = await updateApplicationRecruiterNotes({
-        applicationId: application.id,
-        recruiterNotes,
-        jobId: application.jobId || resolvedJob?.id,
-        studentUserId: application.studentUserId,
-      });
+      let updated;
+      if (application.isSuitableProfile) {
+        updated = await updateSuitableProfileStage({
+          profileId: application.id,
+          recruiterNotes,
+          jobId: application.jobId || resolvedJob?.id,
+          studentUserId: application.studentUserId,
+        });
+      } else {
+        updated = await updateApplicationRecruiterNotes({
+          applicationId: application.id,
+          recruiterNotes,
+          jobId: application.jobId || resolvedJob?.id,
+          studentUserId: application.studentUserId,
+        });
+      }
       if (onApplicationUpdate) {
         onApplicationUpdate(updated);
       }
@@ -247,16 +263,30 @@ export default function JobApplicationCard({
 
     try {
       setIsScheduling(true);
-      const updated = await scheduleApplicationInterview({
-        applicationId: application.id,
-        interviewScheduledAt: scheduledAt,
-        interviewMode: mode,
-        interviewLocation: location,
-        interviewInstructions: instructions,
-        status: 'interview_scheduled',
-        jobId: application.jobId || resolvedJob?.id,
-        studentUserId: application.studentUserId,
-      });
+      let updated;
+      if (application.isSuitableProfile) {
+        updated = await updateSuitableProfileStage({
+          profileId: application.id,
+          interviewScheduledAt: scheduledAt,
+          interviewMode: mode,
+          interviewLocation: location,
+          interviewInstructions: instructions,
+          status: 'interview_scheduled',
+          jobId: application.jobId || resolvedJob?.id,
+          studentUserId: application.studentUserId,
+        });
+      } else {
+        updated = await scheduleApplicationInterview({
+          applicationId: application.id,
+          interviewScheduledAt: scheduledAt,
+          interviewMode: mode,
+          interviewLocation: location,
+          interviewInstructions: instructions,
+          status: 'interview_scheduled',
+          jobId: application.jobId || resolvedJob?.id,
+          studentUserId: application.studentUserId,
+        });
+      }
 
       if (onApplicationUpdate) {
         onApplicationUpdate(updated);
@@ -265,6 +295,7 @@ export default function JobApplicationCard({
         await onStatusChange(application.id, 'interview_scheduled', {
           jobId: application.jobId || resolvedJob?.id,
           studentUserId: application.studentUserId,
+          isSuitableProfile: application.isSuitableProfile,
         });
       }
 
@@ -286,11 +317,21 @@ export default function JobApplicationCard({
     }
 
     try {
-      const updated = await cancelApplicationInterview({
-        applicationId: application.id,
-        jobId: application.jobId || resolvedJob?.id,
-        studentUserId: application.studentUserId,
-      });
+      let updated;
+      if (application.isSuitableProfile) {
+        updated = await updateSuitableProfileStage({
+          profileId: application.id,
+          clearInterview: true,
+          jobId: application.jobId || resolvedJob?.id,
+          studentUserId: application.studentUserId,
+        });
+      } else {
+        updated = await cancelApplicationInterview({
+          applicationId: application.id,
+          jobId: application.jobId || resolvedJob?.id,
+          studentUserId: application.studentUserId,
+        });
+      }
       if (onApplicationUpdate) {
         onApplicationUpdate(updated);
       }
@@ -384,9 +425,15 @@ export default function JobApplicationCard({
         {/* Right side: Timestamp & Source */}
         <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:text-right">
           <p className="text-xs font-medium text-slate-500">
-            Applied {formatApplicationTime(application.submittedAt)}
+            {application.isSuitableProfile
+              ? `Assigned ${formatApplicationTime(application.createdAt || application.submittedAt)}`
+              : `Applied ${formatApplicationTime(application.submittedAt)}`}
           </p>
-          {application.source === 'external_click' ? (
+          {application.isSuitableProfile ? (
+            <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-300">
+              🌟 Suitable Profile
+            </span>
+          ) : application.source === 'external_click' ? (
             <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-200/60">
               Direct Student Apply
             </span>
@@ -399,6 +446,16 @@ export default function JobApplicationCard({
       </div>
 
       <div className="p-5">
+        {/* Admin Recommendation Note */}
+        {application.adminNotes ? (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-950 shadow-2xs">
+            <div className="flex items-center gap-1.5 font-bold">
+              <span>🌟 Admin Recommendation Note</span>
+            </div>
+            <p className="mt-1 font-medium [overflow-wrap:anywhere]">{application.adminNotes}</p>
+          </div>
+        ) : null}
+
         {/* Recruiter Instant Contact & Resume Action Bar */}
         <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
@@ -700,13 +757,24 @@ export default function JobApplicationCard({
           {/* Quick Stage Action Pills */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Quick Actions:</span>
-            {application.status === 'applied' || application.status === 'external_click' ? (
+            {application.isSuitableProfile && application.status === 'suitable' ? (
+              <button
+                type="button"
+                onClick={() => handleQuickStageClick('contacted')}
+                className="rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
+              >
+                📞 Mark Contacted
+              </button>
+            ) : null}
+            {application.status === 'applied' ||
+            application.status === 'external_click' ||
+            (application.isSuitableProfile && (application.status === 'suitable' || application.status === 'contacted')) ? (
               <button
                 type="button"
                 onClick={() => handleQuickStageClick('screened')}
                 className="rounded-xl border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 transition hover:bg-purple-100"
               >
-                ✓ Shortlist / Screen
+                ✓ Shortlist
               </button>
             ) : null}
             {application.status !== 'interview_scheduled' ? (
@@ -752,7 +820,7 @@ export default function JobApplicationCard({
                 {application.status === 'external_click' ? (
                   <option value="external_click">Applied / New Click</option>
                 ) : null}
-                {STATUS_OPTIONS.map((status) => (
+                {(application.isSuitableProfile ? SUITABLE_PROFILE_STATUS_OPTIONS : STATUS_OPTIONS).map((status) => (
                   <option key={status} value={status}>
                     {formatApplicationStatus(status)}
                   </option>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
@@ -12,10 +12,14 @@ import {
   fetchJobCandidates,
   updateApplicationStatus,
 } from '../services/jobApplications';
+import {
+  fetchJobSuitableProfiles,
+  updateSuitableProfileStage,
+} from '../services/jobSuitableProfiles';
 import { fetchMyJobById, fetchMyJobs } from '../services/employerJobs';
 import { getJobDetailPath } from '../lib/jobRoutes';
 
-const FUNNEL_STAGES = [
+const APPLICANT_FUNNEL_STAGES = [
   { id: 'all', label: 'All Candidates' },
   { id: 'applied', label: 'Applied' },
   { id: 'viewed', label: 'Viewed' },
@@ -24,6 +28,17 @@ const FUNNEL_STAGES = [
   { id: 'processing', label: 'Processing' },
   { id: 'hired', label: 'Hired' },
   { id: 'rejected', label: 'Rejected' },
+];
+
+const SUITABLE_FUNNEL_STAGES = [
+  { id: 'all', label: 'All Suitable Profiles' },
+  { id: 'suitable', label: '🌟 Suitable / New' },
+  { id: 'contacted', label: '📞 Contacted' },
+  { id: 'screened', label: '✓ Shortlisted' },
+  { id: 'interview_scheduled', label: '📅 Interview Scheduled' },
+  { id: 'processing', label: 'Processing' },
+  { id: 'hired', label: '★ Hired' },
+  { id: 'rejected', label: '✕ Rejected' },
 ];
 
 const ExcelIcon = () => (
@@ -84,8 +99,12 @@ const ExternalLinkIcon = () => (
 
 function EmployerJobApplicationsContent() {
   const { jobId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(urlTab === 'suitable' ? 'suitable' : 'applicants');
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [suitableProfiles, setSuitableProfiles] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [hasResumeOnly, setHasResumeOnly] = useState(false);
@@ -97,9 +116,41 @@ function EmployerJobApplicationsContent() {
   const [error, setError] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
 
+  // Sync tab with URL if user navigates back/forward
+  useEffect(() => {
+    if (urlTab === 'suitable' && activeTab !== 'suitable') {
+      setActiveTab('suitable');
+      setStatusFilter('all');
+    } else if (urlTab === 'applicants' && activeTab !== 'applicants') {
+      setActiveTab('applicants');
+      setStatusFilter('all');
+    }
+  }, [urlTab, activeTab]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setStatusFilter('all');
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === 'suitable') {
+          next.set('tab', 'suitable');
+        } else {
+          next.delete('tab');
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const loadData = useCallback(async (ignoreFlag = false) => {
     try {
-      const [jobs, rows] = await Promise.all([fetchMyJobs(), fetchJobCandidates(jobId)]);
+      const [jobs, rows, suitable] = await Promise.all([
+        fetchMyJobs(),
+        fetchJobCandidates(jobId),
+        fetchJobSuitableProfiles(jobId),
+      ]);
       let matchedJob = jobs.find((row) => row.id === jobId) || null;
       if (!matchedJob && jobId) {
         try {
@@ -112,7 +163,13 @@ function EmployerJobApplicationsContent() {
       if (!ignoreFlag) {
         setJob(matchedJob);
         setApplications(rows);
+        setSuitableProfiles(suitable);
         setError('');
+
+        // If no direct applications but suitable profiles exist, auto-suggest suitable tab
+        if (rows.length === 0 && suitable.length > 0 && !searchParams.has('tab')) {
+          setActiveTab('suitable');
+        }
       }
     } catch (loadError) {
       if (!ignoreFlag) {
@@ -124,7 +181,7 @@ function EmployerJobApplicationsContent() {
         setIsRefreshing(false);
       }
     }
-  }, [jobId]);
+  }, [jobId, searchParams]);
 
   useEffect(() => {
     let ignore = false;
@@ -139,11 +196,16 @@ function EmployerJobApplicationsContent() {
     await loadData(false);
   };
 
-  // Funnel stage counts across ALL applications
+  // Target candidate list based on active tab
+  const activeCandidates = activeTab === 'suitable' ? suitableProfiles : applications;
+
+  // Funnel stage counts for currently active tab
   const stageCounts = useMemo(() => {
     const counts = {
-      all: applications.length,
+      all: activeCandidates.length,
       applied: 0,
+      suitable: 0,
+      contacted: 0,
       viewed: 0,
       screened: 0,
       interview_scheduled: 0,
@@ -154,9 +216,11 @@ function EmployerJobApplicationsContent() {
       withPhone: 0,
     };
 
-    for (const app of applications) {
-      const s = normalizeApplicationStatus(app.status);
+    for (const item of activeCandidates) {
+      const s = normalizeApplicationStatus(item.status);
       if (s === 'applied' || s === 'external_click') counts.applied += 1;
+      else if (s === 'suitable') counts.suitable += 1;
+      else if (s === 'contacted') counts.contacted += 1;
       else if (s === 'viewed') counts.viewed += 1;
       else if (s === 'screened') counts.screened += 1;
       else if (s === 'interview_scheduled') counts.interview_scheduled += 1;
@@ -164,21 +228,21 @@ function EmployerJobApplicationsContent() {
       else if (s === 'hired' || s === 'joined') counts.hired += 1;
       else if (s === 'rejected') counts.rejected += 1;
 
-      if (app.resumePath) counts.withResume += 1;
-      if (app.profileSnapshot?.phone) counts.withPhone += 1;
+      if (item.resumePath) counts.withResume += 1;
+      if (item.profileSnapshot?.phone) counts.withPhone += 1;
     }
 
     return counts;
-  }, [applications]);
+  }, [activeCandidates]);
 
   // Filtered and sorted candidate list
-  const filteredApplications = useMemo(() => {
-    let list = applications;
+  const filteredCandidates = useMemo(() => {
+    let list = activeCandidates;
 
     // 1. Stage filter
     if (statusFilter !== 'all') {
-      list = list.filter((app) => {
-        const s = normalizeApplicationStatus(app.status);
+      list = list.filter((item) => {
+        const s = normalizeApplicationStatus(item.status);
         if (statusFilter === 'applied') {
           return s === 'applied' || s === 'external_click';
         }
@@ -188,19 +252,19 @@ function EmployerJobApplicationsContent() {
 
     // 2. Resume only filter
     if (hasResumeOnly) {
-      list = list.filter((app) => Boolean(app.resumePath));
+      list = list.filter((item) => Boolean(item.resumePath));
     }
 
     // 3. Phone only filter
     if (hasPhoneOnly) {
-      list = list.filter((app) => Boolean(app.profileSnapshot?.phone));
+      list = list.filter((item) => Boolean(item.profileSnapshot?.phone));
     }
 
     // 4. Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      list = list.filter((app) => {
-        const snap = app.profileSnapshot || {};
+      list = list.filter((item) => {
+        const snap = item.profileSnapshot || {};
         const name = (snap.fullName || '').toLowerCase();
         const phone = (snap.phone || '').toLowerCase();
         const email = (snap.contactEmail || '').toLowerCase();
@@ -208,6 +272,7 @@ function EmployerJobApplicationsContent() {
         const degree = (snap.degree || '').toLowerCase();
         const branch = (snap.branch || '').toLowerCase();
         const skills = Array.isArray(snap.skills) ? snap.skills.join(' ').toLowerCase() : '';
+        const adminNotes = (item.adminNotes || '').toLowerCase();
         return (
           name.includes(q) ||
           phone.includes(q) ||
@@ -215,15 +280,19 @@ function EmployerJobApplicationsContent() {
           college.includes(q) ||
           degree.includes(q) ||
           branch.includes(q) ||
-          skills.includes(q)
+          skills.includes(q) ||
+          adminNotes.includes(q)
         );
       });
     }
 
     // 5. Sorting
     return [...list].sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.submittedAt || 0).getTime();
+      const timeB = new Date(b.createdAt || b.submittedAt || 0).getTime();
+
       if (sortBy === 'oldest') {
-        return new Date(a.submittedAt || 0) - new Date(b.submittedAt || 0);
+        return timeA - timeB;
       }
       if (sortBy === 'name_asc') {
         const nameA = (a.profileSnapshot?.fullName || '').toLowerCase();
@@ -234,15 +303,46 @@ function EmployerJobApplicationsContent() {
         const hasA = Boolean(a.resumePath);
         const hasB = Boolean(b.resumePath);
         if (hasA !== hasB) return hasA ? -1 : 1;
-        return new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0);
+        return timeB - timeA;
       }
-      return new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0);
+      return timeB - timeA;
     });
-  }, [applications, statusFilter, hasResumeOnly, hasPhoneOnly, searchQuery, sortBy]);
+  }, [activeCandidates, statusFilter, hasResumeOnly, hasPhoneOnly, searchQuery, sortBy]);
 
-  const handleStatusChange = async (applicationId, nextStatus, meta = {}) => {
+  const handleStatusChange = async (targetId, nextStatus, meta = {}) => {
+    const isSuitable = meta.isSuitableProfile || activeTab === 'suitable';
+
+    if (isSuitable) {
+      const updated = await updateSuitableProfileStage({
+        profileId: targetId,
+        status: nextStatus,
+        jobId: meta.jobId || jobId,
+        studentUserId: meta.studentUserId,
+      });
+
+      setSuitableProfiles((current) =>
+        current.map((row) => {
+          if (
+            row.id === targetId ||
+            (updated && row.id === updated.id) ||
+            (updated && row.studentUserId && row.studentUserId === updated.studentUserId)
+          ) {
+            return {
+              ...row,
+              ...updated,
+              status: updated?.status || nextStatus,
+              id: updated?.id || row.id,
+              isSuitableProfile: true,
+            };
+          }
+          return row;
+        }),
+      );
+      return;
+    }
+
     const updated = await updateApplicationStatus({
-      applicationId,
+      applicationId: targetId,
       status: nextStatus,
       jobId: meta.jobId || jobId,
       studentUserId: meta.studentUserId,
@@ -251,7 +351,7 @@ function EmployerJobApplicationsContent() {
     setApplications((current) =>
       current.map((row) => {
         if (
-          row.id === applicationId ||
+          row.id === targetId ||
           (updated && row.id === updated.id) ||
           (updated && row.studentUserId && row.studentUserId === updated.studentUserId)
         ) {
@@ -269,6 +369,21 @@ function EmployerJobApplicationsContent() {
 
   const handleApplicationUpdate = (updated) => {
     if (!updated) return;
+    if (updated.isSuitableProfile || activeTab === 'suitable') {
+      setSuitableProfiles((current) =>
+        current.map((row) => {
+          if (
+            row.id === updated.id ||
+            (row.studentUserId && row.studentUserId === updated.studentUserId)
+          ) {
+            return { ...row, ...updated, isSuitableProfile: true };
+          }
+          return row;
+        }),
+      );
+      return;
+    }
+
     setApplications((current) =>
       current.map((row) => {
         if (
@@ -293,13 +408,16 @@ function EmployerJobApplicationsContent() {
     setSearchQuery('');
   };
 
+  const funnelStages =
+    activeTab === 'suitable' ? SUITABLE_FUNNEL_STAGES : APPLICANT_FUNNEL_STAGES;
+
   return (
     <EmployerShell
       title="Candidate Pipeline"
-      description={job ? `${job.title} · ${job.company}` : 'Recruitment pipeline and applicants.'}
+      description={job ? `${job.title} · ${job.company}` : 'Recruitment pipeline and candidates.'}
     >
       <SEO
-        title={job ? `${job.title} Applications | Vizag Jobs Recruiter` : 'Job applications | Vizag Jobs'}
+        title={job ? `${job.title} Candidates | Vizag Jobs Recruiter` : 'Job Candidates | Vizag Jobs'}
         canonical={`/employer/jobs/${jobId}/applications`}
       />
 
@@ -313,7 +431,9 @@ function EmployerJobApplicationsContent() {
             ← My Jobs
           </Link>
           <span className="text-slate-300">/</span>
-          <span className="min-w-0 self-center font-semibold text-slate-900 [overflow-wrap:anywhere]">{job?.title || 'Job Applications'}</span>
+          <span className="min-w-0 self-center font-semibold text-slate-900 [overflow-wrap:anywhere]">
+            {job?.title || 'Candidates'}
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -340,14 +460,14 @@ function EmployerJobApplicationsContent() {
             <span>{isRefreshing ? 'Refreshing…' : 'Refresh'}</span>
           </button>
 
-          {!isLoading && applications.length > 0 ? (
+          {!isLoading && filteredCandidates.length > 0 ? (
             <button
               type="button"
               onClick={() => setExportOpen(true)}
               className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-2xl bg-cyan-500 px-4 py-2 text-xs font-black text-slate-950 shadow-2xs transition hover:bg-cyan-400"
             >
               <ExcelIcon />
-              <span>Download Excel ({applications.length})</span>
+              <span>Download Excel ({filteredCandidates.length})</span>
             </button>
           ) : null}
         </div>
@@ -359,7 +479,7 @@ function EmployerJobApplicationsContent() {
         </div>
       ) : null}
 
-      {/* Job Hero & Pipeline Stat Badges */}
+      {/* Job Hero & Summary Stat Badges */}
       {job ? (
         <div className="mb-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/70 p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -369,7 +489,7 @@ function EmployerJobApplicationsContent() {
                   {job.title}
                 </h1>
                 <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-bold text-emerald-800">
-                  {job.status === 'published' ? 'Active & Receiving Applicants' : job.status}
+                  {job.status === 'published' ? 'Active & Receiving Candidates' : job.status}
                 </span>
               </div>
               <p className="mt-1 text-base font-semibold text-slate-700">{job.company}</p>
@@ -395,12 +515,12 @@ function EmployerJobApplicationsContent() {
             {/* Quick Stat Chips */}
             <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-center">
               <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-2.5 text-center">
-                <div className="text-xl font-black text-cyan-900">{stageCounts.all}</div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-700">Candidates</div>
+                <div className="text-xl font-black text-cyan-900">{applications.length}</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-700">Applicants</div>
               </div>
-              <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-2.5 text-center">
-                <div className="text-xl font-black text-indigo-900">{stageCounts.withResume}</div>
-                <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Resumes Attached</div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-2.5 text-center">
+                <div className="text-xl font-black text-amber-950">{suitableProfiles.length}</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800">🌟 Suitable</div>
               </div>
               <div className="rounded-2xl border border-purple-100 bg-purple-50/70 px-4 py-2.5 text-center">
                 <div className="text-xl font-black text-purple-900">
@@ -417,11 +537,75 @@ function EmployerJobApplicationsContent() {
         </div>
       ) : null}
 
+      {/* Main Tabs: Direct Applicants vs Admin-Curated Suitable Profiles */}
+      <div className="mb-6 border-b border-slate-200">
+        <div className="flex gap-2 sm:gap-4">
+          <button
+            type="button"
+            onClick={() => handleTabChange('applicants')}
+            className={`flex min-h-12 items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition ${
+              activeTab === 'applicants'
+                ? 'border-cyan-600 text-cyan-950'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <span>📥 Direct Applicants</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-black ${
+                activeTab === 'applicants'
+                  ? 'bg-cyan-100 text-cyan-900'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {applications.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange('suitable')}
+            className={`flex min-h-12 items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition ${
+              activeTab === 'suitable'
+                ? 'border-amber-500 text-amber-950'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <span>🌟 Suitable Profiles</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-black ${
+                activeTab === 'suitable'
+                  ? 'bg-amber-100 text-amber-950 ring-1 ring-amber-300'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {suitableProfiles.length}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Suitable Profiles Info Banner */}
+      {activeTab === 'suitable' ? (
+        <div className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50/90 via-white to-amber-50/60 p-4 sm:p-5 shadow-xs">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0">🌟</span>
+            <div>
+              <h2 className="text-base font-bold text-amber-950">
+                Admin-Curated Suitable Profiles ({suitableProfiles.length})
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-amber-900/90 leading-relaxed">
+                These candidates were filtered and recommended directly by the Vizag Jobs admin team based on your required qualifications, skills, passout year, and desired role. Direct contact (Call/WhatsApp) and candidate resumes are available below.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Recruiter Pipeline Stage Funnel Bar */}
-      {!isLoading && applications.length > 0 ? (
+      {!isLoading && activeCandidates.length > 0 ? (
         <div className="mb-6 -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
           <div className="flex min-w-max items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xs">
-            {FUNNEL_STAGES.map((stage) => {
+            {funnelStages.map((stage) => {
               const count = stageCounts[stage.id] ?? 0;
               const isActive = statusFilter === stage.id;
 
@@ -454,7 +638,7 @@ function EmployerJobApplicationsContent() {
       ) : null}
 
       {/* Smart Search & Filter Toolbar */}
-      {!isLoading && applications.length > 0 ? (
+      {!isLoading && activeCandidates.length > 0 ? (
         <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
           {/* Live Search input */}
           <div className="relative flex-1">
@@ -548,11 +732,12 @@ function EmployerJobApplicationsContent() {
       ) : null}
 
       {/* Showing Count / Reset Filters Info */}
-      {!isLoading && applications.length > 0 ? (
+      {!isLoading && activeCandidates.length > 0 ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-600">
           <div>
-            Showing <span className="font-black text-slate-950">{filteredApplications.length}</span> of{' '}
-            <span className="font-black text-slate-950">{applications.length}</span> candidates
+            Showing <span className="font-black text-slate-950">{filteredCandidates.length}</span> of{' '}
+            <span className="font-black text-slate-950">{activeCandidates.length}</span>{' '}
+            {activeTab === 'suitable' ? 'suitable profiles' : 'candidates'}
             {isAnyFilterActive ? ' (filtered)' : ''}
           </div>
           {isAnyFilterActive ? (
@@ -570,18 +755,30 @@ function EmployerJobApplicationsContent() {
       {isLoading ? <LoadingSpinner message="Loading candidate applications..." /> : null}
 
       {/* Empty State: Zero Applications on Job */}
-      {!isLoading && applications.length === 0 ? (
+      {!isLoading && activeTab === 'applicants' && applications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 sm:p-12 text-center shadow-xs">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-2xl">
             👥
           </div>
-          <h3 className="mt-4 text-xl font-bold text-slate-950">No applications yet</h3>
+          <h3 className="mt-4 text-xl font-bold text-slate-950">No direct applications yet</h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
             Once job seekers apply on Vizag Jobs or click your application link, candidate profiles,
             resumes, and contact numbers will appear here automatically.
           </p>
+          {suitableProfiles.length > 0 ? (
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => handleTabChange('suitable')}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-bold text-amber-950 transition hover:bg-amber-100"
+              >
+                <span>View {suitableProfiles.length} Suitable Profiles</span>
+                <span>🌟</span>
+              </button>
+            </div>
+          ) : null}
           {publicJobPath ? (
-            <div className="mt-6">
+            <div className="mt-4">
               <Link
                 to={publicJobPath}
                 target="_blank"
@@ -596,8 +793,34 @@ function EmployerJobApplicationsContent() {
         </div>
       ) : null}
 
+      {/* Empty State: Zero Suitable Profiles on Job */}
+      {!isLoading && activeTab === 'suitable' && suitableProfiles.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-amber-300 bg-amber-50/40 p-6 sm:p-12 text-center shadow-xs">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-2xl">
+            🌟
+          </div>
+          <h3 className="mt-4 text-xl font-bold text-amber-950">No suitable profiles assigned yet</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-amber-900/80">
+            Our team reviews active vacancies and assigns verified candidates matching your skills,
+            qualifications, and target role directly to this list.
+          </p>
+          {applications.length > 0 ? (
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => handleTabChange('applicants')}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+              >
+                <span>View {applications.length} Direct Applicants</span>
+                <span>📥</span>
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Empty State: Filters yielded 0 results */}
-      {!isLoading && applications.length > 0 && filteredApplications.length === 0 ? (
+      {!isLoading && activeCandidates.length > 0 && filteredCandidates.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 sm:p-10 text-center shadow-xs">
           <h3 className="text-lg font-bold text-slate-900">No candidates match your current filter</h3>
           <p className="mt-2 text-sm text-slate-600">
@@ -608,15 +831,15 @@ function EmployerJobApplicationsContent() {
             onClick={clearAllFilters}
             className="mt-5 inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-2xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
           >
-            Show All Candidates ({applications.length})
+            Show All ({activeCandidates.length})
           </button>
         </div>
       ) : null}
 
       {/* Candidate Display: Table View */}
-      {!isLoading && filteredApplications.length > 0 && viewMode === 'table' ? (
+      {!isLoading && filteredCandidates.length > 0 && viewMode === 'table' ? (
         <JobApplicationTable
-          applications={filteredApplications}
+          applications={filteredCandidates}
           onStatusChange={handleStatusChange}
           job={job}
           onSelectCandidate={() => setViewMode('cards')}
@@ -624,12 +847,12 @@ function EmployerJobApplicationsContent() {
       ) : null}
 
       {/* Candidate Display: Detailed Card View */}
-      {!isLoading && filteredApplications.length > 0 && viewMode === 'cards' ? (
+      {!isLoading && filteredCandidates.length > 0 && viewMode === 'cards' ? (
         <div className="space-y-4">
-          {filteredApplications.map((application) => (
+          {filteredCandidates.map((candidate) => (
             <JobApplicationCard
-              key={application.id}
-              application={application}
+              key={candidate.id}
+              application={candidate}
               onStatusChange={handleStatusChange}
               onApplicationUpdate={handleApplicationUpdate}
               job={job}
@@ -641,7 +864,7 @@ function EmployerJobApplicationsContent() {
       <ApplicationExportDialog
         open={exportOpen}
         onClose={() => setExportOpen(false)}
-        applications={filteredApplications}
+        applications={filteredCandidates}
         job={job}
       />
     </EmployerShell>

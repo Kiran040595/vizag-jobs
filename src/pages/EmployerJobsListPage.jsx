@@ -11,6 +11,7 @@ import {
 } from '../lib/applicationStatus';
 import { fetchMyJobs } from '../services/employerJobs';
 import { fetchJobApplicationStats } from '../services/jobApplications';
+import { fetchEmployerSuitableProfileCounts } from '../services/jobSuitableProfiles';
 import {
   formatApplicationCountNoun,
   resolveJobApplicationCount,
@@ -41,6 +42,7 @@ function EmployerJobsListContent() {
   const [jobs, setJobs] = useState([]);
   const [applicationCounts, setApplicationCounts] = useState({});
   const [statusCounts, setStatusCounts] = useState({});
+  const [suitableCounts, setSuitableCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
@@ -70,13 +72,23 @@ function EmployerJobsListContent() {
         const jobIds = data.map((job) => job.id);
         if (jobIds.length > 0) {
           try {
-            const stats = await fetchJobApplicationStats(jobIds);
+            const [stats, suitable] = await Promise.all([
+              fetchJobApplicationStats(jobIds).catch((err) => {
+                console.warn('Could not load employer application stats:', err);
+                return { byJobId: {}, byStatus: {} };
+              }),
+              fetchEmployerSuitableProfileCounts(jobIds).catch((err) => {
+                console.warn('Could not load employer suitable profile counts:', err);
+                return { byJobId: {}, totalCount: 0 };
+              }),
+            ]);
             if (!ignore) {
-              setApplicationCounts(stats.byJobId);
-              setStatusCounts(stats.byStatus);
+              setApplicationCounts(stats.byJobId || {});
+              setStatusCounts(stats.byStatus || {});
+              setSuitableCounts(suitable.byJobId || {});
             }
           } catch (error) {
-            console.warn('Could not load employer application stats:', error);
+            console.warn('Could not load employer candidate stats:', error);
           }
         }
       } catch (error) {
@@ -113,6 +125,10 @@ function EmployerJobsListContent() {
     );
   }, [jobs, applicationCounts]);
 
+  const totalSuitableProfiles = useMemo(() => {
+    return jobs.reduce((sum, job) => sum + (suitableCounts[job.id] || 0), 0);
+  }, [jobs, suitableCounts]);
+
   return (
     <EmployerShell title="My job submissions" description="Track pending, live, and rejected listings.">
       <SEO title="My jobs | Vizag Jobs Employer" canonical="/employer/jobs" />
@@ -130,6 +146,11 @@ function EmployerJobsListContent() {
             <span className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800">
               {totalApplications} application{totalApplications === 1 ? '' : 's'}
             </span>
+            {totalSuitableProfiles > 0 ? (
+              <span className="rounded-2xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-950">
+                🌟 {totalSuitableProfiles} Suitable Profile{totalSuitableProfiles === 1 ? '' : 's'}
+              </span>
+            ) : null}
             {summaryStatuses.map(({ status, count }) => (
               <span
                 key={status}
@@ -165,6 +186,7 @@ function EmployerJobsListContent() {
         <div className="space-y-4">
           {jobs.map((job) => {
             const candidateCount = resolveJobApplicationCount(job, applicationCounts);
+            const suitableCount = suitableCounts[job.id] || 0;
             return (
               <article key={job.id} className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -183,23 +205,44 @@ function EmployerJobsListContent() {
                           On-platform apply
                         </span>
                       ) : null}
+                      {suitableCount > 0 ? (
+                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase text-amber-900">
+                          🌟 {suitableCount} Suitable
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-1 text-sm text-slate-600">{job.company}</p>
                     {job.rejection_reason ? (
                       <p className="mt-2 text-sm text-rose-700">Reason: {job.rejection_reason}</p>
                     ) : null}
-                    {job.apply_mode === 'internal' || candidateCount > 0 ? (
-                      <p className="mt-2 text-sm text-slate-600">
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                      {job.apply_mode === 'internal' || candidateCount > 0 ? (
                         <Link
                           to={`/employer/jobs/${job.id}/applications`}
                           className="inline-flex min-h-11 items-center font-medium text-cyan-700 underline hover:text-cyan-800"
                         >
                           {formatApplicationCountNoun(candidateCount)}
                         </Link>
-                      </p>
-                    ) : null}
+                      ) : null}
+                      {suitableCount > 0 ? (
+                        <Link
+                          to={`/employer/jobs/${job.id}/applications?tab=suitable`}
+                          className="inline-flex min-h-11 items-center font-bold text-amber-800 underline hover:text-amber-900"
+                        >
+                          🌟 {suitableCount} suitable profile{suitableCount === 1 ? '' : 's'}
+                        </Link>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t border-slate-100 sm:border-0">
+                    {suitableCount > 0 ? (
+                      <Link
+                        to={`/employer/jobs/${job.id}/applications?tab=suitable`}
+                        className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 w-full sm:w-auto text-center"
+                      >
+                        🌟 Suitable ({suitableCount})
+                      </Link>
+                    ) : null}
                     {job.apply_mode === 'internal' || candidateCount > 0 ? (
                       <Link
                         to={`/employer/jobs/${job.id}/applications`}

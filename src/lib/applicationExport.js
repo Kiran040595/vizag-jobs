@@ -215,6 +215,13 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     getValue: (app) => formatAppliedAt(app.submittedAt),
   },
   {
+    id: 'adminNotes',
+    label: 'Admin recommendation notes',
+    group: 'Consultancy',
+    defaultSelected: true,
+    getValue: (app) => app.adminNotes || '',
+  },
+  {
     id: 'recruiterNotes',
     label: 'Recruiter notes',
     group: 'Consultancy',
