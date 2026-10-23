@@ -11,6 +11,7 @@ export default function AssignCandidatesDialog({
   defaultJobId = '',
   onAssigned,
 }) {
+  const [includeExternal, setIncludeExternal] = useState(false);
   const [internalJobs, setInternalJobs] = useState([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState('');
@@ -23,16 +24,16 @@ export default function AssignCandidatesDialog({
   const [error, setError] = useState('');
   const dialogRef = useNativeModal(open && candidates.length > 0);
 
-  // If jobs are not passed or empty, fetch all active company jobs automatically
+  // Load active company jobs (by default, admin-created or employer-created only)
   useEffect(() => {
     if (!open) return;
-    if (jobs && jobs.length > 0) {
+    if (!includeExternal && jobs && jobs.length > 0) {
       setInternalJobs(jobs);
       return;
     }
     let active = true;
     setIsLoadingJobs(true);
-    fetchAllCompanyJobsForAssignment()
+    fetchAllCompanyJobsForAssignment({ includeExternal })
       .then((rows) => {
         if (active) setInternalJobs(rows);
       })
@@ -45,10 +46,11 @@ export default function AssignCandidatesDialog({
     return () => {
       active = false;
     };
-  }, [open, jobs]);
+  }, [open, jobs, includeExternal]);
 
   const effectiveJobs = useMemo(() => {
-    return jobs && jobs.length > 0 ? jobs : internalJobs;
+    if (internalJobs.length > 0) return internalJobs;
+    return jobs && jobs.length > 0 ? jobs : [];
   }, [jobs, internalJobs]);
 
   // Group jobs by company name
@@ -204,7 +206,7 @@ export default function AssignCandidatesDialog({
                 Assign Candidates as Suitable Profiles
               </h2>
               <p className="mt-0.5 text-xs text-amber-900/80 sm:text-sm">
-                Targeted matching: assign candidates directly to an employer vacancy as Suitable Profiles.
+                Targeted matching: assign candidates directly to an Admin or Employer vacancy as Suitable Profiles.
               </p>
             </div>
           </div>
@@ -352,25 +354,39 @@ export default function AssignCandidatesDialog({
 
             {/* Dropdown 1: Select Company */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <label
                   htmlFor="target-company-select"
-                  className="block text-xs font-bold text-slate-800"
+                  className="flex items-center gap-2 text-xs font-bold text-slate-800"
                 >
-                  Step 1: Select Company <span className="text-rose-500">*</span>
+                  <span>Step 1: Select Company</span>
+                  <span className="text-rose-500">*</span>
+                  <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-bold text-emerald-800">
+                    Admin & Employer Posted
+                  </span>
                 </label>
-                <span className="text-[11px] font-semibold text-slate-500">
-                  {companyList.length} companies with open jobs
-                </span>
+                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-slate-500 hover:text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={includeExternal}
+                    onChange={(e) => setIncludeExternal(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span>Include external scrapes (LinkedIn/Naukri)</span>
+                </label>
               </div>
 
+              <span className="block text-[11px] font-semibold text-slate-500">
+                {companyList.length} hiring {companyList.length === 1 ? 'company' : 'companies'} with active vacancies
+              </span>
+
               {/* Company search filter input */}
-              {companyList.length > 6 ? (
+              {companyList.length > 5 ? (
                 <input
                   type="text"
                   value={companySearch}
                   onChange={(e) => setCompanySearch(e.target.value)}
-                  placeholder="🔍 Type to filter companies (e.g. Wipro, Infosys, Tech, Metro)..."
+                  placeholder="🔍 Type to filter companies (e.g. Geosis, Jain Infotech, Suswadeep, Pfizer)..."
                   className="min-h-10 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 outline-none transition focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                 />
               ) : null}
@@ -384,7 +400,7 @@ export default function AssignCandidatesDialog({
               >
                 <option value="">
                   {isLoadingJobs
-                    ? 'Loading all company vacancies…'
+                    ? 'Loading company vacancies…'
                     : `-- Choose a Company (${companyList.length} companies available) --`}
                 </option>
                 {filteredCompanies.map((c) => (
@@ -457,10 +473,18 @@ export default function AssignCandidatesDialog({
                       {selectedJob.company}
                     </span>
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-slate-600">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-600">
                     {selectedJob.location ? <span>📍 {selectedJob.location}</span> : null}
                     {selectedJob.salary ? <span>💰 {selectedJob.salary}</span> : null}
-                    {selectedJob.status ? <span>Status: {selectedJob.status}</span> : null}
+                    {selectedJob.created_by ? (
+                      <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-800">
+                        🏢 Employer-Posted
+                      </span>
+                    ) : selectedJob.source_name ? (
+                      <span className="rounded border border-amber-200 bg-amber-100/60 px-1.5 py-0.5 font-bold text-amber-900">
+                        ⭐ {selectedJob.source_name}
+                      </span>
+                    ) : null}
                   </div>
                   {Array.isArray(selectedJob.required_skills) && selectedJob.required_skills.length > 0 ? (
                     <div className="mt-2 flex flex-wrap items-center gap-1">
@@ -468,7 +492,7 @@ export default function AssignCandidatesDialog({
                       {selectedJob.required_skills.slice(0, 6).map((skill) => (
                         <span
                           key={skill}
-                          className="rounded bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-800 border border-amber-200"
+                          className="rounded border border-amber-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-800"
                         >
                           {skill}
                         </span>

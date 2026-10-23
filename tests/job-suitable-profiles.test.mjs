@@ -215,3 +215,45 @@ test('assignCandidatesToJob executes bulk upserts in batches of 100', async () =
   }
 });
 
+test('fetchAllCompanyJobsForAssignment applies admin and employer created filter by default', async () => {
+  const { fetchAllCompanyJobsForAssignment } = await import('../src/services/adminJobs.js');
+
+  const originalFrom = supabase.from;
+  let appliedOrFilter = null;
+
+  supabase.from = (table) => {
+    assert.equal(table, 'jobs');
+    const query = {
+      select: () => query,
+      neq: () => query,
+      order: () => query,
+      or: (filterStr) => {
+        appliedOrFilter = filterStr;
+        return query;
+      },
+      then: (resolve) => {
+        resolve({
+          data: [
+            { id: 'j-1', company: 'Geosis Technologies Pvt Ltd', title: 'GIS Engineer', created_by: 'emp-1' },
+            { id: 'j-2', company: 'Jain Infotech', title: 'Telecaller', source_name: 'Admin Post' },
+          ],
+          error: null,
+        });
+      },
+    };
+    return query;
+  };
+
+  try {
+    const jobs = await fetchAllCompanyJobsForAssignment();
+    assert.equal(jobs.length, 2);
+    assert.ok(appliedOrFilter, 'Should apply .or() filter to exclude external scraped jobs');
+    assert.ok(appliedOrFilter.includes('created_by.not.is.null'));
+    assert.ok(appliedOrFilter.includes('naukri'));
+    assert.ok(appliedOrFilter.includes('linkedin'));
+  } finally {
+    supabase.from = originalFrom;
+  }
+});
+
+

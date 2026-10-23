@@ -882,14 +882,33 @@ export const fetchCandidateMatchingJobs = async () => {
   return data || [];
 };
 
-/** All active company vacancies across all companies for assigning suitable candidates. */
-export const fetchAllCompanyJobsForAssignment = async () => {
+/**
+ * Active company vacancies for assigning suitable candidates.
+ * Defaults to admin-created or employer-created vacancies only (excludes external scraped jobs like Naukri/LinkedIn).
+ * Pass { includeExternal: true } to load all external scrapes.
+ * @param {{ includeExternal?: boolean }} [options]
+ */
+export const fetchAllCompanyJobsForAssignment = async ({ includeExternal = false } = {}) => {
   if (!supabase) throw new Error('Supabase is not configured.');
-  const { data, error } = await supabase.from(JOBS_TABLE)
-    .select('id,title,company,location,salary,status,posted_at,accepted_degrees,accepted_branches,required_education_status,required_experience,required_skills,preferred_skills,required_candidate_locations,accepts_relocation,requirements_verified')
+  let query = supabase.from(JOBS_TABLE)
+    .select('id,title,company,location,salary,status,posted_at,accepted_degrees,accepted_branches,required_education_status,required_experience,required_skills,preferred_skills,required_candidate_locations,accepts_relocation,requirements_verified,created_by,source_name')
     .neq('status', 'archived')
     .order('company', { ascending: true })
     .order('posted_at', { ascending: false });
+
+  if (!includeExternal) {
+    // Only employer-created or admin-created jobs (excludes external job-board scrapes like Naukri/LinkedIn/Indeed)
+    query = query.or(
+      [
+        'created_by.not.is.null',
+        'source_name.is.null',
+        'source_name.eq.',
+        'and(source_name.not.ilike.%naukri%,source_name.not.ilike.%linkedin%,source_name.not.ilike.%indeed%)',
+      ].join(','),
+    );
+  }
+
+  const { data, error } = await query;
   if (error) throw mapError(error, 'Could not load company vacancies.');
   return data || [];
 };

@@ -854,4 +854,25 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Production build: `npm run build` completed cleanly in 3.69s with 0 errors.
   - Verified responsive design on mobile viewports (< 640px) and desktop (> 1024px).
 
+## QA-2026-10-24: Scoping Company Vacancies to Admin-Created and Employer-Created Only
+
+- Scope: S044 `/admin/students` (Suitable Profiles Assignment Dialog)
+- User Feedback Addressed:
+  - *"All companies mens not all . Only admin created or Employer creted only"*
+- Analysis & Changes:
+  - Identified that external web scraped listings (e.g. 660+ from LinkedIn, 320+ from Naukri) do not have employer accounts on the platform to log in and review suitable profiles.
+  - Updated `fetchAllCompanyJobsForAssignment()` in `src/services/adminJobs.js` to filter at database level by default using `.or('created_by.not.is.null,source_name.is.null,source_name.eq.,and(source_name.not.ilike.%naukri%,source_name.not.ilike.%linkedin%,source_name.not.ilike.%indeed%)')`.
+  - Scoped companies list directly to the ~29 actual hiring companies (e.g. Geosis Technologies, Jain Infotech, Suswadeep Agro Services, EVENBREAK HR, CMT Business School, MedPlus, Pfizer, Foxconn) with 42 active vacancies.
+  - Updated `src/components/admin/AssignCandidatesDialog.jsx`:
+    - Shows `Admin & Employer Posted` badge.
+    - Default company dropdown lists only genuine platform companies.
+    - Added an optional checkbox toggle: `Include external scrapes (LinkedIn/Naukri)` for administrative flexibility if ever needed.
+    - Added source badges (`🏢 Employer-Posted` vs `⭐ Admin Post`) in the selected job preview card.
+  - Added test in `tests/job-suitable-profiles.test.mjs` verifying default scoping behavior.
+- Verification Evidence:
+  - Automated tests: `node --test tests/*.test.mjs` passed 186/186 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly in 2.12s with 0 errors.
+
+
 
