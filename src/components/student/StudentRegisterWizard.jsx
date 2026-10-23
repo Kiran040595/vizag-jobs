@@ -138,6 +138,9 @@ export default function StudentRegisterWizard({
     if (!password || password.length < 6) {
       errors.password = 'Password must be at least 6 characters.';
     }
+    if (typeof form.is_fresher !== 'boolean') {
+      errors.experience = 'Choose Fresher or Experienced so recruiters can find the right candidates.';
+    }
 
     setStep1Errors(errors);
     return Object.keys(errors).length === 0;
@@ -353,7 +356,7 @@ export default function StudentRegisterWizard({
       {/* STEP 1: ACCOUNT CREDENTIALS */}
       {currentStep === 1 ? (
         <form onSubmit={handleStep1Continue} className="space-y-5">
-          <CandidateDetailsFields form={form} onChange={onFormChange} section="personal" />
+          <CandidateDetailsFields form={form} onChange={onFormChange} section="personal" requireMatchingDetails />
           <div>
             <label className="block text-sm font-semibold text-slate-700">
               Full Name *
@@ -485,6 +488,7 @@ export default function StudentRegisterWizard({
               <button
                 type="button"
                 onClick={() => onFresherChange('yes')}
+                aria-pressed={form.is_fresher === true}
                 className={`flex flex-col items-center justify-center rounded-2xl border p-3.5 text-center transition ${
                   form.is_fresher === true
                     ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200'
@@ -493,11 +497,12 @@ export default function StudentRegisterWizard({
               >
                 <span className="text-xl">🎓</span>
                 <span className="mt-1 text-sm font-bold text-slate-900">Fresher</span>
-                <span className="text-xs text-slate-500">Student or 0-1 yr exp</span>
+                <span className="text-xs text-slate-500">No work experience yet</span>
               </button>
               <button
                 type="button"
                 onClick={() => onFresherChange('no')}
+                aria-pressed={form.is_fresher === false}
                 className={`flex flex-col items-center justify-center rounded-2xl border p-3.5 text-center transition ${
                   form.is_fresher === false
                     ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200'
@@ -506,9 +511,10 @@ export default function StudentRegisterWizard({
               >
                 <span className="text-xl">💼</span>
                 <span className="mt-1 text-sm font-bold text-slate-900">Experienced</span>
-                <span className="text-xs text-slate-500">1+ years experience</span>
+                <span className="text-xs text-slate-500">Have work experience</span>
               </button>
             </div>
+            {step1Errors.experience && <p role="alert" className="mt-2 text-sm text-rose-700">{step1Errors.experience}</p>}
           </div>
 
           <button
@@ -542,7 +548,7 @@ export default function StudentRegisterWizard({
           </div>
 
           <fieldset disabled={currentStep !== 2} className={currentStep === 2 ? "space-y-6" : "hidden"}>
-          <CandidateDetailsFields form={form} onChange={onFormChange} section="education" />
+          <CandidateDetailsFields form={form} onChange={onFormChange} section="education" requireMatchingDetails />
           {/* College with Quick Vizag Badges */}
           <div>
             <label className="block text-sm font-semibold text-slate-700">
@@ -932,6 +938,7 @@ export default function StudentRegisterWizard({
                 required
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               >
+                <option value="">Select experience in this role</option>
                 {STUDENT_ROLE_EXPERIENCE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -953,6 +960,7 @@ export default function StudentRegisterWizard({
               required
               className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
             >
+              <option value="">Select when you can join</option>
               {STUDENT_AVAILABILITY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}

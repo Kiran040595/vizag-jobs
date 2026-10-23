@@ -19,12 +19,14 @@ import {
 import { markStudentAuthSuccess } from '../lib/studentAuthSuccess';
 import { trackStudentFunnel } from '../lib/studentFunnelAnalytics';
 import { validateStudentProfilePayload } from '../lib/studentProfileValidation';
+import { upsertStudentProfile } from '../services/studentJobs';
+import { recordStudentRegistrationConsents } from '../services/studentConsent';
 
 const INITIAL_STUDENT_REGISTER_FORM = {
   ...EMPTY_STUDENT_PROFILE_FORM,
-  availability: 'immediate',
-  role_experience_level: 'fresher',
-  is_fresher: true,
+  availability: '',
+  role_experience_level: '',
+  is_fresher: null,
   certifications: '',
   preferred_locations: ['Visakhapatnam'],
 };
@@ -32,7 +34,7 @@ const INITIAL_STUDENT_REGISTER_FORM = {
 export default function StudentRegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isLoading, isStudent, isSupabaseConfigured, profileComplete, session, signUp } =
+  const { isLoading, isStudent, isSupabaseConfigured, profileComplete, refreshStudentAccess, session, signUp } =
     useStudentAuth();
   const [form, setForm] = useState(() => {
     try {
@@ -89,11 +91,11 @@ export default function StudentRegisterPage() {
   }, [navigate, profileComplete, searchParams]);
 
   useEffect(() => {
-    if (!session || !isStudent || isLoading) {
+    if (!session || !isStudent || isLoading || isSubmitting || submitError) {
       return;
     }
     completePostAuthNavigation();
-  }, [completePostAuthNavigation, isLoading, isStudent, session]);
+  }, [completePostAuthNavigation, isLoading, isStudent, isSubmitting, session, submitError]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -105,7 +107,7 @@ export default function StudentRegisterPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !isSubmitting && !submitError) {
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-12">
         <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8">
@@ -115,7 +117,7 @@ export default function StudentRegisterPage() {
     );
   }
 
-  if (session && isStudent) {
+  if (session && isStudent && !isSubmitting && !submitError) {
     return <Navigate to={returnPath} replace />;
   }
 
@@ -136,7 +138,7 @@ export default function StudentRegisterPage() {
       role_experience_level: isFresher
         ? 'fresher'
         : current.role_experience_level === 'fresher' || !current.role_experience_level
-          ? '1_2_years'
+          ? ''
           : current.role_experience_level,
     }));
   };
@@ -216,7 +218,16 @@ export default function StudentRegisterPage() {
         certifications: form.certifications || '',
         contact_email: form.contact_email || undefined,
       };
-      validateStudentProfilePayload(profilePayload);
+      validateStudentProfilePayload(profilePayload, { requireMatchingDetails: true });
+
+      // Auth can succeed before profile persistence. Keep failures on this form and
+      // retry the profile save without creating a second account or losing input.
+      if (session?.user?.user_metadata?.user_type === 'student') {
+        await recordStudentRegistrationConsents(consents, { userId: session.user.id });
+        await upsertStudentProfile(profilePayload);
+        await refreshStudentAccess(session.user.id);
+        return;
+      }
 
       const postAuthPath = resolvePostAuthDestination(searchParams, { profileComplete: true });
       const result = await signUp({

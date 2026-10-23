@@ -34,7 +34,7 @@ const parseCertifications = (value) => {
     .slice(0, 16);
 };
 
-export const validateStudentProfilePayload = (profile) => {
+export const validateStudentProfilePayload = (profile, { requireMatchingDetails = false } = {}) => {
   const fullName = String(profile.full_name || '').trim();
   const college = String(profile.college || '').trim();
   const degree = String(profile.degree || '').trim();
@@ -50,6 +50,13 @@ export const validateStudentProfilePayload = (profile) => {
   const availability = String(profile.availability || '').trim();
   const expectedSalaryMin = parseExpectedSalary(profile.expected_salary_min);
   const expectedSalaryMax = parseExpectedSalary(profile.expected_salary_max);
+
+  if (requireMatchingDetails && !normalizeCareerText(profile.current_city, 64)) {
+    throw new Error('Enter your current city so recruiters can match your location.');
+  }
+  if (requireMatchingDetails && !['studying', 'completed'].includes(profile.education_status)) {
+    throw new Error('Select whether you are currently studying or have completed your qualification.');
+  }
 
   if (!fullName) {
     throw new Error('Full name is required.');

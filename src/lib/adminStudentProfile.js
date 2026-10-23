@@ -31,7 +31,7 @@ export const mapStudentProfileRow = (row) => {
   const graduationYear = row.graduation_year ?? null;
   const phone = String(row.phone || '').trim();
   const skills = Array.isArray(row.skills)
-    ? row.skills.map(normalizeSkillValue).filter(Boolean)
+    ? [...new Set(row.skills.map(normalizeSkillValue).filter(Boolean))]
     : [];
   const certifications = Array.isArray(row.certifications)
     ? row.certifications.map((item) => String(item || '').trim()).filter(Boolean)

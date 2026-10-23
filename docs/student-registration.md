@@ -1,5 +1,52 @@
 # Student registration
 
+## Candidate discovery workflow (2026-10-23)
+
+Admin Students is a candidate finder rather than a long list of account details.
+Start with **Required skills**, choose **All selected skills** or **Any selected
+skill**, select alternative qualifications, and enter part of the desired role.
+For example, React + SQL (All), B.Tech or B.E, and role containing Developer
+narrows candidates using their recorded facts. Current city searches residence;
+preferred work locations are shown separately and never establish residence.
+
+The finder also supports the actual registration experience buckets, joining
+availability, exact primary/secondary role, career sector, branch, batch,
+education status, relocation, certification/course, account status, and missing
+matching information. Existing saved qualifications not in the current presets
+remain selectable. General search matches words across fields, recognizes common
+qualification/skill spellings, and supports quoted phrases. Specific required
+skills keep C, C++, C#, Java and JavaScript distinct.
+
+Candidate cards put qualifications, desired role, location, experience, joining
+time and skills first. They explain matching criteria and show missing facts.
+Contact information and the complete profile are expandable. Reviewed-job checks
+separate recorded requirement matches, missing information and known failures;
+they are screening aids, not hiring decisions. Gender is not a targeting or
+sorting criterion. Active accounts are the default, with explicit all/inactive
+options. Filter URLs survive reload; page size is bounded to 25/50/100 candidates.
+
+Export matching downloads exactly the current results. A visit-only shortlist
+can be built across pages and filters, then exported separately. The UI discloses
+shortlisted candidates hidden by current filters. Skill/role/sector counts follow
+account status; other criteria further narrow results. Failed pagination no
+longer silently omits students or permits a partial new export.
+
+New signups must explicitly provide current city, education status, fresher versus
+experienced, role experience, and joining availability alongside the existing
+qualification, skills and desired-role requirements. No fresher, experienced
+duration, or immediate-joining answer is guessed. Existing profiles remain valid;
+missing facts are shown in the finder, including field-specific missing-data
+filters. These facts must be supplied by the student rather than inferred from
+work preferences or administrative flags.
+
+Registration stays on the form until profile persistence completes. If auth
+succeeds but profile saving fails, the error and input remain visible; retry
+records consent and saves the existing student's profile without another signup.
+
+Verification and limitations are in `docs/SCREEN_FUNCTIONALITY_TEST_TRACKER.md`
+under QA-2026-10-23-Candidate-Discovery. No schema migration is required for this
+finder update. Production student profiles were not changed during verification.
+
 ## Shared student role catalog (2026-10-23)
 
 Saving a student profile captures its primary target role and interested roles in

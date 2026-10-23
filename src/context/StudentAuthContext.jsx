@@ -250,7 +250,7 @@ export function StudentAuthProvider({ children }) {
       contact_email: profile?.contact_email || signupEmail,
       phone: profile?.phone || phone,
     };
-    const validatedProfile = validateStudentProfilePayload(profileInput);
+    const validatedProfile = validateStudentProfilePayload(profileInput, { requireMatchingDetails: true });
 
     const postAuthPath =
       returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')

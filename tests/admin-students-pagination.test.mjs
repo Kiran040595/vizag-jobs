@@ -28,6 +28,7 @@ test('fetchAdminStudentProfiles fetches all students beyond the 1000 row PostgRE
         return {
           order: (orderCol, orderOpts) => {
             return {
+              order: () => ({
               range: async (from, to) => {
                 calls.push({ from, to, countOption: options?.count });
                 const pageData = mockRows.slice(from, to + 1);
@@ -37,6 +38,7 @@ test('fetchAdminStudentProfiles fetches all students beyond the 1000 row PostgRE
                   count: 1450,
                 };
               },
+              }),
             };
           },
         };
@@ -60,4 +62,20 @@ test('fetchAdminStudentProfiles fetches all students beyond the 1000 row PostgRE
   } finally {
     supabase.from = originalFrom;
   }
+});
+
+test('a failed later page must not silently return a partial candidate list', async () => {
+  const original = supabase.from;
+  supabase.from = () => {
+    const query = {
+      select: () => query,
+      order: () => query,
+      range: async from => from === 0
+        ? { data: [{ user_id: 'one', full_name: 'One' }], error: null, count: 1001 }
+        : { data: null, error: { message: 'Second batch failed' } },
+    };
+    return query;
+  };
+  try { await assert.rejects(fetchAdminStudentProfiles(), /Second batch failed/); }
+  finally { supabase.from = original; }
 });

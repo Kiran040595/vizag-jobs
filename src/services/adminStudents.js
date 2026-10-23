@@ -22,6 +22,7 @@ export const fetchAdminStudentProfiles = async () => {
     .from('student_profiles')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .order('user_id', { ascending: true })
     .range(0, PAGE_SIZE - 1);
 
   if (firstError) {
@@ -47,6 +48,7 @@ export const fetchAdminStudentProfiles = async () => {
           .from('student_profiles')
           .select('*')
           .order('created_at', { ascending: false })
+          .order('user_id', { ascending: true })
           .range(pageFrom, pageTo)
       );
       from += PAGE_SIZE;
@@ -55,7 +57,7 @@ export const fetchAdminStudentProfiles = async () => {
     const responses = await Promise.all(pagePromises);
     for (const res of responses) {
       if (res.error) {
-        console.warn('[adminStudents] Error fetching student batch:', res.error);
+        throw mapError(res.error, 'Could not load every student batch. Refresh before targeting or exporting candidates.');
       } else if (res.data) {
         allRows = allRows.concat(res.data);
       }
@@ -68,11 +70,11 @@ export const fetchAdminStudentProfiles = async () => {
         .from('student_profiles')
         .select('*')
         .order('created_at', { ascending: false })
+        .order('user_id', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (error) {
-        console.warn('[adminStudents] Error fetching student batch:', error);
-        break;
+        throw mapError(error, 'Could not load every student batch. Refresh before targeting or exporting candidates.');
       }
       if (!data || data.length === 0) break;
       allRows = allRows.concat(data);

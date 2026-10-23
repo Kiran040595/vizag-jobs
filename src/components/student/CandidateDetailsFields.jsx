@@ -2,7 +2,7 @@ import { EDUCATION_STATUSES, GENDER_OPTIONS, listValues } from '../../lib/candid
 
 const INPUT_CLASS = 'mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base';
 
-export default function CandidateDetailsFields({ form, onChange, section = 'all', roles = [] }) {
+export default function CandidateDetailsFields({ form, onChange, section = 'all', roles = [], requireMatchingDetails = false }) {
   const changeField = (name, value) => onChange({ target: { name, value } });
   const show = (name) => section === 'all' || section === name;
 
@@ -10,8 +10,8 @@ export default function CandidateDetailsFields({ form, onChange, section = 'all'
     <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
       {show('personal') && <>
         <label>
-          Current city
-          <input className={INPUT_CLASS} name="current_city" maxLength={64}
+          Current city{requireMatchingDetails ? ' *' : ''}
+          <input className={INPUT_CLASS} name="current_city" maxLength={64} required={requireMatchingDetails}
             value={form.current_city || ''} onChange={onChange} placeholder="Where you currently live" />
         </label>
         <label>
@@ -33,8 +33,8 @@ export default function CandidateDetailsFields({ form, onChange, section = 'all'
       </>}
       {show('education') && (
         <label>
-          Education status
-          <select aria-label="Education status" className={INPUT_CLASS} name="education_status"
+          Education status{requireMatchingDetails ? ' *' : ''}
+          <select aria-label={requireMatchingDetails ? 'Education status *' : 'Education status'} className={INPUT_CLASS} name="education_status" required={requireMatchingDetails}
             value={form.education_status || ''} onChange={onChange}>
             <option value="">Select status</option>
             {EDUCATION_STATUSES.map(value => (

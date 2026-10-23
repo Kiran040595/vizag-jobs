@@ -1,0 +1,192 @@
+import { studentSearchBlob } from './adminStudentProfile.js';
+import { evaluateJobEligibility, normalizeCandidateLocation } from './candidateEligibility.js';
+import { formatSkillLabel, normalizeSkillValue } from './studentProfileOptions.js';
+import { studentMatchesRole, studentRoleLabels, roleKey } from './studentRoles.js';
+import { formatAvailabilityLabel, formatJobCategoryLabel, formatRoleExperienceLabel } from './studentCareerPreferences.js';
+
+const text = value => String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+const skillAliases = new Map([
+  ['react.js', 'react'], ['reactjs', 'react'], ['react js', 'react'],
+  ['node.js', 'nodejs'], ['node js', 'nodejs'],
+  ['js', 'javascript'], ['javascript', 'javascript'],
+  ['.net', 'dotnet'], ['.net framework', 'dotnet'],
+  ['excel', 'ms excel'], ['microsoft excel', 'ms excel'],
+  ['html & css', 'html css'],
+]);
+export const candidateSkillKey = value => {
+  const key = normalizeSkillValue(value);
+  return skillAliases.get(key) || key;
+};
+export const qualificationKey = value => text(value).replace(/[.\s]+/g, '');
+const unique = (values, key = text) => [...new Map(values.filter(Boolean).map(value => [key(value), value])).values()];
+export const candidateSkills = student => unique(student.skills || [], candidateSkillKey);
+
+export const EMPTY_CANDIDATE_FILTERS = {
+  search: '', skills: [], skillMode: 'all', degrees: [], roleQuery: '', role: '',
+  category: '', branch: '', year: '', experience: '', city: '', area: '',
+  educationStatus: '', relocation: '', availability: '', certification: '',
+  accountStatus: 'active', dataStatus: '', job: '', jobStatus: 'eligible', sort: 'relevance',
+};
+
+export const MISSING_CANDIDATE_FACTS = {
+  missing_skills: 'Skills', missing_role: 'Desired role', missing_qualification: 'Qualification',
+  missing_city: 'Current city', missing_education: 'Education status',
+  missing_experience: 'Experience', missing_availability: 'Joining availability',
+};
+
+export const readCandidateFilters = params => {
+  const filters = { ...EMPTY_CANDIDATE_FILTERS, skills: [], degrees: [] };
+  for (const field of Object.keys(filters)) {
+    if (field === 'skills' || field === 'degrees') continue;
+    const value = params.get(field);
+    if (value !== null) filters[field] = value;
+  }
+  filters.search = params.get('search') || params.get('q') || '';
+  filters.skills = unique([...params.getAll('skills'), ...params.getAll('skill')].flatMap(value => value.split(',')), candidateSkillKey);
+  filters.degrees = unique([...params.getAll('degrees'), ...params.getAll('degree')].flatMap(value => value.split(',')), qualificationKey);
+  filters.roleQuery = params.get('roleQuery') || '';
+  filters.year = params.get('year') || params.get('batch') || '';
+  filters.experience = params.get('experience') || params.get('fresher') || params.get('exp') || '';
+  filters.city = params.get('city') || params.get('currentCity') || '';
+  if (!['active', 'inactive', 'all'].includes(filters.accountStatus)) filters.accountStatus = 'active';
+  if (!['all', 'any'].includes(filters.skillMode)) filters.skillMode = 'all';
+  if (!['eligible', 'needs_information', 'ineligible', 'unverified', 'all'].includes(filters.jobStatus)) filters.jobStatus = 'eligible';
+  if (!['relevance', 'newest', 'oldest', 'name'].includes(filters.sort)) filters.sort = 'relevance';
+  if (!['', 'missing', 'ready', ...Object.keys(MISSING_CANDIDATE_FACTS)].includes(filters.dataStatus)) filters.dataStatus = '';
+  return filters;
+};
+
+export const writeCandidateFilters = filters => {
+  const params = new URLSearchParams();
+  for (const [field, value] of Object.entries(filters)) {
+    if (Array.isArray(value)) value.forEach(item => params.append(field, item));
+    else if (value && value !== EMPTY_CANDIDATE_FILTERS[field]) params.set(field, value);
+  }
+  return params;
+};
+
+/** Recruiting facts, distinct from the account/consent completeness flag. Never infer missing facts. */
+export const candidateMissingFacts = student => [
+  !text(student.degree) && 'Qualification',
+  !candidateSkills(student).length && 'Skills',
+  !studentRoleLabels(student).length && 'Desired role',
+  !text(student.roleExperienceLevel) && typeof student.isFresher !== 'boolean' && 'Experience',
+  !text(student.currentCity) && 'Current city',
+  !text(student.educationStatus) && 'Education status',
+  !text(student.availability) && 'Joining availability',
+].filter(Boolean);
+
+const queryTerms = query => [...text(query).matchAll(/"([^"]+)"|(\S+)/g)].map(match => match[1] || match[2]);
+export const candidateMatchesSearch = (student, query) => {
+  if (!text(query)) return true;
+  const skills = candidateSkills(student).map(candidateSkillKey);
+  const location = [student.currentCity, student.currentArea, ...(student.preferredLocations || [])].join(' ');
+  const cityAliases = /vizag|visakhapatnam|vishakhapatnam/i.test(location) ? 'vizag visakhapatnam vishakhapatnam' : '';
+  const blob = `${studentSearchBlob(student)} ${qualificationKey(student.degree)} ${skills.join(' ')} ${cityAliases}`;
+  return queryTerms(query).every(term => blob.includes(term) || skills.includes(candidateSkillKey(term)) || qualificationKey(student.degree) === qualificationKey(term));
+};
+
+export const candidateMatchesExperience = (student, value) => {
+  if (!value) return true;
+  const isFresher = typeof student.isFresher === 'boolean' ? student.isFresher
+    : student.roleExperienceLevel ? student.roleExperienceLevel === 'fresher' : null;
+  if (value === 'fresher') return isFresher === true;
+  if (value === 'experienced') return isFresher === false;
+  return student.roleExperienceLevel === value;
+};
+
+export const matchesCandidateRequirements = (student, filters) => {
+  if (filters.accountStatus === 'active' && !student.isActive) return false;
+  if (filters.accountStatus === 'inactive' && student.isActive) return false;
+  if (!candidateMatchesSearch(student, filters.search)) return false;
+  if (!studentMatchesRole(student, filters.role)) return false;
+  if (filters.roleQuery) {
+    const roles = studentRoleLabels(student).map(roleKey).join(' ');
+    if (!queryTerms(filters.roleQuery).every(term => roles.includes(term))) return false;
+  }
+  if (filters.category && !student.targetJobCategories?.includes(filters.category)) return false;
+  if (filters.degrees.length && !filters.degrees.some(value => qualificationKey(student.degree) === qualificationKey(value))) return false;
+  if (filters.branch && text(student.branch) !== text(filters.branch)) return false;
+  if (filters.year && String(student.graduationYear || '') !== filters.year) return false;
+  if (!candidateMatchesExperience(student, filters.experience)) return false;
+  const skills = new Set(candidateSkills(student).map(candidateSkillKey));
+  if (filters.skills.length) {
+    const matches = filters.skills.map(value => skills.has(candidateSkillKey(value)));
+    if (filters.skillMode === 'any' ? !matches.some(Boolean) : !matches.every(Boolean)) return false;
+  }
+  // Current residence and preferred work locations are different facts.
+  if (filters.city && (!text(student.currentCity) || !normalizeCandidateLocation(student.currentCity).includes(normalizeCandidateLocation(filters.city)))) return false;
+  if (filters.area && (!text(student.currentArea) || !normalizeCandidateLocation(student.currentArea).includes(normalizeCandidateLocation(filters.area)))) return false;
+  if (filters.educationStatus && student.educationStatus !== filters.educationStatus) return false;
+  if (filters.relocation && String(student.willingToRelocate ?? '') !== filters.relocation) return false;
+  if (filters.availability && student.availability !== filters.availability) return false;
+  if (filters.certification && !queryTerms(filters.certification).every(term => text(student.certificationsText).includes(term))) return false;
+  if (filters.dataStatus) {
+    const missing = candidateMissingFacts(student);
+    if (filters.dataStatus === 'missing' && !missing.length) return false;
+    if (filters.dataStatus === 'ready' && missing.length) return false;
+    if (MISSING_CANDIDATE_FACTS[filters.dataStatus] && !missing.includes(MISSING_CANDIDATE_FACTS[filters.dataStatus])) return false;
+  }
+  return true;
+};
+
+/** Explain selected matching facts. This is a discovery aid, never an automatic hiring decision. */
+export const candidateMatchReasons = (student, filters, job) => {
+  const skills = new Set(candidateSkills(student).map(candidateSkillKey));
+  const selectedSkills = filters.skills.filter(value => skills.has(candidateSkillKey(value)));
+  const reasons = selectedSkills.map(value => `Skill: ${formatSkillLabel(value)}`);
+  if (filters.search) reasons.push(`All search terms found: ${filters.search}`);
+  if (filters.degrees.length) reasons.push(`Qualification: ${student.degree}`);
+  if (filters.role || filters.roleQuery) reasons.push(`Role: ${studentRoleLabels(student).filter(role => filters.role ? roleKey(role) === roleKey(filters.role) : queryTerms(filters.roleQuery).some(term => text(role).includes(term))).join(', ')}`);
+  if (filters.city || filters.area) reasons.push(`Current location: ${[student.currentCity, student.currentArea].filter(Boolean).join(', ')}`);
+  if (filters.experience) reasons.push(`Experience: ${student.roleExperienceLabel || (student.isFresher === true ? 'Fresher' : student.isFresher === false ? 'Experienced' : 'Not provided')}`);
+  if (filters.availability) reasons.push(`Joining: ${student.availabilityLabel}`);
+  if (filters.educationStatus) reasons.push(`Education: ${student.educationStatus}`);
+  if (filters.certification) reasons.push(`Certification: ${filters.certification}`);
+  const preferred = unique(job?.preferred_skills || [], candidateSkillKey).filter(value => skills.has(candidateSkillKey(value)));
+  for (const skill of preferred) reasons.push(`Preferred job skill: ${formatSkillLabel(skill)}`);
+  return { reasons, score: selectedSkills.length + preferred.length };
+};
+
+export const findAdminCandidates = (students, filters, job = null) => {
+  const jobCounts = { eligible: 0, needs_information: 0, ineligible: 0, unverified: 0 };
+  const entries = [];
+  for (const student of students) {
+    if (!matchesCandidateRequirements(student, filters)) continue;
+    const eligibility = filters.job && job ? evaluateJobEligibility(job, student) : null;
+    if (eligibility) jobCounts[eligibility.status] += 1;
+    if (filters.job && !job) continue;
+    if (eligibility && filters.jobStatus !== 'all' && eligibility.status !== filters.jobStatus) continue;
+    const match = candidateMatchReasons(student, filters, job);
+    entries.push({ student, ...match, eligibility, missingFacts: candidateMissingFacts(student) });
+  }
+  const time = student => Date.parse(student.createdAt) || 0;
+  entries.sort((a, b) => {
+    if (filters.sort === 'name') return a.student.fullName.localeCompare(b.student.fullName) || String(a.student.userId).localeCompare(String(b.student.userId));
+    if (filters.sort === 'relevance' && a.score !== b.score) return b.score - a.score;
+    const byDate = filters.sort === 'oldest' ? time(a.student) - time(b.student) : time(b.student) - time(a.student);
+    return byDate || String(a.student.userId).localeCompare(String(b.student.userId));
+  });
+  return { entries, jobCounts };
+};
+
+export const candidateFilterLabels = filters => {
+  const labels = [];
+  if (filters.search) labels.push(`Search: ${filters.search}`);
+  if (filters.skills.length) labels.push(`${filters.skillMode === 'any' ? 'Any' : 'All'} skills: ${filters.skills.map(formatSkillLabel).join(', ')}`);
+  if (filters.degrees.length) labels.push(`Qualification: ${filters.degrees.join(' or ')}`);
+  for (const [field, label] of [['roleQuery', 'Role contains'], ['role', 'Exact role'], ['category', 'Sector'], ['branch', 'Branch'], ['year', 'Batch'], ['experience', 'Experience'], ['city', 'Current city'], ['area', 'Area'], ['educationStatus', 'Education'], ['relocation', 'Relocation'], ['availability', 'Joining'], ['certification', 'Certification'], ['dataStatus', 'Profile facts']]) {
+    if (filters[field] && filters[field] !== EMPTY_CANDIDATE_FILTERS[field]) {
+      const value = field === 'experience' ? (filters[field] === 'experienced' ? 'Experienced' : formatRoleExperienceLabel(filters[field]))
+        : field === 'availability' ? formatAvailabilityLabel(filters[field])
+          : field === 'category' ? formatJobCategoryLabel(filters[field])
+            : field === 'relocation' ? filters[field] === 'true' ? 'Yes' : 'No'
+              : field === 'dataStatus' ? MISSING_CANDIDATE_FACTS[filters[field]] ? `Missing ${MISSING_CANDIDATE_FACTS[filters[field]]}` : filters[field] === 'missing' ? 'Missing matching details' : 'Matching facts provided'
+                : field === 'educationStatus' ? filters[field] === 'studying' ? 'Currently studying' : 'Completed'
+                  : filters[field];
+      labels.push(`${label}: ${value}`);
+    }
+  }
+  if (filters.accountStatus !== 'active') labels.push(`Accounts: ${filters.accountStatus}`);
+  return labels;
+};

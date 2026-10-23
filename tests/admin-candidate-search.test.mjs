@@ -1,0 +1,113 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { EMPTY_CANDIDATE_FILTERS, candidateMatchesExperience, candidateMatchesSearch, candidateMissingFacts, candidateSkillKey, findAdminCandidates, readCandidateFilters, writeCandidateFilters } from '../src/lib/adminCandidateSearch.js';
+import { mapStudentProfileRow } from '../src/lib/adminStudentProfile.js';
+import { validateStudentProfilePayload } from '../src/lib/studentProfileValidation.js';
+import { buildStudentExportRows } from '../src/lib/studentExport.js';
+
+const row = (id, overrides = {}) => mapStudentProfileRow({
+  user_id: id, full_name: `Candidate ${id}`, college: 'Test Institute', degree: 'B.Tech',
+  branch: 'Computer Science (CSE)', graduation_year: 2026, skills: ['React.js', 'SQL'],
+  primary_target_role: 'Frontend Developer', interested_roles: ['Java Backend Developer'],
+  role_experience_level: '1_2_years', is_fresher: false, is_active: true,
+  current_city: 'Visakhapatnam', current_area: 'Gajuwaka', education_status: 'completed',
+  availability: 'immediate', willing_to_relocate: false, preferred_locations: ['Vizag'],
+  created_at: '2026-10-20T00:00:00Z', ...overrides,
+});
+const filters = overrides => ({ ...EMPTY_CANDIDATE_FILTERS, skills: [], degrees: [], ...overrides });
+const students = [
+  row('react-sql'), row('react', { degree: 'B.E', skills: ['react'], primary_target_role: 'React Developer' }),
+  row('java', { degree: 'MCA', skills: ['java', 'sql'], primary_target_role: 'Java Developer' }),
+  row('inactive', { is_active: false }),
+  row('missing', { skills: [], primary_target_role: '', interested_roles: [], current_city: '', education_status: '', availability: '', is_fresher: null, role_experience_level: null }),
+];
+const ids = result => result.entries.map(entry => entry.student.userId);
+
+test('combine all skills, alternative qualifications, partial secondary role and current residence', () => {
+  const result = findAdminCandidates(students, filters({ skills: ['react', 'sql'], degrees: ['BTech', 'B.E'], roleQuery: 'backend', city: 'Vizag' }));
+  assert.deepEqual(ids(result), ['react-sql']);
+  assert.ok(result.entries[0].reasons.includes('Skill: React'));
+  assert.ok(result.entries[0].reasons.some(reason => reason.includes('Java Backend Developer')));
+  assert.ok(result.entries[0].reasons.includes('Qualification: B.Tech'));
+});
+
+test('ANY skills differs from ALL and preserves stable deterministic ordering', () => {
+  const result = findAdminCandidates(students, filters({ skills: ['react', 'sql'], skillMode: 'any' }));
+  assert.equal(result.entries.length, 3);
+  assert.equal(result.entries[0].student.userId, 'react-sql');
+  assert.deepEqual(ids(findAdminCandidates(students, filters({ skills: ['react', 'sql'] }))), ['react-sql']);
+});
+
+test('C, C++, C#, Java and JavaScript are not interchangeable required skills', () => {
+  const examples = [row('c', { skills: ['c'] }), row('cpp', { skills: ['c++'] }), row('csharp', { skills: ['c#'] }), row('java', { skills: ['java'] }), row('js', { skills: ['javascript'] })];
+  for (const [skill, expected] of [['C', 'c'], ['C++', 'cpp'], ['C#', 'csharp'], ['Java', 'java'], ['JS', 'js']]) assert.deepEqual(ids(findAdminCandidates(examples, filters({ skills: [skill] }))), [expected]);
+  assert.equal(candidateSkillKey('Node.js'), 'nodejs');
+});
+
+test('search words match across fields; role search does not borrow from unrelated qualifications or skills', () => {
+  assert.equal(candidateMatchesSearch(students[0], 'react BTech Vizag'), true);
+  assert.equal(candidateMatchesSearch(students[0], 'React "Computer Science"'), true);
+  assert.equal(candidateMatchesSearch(students[0], 'react MBA'), false);
+  assert.equal(findAdminCandidates(students, filters({ roleQuery: 'Accountant' })).entries.length, 0);
+});
+
+test('experience buckets match the values registration actually saves and unknown is not experienced', () => {
+  for (const value of ['0_6_months', '6_12_months', '1_2_years', '2_4_years', '4_plus_years']) assert.equal(candidateMatchesExperience(row('exp', { role_experience_level: value }), value), true);
+  assert.equal(candidateMatchesExperience(students[4], 'experienced'), false);
+  assert.equal(candidateMatchesExperience(students[4], 'fresher'), false);
+  assert.equal(findAdminCandidates(students, filters({ experience: '1_2_years' })).entries.length, 3);
+});
+
+test('missing facts are explicit; preferred location never establishes current residence or joining time', () => {
+  assert.ok(candidateMissingFacts(students[4]).includes('Desired role'));
+  assert.ok(candidateMissingFacts(students[4]).includes('Experience'));
+  assert.equal(findAdminCandidates([students[4]], filters({ availability: 'immediate' })).entries.length, 0);
+  const away = row('away', { current_city: 'Hyderabad', preferred_locations: ['Vizag'] });
+  assert.equal(findAdminCandidates([away], filters({ city: 'Vizag' })).entries.length, 0);
+  assert.deepEqual(ids(findAdminCandidates(students, filters({ dataStatus: 'missing' }))), ['missing']);
+  assert.deepEqual(ids(findAdminCandidates(students, filters({ dataStatus: 'missing_skills' }))), ['missing']);
+  assert.deepEqual(ids(findAdminCandidates(students, filters({ dataStatus: 'missing_qualification' }))), []);
+});
+
+test('job checks separate missing evidence from known requirement failures', () => {
+  const job = { id: 'job', requirements_verified: true, accepted_degrees: ['B.Tech'], required_skills: ['sql'], required_education_status: 'completed' };
+  const examples = [row('yes'), row('unknown', { education_status: null }), row('no', { degree: 'B.Com' })];
+  const result = findAdminCandidates(examples, filters({ job: 'job' }), job);
+  assert.deepEqual(ids(result), ['yes']);
+  assert.deepEqual(result.jobCounts, { eligible: 1, needs_information: 1, ineligible: 1, unverified: 0 });
+  assert.deepEqual(ids(findAdminCandidates(examples, filters({ job: 'job', jobStatus: 'needs_information' }), job)), ['unknown']);
+  assert.equal(findAdminCandidates(examples, filters({ job: 'unloaded' })).entries.length, 0);
+});
+
+test('demographic fields do not affect inclusion, match explanation, or sorting', () => {
+  const base = row('person');
+  const settings = filters({ skills: ['react'], degrees: ['B.Tech'] });
+  const one = findAdminCandidates([{ ...base, gender: 'female' }], settings).entries[0];
+  const two = findAdminCandidates([{ ...base, gender: 'male' }], settings).entries[0];
+  assert.equal(one.score, two.score);
+  assert.deepEqual(one.reasons, two.reasons);
+});
+
+test('URL criteria round trip, support old links, and normalize malformed settings', () => {
+  const input = filters({ skills: ['react', 'sql'], degrees: ['B.Tech', 'B.E'], city: 'Vizag', experience: '2_4_years', accountStatus: 'all', jobStatus: 'needs_information' });
+  assert.deepEqual(readCandidateFilters(writeCandidateFilters(input)), input);
+  const legacy = readCandidateFilters(new URLSearchParams('skill=react&degree=B.Tech&batch=2026&exp=1_2_years&q=developer'));
+  assert.deepEqual(legacy.skills, ['react']);
+  assert.deepEqual(legacy.degrees, ['B.Tech']);
+  assert.equal(legacy.experience, '1_2_years');
+  assert.equal(readCandidateFilters(new URLSearchParams('skillMode=broken&accountStatus=broken')).skillMode, 'all');
+});
+
+test('exports use exactly the matching candidate list, including secondary-role matches', () => {
+  const result = findAdminCandidates(students, filters({ degrees: ['BTech', 'BE'], roleQuery: 'backend' }));
+  const exported = buildStudentExportRows(result.entries.map(entry => entry.student), ['fullName']);
+  assert.equal(exported.rows.length, 2);
+});
+
+test('new registrations require recruiting facts while legacy profile edits remain valid', () => {
+  const profile = { full_name: 'Test Candidate', college: 'Test Institute', degree: 'B.Tech', branch: 'Computer Science (CSE)', graduation_year: 2026, phone: '9000000000', skills: ['react'], is_fresher: true, target_job_categories: ['software_frontend'], primary_target_role: 'Frontend Developer', role_experience_level: 'fresher', availability: 'immediate', preferred_locations: ['Vizag'] };
+  assert.doesNotThrow(() => validateStudentProfilePayload(profile));
+  assert.throws(() => validateStudentProfilePayload(profile, { requireMatchingDetails: true }), /current city/);
+  assert.throws(() => validateStudentProfilePayload({ ...profile, current_city: 'Vizag' }, { requireMatchingDetails: true }), /currently studying/);
+  assert.equal(validateStudentProfilePayload({ ...profile, current_city: 'Vizag', education_status: 'completed' }, { requireMatchingDetails: true }).education_status, 'completed');
+});
