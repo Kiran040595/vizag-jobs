@@ -1,5 +1,27 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-24-Registration-Degree-Branch-Sync
+
+- Scope: S021 `/student/register` and S025 `/student/profile`; `src/lib/studentProfileOptions.js`, `src/components/student/StudentRegisterWizard.jsx`, `src/pages/StudentRegisterPage.jsx`, `src/components/student/StudentProfileFields.jsx`, `src/components/student/StudentProfileForm.jsx`, `tests/student-register-wizard.test.mjs`.
+- Problem resolved:
+  - Degree and Branch fields were not synchronizing. Selecting degree `B.Com` previously presented a flat, static 15-branch list starting with engineering branches (CSE, IT, ECE, EEE, Mechanical, Civil, Chemical, Automobile).
+  - Changing degree from engineering (e.g. `B.Tech` with `Mechanical Engineering`) to `B.Com` retained the invalid branch in state without resetting.
+  - Selecting `ITI` did not auto-populate `ITI Trade / Technical`.
+  - Selecting `10th Pass` disabled the select without visual helper feedback.
+- Solution delivered:
+  - Created canonical `DEGREE_BRANCH_MAP` in `src/lib/studentProfileOptions.js` defining branch subsets for all 14 degrees (`B.Com`, `B.Tech`, `B.E`, `Diploma`, `B.Sc`, `BBA`, `BCA`, `MCA`, `M.Tech`, `MBA`, `ITI`, `10th Pass`, `12th Pass`, `Other`).
+  - Added `getBranchesForDegree(degree)` and `getSyncedBranchForDegree(newDegree, currentBranch)` helpers.
+  - Synchronized branch dropdown options and state across both registration wizard (`StudentRegisterWizard.jsx`, `StudentRegisterPage.jsx`) and post-login profile editor (`StudentProfileFields.jsx`, `StudentProfileForm.jsx`).
+  - Selecting `B.Com` dynamically limits branches to `Commerce`, `Accounting & Finance`, `Computer Science (CSE)` (for B.Com Computer Applications), and `Business Administration`.
+  - Switching degree immediately clears invalid branches (prompting selection of a valid branch), preserves compatible branches (e.g. `Computer Science (CSE)` between B.Tech, BCA, B.Sc), and auto-populates single-option qualifications (`ITI Trade / Technical` for ITI, `Not Applicable` for 10th Pass).
+  - Added mobile-friendly contextual helper notes under the select fields confirming active branch filtering and auto-selections.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 186/186 tests.
+  - Added comprehensive test suite in `tests/student-register-wizard.test.mjs` verifying degree-to-branch filtering, reset on degree change, auto-population for ITI/10th Pass, and intermediate stream preservation.
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-23-Candidate-Discovery
 
 - Scope: S021 `/student/register` and S044 `/admin/students`; supporting candidate-search helpers, registration persistence handling, and student-profile fetching. Existing share/export/moderation actions retained. No new route or database migration.

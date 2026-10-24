@@ -7,6 +7,7 @@ import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume, va
 import StudentProfileFields, { EMPTY_STUDENT_PROFILE_FORM } from './StudentProfileFields';
 import StudentRegistrationConsent from './StudentRegistrationConsent';
 import StudentSkillMatchNotice from './StudentSkillMatchNotice';
+import { getSyncedBranchForDegree } from '../../lib/studentProfileOptions';
 
 export default function StudentProfileForm({ onSaved }) {
   const { profile, profileComplete, refreshStudentAccess, user } = useStudentAuth();
@@ -60,11 +61,19 @@ export default function StudentProfileForm({ onSaved }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === 'degree' && ['10th Pass', '12th Pass'].includes(value) ? { branch: 'Not Applicable' } : {}),
-    }));
+    setForm((current) => {
+      if (name === 'degree') {
+        return {
+          ...current,
+          degree: value,
+          branch: getSyncedBranchForDegree(value, current.branch),
+        };
+      }
+      return {
+        ...current,
+        [name]: value,
+      };
+    });
   };
 
   const handleFresherChange = (value) => {

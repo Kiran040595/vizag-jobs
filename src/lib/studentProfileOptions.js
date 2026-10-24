@@ -35,6 +35,140 @@ export const STUDENT_BRANCH_OPTIONS = [
   'Not Applicable',
 ];
 
+/** Mapping of degrees to relevant branches/streams/trades. */
+export const DEGREE_BRANCH_MAP = {
+  '10th Pass': ['Not Applicable'],
+  '12th Pass': ['Not Applicable', 'Science (General)', 'Commerce', 'Arts / Humanities'],
+  'ITI': ['ITI Trade / Technical'],
+  'Diploma': [
+    'Mechanical Engineering',
+    'Electrical & Electronics (EEE)',
+    'Civil Engineering',
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+    'Electronics & Communication (ECE)',
+    'Automobile Engineering',
+    'Chemical Engineering',
+    'ITI Trade / Technical',
+  ],
+  'B.Tech': [
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+    'Electronics & Communication (ECE)',
+    'Electrical & Electronics (EEE)',
+    'Mechanical Engineering',
+    'Civil Engineering',
+    'Chemical Engineering',
+    'Automobile Engineering',
+  ],
+  'B.E': [
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+    'Electronics & Communication (ECE)',
+    'Electrical & Electronics (EEE)',
+    'Mechanical Engineering',
+    'Civil Engineering',
+    'Chemical Engineering',
+    'Automobile Engineering',
+  ],
+  'B.Sc': [
+    'Science (General)',
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+  ],
+  'B.Com': [
+    'Commerce',
+    'Accounting & Finance',
+    'Computer Science (CSE)',
+    'Business Administration',
+  ],
+  'BBA': [
+    'Business Administration',
+    'Commerce',
+    'Accounting & Finance',
+  ],
+  'BCA': [
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+  ],
+  'MCA': [
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+  ],
+  'M.Tech': [
+    'Computer Science (CSE)',
+    'Information Technology (IT)',
+    'Electronics & Communication (ECE)',
+    'Electrical & Electronics (EEE)',
+    'Mechanical Engineering',
+    'Civil Engineering',
+    'Chemical Engineering',
+    'Automobile Engineering',
+  ],
+  'MBA': [
+    'Business Administration',
+    'Accounting & Finance',
+    'Commerce',
+  ],
+  'Other': STUDENT_BRANCH_OPTIONS,
+};
+
+/**
+ * Returns the relevant branches for a selected degree qualification.
+ * If degree is not provided or not in map, defaults to all canonical branch options.
+ */
+export const getBranchesForDegree = (degree) => {
+  const trimmed = String(degree || '').trim();
+  if (!trimmed || !DEGREE_BRANCH_MAP[trimmed]) {
+    return STUDENT_BRANCH_OPTIONS;
+  }
+  return DEGREE_BRANCH_MAP[trimmed];
+};
+
+/**
+ * Synchronizes the branch value when degree changes:
+ * - '10th Pass' -> 'Not Applicable'
+ * - Single-option degree like 'ITI' -> 'ITI Trade / Technical'
+ * - '12th Pass' -> preserves valid stream or defaults to 'Not Applicable'
+ * - Incompatible branch with new degree -> resets to ''
+ * - Compatible branch with new degree -> preserved
+ */
+export const getSyncedBranchForDegree = (newDegree, currentBranch) => {
+  const trimmedDegree = String(newDegree || '').trim();
+  const trimmedBranch = String(currentBranch || '').trim();
+
+  if (!trimmedDegree) {
+    return '';
+  }
+
+  if (trimmedDegree === '10th Pass') {
+    return 'Not Applicable';
+  }
+
+  const validBranches = getBranchesForDegree(trimmedDegree);
+
+  // If only one branch option exists (e.g. ITI -> 'ITI Trade / Technical')
+  if (validBranches.length === 1) {
+    return validBranches[0];
+  }
+
+  // If 12th Pass, keep valid stream or default to 'Not Applicable'
+  if (trimmedDegree === '12th Pass') {
+    if (trimmedBranch && validBranches.includes(trimmedBranch)) {
+      return trimmedBranch;
+    }
+    return 'Not Applicable';
+  }
+
+  // If the current branch is valid for the new degree, keep it
+  if (trimmedBranch && validBranches.includes(trimmedBranch)) {
+    return trimmedBranch;
+  }
+
+  // Reset to empty string so candidate is prompted to pick a valid branch for that degree
+  return '';
+};
+
 /** Graduation years for dropdown (expanded 2010 to 2030). */
 export const buildGraduationYearOptions = () => {
   const years = [];

@@ -9,7 +9,8 @@ import {
   resolveTargetJobCategoryToken,
 } from '../../lib/studentCareerPreferences';
 import {
-  STUDENT_BRANCH_OPTIONS,
+  getBranchesForDegree,
+  getSyncedBranchForDegree,
   STUDENT_DEGREE_OPTIONS,
   STUDENT_GRADUATION_YEAR_OPTIONS,
   STUDENT_SKILL_OPTIONS,
@@ -161,6 +162,17 @@ export default function StudentRegisterWizard({
 
   const handleCollegePillClick = (collegeName) => {
     onFormChange({ target: { name: 'college', value: collegeName } });
+  };
+
+  const availableBranches = useMemo(() => getBranchesForDegree(form.degree), [form.degree]);
+
+  const handleDegreeChange = (e) => {
+    const nextDegree = e.target.value;
+    onFormChange(e);
+    const syncedBranch = getSyncedBranchForDegree(nextDegree, form.branch);
+    if (syncedBranch !== form.branch) {
+      onFormChange({ target: { name: 'branch', value: syncedBranch } });
+    }
   };
 
   // --- SECTOR MANAGEMENT (MAX 3) ---
@@ -600,7 +612,7 @@ export default function StudentRegisterWizard({
               <select
                 aria-label="Degree / Qualification *" name="degree"
                 value={form.degree}
-                onChange={onFormChange}
+                onChange={handleDegreeChange}
                 required
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               >
@@ -619,19 +631,30 @@ export default function StudentRegisterWizard({
               </label>
               <select
                 aria-label="Branch / Stream / Trade *" name="branch"
-                disabled={['10th Pass', '12th Pass'].includes(form.degree)}
+                disabled={!form.degree || form.degree === '10th Pass'}
                 value={form.branch}
                 onChange={onFormChange}
                 required
                 className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
               >
-                <option value="">Select Branch / Trade</option>
-                {STUDENT_BRANCH_OPTIONS.map((br) => (
+                <option value="">
+                  {!form.degree ? 'Select Degree / Course first' : 'Select Branch / Trade'}
+                </option>
+                {availableBranches.map((br) => (
                   <option key={br} value={br}>
                     {br}
                   </option>
                 ))}
               </select>
+              {form.degree === '10th Pass' && (
+                <p className="mt-1 text-xs text-slate-500">Not Applicable for 10th Pass.</p>
+              )}
+              {form.degree === 'ITI' && (
+                <p className="mt-1 text-xs text-indigo-600 font-medium">Auto-selected ITI Trade / Technical.</p>
+              )}
+              {form.degree && form.degree !== '10th Pass' && form.degree !== 'ITI' && (
+                <p className="mt-1 text-xs text-slate-500">Showing relevant branches for {form.degree}.</p>
+              )}
             </div>
           </div>
 

@@ -12,7 +12,8 @@ import {
   formatSkillLabel,
   groupSkillOptions,
   resolveSkillToken,
-  STUDENT_BRANCH_OPTIONS,
+  getBranchesForDegree,
+  getSyncedBranchForDegree,
   STUDENT_DEGREE_OPTIONS,
   STUDENT_GRADUATION_YEAR_OPTIONS,
   STUDENT_SKILL_OPTIONS,
@@ -62,9 +63,19 @@ export default function StudentProfileFields({
   idPrefix = 'student-profile',
 }) {
   const skillGroups = useMemo(() => groupSkillOptions(), []);
+  const availableBranches = useMemo(() => getBranchesForDegree(form.degree), [form.degree]);
   const [customCategoryDraft, setCustomCategoryDraft] = useState('');
   const [customSkillDraft, setCustomSkillDraft] = useState('');
   const [sharedRoleLabels, setSharedRoleLabels] = useState([]);
+
+  const handleDegreeChange = (e) => {
+    const nextDegree = e.target.value;
+    onChange(e);
+    const syncedBranch = getSyncedBranchForDegree(nextDegree, form.branch);
+    if (syncedBranch !== form.branch) {
+      onChange({ target: { name: 'branch', value: syncedBranch } });
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +176,7 @@ export default function StudentProfileFields({
           id={`${idPrefix}-degree`}
           name="degree"
           value={form.degree}
-          onChange={onChange}
+          onChange={handleDegreeChange}
           required
           className={SELECT_CLASS}
         >
@@ -183,19 +194,30 @@ export default function StudentProfileFields({
         <select
           id={`${idPrefix}-branch`}
           name="branch"
-                disabled={['10th Pass', '12th Pass'].includes(form.degree)}
+          disabled={!form.degree || form.degree === '10th Pass'}
           value={form.branch}
           onChange={onChange}
           required
           className={SELECT_CLASS}
         >
-          <option value="">Select branch</option>
-          {STUDENT_BRANCH_OPTIONS.map((option) => (
+          <option value="">
+            {!form.degree ? 'Select degree first' : 'Select branch'}
+          </option>
+          {availableBranches.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
           ))}
         </select>
+        {form.degree === '10th Pass' && (
+          <p className="mt-1 text-xs text-slate-500">Not Applicable for 10th Pass.</p>
+        )}
+        {form.degree === 'ITI' && (
+          <p className="mt-1 text-xs text-indigo-600 font-medium">Auto-selected ITI Trade / Technical.</p>
+        )}
+        {form.degree && form.degree !== '10th Pass' && form.degree !== 'ITI' && (
+          <p className="mt-1 text-xs text-slate-500">Showing relevant branches for {form.degree}.</p>
+        )}
       </label>
 
       <label className="block">

@@ -22,6 +22,7 @@ import { validateStudentProfilePayload } from '../lib/studentProfileValidation';
 import { upsertStudentProfile } from '../services/studentJobs';
 import { recordStudentRegistrationConsents } from '../services/studentConsent';
 import { saveResumePathOnProfile, uploadStudentResume, validateResumeFile } from '../services/studentResume';
+import { getSyncedBranchForDegree } from '../lib/studentProfileOptions';
 
 const INITIAL_STUDENT_REGISTER_FORM = {
   ...EMPTY_STUDENT_PROFILE_FORM,
@@ -126,11 +127,19 @@ export default function StudentRegisterPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === 'degree' && ['10th Pass', '12th Pass'].includes(value) ? { branch: 'Not Applicable' } : {}),
-    }));
+    setForm((current) => {
+      if (name === 'degree') {
+        return {
+          ...current,
+          degree: value,
+          branch: getSyncedBranchForDegree(value, current.branch),
+        };
+      }
+      return {
+        ...current,
+        [name]: value,
+      };
+    });
   };
 
   const handleFresherChange = (value) => {
