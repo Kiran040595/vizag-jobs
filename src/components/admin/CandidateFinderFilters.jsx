@@ -37,6 +37,7 @@ const POPULAR_TARGET_ROLES = [
   'Full Stack Developer',
   'Telecaller',
   'GIS Developer',
+  'Teacher',
   'Accountant',
   'Digital Marketing',
   'Sales Executive',
@@ -242,7 +243,7 @@ export default function CandidateFinderFilters({
           <span className="text-slate-300">|</span>
 
           {/* Popular Target Roles Quick Pills */}
-          {POPULAR_TARGET_ROLES.slice(0, 8).map((role) => {
+          {POPULAR_TARGET_ROLES.slice(0, 10).map((role) => {
             const isSelected = filters.roleQuery.toLowerCase() === role.toLowerCase();
             return (
               <button

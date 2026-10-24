@@ -24,6 +24,9 @@ export const POPULAR_CERTIFICATIONS = [
   'PLC & Automation',
   'DevOps & Docker',
   'Cyber Security Fundamentals',
+  'B.Ed (Bachelor of Education)',
+  'AP TET / CTET Certified',
+  'NET / SET Qualified',
 ];
 
 export const POPULAR_VIZAG_ROLES = [
@@ -51,6 +54,11 @@ export const POPULAR_VIZAG_ROLES = [
   'Content Writer',
   'HR Recruiter',
   'Operations Executive',
+  'Teacher',
+  'Primary School Teacher',
+  'High School Teacher',
+  'Lecturer / Assistant Professor',
+  'Tutor / Home Tutor',
   'Mechanical Engineer',
   'Civil Site Engineer',
   'Electrical Engineer',

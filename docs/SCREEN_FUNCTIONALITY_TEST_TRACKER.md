@@ -874,5 +874,30 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
   - Production build: `npm run build` completed cleanly in 2.12s with 0 errors.
 
+## QA-2026-10-24: End-to-End Teacher Role Matching & Teaching Specializations
+
+- Scope: S004 `/register`, S044 `/admin/students`, S019 `/employer/jobs/:jobId/applications`
+- User Query:
+  - *"what about if a candidate looking for teacher role and companies looking for teacher role ? are we satisfyig both conditions"*
+- Two-Sided Condition Audit & Implementation:
+  1. Candidate Side (Candidates looking for teaching roles):
+     - Added popular teaching roles (`Teacher`, `Primary School Teacher`, `High School Teacher`, `Lecturer / Assistant Professor`, `Tutor / Home Tutor`) to `POPULAR_VIZAG_ROLES` in `studentRegistrationSuggestions.js` for instant autocompletion during registration.
+     - Added teaching certifications (`B.Ed (Bachelor of Education)`, `AP TET / CTET Certified`, `NET / SET Qualified`) to `POPULAR_CERTIFICATIONS`.
+     - Added a dedicated `Teaching & Education` skill group to `STUDENT_SKILL_OPTIONS` in `studentProfileOptions.js` (`teaching`, `classroom management`, `lesson planning`, `curriculum development`, `student mentoring`, `online tutoring`).
+     - Aligned with candidate category `teaching_training` ("Teaching / Training").
+  2. Company Side (Schools, colleges, institutes looking for teachers):
+     - Verified platform vacancies exist (e.g. `Root and right learning` → `Teacher`, `Achievvers Junior College of Aakash` → `Chemistry faculty`, `CMT Business School` → `Faculty`, etc.) under Education category.
+  3. Admin Matching & Suitable Profiles Assignment:
+     - Added `Teacher` quick filter pill directly to `POPULAR_TARGET_ROLES` in `CandidateFinderFilters.jsx`. Clicking it immediately filters all candidates desiring teacher roles.
+     - Admins can filter by sector (`Teaching / Training`), qualification, or teaching skills.
+     - Admins can assign all matching teachers directly to the company vacancy as Suitable Profiles.
+  4. Employer Dashboard:
+     - Recruiter logs in → opens job → views `🌟 Suitable Profiles` → reviews teacher credentials & admin notes → schedules interview or contacts via WhatsApp.
+- Verification Evidence:
+  - Automated tests: `node --test tests/*.test.mjs` passed 186/186 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly in 7.57s with 0 errors.
+
+
 
 

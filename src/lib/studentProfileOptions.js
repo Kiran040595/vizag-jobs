@@ -82,6 +82,12 @@ export const STUDENT_SKILL_OPTIONS = [
   { value: 'two wheeler riding', label: 'Two-wheeler Riding', group: 'Field & Logistics' },
   { value: 'warehouse operations', label: 'Warehouse Operations', group: 'Field & Logistics' },
   { value: 'delivery operations', label: 'Delivery Operations', group: 'Field & Logistics' },
+  { value: 'teaching', label: 'Teaching', group: 'Teaching & Education' },
+  { value: 'classroom management', label: 'Classroom Management', group: 'Teaching & Education' },
+  { value: 'lesson planning', label: 'Lesson Planning', group: 'Teaching & Education' },
+  { value: 'curriculum development', label: 'Curriculum Development', group: 'Teaching & Education' },
+  { value: 'student mentoring', label: 'Student Mentoring', group: 'Teaching & Education' },
+  { value: 'online tutoring', label: 'Online Tutoring', group: 'Teaching & Education' },
 ];
 
 const SKILL_LABEL_BY_VALUE = new Map(STUDENT_SKILL_OPTIONS.map((item) => [item.value, item.label]));
