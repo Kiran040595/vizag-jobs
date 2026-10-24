@@ -190,9 +190,9 @@ export default function ApplicationFilters({
             onChange={(e) => onSortChange?.(e.target.value)}
             className={selectClassName}
           >
-            <option value="newest">Newest applied first</option>
-            <option value="oldest">Earliest applied (Early register)</option>
+            <option value="newest">⭐ Starred first · Newest</option>
             <option value="starred_first">⭐ Starred first</option>
+            <option value="oldest">Earliest applied (Early register)</option>
             <option value="name_asc">Name (A–Z)</option>
             <option value="has_resume">Has resume first</option>
           </select>

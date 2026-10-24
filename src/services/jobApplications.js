@@ -17,6 +17,9 @@ const APPLICATION_COLUMNS = `
   resume_path,
   resume_share_token,
   profile_snapshot,
+  is_starred,
+  starred_at,
+  admin_notes,
   recruiter_notes,
   interview_scheduled_at,
   interview_mode,
@@ -173,7 +176,7 @@ export const fetchJobApplications = async (jobId) => {
   let data;
   const res = await supabase
     .from('job_applications')
-    .select(`${APPLICATION_COLUMNS}, is_starred, admin_notes, starred_at`)
+    .select(APPLICATION_COLUMNS)
     .eq('job_id', jobId)
     .order('submitted_at', { ascending: false });
 

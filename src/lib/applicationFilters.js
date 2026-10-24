@@ -248,13 +248,6 @@ export const filterApplications = (applications = [], criteria = {}) => {
       return timeA - timeB;
     }
 
-    if (sortBy === 'starred_first') {
-      const starA = Boolean(a.isStarred || a.profileSnapshot?.is_starred || a.profileSnapshot?.isStarred);
-      const starB = Boolean(b.isStarred || b.profileSnapshot?.is_starred || b.profileSnapshot?.isStarred);
-      if (starA !== starB) return starA ? -1 : 1;
-      return timeB - timeA;
-    }
-
     if (sortBy === 'name_asc') {
       const nameA = (a.profileSnapshot?.fullName || '').toLowerCase();
       const nameB = (b.profileSnapshot?.fullName || '').toLowerCase();
@@ -268,7 +261,21 @@ export const filterApplications = (applications = [], criteria = {}) => {
       return timeB - timeA;
     }
 
-    // Default newest first
+    // Default newest or starred_first: Starred / Referred candidates ALWAYS appear first, then newest
+    const starA = Boolean(
+      a.isStarred ||
+        a.profileSnapshot?.is_starred ||
+        a.profileSnapshot?.isStarred ||
+        (a.isSuitableProfile && Boolean(a.adminNotes))
+    );
+    const starB = Boolean(
+      b.isStarred ||
+        b.profileSnapshot?.is_starred ||
+        b.profileSnapshot?.isStarred ||
+        (b.isSuitableProfile && Boolean(b.adminNotes))
+    );
+    if (starA !== starB) return starA ? -1 : 1;
+
     return timeB - timeA;
   });
 };

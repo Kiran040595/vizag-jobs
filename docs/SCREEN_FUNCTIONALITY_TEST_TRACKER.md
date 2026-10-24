@@ -13,6 +13,10 @@
 - Solution delivered:
   - Repaired and restored Badamsetti Indrani's complete `profile_snapshot` in live database (`fullName: 'Badamsetti indrani'`, `degree: 'B.Com'`, `skills`, `phone`, `college`, `branch: 'Commerce'`, `graduationYear: 2026`).
   - Backfilled and verified all applications in `job_applications` to guarantee complete snapshots from `student_profiles`.
+  - Deployed database migration `supabase/migrations/20261024220000_application_star_and_admin_notes.sql` adding dedicated columns `is_starred`, `starred_at`, and `admin_notes` to `job_applications` with index and RLS policy `Admins update job applications`.
+  - Resolved star persistence on reload: `fetchJobCandidates` and `fetchJobApplications` now load persisted `is_starred` directly from database column `job_applications.is_starred`.
+  - Implemented automatic **Starred Profiles Appear First** in `src/lib/applicationFilters.js`: in default sort (`newest`), all starred and admin-recommended profiles automatically bubble to the top of the applications list.
+  - Updated sort options in `ApplicationFilters.jsx` confirming starred candidates appear first (`⭐ Starred first · Newest`).
   - Updated `updateApplicationStar` in `src/services/jobApplications.js` to accept `existingProfileSnapshot`, query `student_profiles` if name is missing, and deep merge so candidate personal/educational facts are NEVER overwritten or lost.
   - Updated `fetchJobApplications` to enrich candidate records from `student_profiles` when snapshot is incomplete.
   - Updated `AdminJobApplicationsPage.jsx` to load via `fetchJobCandidates(jobId)` (joining `student_profiles` via `get_job_applicant_records` with fallback).
@@ -20,7 +24,7 @@
   - Passed `existingProfileSnapshot` from `JobApplicationCard.jsx`.
   - Added clear active indicator badge for "⭐ Starred only" in `ApplicationFilters.jsx` with an explicit reset button in the empty results state so admins never get stranded when unstarring.
 - Automated checks:
-  - `node --test tests/*.test.mjs` passed 205/205 tests.
+  - `node --test tests/*.test.mjs` passed 206/206 tests (added test for default newest sort placing starred candidates first).
   - `npm run lint` clean (0 errors, 0 warnings).
   - Production build `npm run build` passed successfully.
 - Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.

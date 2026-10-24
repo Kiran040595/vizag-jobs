@@ -19,15 +19,6 @@ create index if not exists idx_job_applications_starred
   on public.job_applications(job_id, is_starred)
   where is_starred = true;
 
--- 2. Extend job_suitable_profiles
-alter table public.job_suitable_profiles
-  add column if not exists is_starred boolean not null default false,
-  add column if not exists starred_at timestamptz;
-
-create index if not exists idx_job_suitable_profiles_starred
-  on public.job_suitable_profiles(job_id, is_starred)
-  where is_starred = true;
-
 -- 3. Policy to allow admins to update star and admin notes on job_applications
 drop policy if exists "Admins update job applications" on public.job_applications;
 create policy "Admins update job applications"

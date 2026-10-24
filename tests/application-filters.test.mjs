@@ -164,6 +164,17 @@ test('filterApplications sorts by starred first', () => {
   assert.ok(!sorted[3].isStarred);
 });
 
+test('filterApplications default newest sort places starred profiles first', () => {
+  const sorted = filterApplications(mockApplicants, { sortBy: 'newest' });
+  // Starred profiles (app-4 submitted 15:00, app-2 submitted 12:00) should appear before unstarred (app-1, app-3)
+  assert.equal(sorted[0].id, 'app-4');
+  assert.equal(sorted[1].id, 'app-2');
+  assert.ok(sorted[0].isStarred);
+  assert.ok(sorted[1].isStarred);
+  assert.ok(!sorted[2].isStarred);
+  assert.ok(!sorted[3].isStarred);
+});
+
 test('extractApplicationFilterOptions extracts facets and counts', () => {
   const facets = extractApplicationFilterOptions(mockApplicants);
   assert.equal(facets.totalCount, 4);
