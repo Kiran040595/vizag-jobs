@@ -303,6 +303,12 @@ export default function StudentRegisterWizard({
     return categories.includes('telecaller_bpo') || /telecaller|calling|bpo|voice/i.test(role);
   }, [form.primary_target_role, form.target_job_categories]);
 
+  const isSalesRole = useMemo(() => {
+    const role = (form.primary_target_role || '').toLowerCase();
+    const categories = form.target_job_categories || [];
+    return categories.includes('sales_marketing') || /sales|bde|business development/i.test(role);
+  }, [form.primary_target_role, form.target_job_categories]);
+
   // --- CERTIFICATIONS CHIPS & AUTOCOMPLETE ---
   const popularCertChips = useMemo(() => {
     const list = [...POPULAR_CERTIFICATIONS];
@@ -957,6 +963,92 @@ export default function StudentRegisterWizard({
                     <span>🗣️</span>
                     <span>Hindi Speaking</span>
                     {form.skills.includes('hindi speaking') ? ' ✓' : ''}
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Sales & Business Development Assets Card */}
+            {isSalesRole && (
+              <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">💼</span>
+                  <div>
+                    <p className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                      Sales & Field Marketing Assets (Key for Hiring in Vizag):
+                    </p>
+                    <p className="text-xs text-emerald-800">
+                      Companies in Vizag look for these key skills and assets for sales roles. Tap to add:
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('sales')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('sales')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🎯</span>
+                    <span>Direct / Field Sales</span>
+                    {form.skills.includes('sales') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('client acquisition')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('client acquisition')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🤝</span>
+                    <span>Client Acquisition</span>
+                    {form.skills.includes('client acquisition') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('negotiation')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('negotiation')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>💬</span>
+                    <span>Negotiation</span>
+                    {form.skills.includes('negotiation') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('two wheeler riding')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('two wheeler riding')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🛵</span>
+                    <span>Own Two-Wheeler / Bike</span>
+                    {form.skills.includes('two wheeler riding') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggleSkill('driving license');
+                      handleToggleCertChip('Two-Wheeler Driving License (DL)');
+                    }}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('driving license') || (form.certifications || '').includes('Driving License')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🪪</span>
+                    <span>Driving License (DL)</span>
+                    {form.skills.includes('driving license') || (form.certifications || '').includes('Driving License') ? ' ✓' : ''}
                   </button>
                 </div>
               </div>

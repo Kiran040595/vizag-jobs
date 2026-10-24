@@ -401,3 +401,95 @@ test('findAdminCandidates candidateSource filter isolates registered vs quick_ap
   assert.equal(quickResult.entries[0].student.candidateSource, 'quick_apply');
   assert.ok(quickResult.entries[0].reasons.some((r) => r.includes('Source: ⚡ Quick Apply Lead')));
 });
+
+test('sales executive typo tolerance and synonym matching in roleQuery and search', () => {
+  const salesCand = row('sales-1', {
+    full_name: 'Rajesh Kumar',
+    primary_target_role: 'Sales Executive',
+    is_fresher: false,
+    role_experience_level: '1_2_years',
+    target_job_categories: ['sales_marketing'],
+    skills: ['sales', 'client acquisition'],
+  });
+  const bdeCand = row('bde-1', {
+    full_name: 'Anitha Rao',
+    primary_target_role: 'Business Development Executive (BDE)',
+    is_fresher: false,
+    role_experience_level: '2_4_years',
+    target_job_categories: ['sales_marketing'],
+  });
+  const devCand = row('dev-1', {
+    full_name: 'Suresh V',
+    primary_target_role: 'Java Developer',
+    is_fresher: true,
+    role_experience_level: 'fresher',
+  });
+
+  const candPool = [salesCand, bdeCand, devCand];
+
+  // 1. Exact roleQuery with typo "sales exicutive" (with 'i') matches Sales Executive and BDE
+  const typoResult = findAdminCandidates(candPool, filters({ roleQuery: 'sales exicutive' }));
+  assert.equal(typoResult.entries.length, 2);
+  assert.deepEqual(typoResult.entries.map((e) => e.student.userId).sort(), ['bde-1', 'sales-1']);
+
+  // 2. roleQuery "sales executive" matches Sales Executive and BDE (business development)
+  const roleResult = findAdminCandidates(candPool, filters({ roleQuery: 'sales executive' }));
+  assert.equal(roleResult.entries.length, 2);
+  assert.deepEqual(roleResult.entries.map((e) => e.student.userId).sort(), ['bde-1', 'sales-1']);
+
+  // 3. Smart Search query with typo "sales exicutive" finds sales candidates
+  const searchResult = findAdminCandidates(candPool, filters({ search: 'sales exicutive' }));
+  assert.equal(searchResult.entries.length, 2);
+  assert.deepEqual(searchResult.entries.map((e) => e.student.userId).sort(), ['bde-1', 'sales-1']);
+
+  // 4. Smart Search query "sales executive" finds sales candidates
+  const searchResult2 = findAdminCandidates(candPool, filters({ search: 'sales executive' }));
+  assert.equal(searchResult2.entries.length, 2);
+  assert.deepEqual(searchResult2.entries.map((e) => e.student.userId).sort(), ['bde-1', 'sales-1']);
+});
+
+test('experienced filter correctly matches candidates with role experience level or quick apply experience', () => {
+  // Candidate with role_experience_level set, but is_fresher is null
+  const expWithoutBool = row('exp-nobool', {
+    is_fresher: null,
+    role_experience_level: '1_2_years',
+    role_experience_label: '1-2 years',
+  });
+  assert.equal(candidateMatchesExperience(expWithoutBool, 'experienced'), true);
+  assert.equal(candidateMatchesExperience(expWithoutBool, 'fresher'), false);
+
+  // Quick applicant with "2 years" text
+  const quickExp = mapQuickApplicationToCandidate({
+    id: 'app-sales-quick',
+    candidate: { full_name: 'Praveen Sales', phone: '+919876543210' },
+    applied_role: 'Field Sales Executive',
+    form_answers: { experience: '2 years' },
+  });
+  assert.equal(quickExp.isFresher, false);
+  assert.equal(candidateMatchesExperience(quickExp, 'experienced'), true);
+  assert.equal(candidateMatchesTalentPool(quickExp, 'sales'), true);
+
+  // Unknown/missing experience remains not experienced
+  assert.equal(candidateMatchesExperience(students[4], 'experienced'), false);
+});
+
+test('curated talent pool for sales matches sales roles, categories, and skills', () => {
+  const salesOption = TALENT_POOL_OPTIONS.find((p) => p.value === 'sales');
+  assert.ok(salesOption);
+  assert.equal(salesOption.label, '💼 Sales & Marketing Executives');
+
+  const sales1 = row('s1', { primary_target_role: 'Field Sales Executive' });
+  const sales2 = row('s2', { target_job_categories: ['sales_marketing'] });
+  const sales3 = row('s3', { skills: ['client acquisition'] });
+  const dev = row('d1', { primary_target_role: 'Python Developer' });
+
+  assert.equal(candidateMatchesTalentPool(sales1, 'sales'), true);
+  assert.equal(candidateMatchesTalentPool(sales2, 'sales'), true);
+  assert.equal(candidateMatchesTalentPool(sales3, 'sales'), true);
+  assert.equal(candidateMatchesTalentPool(dev, 'sales'), false);
+
+  // Combining sales talent pool with experienced filter isolates experienced sales candidates
+  const res = findAdminCandidates([sales1, sales2, dev], filters({ talentPool: 'sales', experience: 'experienced' }));
+  assert.equal(res.entries.length, 2);
+  assert.ok(res.entries[0].reasons.some((r) => r.includes('Talent Pool: 💼 Sales & Marketing Executives')));
+});

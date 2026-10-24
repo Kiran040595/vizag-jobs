@@ -22,6 +22,7 @@ export const EMPTY_CANDIDATE_FILTERS = {
 export const TALENT_POOL_OPTIONS = [
   { value: 'delivery', label: '🛵 Delivery Boys & Executives', shortLabel: '🛵 Delivery' },
   { value: 'telecaller', label: '📞 Telecallers & BPO Voice', shortLabel: '📞 Telecaller' },
+  { value: 'sales', label: '💼 Sales & Marketing Executives', shortLabel: '💼 Sales' },
   { value: 'teacher', label: '👨‍🏫 Teachers & Education', shortLabel: '👨‍🏫 Teachers' },
   { value: 'it_freshers', label: '💻 IT & Software Freshers', shortLabel: '💻 IT Freshers' },
   { value: 'accounts', label: '🏢 Accounts & Office Finance', shortLabel: '🏢 Accounts' },
@@ -82,28 +83,78 @@ export const candidateMissingFacts = student => [
   !text(student.availability) && 'Joining availability',
 ].filter(Boolean);
 
+export const normalizeQueryTerm = (term) => {
+  const t = text(term);
+  if (/^ex[ie]cutiv[e]?$|^exec$/i.test(t)) return 'executive';
+  if (/^deve?l[oe]pe?r$/i.test(t)) return 'developer';
+  if (/^telec[ao]ll?[oe]r$|^telecal$/i.test(t)) return 'telecaller';
+  if (/^acc?ount?ant$|^acount$/i.test(t)) return 'accountant';
+  if (/^teach?er$|^techer$|^techr$/i.test(t)) return 'teacher';
+  if (/^del[ie]ve?ry$/i.test(t)) return 'delivery';
+  return t;
+};
+
 const queryTerms = query => [...text(query).matchAll(/"([^"]+)"|(\S+)/g)].map(match => match[1] || match[2]);
+
+const roleMatchesTerm = (normalizedRole, term) => {
+  const normTerm = normalizeQueryTerm(term);
+  if (normalizedRole.includes(term) || normalizedRole.includes(normTerm)) return true;
+  if (normTerm === 'sales' && /business development|bde|marketing executive/i.test(normalizedRole)) return true;
+  if ((normTerm === 'executive' || normTerm === 'officer') && /associate|representative|agent|specialist/i.test(normalizedRole)) return true;
+  if (normTerm === 'bde' && /business development|sales executive/i.test(normalizedRole)) return true;
+  return false;
+};
+
 const matchingDesiredRoles = (student, filters) => {
   const terms = queryTerms(filters.roleQuery);
-  return studentRoleLabels(student).filter(role =>
-    (!filters.role || roleKey(role) === roleKey(filters.role)) &&
-    terms.every(term => roleKey(role).includes(term)));
+  return studentRoleLabels(student).filter(role => {
+    const rKey = roleKey(role);
+    if (filters.role && rKey !== roleKey(filters.role)) return false;
+    return terms.every(term => roleMatchesTerm(rKey, term));
+  });
 };
+
 export const candidateMatchesSearch = (student, query) => {
   if (!text(query)) return true;
   const skills = candidateSkills(student).map(candidateSkillKey);
   const location = [student.currentCity, student.currentArea, ...(student.preferredLocations || [])].join(' ');
   const cityAliases = /vizag|visakhapatnam|vishakhapatnam/i.test(location) ? 'vizag visakhapatnam vishakhapatnam' : '';
   const blob = `${studentSearchBlob(student)} ${qualificationKey(student.degree)} ${skills.join(' ')} ${cityAliases}`;
-  return queryTerms(query).every(term => blob.includes(term) || skills.includes(candidateSkillKey(term)) || qualificationKey(student.degree) === qualificationKey(term));
+  return queryTerms(query).every(term => {
+    const norm = normalizeQueryTerm(term);
+    return (
+      blob.includes(term) ||
+      blob.includes(norm) ||
+      skills.includes(candidateSkillKey(term)) ||
+      skills.includes(candidateSkillKey(norm)) ||
+      qualificationKey(student.degree) === qualificationKey(term) ||
+      qualificationKey(student.degree) === qualificationKey(norm)
+    );
+  });
 };
 
 export const candidateMatchesExperience = (student, value) => {
   if (!value) return true;
-  const isFresher = typeof student.isFresher === 'boolean' ? student.isFresher
-    : student.roleExperienceLevel ? student.roleExperienceLevel === 'fresher' : null;
+  const hasExpLevel = Boolean(student.roleExperienceLevel && student.roleExperienceLevel !== 'fresher');
+  const isFresher = typeof student.isFresher === 'boolean'
+    ? student.isFresher
+    : student.roleExperienceLevel
+      ? student.roleExperienceLevel === 'fresher'
+      : (student.roleExperienceLabel && /fresher/i.test(student.roleExperienceLabel))
+        ? true
+        : hasExpLevel
+          ? false
+          : null;
   if (value === 'fresher') return isFresher === true;
-  if (value === 'experienced') return isFresher === false;
+  if (value === 'experienced') {
+    return (
+      isFresher === false ||
+      hasExpLevel ||
+      Boolean(student.roleExperienceLabel && !/fresher/i.test(student.roleExperienceLabel)) ||
+      (typeof student.quickAnswers?.experience !== 'undefined' &&
+        parseFloat(String(student.quickAnswers.experience).replace(/[^\d.]/g, '')) > 0)
+    );
+  }
   return student.roleExperienceLevel === value;
 };
 
@@ -129,6 +180,15 @@ export const candidateMatchesTalentPool = (student, pool) => {
       categories.includes('telecaller_bpo') ||
       roles.some((r) => /telecaller|calling|bpo|voice|customer support/i.test(r)) ||
       skills.some((s) => /telecalling|inbound|outbound|voice process|customer support|telugu fluency/i.test(s))
+    );
+  }
+
+  if (pool === 'sales') {
+    return (
+      categories.includes('sales_marketing') ||
+      categories.includes('retail_hospitality') ||
+      roles.some((r) => /sales|bde|business development|marketing executive|field executive|retail sales|counter sales|inside sales/i.test(r)) ||
+      skills.some((s) => /sales|lead generation|client acquisition|b2b|b2c|cold calling|marketing|negotiation|direct sales|field sales/i.test(s))
     );
   }
 

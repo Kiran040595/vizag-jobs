@@ -58,6 +58,15 @@ export const mapQuickApplicationToCandidate = (row) => {
     extractedSkills.add('voice process');
   }
 
+  // Sales & Marketing detection
+  const isSalesRole =
+    /sales|bde|business development|marketing executive|field executive|retail sales|counter sales/i.test(appliedRoleRaw) ||
+    /sales|marketing|lead generation|client acquisition/i.test(answersText);
+  if (isSalesRole) {
+    extractedSkills.add('sales');
+    extractedSkills.add('client acquisition');
+  }
+
   // Languages detection
   if (/telugu/i.test(answersText)) extractedSkills.add('telugu fluency');
   if (/english/i.test(answersText)) extractedSkills.add('english communication');
@@ -76,11 +85,12 @@ export const mapQuickApplicationToCandidate = (row) => {
   const targetJobCategories = [];
   if (isDeliveryRole || hasVehicleAnswer) targetJobCategories.push('delivery_logistics');
   if (isTelecallerRole) targetJobCategories.push('telecaller_bpo');
-  if (/teacher|teaching|tutor/i.test(appliedRoleRaw)) targetJobCategories.push('teaching_education');
+  if (isSalesRole) targetJobCategories.push('sales_marketing');
+  if (/teacher|teaching|tutor/i.test(appliedRoleRaw)) targetJobCategories.push('teaching_training');
   if (targetJobCategories.length === 0) targetJobCategories.push('other');
 
   // Primary Role
-  const primaryTargetRole = appliedRoleRaw || (isDeliveryRole ? 'Delivery Boy / Delivery Executive' : 'Candidate Lead');
+  const primaryTargetRole = appliedRoleRaw || (isDeliveryRole ? 'Delivery Boy / Delivery Executive' : isTelecallerRole ? 'Telecaller' : isSalesRole ? 'Sales Executive' : 'Candidate Lead');
 
   // Location / Area
   const currentArea = String(answers.location || answers.area || answers.address || job.location || '').trim();
@@ -92,18 +102,28 @@ export const mapQuickApplicationToCandidate = (row) => {
   let roleExperienceLabel = 'Fresher';
   let isFresher = true;
   if (answers.experience !== undefined && answers.experience !== null && answers.experience !== '') {
-    const expNum = Number(answers.experience);
-    if (!isNaN(expNum) && expNum > 0) {
+    const expStr = String(answers.experience).trim();
+    const expNum = parseFloat(expStr.replace(/[^\d.]/g, ''));
+    const mentionsFresher = /fresher/i.test(expStr);
+    const mentionsExp = /exp|year|yr/i.test(expStr);
+    if (!mentionsFresher && ((!isNaN(expNum) && expNum > 0) || mentionsExp)) {
       isFresher = false;
-      if (expNum <= 1) {
+      const years = !isNaN(expNum) && expNum > 0 ? expNum : 1;
+      if (years <= 0.5) {
         roleExperienceLevel = '0_6_months';
-        roleExperienceLabel = `${expNum} yr exp`;
-      } else if (expNum <= 2) {
+        roleExperienceLabel = '0-6 months exp';
+      } else if (years <= 1) {
+        roleExperienceLevel = '6_12_months';
+        roleExperienceLabel = '6-12 months exp';
+      } else if (years <= 2) {
         roleExperienceLevel = '1_2_years';
-        roleExperienceLabel = `${expNum} yrs exp`;
-      } else {
+        roleExperienceLabel = `${years} yrs exp`;
+      } else if (years <= 4) {
         roleExperienceLevel = '2_4_years';
-        roleExperienceLabel = `${expNum}+ yrs exp`;
+        roleExperienceLabel = `${years} yrs exp`;
+      } else {
+        roleExperienceLevel = '4_plus_years';
+        roleExperienceLabel = `${years}+ yrs exp`;
       }
     }
   }
