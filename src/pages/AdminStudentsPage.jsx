@@ -9,7 +9,7 @@ import CandidateTableView from '../components/admin/CandidateTableView';
 import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
 import AssignCandidatesDialog from '../components/admin/AssignCandidatesDialog';
-import { fetchAdminStudentProfiles, setStudentActiveStatus } from '../services/adminStudents';
+import { fetchAdminStudentProfiles, fetchAdminQuickCandidates, setStudentActiveStatus } from '../services/adminStudents';
 import { fetchAllCompanyJobsForAssignment, fetchCandidateMatchingJobs } from '../services/adminJobs';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
 import { formatSkillLabel } from '../lib/studentProfileOptions';
@@ -71,9 +71,19 @@ export default function AdminStudentsPage() {
   const loadStudents = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
-    try { setStudents(await fetchAdminStudentProfiles()); }
-    catch (error) { setLoadError(error instanceof Error ? error.message : 'Could not load candidates.'); }
-    finally { setIsLoading(false); }
+    try {
+      const registeredPromise = fetchAdminStudentProfiles();
+      const quickPromise = fetchAdminQuickCandidates().catch((err) => {
+        console.warn('Could not load quick candidates:', err);
+        return [];
+      });
+      const [registered, quickApplicants] = await Promise.all([registeredPromise, quickPromise]);
+      setStudents([...registered, ...quickApplicants]);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not load candidates.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
   useEffect(() => { loadStudents(); }, [loadStudents]);
   useEffect(() => {
@@ -97,6 +107,8 @@ export default function AdminStudentsPage() {
   const canExport = !isLoading && !loadError && filters === deferredFilters;
   const summary = useMemo(() => ({
     total: students.length,
+    registered: students.filter(student => student.candidateSource !== 'quick_apply').length,
+    quick: students.filter(student => student.candidateSource === 'quick_apply').length,
     active: students.filter(student => student.isActive).length,
     missing: students.filter(student => candidateMissingFacts(student).length > 0).length,
   }), [students]);
@@ -157,10 +169,19 @@ export default function AdminStudentsPage() {
     <SEO title="Student candidate finder" noindex />
     <AdminShell title="Student candidate finder" description="Find students by the skills, qualifications and roles that matter for your vacancy.">
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[['Registered students', summary.total], ['Active accounts', summary.active], ['Matching your criteria', result.entries.length]].map(([label, value]) => <div key={label} className="rounded-2xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">{label}</p><p className="mt-1 text-2xl font-black text-slate-950">{value}</p></div>)}
-        <button type="button" onClick={() => updateFilters({ dataStatus: filters.dataStatus === 'missing' ? '' : 'missing', accountStatus: 'all' })} className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-left" aria-pressed={filters.dataStatus === 'missing'}><span className="block text-xs font-semibold text-amber-900">Missing matching details</span><span className="mt-1 block text-2xl font-black text-amber-950">{summary.missing}</span></button>
+        {[
+          ['Total candidates', summary.total],
+          ['Registered profiles', summary.registered],
+          ['⚡ Quick Apply leads', summary.quick],
+          ['Matching your criteria', result.entries.length],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-3">
+            <p className="text-xs font-semibold text-slate-500">{label}</p>
+            <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
+          </div>
+        ))}
       </div>
-      <CandidateFinderFilters filters={filters} onChange={updateFilters} {...options} jobs={jobs} jobCounts={result.jobCounts} onClear={resetFilters} />
+      <CandidateFinderFilters filters={filters} onChange={updateFilters} counts={summary} {...options} jobs={jobs} jobCounts={result.jobCounts} onClear={resetFilters} />
       {jobsError && <p role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Reviewed jobs could not load: {jobsError}. You can still search using skills and qualifications.</p>}
 
       <details className="mb-4 min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
@@ -199,7 +220,18 @@ export default function AdminStudentsPage() {
               <button type="button" disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length} onClick={() => setExportScope({ students: filteredStudents, label: exportLabel })} className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Export matching ({filteredStudents.length})</button>
             </div>
           </div>
-          <div className="grid min-w-0 gap-3 sm:grid-cols-3">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-4">
+            <CandidateSelect
+              label="Candidate source"
+              value={filters.candidateSource}
+              onChange={(candidateSource) => updateFilters({ candidateSource })}
+              emptyLabel={null}
+              options={[
+                { value: 'all', label: `All sources (${summary.total})` },
+                { value: 'registered', label: `Registered students (${summary.registered})` },
+                { value: 'quick_apply', label: `⚡ Quick Apply leads (${summary.quick})` },
+              ]}
+            />
             <CandidateSelect label="Account status" value={filters.accountStatus} onChange={accountStatus => updateFilters({ accountStatus })} emptyLabel={null} options={[{ value: 'active', label: 'Active accounts' }, { value: 'all', label: 'All accounts' }, { value: 'inactive', label: 'Deactivated accounts' }]} />
             <CandidateSelect label="Sort candidates" value={filters.sort} onChange={sort => updateFilters({ sort })} emptyLabel={null} options={[{ value: 'relevance', label: 'Most matching selected / preferred skills' }, { value: 'newest', label: 'Newest registration' }, { value: 'oldest', label: 'Oldest registration' }, { value: 'name', label: 'Name A–Z' }]} />
             <CandidateSelect label="Candidates per page" value={String(pageSize)} onChange={value => { setPageSize(Number(value) || 25); setCurrentPage(1); }} emptyLabel={null} options={['25', '50', '100', '250', '500', '1000']} />

@@ -97,17 +97,22 @@ export default function CandidateSearchCard({
               {student.fullName || 'Name not provided'}
             </h2>
             <div className="flex flex-wrap gap-1.5 text-xs">
+              {student.candidateSource === 'quick_apply' && (
+                <span className="rounded-lg bg-purple-50 px-2 py-0.5 font-bold text-purple-900 border border-purple-200">
+                  ⚡ Quick Apply Lead
+                </span>
+              )}
               {!student.isActive && (
                 <span className="rounded-lg bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
                   Deactivated
                 </span>
               )}
-              {!student.hasRegistrationConsents && (
+              {!student.isQuickCandidate && !student.hasRegistrationConsents && (
                 <span className="rounded-lg bg-rose-50 px-2 py-0.5 font-medium text-rose-800 border border-rose-200">
                   Consent pending
                 </span>
               )}
-              {!student.profileComplete && (
+              {!student.isQuickCandidate && !student.profileComplete && (
                 <span className="rounded-lg bg-amber-50 px-2 py-0.5 font-medium text-amber-900 border border-amber-200">
                   Profile incomplete
                 </span>
@@ -120,6 +125,11 @@ export default function CandidateSearchCard({
             <span className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-900">
               🎯 Seeking: {student.primaryTargetRole || studentRoleLabels(student)[0] || 'Any Role'}
             </span>
+            {student.quickJobTitle && (
+              <span className="text-xs text-purple-800 bg-purple-50/80 border border-purple-200 rounded px-1.5 py-0.5 font-medium">
+                Applied via: <strong>{student.quickJobTitle}</strong>
+              </span>
+            )}
             {student.interestedRoles?.length > 0 && (
               <span className="text-xs text-slate-600 [overflow-wrap:anywhere]">
                 Also open to:{' '}

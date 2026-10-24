@@ -16,7 +16,7 @@ export const EMPTY_CANDIDATE_FILTERS = {
   category: '', branch: '', year: '', experience: '', college: '', hasResume: 'all',
   city: '', area: '', preferredLocation: '', educationStatus: '', relocation: '',
   availability: '', certification: '', accountStatus: 'active', dataStatus: '',
-  job: '', jobStatus: 'eligible', sort: 'relevance', talentPool: '',
+  job: '', jobStatus: 'eligible', sort: 'relevance', talentPool: '', candidateSource: 'all',
 };
 
 export const TALENT_POOL_OPTIONS = [
@@ -52,6 +52,8 @@ export const readCandidateFilters = params => {
   filters.city = params.get('city') || params.get('currentCity') || '';
   filters.preferredLocation = params.get('preferredLocation') || params.get('prefLocation') || params.get('workLocation') || '';
   filters.talentPool = params.get('talentPool') || params.get('pool') || '';
+  filters.candidateSource = params.get('candidateSource') || params.get('source') || 'all';
+  if (!['all', 'registered', 'quick_apply'].includes(filters.candidateSource)) filters.candidateSource = 'all';
   if (!['active', 'inactive', 'all'].includes(filters.accountStatus)) filters.accountStatus = 'active';
   if (!['all', 'any'].includes(filters.skillMode)) filters.skillMode = 'all';
   if (!['eligible', 'needs_information', 'ineligible', 'unverified', 'all'].includes(filters.jobStatus)) filters.jobStatus = 'eligible';
@@ -162,6 +164,8 @@ export const candidateMatchesTalentPool = (student, pool) => {
 export const matchesCandidateRequirements = (student, filters) => {
   if (filters.accountStatus === 'active' && !student.isActive) return false;
   if (filters.accountStatus === 'inactive' && student.isActive) return false;
+  if (filters.candidateSource === 'registered' && student.candidateSource === 'quick_apply') return false;
+  if (filters.candidateSource === 'quick_apply' && student.candidateSource !== 'quick_apply') return false;
   if (filters.talentPool && !candidateMatchesTalentPool(student, filters.talentPool)) return false;
   if (!candidateMatchesSearch(student, filters.search)) return false;
   if ((filters.role || filters.roleQuery) && !matchingDesiredRoles(student, filters).length) return false;
@@ -215,6 +219,9 @@ export const candidateMatchReasons = (student, filters, job) => {
     const poolOpt = TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool);
     if (poolOpt) reasons.push(`Talent Pool: ${poolOpt.label}`);
   }
+  if (student.candidateSource === 'quick_apply') {
+    reasons.push('Source: ⚡ Quick Apply Lead');
+  }
   const preferred = unique(job?.preferred_skills || [], candidateSkillKey).filter(value => skills.has(candidateSkillKey(value)));
   for (const skill of preferred) reasons.push(`Preferred job skill: ${formatSkillLabel(skill)}`);
   return { reasons, score: selectedSkills.length + preferred.length };
@@ -244,6 +251,8 @@ export const findAdminCandidates = (students, filters, job = null) => {
 
 export const candidateFilterLabels = filters => {
   const labels = [];
+  if (filters.candidateSource === 'quick_apply') labels.push('Source: ⚡ Quick Apply Leads');
+  if (filters.candidateSource === 'registered') labels.push('Source: 🎓 Registered Students');
   if (filters.talentPool) {
     const poolOpt = TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool);
     if (poolOpt) labels.push(`Talent Pool: ${poolOpt.label}`);

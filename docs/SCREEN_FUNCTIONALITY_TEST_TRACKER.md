@@ -1,5 +1,24 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-24-Quick-Jobs-Candidate-Integration
+
+- Scope: S044 `/admin/students` and S006 `/admin/candidates`; `src/lib/quickCandidateProfile.js`, `src/services/adminStudents.js`, `src/lib/adminCandidateSearch.js`, `src/pages/AdminStudentsPage.jsx`, `src/components/admin/CandidateFinderFilters.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `src/services/jobSuitableProfiles.js`, `tests/admin-candidate-search.test.mjs`.
+- Problem resolved:
+  - Candidates applying to Quick Jobs (like delivery boys, drivers, and telecallers who don't register full accounts) were isolated in `job_applications` and `/admin/candidates`, making them invisible in the Admin Candidate Finder (`/admin/students`).
+  - Admins could not target, filter, export, or assign Quick Job applicants together with registered students when companies asked for delivery boys or telecallers.
+- Solution delivered:
+  - Created `mapQuickApplicationToCandidate` and `mergeQuickApplications` in `src/lib/quickCandidateProfile.js` to normalize quick job form answers into canonical candidate records with auto-extracted skills (`two wheeler riding`, `driving license`, `telugu fluency`, `food delivery`), degree, and location.
+  - Added `fetchAdminQuickCandidates()` in `src/services/adminStudents.js` and merged quick applicants alongside registered profiles in `AdminStudentsPage.jsx`.
+  - Added `candidateSource` criteria (`all`, `registered`, `quick_apply`) to search engine with 1-click Talent Source switcher pills in `CandidateFinderFilters.jsx`.
+  - Displayed prominent `⚡ Quick Apply Lead` badge and applied job reference in candidate card and recruiter table views.
+  - Enabled seamless assignment of both registered students and guest quick applicants to employer jobs in `src/services/jobSuitableProfiles.js`.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 192/192 tests.
+  - Unit tests added in `tests/admin-candidate-search.test.mjs` verifying quick apply answer normalization, deduplication, candidateSource filtering, and talent pool matching.
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 3.60s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-24-Delivery-Telecaller-Talent-Pools
 
 - Scope: S021 `/student/register` and S044 `/admin/students`; `src/lib/studentProfileOptions.js`, `src/lib/studentRegistrationSuggestions.js`, `src/pages/StudentRegisterPage.jsx`, `src/components/student/StudentRegisterWizard.jsx`, `src/lib/adminCandidateSearch.js`, `src/components/admin/CandidateFinderFilters.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `tests/admin-candidate-search.test.mjs`.

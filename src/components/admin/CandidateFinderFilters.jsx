@@ -51,6 +51,7 @@ const POPULAR_TARGET_ROLES = [
 export default function CandidateFinderFilters({
   filters,
   onChange,
+  counts,
   skills,
   roles,
   categories,
@@ -127,6 +128,46 @@ export default function CandidateFinderFilters({
         >
           Reset all filters
         </button>
+      </div>
+
+      {/* Talent Source Quick Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
+        <span className="text-xs font-bold text-slate-700">Talent Source:</span>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => onChange({ candidateSource: 'all' })}
+            className={`min-h-9 rounded-lg px-3 py-1 text-xs font-bold transition ${
+              (filters.candidateSource || 'all') === 'all'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            👥 All Talent ({counts?.total ?? 'All'})
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ candidateSource: 'registered' })}
+            className={`min-h-9 rounded-lg px-3 py-1 text-xs font-bold transition ${
+              filters.candidateSource === 'registered'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            🎓 Registered Profiles ({counts?.registered ?? 0})
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ candidateSource: 'quick_apply' })}
+            className={`min-h-9 rounded-lg px-3 py-1 text-xs font-bold transition ${
+              filters.candidateSource === 'quick_apply'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'border border-purple-200 bg-purple-50 text-purple-900 hover:bg-purple-100'
+            }`}
+          >
+            ⚡ Quick Apply Leads ({counts?.quick ?? 0})
+          </button>
+        </div>
       </div>
 
       {/* Role Talent Pools Bar */}

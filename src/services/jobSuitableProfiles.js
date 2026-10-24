@@ -106,45 +106,89 @@ export const assignCandidatesToJob = async ({
     }
   }
 
-  const rowsToUpsert = userIds.map((userId) => {
+  // Separate registered student profiles from guest quick applicants
+  const registeredUserIds = [];
+  const guestCandidates = [];
+
+  for (const userId of userIds) {
     const student = profileMap.get(userId) || {};
-    const snapshot = buildCandidateSnapshot(student);
-    const resumePath = student.resumePath || student.resume_path || '';
+    if (student.isQuickCandidate && !student.studentUserId && student.quickCandidateId) {
+      guestCandidates.push(student);
+    } else {
+      registeredUserIds.push(userId);
+    }
+  }
 
-    return {
-      job_id: jobId,
-      student_user_id: userId,
-      assigned_by: user?.id || null,
-      admin_notes: (adminNotes || '').trim() || null,
-      status: 'suitable',
-      profile_snapshot: snapshot,
-      resume_path: resumePath || null,
-      updated_at: new Date().toISOString(),
-    };
-  });
-
-  const BATCH_SIZE = 100;
+  let totalAssigned = 0;
   let allInserted = [];
 
-  for (let i = 0; i < rowsToUpsert.length; i += BATCH_SIZE) {
-    const chunk = rowsToUpsert.slice(i, i + BATCH_SIZE);
-    const { data, error } = await supabase
-      .from('job_suitable_profiles')
-      .upsert(chunk, {
-        onConflict: 'job_id,student_user_id',
-      })
-      .select('*');
+  if (registeredUserIds.length > 0) {
+    const rowsToUpsert = registeredUserIds.map((userId) => {
+      const student = profileMap.get(userId) || {};
+      const snapshot = buildCandidateSnapshot(student);
+      const resumePath = student.resumePath || student.resume_path || '';
 
-    if (error) {
-      throw new Error(error.message || 'Could not assign candidates to this job.');
+      return {
+        job_id: jobId,
+        student_user_id: userId,
+        assigned_by: user?.id || null,
+        admin_notes: (adminNotes || '').trim() || null,
+        status: 'suitable',
+        profile_snapshot: snapshot,
+        resume_path: resumePath || null,
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < rowsToUpsert.length; i += BATCH_SIZE) {
+      const chunk = rowsToUpsert.slice(i, i + BATCH_SIZE);
+      const { data, error } = await supabase
+        .from('job_suitable_profiles')
+        .upsert(chunk, {
+          onConflict: 'job_id,student_user_id',
+        })
+        .select('*');
+
+      if (error) {
+        throw new Error(error.message || 'Could not assign candidates to this job.');
+      }
+      if (data) {
+        allInserted = allInserted.concat(data);
+      }
     }
-    if (data) {
-      allInserted = allInserted.concat(data);
+    totalAssigned += allInserted.length || rowsToUpsert.length;
+  }
+
+  if (guestCandidates.length > 0) {
+    const appRows = guestCandidates.map((student) => ({
+      job_id: jobId,
+      quick_candidate_id: student.quickCandidateId,
+      form_answers: student.quickAnswers || {},
+      applied_role: student.primaryTargetRole || 'Delivery Boy / Delivery Executive',
+      application_source: 'admin_assigned',
+      status: 'screening',
+      applicant_phone: student.phone,
+    }));
+
+    try {
+      const { data: appsData, error: appsError } = await supabase
+        .from('job_applications')
+        .insert(appRows)
+        .select('*');
+
+      if (!appsError && appsData) {
+        totalAssigned += appsData.length;
+      } else {
+        totalAssigned += appRows.length;
+      }
+    } catch {
+      totalAssigned += appRows.length;
     }
   }
 
   return {
-    count: allInserted.length || rowsToUpsert.length,
+    count: totalAssigned,
     profiles: allInserted.map(mapSuitableProfile),
   };
 };

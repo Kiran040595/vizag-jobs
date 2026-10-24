@@ -14,6 +14,7 @@ import {
   writeCandidateFilters,
 } from '../src/lib/adminCandidateSearch.js';
 import { mapStudentProfileRow } from '../src/lib/adminStudentProfile.js';
+import { mapQuickApplicationToCandidate, mergeQuickApplications } from '../src/lib/quickCandidateProfile.js';
 import { validateStudentProfilePayload } from '../src/lib/studentProfileValidation.js';
 import { EMPLOYER_EXPORT_COLUMN_IDS, buildStudentExportRows } from '../src/lib/studentExport.js';
 
@@ -294,4 +295,109 @@ test('formatCandidateListForEmployer includes vehicle & license line when delive
   assert.ok(formatted.includes('🪪 Has Driving License'));
   assert.ok(formatted.includes('Kamesh V'));
   assert.ok(formatted.includes('NAD Junction'));
+});
+
+test('mapQuickApplicationToCandidate converts quick apply answers into canonical profile with bike and license', () => {
+  const quickRow = {
+    id: 'app-123',
+    quick_candidate_id: 'qc-456',
+    student_user_id: null,
+    applied_role: 'Delivery Executive',
+    submitted_at: '2026-10-24T05:00:00Z',
+    candidate: {
+      full_name: 'Surya Narayana',
+      phone: '+919123456789',
+      needs_review: false,
+    },
+    job: {
+      title: 'Zomato Delivery Rider',
+      role: 'Delivery Boy',
+      company: 'Zomato',
+      location: 'Visakhapatnam',
+    },
+    form_answers: {
+      full_name: 'Surya Narayana',
+      phone: '+919123456789',
+      location: 'Madhurawada',
+      vehicle: 'Yes',
+      licence: 'Yes',
+      education: '10th',
+      experience: '2',
+    },
+  };
+
+  const profile = mapQuickApplicationToCandidate(quickRow);
+  assert.equal(profile.fullName, 'Surya Narayana');
+  assert.equal(profile.phone, '+919123456789');
+  assert.equal(profile.candidateSource, 'quick_apply');
+  assert.equal(profile.isQuickCandidate, true);
+  assert.equal(profile.currentArea, 'Madhurawada');
+  assert.ok(profile.skills.includes('two wheeler riding'));
+  assert.ok(profile.skills.includes('driving license'));
+  assert.ok(profile.skills.includes('food delivery'));
+  assert.ok(profile.targetJobCategories.includes('delivery_logistics'));
+  assert.equal(profile.isFresher, false);
+  assert.equal(profile.degree, '10th Pass');
+
+  // Verify it matches talent pool 'delivery'
+  assert.equal(candidateMatchesTalentPool(profile, 'delivery'), true);
+  assert.equal(candidateMatchesTalentPool(profile, 'telecaller'), false);
+});
+
+test('mergeQuickApplications deduplicates multiple applications from same candidate', () => {
+  const app1 = {
+    id: 'app-1',
+    quick_candidate_id: 'qc-1',
+    candidate: { full_name: 'Kiran K', phone: '+919888877777' },
+    applied_role: 'Delivery Boy',
+    submitted_at: '2026-10-23T10:00:00Z',
+    form_answers: { vehicle: 'Yes', location: 'MVP Colony' },
+  };
+  const app2 = {
+    id: 'app-2',
+    quick_candidate_id: 'qc-1',
+    candidate: { full_name: 'Kiran K', phone: '+919888877777' },
+    applied_role: 'Telecaller',
+    submitted_at: '2026-10-24T10:00:00Z',
+    form_answers: { vehicle: 'Yes', licence: 'Yes', telugu: 'Fluent' },
+  };
+
+  const merged = mergeQuickApplications([app1, app2]);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].fullName, 'Kiran K');
+  assert.equal(merged[0].primaryTargetRole, 'Telecaller');
+  assert.ok(merged[0].skills.includes('two wheeler riding'));
+  assert.ok(merged[0].skills.includes('driving license'));
+  assert.ok(merged[0].skills.includes('telugu fluency'));
+});
+
+test('findAdminCandidates candidateSource filter isolates registered vs quick_apply leads', () => {
+  const registeredCand = row('reg-cand', {
+    full_name: 'Registered Candidate',
+    candidateSource: 'registered',
+  });
+  const quickCand = mapQuickApplicationToCandidate({
+    id: 'app-quick',
+    quick_candidate_id: 'qc-999',
+    candidate: { full_name: 'Quick Lead', phone: '+919000011111' },
+    applied_role: 'Delivery Boy',
+    form_answers: { vehicle: 'Yes' },
+  });
+
+  const pool = [registeredCand, quickCand];
+
+  // All sources
+  const allResult = findAdminCandidates(pool, filters({ candidateSource: 'all' }));
+  assert.equal(allResult.entries.length, 2);
+
+  // Registered only
+  const regResult = findAdminCandidates(pool, filters({ candidateSource: 'registered' }));
+  assert.equal(regResult.entries.length, 1);
+  assert.equal(regResult.entries[0].student.userId, 'reg-cand');
+
+  // Quick apply only
+  const quickResult = findAdminCandidates(pool, filters({ candidateSource: 'quick_apply' }));
+  assert.equal(quickResult.entries.length, 1);
+  assert.equal(quickResult.entries[0].student.candidateSource, 'quick_apply');
+  assert.ok(quickResult.entries[0].reasons.some((r) => r.includes('Source: ⚡ Quick Apply Lead')));
 });

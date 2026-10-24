@@ -104,3 +104,38 @@ export const setStudentActiveStatus = async ({ userId, isActive }) => {
 
   return mapStudentProfileRow(data);
 };
+
+export const fetchAdminQuickCandidates = async () => {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select(`
+        id,
+        job_id,
+        status,
+        student_user_id,
+        quick_candidate_id,
+        form_answers,
+        form_snapshot,
+        application_source,
+        applied_role,
+        submitted_at,
+        candidate:quick_candidates(full_name, phone, needs_review),
+        job:jobs(title, role, company, location)
+      `)
+      .not('quick_candidate_id', 'is', null)
+      .order('submitted_at', { ascending: false });
+
+    if (error) {
+      console.warn('Could not load quick candidates:', error.message);
+      return [];
+    }
+
+    const { mergeQuickApplications } = await import('../lib/quickCandidateProfile.js');
+    return mergeQuickApplications(data || []);
+  } catch (err) {
+    console.warn('Error loading quick candidates:', err?.message);
+    return [];
+  }
+};
