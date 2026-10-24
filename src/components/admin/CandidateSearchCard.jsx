@@ -40,6 +40,13 @@ export default function CandidateSearchCard({
     }. Are you available for an interview discussion?`
   );
 
+  const allSkills = (student.skills || []).map((sk) => String(sk).toLowerCase());
+  const certsText = String(student.certificationsText || '').toLowerCase();
+  const hasBike = allSkills.some((sk) => sk.includes('two wheeler') || sk.includes('driving'));
+  const hasLicense = allSkills.some((sk) => sk.includes('license')) || certsText.includes('license');
+  const hasTelugu = allSkills.some((sk) => sk.includes('telugu'));
+  const hasEnglish = allSkills.some((sk) => sk.includes('english'));
+
   const handleViewResume = async () => {
     if (!student.resumePath) return;
     setLoadingResume(true);
@@ -181,6 +188,26 @@ export default function CandidateSearchCard({
             {student.resumePath && (
               <span className="rounded-lg border border-purple-300 bg-purple-50 px-2.5 py-1 font-bold text-purple-900">
                 📄 Resume Available
+              </span>
+            )}
+            {hasBike && (
+              <span className="rounded-lg border border-emerald-400 bg-emerald-50 px-2.5 py-1 font-bold text-emerald-950 flex items-center gap-1">
+                <span>🛵</span> Two-Wheeler / Bike
+              </span>
+            )}
+            {hasLicense && (
+              <span className="rounded-lg border border-emerald-400 bg-emerald-50 px-2.5 py-1 font-bold text-emerald-950 flex items-center gap-1">
+                <span>🪪</span> Driving License (DL)
+              </span>
+            )}
+            {hasTelugu && (
+              <span className="rounded-lg border border-blue-300 bg-blue-50 px-2.5 py-1 font-medium text-blue-900 flex items-center gap-1">
+                <span>🗣️</span> Telugu Fluency
+              </span>
+            )}
+            {hasEnglish && (
+              <span className="rounded-lg border border-blue-300 bg-blue-50 px-2.5 py-1 font-medium text-blue-900 flex items-center gap-1">
+                <span>🗣️</span> English
               </span>
             )}
           </div>

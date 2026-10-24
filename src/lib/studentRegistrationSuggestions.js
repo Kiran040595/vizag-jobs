@@ -27,9 +27,19 @@ export const POPULAR_CERTIFICATIONS = [
   'B.Ed (Bachelor of Education)',
   'AP TET / CTET Certified',
   'NET / SET Qualified',
+  'Two-Wheeler Driving License (DL)',
+  'Commercial Driving License',
 ];
 
 export const POPULAR_VIZAG_ROLES = [
+  'Delivery Boy / Delivery Executive',
+  'Bike Delivery Partner',
+  'Food & Grocery Delivery Rider',
+  'Courier Delivery Executive',
+  'Telecaller / BPO Executive',
+  'Telecaller (Telugu Voice)',
+  'Customer Support Executive (Voice)',
+  'Inbound / Outbound Calling Executive',
   'Java Developer',
   'Frontend Developer',
   'Full Stack Developer',

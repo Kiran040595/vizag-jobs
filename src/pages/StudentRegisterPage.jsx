@@ -39,10 +39,36 @@ export default function StudentRegisterPage() {
   const { isLoading, isStudent, isSupabaseConfigured, profileComplete, refreshStudentAccess, session, signUp } =
     useStudentAuth();
   const [form, setForm] = useState(() => {
+    const roleParam = searchParams.get('role') || '';
+    const categoryParam = searchParams.get('category') || '';
+    let initialOverrides = {};
+
+    if (/delivery|rider|courier/i.test(roleParam) || categoryParam === 'delivery_logistics') {
+      initialOverrides = {
+        target_job_categories: ['delivery_logistics'],
+        primary_target_role: 'Delivery Boy / Delivery Executive',
+        skills: ['two wheeler riding', 'delivery operations'],
+      };
+    } else if (/telecaller|calling|bpo|voice/i.test(roleParam) || categoryParam === 'telecaller_bpo') {
+      initialOverrides = {
+        target_job_categories: ['telecaller_bpo'],
+        primary_target_role: 'Telecaller / BPO Executive',
+        skills: ['telecalling', 'customer support', 'communication'],
+      };
+    }
+
     try {
       const draft = JSON.parse(sessionStorage.getItem('vizagjobs.quick.registration') || '{}');
-      return { ...INITIAL_STUDENT_REGISTER_FORM, full_name: draft.full_name || '', phone: draft.phone || '', contact_email: draft.email || '' };
-    } catch { return INITIAL_STUDENT_REGISTER_FORM; }
+      return {
+        ...INITIAL_STUDENT_REGISTER_FORM,
+        full_name: draft.full_name || '',
+        phone: draft.phone || '',
+        contact_email: draft.email || '',
+        ...initialOverrides,
+      };
+    } catch {
+      return { ...INITIAL_STUDENT_REGISTER_FORM, ...initialOverrides };
+    }
   });
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');

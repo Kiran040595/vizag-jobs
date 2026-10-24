@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { candidateSkillKey, MISSING_CANDIDATE_FACTS, qualificationKey } from '../../lib/adminCandidateSearch';
+import { candidateSkillKey, MISSING_CANDIDATE_FACTS, qualificationKey, TALENT_POOL_OPTIONS } from '../../lib/adminCandidateSearch';
 import { STUDENT_AVAILABILITY_OPTIONS, STUDENT_ROLE_EXPERIENCE_OPTIONS } from '../../lib/studentCareerPreferences';
 import { formatSkillLabel, STUDENT_DEGREE_OPTIONS } from '../../lib/studentProfileOptions';
 
@@ -31,11 +31,13 @@ export function CandidateSelect({ label, value, onChange, options, emptyLabel = 
 }
 
 const POPULAR_TARGET_ROLES = [
+  'Delivery Boy',
+  'Delivery Executive',
+  'Telecaller',
   'Java Developer',
   'React Developer',
   'Python Developer',
   'Full Stack Developer',
-  'Telecaller',
   'GIS Developer',
   'Teacher',
   'Accountant',
@@ -125,6 +127,57 @@ export default function CandidateFinderFilters({
         >
           Reset all filters
         </button>
+      </div>
+
+      {/* Role Talent Pools Bar */}
+      <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 via-white to-amber-50/60 p-3.5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+              <span>🎯 Curated Role Talent Pools:</span>
+              <span className="font-semibold normal-case text-indigo-700 text-xs">
+                (Click to isolate candidates looking for specific roles in Vizag)
+              </span>
+            </p>
+          </div>
+          {filters.talentPool && (
+            <button
+              type="button"
+              onClick={() => onChange({ talentPool: '' })}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 underline"
+            >
+              Clear Talent Pool (View All)
+            </button>
+          )}
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          {TALENT_POOL_OPTIONS.map((pool) => {
+            const isSelected = filters.talentPool === pool.value;
+            return (
+              <button
+                key={pool.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onChange({ talentPool: isSelected ? '' : pool.value })}
+                className={`min-h-10 rounded-xl border px-3.5 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-200'
+                    : 'border-slate-300 bg-white text-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50'
+                }`}
+              >
+                <span>{pool.label}</span>
+                {isSelected && <span className="ml-1 text-indigo-200 font-extrabold">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+        {filters.talentPool && (
+          <div className="mt-2.5 rounded-lg bg-indigo-100/70 px-3 py-1.5 text-xs font-medium text-indigo-950 flex items-center justify-between">
+            <span>
+              Showing talent pool: <strong>{TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool)?.label}</strong>. You can combine this with locality/area, batch, or experience filters below.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Quick 1-Click Targeting Bar */}

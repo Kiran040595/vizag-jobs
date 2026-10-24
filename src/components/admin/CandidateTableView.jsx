@@ -77,6 +77,13 @@ export default function CandidateTableView({
               }. Are you available for interview?`
             );
 
+            const skillsList = Array.isArray(student.skills) ? student.skills : [];
+            const certsList = Array.isArray(student.certifications) ? student.certifications : [];
+            const hasBike = skillsList.some((s) => s.includes('two wheeler') || s.includes('bike') || s.includes('driving'));
+            const hasLicense = skillsList.some((s) => s.includes('license')) || certsList.some((c) => /driving|license|dl/i.test(c));
+            const hasTelugu = skillsList.some((s) => s.includes('telugu'));
+            const hasEnglish = skillsList.some((s) => s.includes('english'));
+
             return (
               <tr
                 key={student.userId}
@@ -139,6 +146,42 @@ export default function CandidateTableView({
                   <span className="inline-block rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-900 border border-indigo-200 [overflow-wrap:anywhere]">
                     🎯 {student.primaryTargetRole || studentRoleLabels(student)[0] || 'Any Role'}
                   </span>
+                  {(hasBike || hasLicense || hasTelugu || hasEnglish) && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {hasBike && (
+                        <span
+                          className="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200"
+                          title="Has Two-Wheeler / Bike"
+                        >
+                          🛵 Bike
+                        </span>
+                      )}
+                      {hasLicense && (
+                        <span
+                          className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200"
+                          title="Has Driving License"
+                        >
+                          🪪 DL
+                        </span>
+                      )}
+                      {hasTelugu && (
+                        <span
+                          className="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-800 border border-blue-200"
+                          title="Telugu Fluency"
+                        >
+                          🗣️ Telugu
+                        </span>
+                      )}
+                      {hasEnglish && (
+                        <span
+                          className="inline-flex items-center rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-800 border border-indigo-200"
+                          title="English Communication"
+                        >
+                          🗣️ English
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {student.interestedRoles?.length > 0 && (
                     <p className="mt-1 text-[11px] text-slate-500 [overflow-wrap:anywhere]">
                       Also: {student.interestedRoles.join(', ')}

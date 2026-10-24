@@ -1,6 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EMPTY_CANDIDATE_FILTERS, candidateMatchesExperience, candidateMatchesSearch, candidateMissingFacts, candidateSkillKey, findAdminCandidates, formatCandidateListForEmployer, readCandidateFilters, writeCandidateFilters } from '../src/lib/adminCandidateSearch.js';
+import {
+  EMPTY_CANDIDATE_FILTERS,
+  TALENT_POOL_OPTIONS,
+  candidateMatchesExperience,
+  candidateMatchesSearch,
+  candidateMatchesTalentPool,
+  candidateMissingFacts,
+  candidateSkillKey,
+  findAdminCandidates,
+  formatCandidateListForEmployer,
+  readCandidateFilters,
+  writeCandidateFilters,
+} from '../src/lib/adminCandidateSearch.js';
 import { mapStudentProfileRow } from '../src/lib/adminStudentProfile.js';
 import { validateStudentProfilePayload } from '../src/lib/studentProfileValidation.js';
 import { EMPLOYER_EXPORT_COLUMN_IDS, buildStudentExportRows } from '../src/lib/studentExport.js';
@@ -209,3 +221,77 @@ test('EMPLOYER_EXPORT_COLUMN_IDS provides company-ready fields and excludes admi
   assert.ok(!EMPLOYER_EXPORT_COLUMN_IDS.includes('isActive'));
 });
 
+test('candidateMatchesTalentPool correctly matches delivery, telecaller and teacher pools', () => {
+  const deliveryBoy = row('delivery-1', {
+    primary_target_role: 'Delivery Boy / Delivery Executive',
+    target_job_categories: ['delivery_logistics'],
+    skills: ['two wheeler riding', 'driving license'],
+  });
+  const telecaller = row('telecaller-1', {
+    primary_target_role: 'Telecaller / BPO Executive',
+    target_job_categories: ['telecaller_bpo'],
+    skills: ['telugu fluency', 'voice process'],
+  });
+  const teacher = row('teacher-1', {
+    primary_target_role: 'School Teacher',
+    target_job_categories: ['teaching_education'],
+    skills: ['classroom management'],
+  });
+  const softwareDev = row('dev-1', {
+    primary_target_role: 'React Developer',
+    target_job_categories: ['software_frontend'],
+    skills: ['react', 'sql'],
+  });
+
+  // Delivery
+  assert.equal(candidateMatchesTalentPool(deliveryBoy, 'delivery'), true);
+  assert.equal(candidateMatchesTalentPool(telecaller, 'delivery'), false);
+  assert.equal(candidateMatchesTalentPool(softwareDev, 'delivery'), false);
+
+  // Telecaller
+  assert.equal(candidateMatchesTalentPool(telecaller, 'telecaller'), true);
+  assert.equal(candidateMatchesTalentPool(deliveryBoy, 'telecaller'), false);
+  assert.equal(candidateMatchesTalentPool(softwareDev, 'telecaller'), false);
+
+  // Teacher
+  assert.equal(candidateMatchesTalentPool(teacher, 'teacher'), true);
+  assert.equal(candidateMatchesTalentPool(deliveryBoy, 'teacher'), false);
+
+  // Empty or invalid pool matches all
+  assert.equal(candidateMatchesTalentPool(softwareDev, ''), true);
+  assert.equal(candidateMatchesTalentPool(softwareDev, null), true);
+});
+
+test('findAdminCandidates with talentPool isolates candidates and explains reasons', () => {
+  const deliveryBoy = row('rider-1', {
+    primary_target_role: 'Bike Delivery Partner',
+    skills: ['driving license', 'route navigation'],
+  });
+  const coder = row('coder-1', {
+    primary_target_role: 'Java Developer',
+    skills: ['java', 'spring'],
+  });
+
+  const poolResult = findAdminCandidates([deliveryBoy, coder], filters({ talentPool: 'delivery' }));
+  assert.equal(poolResult.entries.length, 1);
+  assert.equal(poolResult.entries[0].student.userId, 'rider-1');
+  assert.ok(poolResult.entries[0].reasons.some((r) => r.includes('Talent Pool: 🛵 Delivery Boys & Executives')));
+});
+
+test('formatCandidateListForEmployer includes vehicle & license line when delivery assets present', () => {
+  const deliveryCand = row('rider-detail', {
+    full_name: 'Kamesh V',
+    phone: '9988776655',
+    primary_target_role: 'Delivery Boy / Delivery Executive',
+    skills: ['two wheeler riding', 'driving license', 'food delivery'],
+    current_city: 'Visakhapatnam',
+    current_area: 'NAD Junction',
+  });
+
+  const formatted = formatCandidateListForEmployer([deliveryCand], 'Delivery Boys for Swiggy');
+  assert.ok(formatted.includes('Vehicle & License:'));
+  assert.ok(formatted.includes('🛵 Has Two-Wheeler / Bike'));
+  assert.ok(formatted.includes('🪪 Has Driving License'));
+  assert.ok(formatted.includes('Kamesh V'));
+  assert.ok(formatted.includes('NAD Junction'));
+});

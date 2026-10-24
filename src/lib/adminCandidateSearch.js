@@ -16,8 +16,16 @@ export const EMPTY_CANDIDATE_FILTERS = {
   category: '', branch: '', year: '', experience: '', college: '', hasResume: 'all',
   city: '', area: '', preferredLocation: '', educationStatus: '', relocation: '',
   availability: '', certification: '', accountStatus: 'active', dataStatus: '',
-  job: '', jobStatus: 'eligible', sort: 'relevance',
+  job: '', jobStatus: 'eligible', sort: 'relevance', talentPool: '',
 };
+
+export const TALENT_POOL_OPTIONS = [
+  { value: 'delivery', label: '🛵 Delivery Boys & Executives', shortLabel: '🛵 Delivery' },
+  { value: 'telecaller', label: '📞 Telecallers & BPO Voice', shortLabel: '📞 Telecaller' },
+  { value: 'teacher', label: '👨‍🏫 Teachers & Education', shortLabel: '👨‍🏫 Teachers' },
+  { value: 'it_freshers', label: '💻 IT & Software Freshers', shortLabel: '💻 IT Freshers' },
+  { value: 'accounts', label: '🏢 Accounts & Office Finance', shortLabel: '🏢 Accounts' },
+];
 
 export const MISSING_CANDIDATE_FACTS = {
   missing_skills: 'Skills', missing_role: 'Desired role', missing_qualification: 'Qualification',
@@ -43,6 +51,7 @@ export const readCandidateFilters = params => {
   if (!['all', 'yes', 'no'].includes(filters.hasResume)) filters.hasResume = 'all';
   filters.city = params.get('city') || params.get('currentCity') || '';
   filters.preferredLocation = params.get('preferredLocation') || params.get('prefLocation') || params.get('workLocation') || '';
+  filters.talentPool = params.get('talentPool') || params.get('pool') || '';
   if (!['active', 'inactive', 'all'].includes(filters.accountStatus)) filters.accountStatus = 'active';
   if (!['all', 'any'].includes(filters.skillMode)) filters.skillMode = 'all';
   if (!['eligible', 'needs_information', 'ineligible', 'unverified', 'all'].includes(filters.jobStatus)) filters.jobStatus = 'eligible';
@@ -96,9 +105,64 @@ export const candidateMatchesExperience = (student, value) => {
   return student.roleExperienceLevel === value;
 };
 
+export const candidateMatchesTalentPool = (student, pool) => {
+  if (!pool) return true;
+  const categories = student.targetJobCategories || [];
+  const roles = studentRoleLabels(student).map((r) => String(r || '').toLowerCase());
+  const skills = candidateSkills(student).map((s) => String(s || '').toLowerCase());
+  const degree = String(student.degree || '').toLowerCase();
+  const certs = String(student.certificationsText || '').toLowerCase();
+
+  if (pool === 'delivery') {
+    return (
+      categories.includes('delivery_logistics') ||
+      roles.some((r) => /delivery|rider|courier|boy/i.test(r)) ||
+      skills.some((s) => /delivery|two wheeler|driving|route|parcel|food delivery/i.test(s)) ||
+      /driving license/i.test(certs)
+    );
+  }
+
+  if (pool === 'telecaller') {
+    return (
+      categories.includes('telecaller_bpo') ||
+      roles.some((r) => /telecaller|calling|bpo|voice|customer support/i.test(r)) ||
+      skills.some((s) => /telecalling|inbound|outbound|voice process|customer support|telugu fluency/i.test(s))
+    );
+  }
+
+  if (pool === 'teacher') {
+    return (
+      categories.includes('teaching_training') ||
+      roles.some((r) => /teacher|lecturer|tutor|professor|faculty|instructor/i.test(r)) ||
+      skills.some((s) => /teaching|tutoring|lesson planning|classroom/i.test(s)) ||
+      /b\.?ed|tet|net|set/i.test(certs)
+    );
+  }
+
+  if (pool === 'it_freshers') {
+    const isTechDegree = /b\.?tech|b\.?e|mca|bca|b\.?sc|m\.?tech/i.test(degree);
+    const isFresher = student.isFresher === true || student.roleExperienceLevel === 'fresher';
+    const isTechCategory = categories.some((c) => /software|testing|data_analytics/i.test(c));
+    const isTechRole = roles.some((r) => /developer|software|engineer|programmer|tester|analyst/i.test(r));
+    return (isTechDegree && isFresher) || (isTechCategory && isFresher) || (isTechRole && isFresher);
+  }
+
+  if (pool === 'accounts') {
+    return (
+      categories.includes('accounting_finance') ||
+      roles.some((r) => /accountant|tally|finance|audit|billing/i.test(r)) ||
+      skills.some((s) => /tally|excel|accounting|gst|finance/i.test(s)) ||
+      /b\.?com|bba|mba/i.test(degree)
+    );
+  }
+
+  return true;
+};
+
 export const matchesCandidateRequirements = (student, filters) => {
   if (filters.accountStatus === 'active' && !student.isActive) return false;
   if (filters.accountStatus === 'inactive' && student.isActive) return false;
+  if (filters.talentPool && !candidateMatchesTalentPool(student, filters.talentPool)) return false;
   if (!candidateMatchesSearch(student, filters.search)) return false;
   if ((filters.role || filters.roleQuery) && !matchingDesiredRoles(student, filters).length) return false;
   if (filters.category && !student.targetJobCategories?.includes(filters.category)) return false;
@@ -147,6 +211,10 @@ export const candidateMatchReasons = (student, filters, job) => {
   if (filters.availability) reasons.push(`Joining: ${student.availabilityLabel}`);
   if (filters.educationStatus) reasons.push(`Education: ${student.educationStatus}`);
   if (filters.certification) reasons.push(`Certification: ${filters.certification}`);
+  if (filters.talentPool) {
+    const poolOpt = TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool);
+    if (poolOpt) reasons.push(`Talent Pool: ${poolOpt.label}`);
+  }
   const preferred = unique(job?.preferred_skills || [], candidateSkillKey).filter(value => skills.has(candidateSkillKey(value)));
   for (const skill of preferred) reasons.push(`Preferred job skill: ${formatSkillLabel(skill)}`);
   return { reasons, score: selectedSkills.length + preferred.length };
@@ -176,6 +244,10 @@ export const findAdminCandidates = (students, filters, job = null) => {
 
 export const candidateFilterLabels = filters => {
   const labels = [];
+  if (filters.talentPool) {
+    const poolOpt = TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool);
+    if (poolOpt) labels.push(`Talent Pool: ${poolOpt.label}`);
+  }
   if (filters.search) labels.push(`Search: ${filters.search}`);
   if (filters.skills.length) labels.push(`${filters.skillMode === 'any' ? 'Any' : 'All'} skills: ${filters.skills.map(formatSkillLabel).join(', ')}`);
   if (filters.degrees.length) labels.push(`Qualification: ${filters.degrees.join(' or ')}`);
@@ -215,10 +287,16 @@ export const formatCandidateListForEmployer = (students, title = 'Vizag Jobs - C
     const loc = [s.currentCity, s.currentArea].filter(Boolean).join(', ');
     const prefLoc = s.preferredLocations?.length ? s.preferredLocations.join(', ') : '';
     const phoneDigits = s.phone ? s.phone.replace(/\D/g, '') : '';
+    const allSkills = (s.skills || []).map((sk) => String(sk).toLowerCase());
+    const certsText = String(s.certificationsText || '').toLowerCase();
+    const hasBike = allSkills.some((sk) => sk.includes('two wheeler') || sk.includes('driving'));
+    const hasLicense = allSkills.some((sk) => sk.includes('license')) || certsText.includes('license');
+    const assetStr = [hasBike ? '🛵 Has Two-Wheeler / Bike' : null, hasLicense ? '🪪 Has Driving License' : null].filter(Boolean).join(' | ');
     const lines = [
       `${index + 1}. ${s.fullName || 'Candidate'}${exp ? ` (${exp})` : ''}`,
       `   • Seeking: ${s.primaryTargetRole || 'Not specified'}`,
       qual ? `   • Qualification: ${qual}${college}` : null,
+      assetStr ? `   • Vehicle & License: ${assetStr}` : null,
       skills ? `   • Key Skills: ${skills}` : null,
       loc ? `   • Location: ${loc}${prefLoc ? ` (Prefers: ${prefLoc})` : ''}` : (prefLoc ? `   • Preferred Work Location: ${prefLoc}` : null),
       s.availabilityLabel ? `   • Joining: ${s.availabilityLabel}` : null,

@@ -291,6 +291,18 @@ export default function StudentRegisterWizard({
     setShowRoleSuggestions(false);
   };
 
+  const isDeliveryRole = useMemo(() => {
+    const role = (form.primary_target_role || '').toLowerCase();
+    const categories = form.target_job_categories || [];
+    return categories.includes('delivery_logistics') || /delivery|rider|courier/i.test(role);
+  }, [form.primary_target_role, form.target_job_categories]);
+
+  const isTelecallerRole = useMemo(() => {
+    const role = (form.primary_target_role || '').toLowerCase();
+    const categories = form.target_job_categories || [];
+    return categories.includes('telecaller_bpo') || /telecaller|calling|bpo|voice/i.test(role);
+  }, [form.primary_target_role, form.target_job_categories]);
+
   // --- CERTIFICATIONS CHIPS & AUTOCOMPLETE ---
   const popularCertChips = useMemo(() => {
     const list = [...POPULAR_CERTIFICATIONS];
@@ -783,9 +795,49 @@ export default function StudentRegisterWizard({
           <CandidateDetailsFields form={form} onChange={onFormChange} section="career" roles={liveRoles} />
           {/* Primary Target Role with Live Suggestions */}
           <div className="relative">
-            <label className="block text-sm font-semibold text-slate-700">
-              Primary Target Role *
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <label className="block text-sm font-semibold text-slate-700">
+                Primary Target Role *
+              </label>
+              <span className="text-xs text-slate-500 font-medium">
+                Tap a popular role or type your own:
+              </span>
+            </div>
+            {/* Quick 1-click popular role pills */}
+            <div className="mt-1.5 mb-2.5 flex flex-wrap gap-1.5">
+              {[
+                { role: 'Delivery Boy / Delivery Executive', label: '🛵 Delivery Boy / Executive', category: 'delivery_logistics' },
+                { role: 'Telecaller / BPO Executive', label: '📞 Telecaller / BPO', category: 'telecaller_bpo' },
+                { role: 'Teacher', label: '👨‍🏫 Teacher', category: 'teaching_training' },
+                { role: 'Java Developer', label: '💻 Java Developer', category: 'software_backend' },
+                { role: 'Accountant', label: '🏢 Accountant', category: 'accounting_finance' },
+              ].map((item) => {
+                const isSelected = form.primary_target_role.toLowerCase() === item.role.toLowerCase();
+                return (
+                  <button
+                    key={item.role}
+                    type="button"
+                    onClick={() => {
+                      handleSelectRole(item.role);
+                      if (!form.target_job_categories.includes(item.category) && form.target_job_categories.length < 3) {
+                        if (onAddTargetCategory) {
+                          onAddTargetCategory(item.category);
+                        } else {
+                          onToggleTargetCategory(item.category);
+                        }
+                      }
+                    }}
+                    className={`min-h-9 rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                      isSelected
+                        ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs font-bold'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-300 hover:bg-white'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
             <input
               type="text"
               aria-label="Primary Target Role *" name="primary_target_role"
@@ -801,10 +853,114 @@ export default function StudentRegisterWizard({
                 setTimeout(() => setShowRoleSuggestions(false), 200);
               }}
               required
-              placeholder="e.g. Java Developer, Site Engineer, Telecaller, Accountant"
+              placeholder="e.g. Delivery Boy / Executive, Telecaller, Java Developer, Accountant"
               autoComplete="off"
-              className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="mt-1 h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
             />
+            {/* Delivery Partner Assets Card */}
+            {isDeliveryRole && (
+              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🛵</span>
+                  <div>
+                    <p className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                      Delivery Partner Assets (Key for Hiring in Vizag):
+                    </p>
+                    <p className="text-xs text-amber-800">
+                      Companies in Vizag require candidates with bike and license. Tap to confirm your assets:
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('two wheeler riding')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('two wheeler riding')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🛵</span>
+                    <span>Own Two-Wheeler / Bike</span>
+                    {form.skills.includes('two wheeler riding') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggleSkill('driving license');
+                      handleToggleCertChip('Two-Wheeler Driving License (DL)');
+                    }}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('driving license') || (form.certifications || '').includes('Driving License')
+                        ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🪪</span>
+                    <span>Valid Driving License (DL)</span>
+                    {form.skills.includes('driving license') || (form.certifications || '').includes('Driving License') ? ' ✓' : ''}
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Telecaller Languages & Calling Card */}
+            {isTelecallerRole && (
+              <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">📞</span>
+                  <div>
+                    <p className="text-xs font-bold text-blue-950 uppercase tracking-wider">
+                      Calling Languages & Experience:
+                    </p>
+                    <p className="text-xs text-blue-800">
+                      Select languages you are comfortable speaking with customers in Vizag:
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('telugu fluency')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('telugu fluency')
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🗣️</span>
+                    <span>Telugu Fluency</span>
+                    {form.skills.includes('telugu fluency') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('english communication')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('english communication')
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🗣️</span>
+                    <span>English Communication</span>
+                    {form.skills.includes('english communication') ? ' ✓' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleSkill('hindi speaking')}
+                    className={`min-h-10 rounded-xl border px-3 py-1.5 text-xs font-bold transition flex items-center gap-1.5 ${
+                      form.skills.includes('hindi speaking')
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <span>🗣️</span>
+                    <span>Hindi Speaking</span>
+                    {form.skills.includes('hindi speaking') ? ' ✓' : ''}
+                  </button>
+                </div>
+              </div>
+            )}
             {showRoleSuggestions && form.primary_target_role.trim().length > 0 && roleSuggestions.length > 0 ? (
               <div className="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
                 <div className="flex items-center justify-between px-2 py-1">
