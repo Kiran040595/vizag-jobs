@@ -9,6 +9,7 @@ import {
   formatApplicationTime,
   getApplicationResumeUrl,
   updateApplicationRecruiterNotes,
+  updateApplicationStar,
   scheduleApplicationInterview,
   cancelApplicationInterview,
 } from '../../services/jobApplications';
@@ -141,8 +142,20 @@ export default function JobApplicationCard({
   onApplicationUpdate,
   canUpdateStatus = true,
   job = null,
+  isAdmin = false,
 }) {
   const snapshot = application.profileSnapshot || {};
+  const isCandidateStarred = Boolean(
+    application.isStarred ||
+      snapshot.is_starred ||
+      snapshot.isStarred ||
+      (application.isSuitableProfile && Boolean(application.adminNotes))
+  );
+  const [isUpdatingStar, setIsUpdatingStar] = useState(false);
+  const [isEditingAdminNote, setIsEditingAdminNote] = useState(false);
+  const [adminNoteDraft, setAdminNoteDraft] = useState(application.adminNotes || '');
+  const [isSavingAdminNote, setIsSavingAdminNote] = useState(false);
+
   const [recruiterNotes, setRecruiterNotes] = useState(application.recruiterNotes || '');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [showNotes, setShowNotes] = useState(Boolean(application.recruiterNotes));
@@ -251,6 +264,55 @@ export default function JobApplicationCard({
       window.alert(err instanceof Error ? err.message : 'Could not save recruiter notes.');
     } finally {
       setIsSavingNotes(false);
+    }
+  };
+
+  const handleToggleStar = async () => {
+    try {
+      setIsUpdatingStar(true);
+      const nextStarred = !isCandidateStarred;
+      const updated = await updateApplicationStar({
+        applicationId: application.id,
+        isStarred: nextStarred,
+        isSuitableProfile: application.isSuitableProfile,
+      });
+      if (onApplicationUpdate) {
+        onApplicationUpdate(updated);
+      }
+      pushToast({
+        message: nextStarred
+          ? 'Candidate marked as Starred / Recommended ⭐'
+          : 'Star removed from candidate.',
+        type: 'success',
+      });
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Could not update star status.');
+    } finally {
+      setIsUpdatingStar(false);
+    }
+  };
+
+  const handleSaveAdminNote = async () => {
+    try {
+      setIsSavingAdminNote(true);
+      const updated = await updateApplicationStar({
+        applicationId: application.id,
+        isStarred: true,
+        adminNotes: adminNoteDraft,
+        isSuitableProfile: application.isSuitableProfile,
+      });
+      if (onApplicationUpdate) {
+        onApplicationUpdate(updated);
+      }
+      setIsEditingAdminNote(false);
+      pushToast({
+        message: 'Admin recommendation note saved.',
+        type: 'success',
+      });
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Could not save admin note.');
+    } finally {
+      setIsSavingAdminNote(false);
     }
   };
 
@@ -388,7 +450,13 @@ export default function JobApplicationCard({
   const avatarGradient = getAvatarGradient(snapshot.fullName);
 
   return (
-    <article className="min-w-0 break-words [&_button]:min-h-11 [&_a]:min-h-11 [&_input]:min-w-0 [&_input]:text-base [&_select]:min-h-11 [&_select]:min-w-0 [&_select]:max-w-full [&_select]:text-base [&_textarea]:text-base overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
+    <article
+      className={`min-w-0 break-words [&_button]:min-h-11 [&_a]:min-h-11 [&_input]:min-w-0 [&_input]:text-base [&_select]:min-h-11 [&_select]:min-w-0 [&_select]:max-w-full [&_select]:text-base [&_textarea]:text-base overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:shadow-md ${
+        isCandidateStarred
+          ? 'border-amber-300 ring-2 ring-amber-200/70 bg-gradient-to-b from-amber-50/20 to-white shadow-amber-100/50'
+          : 'border-slate-200/90 hover:border-slate-300'
+      }`}
+    >
       {/* Top Header Card Bar */}
       <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
         {/* Candidate Avatar & Identity */}
@@ -401,6 +469,12 @@ export default function JobApplicationCard({
           <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-black text-slate-950">{candidateName}</h3>
+              {isCandidateStarred ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
+                  <span>⭐</span>
+                  <span>Admin Recommended</span>
+                </span>
+              ) : null}
               <span
                 className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusStyle}`}
               >
@@ -422,8 +496,25 @@ export default function JobApplicationCard({
           </div>
         </div>
 
-        {/* Right side: Timestamp & Source */}
+        {/* Right side: Timestamp, Source & Admin Star Toggle */}
         <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:text-right">
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={handleToggleStar}
+              disabled={isUpdatingStar}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                isCandidateStarred
+                  ? 'border border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200 shadow-2xs'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+              title={isCandidateStarred ? 'Remove star from candidate' : 'Star & Refer candidate profile'}
+            >
+              <span className="text-sm">{isCandidateStarred ? '★' : '☆'}</span>
+              <span>{isCandidateStarred ? 'Starred' : 'Star Profile'}</span>
+            </button>
+          ) : null}
+
           <p className="text-xs font-medium text-slate-500">
             {application.isSuitableProfile
               ? `Assigned ${formatApplicationTime(application.createdAt || application.submittedAt)}`
@@ -449,10 +540,69 @@ export default function JobApplicationCard({
         {/* Admin Recommendation Note */}
         {application.adminNotes ? (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-950 shadow-2xs">
-            <div className="flex items-center gap-1.5 font-bold">
-              <span>🌟 Admin Recommendation Note</span>
+            <div className="flex items-center justify-between gap-1.5 font-bold">
+              <div className="flex items-center gap-1.5">
+                <span>🌟 Admin Recommendation Note</span>
+              </div>
+              {isAdmin && !isEditingAdminNote ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminNoteDraft(application.adminNotes);
+                    setIsEditingAdminNote(true);
+                  }}
+                  className="text-[11px] font-bold text-amber-800 underline hover:text-amber-950"
+                >
+                  Edit Note
+                </button>
+              ) : null}
             </div>
             <p className="mt-1 font-medium [overflow-wrap:anywhere]">{application.adminNotes}</p>
+          </div>
+        ) : isAdmin && !isEditingAdminNote ? (
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={() => setIsEditingAdminNote(true)}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-400"
+            >
+              <span>⭐</span>
+              <span>+ Add Admin Referral Note for Employer</span>
+            </button>
+          </div>
+        ) : null}
+
+        {/* Inline Admin Note Editor */}
+        {isEditingAdminNote ? (
+          <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-3.5 shadow-xs">
+            <label htmlFor={`admin-note-${application.id}`} className="block text-xs font-bold text-amber-950 mb-1.5">
+              Admin Recommendation Note (Visible to Company)
+            </label>
+            <textarea
+              id={`admin-note-${application.id}`}
+              rows={2}
+              value={adminNoteDraft}
+              onChange={(e) => setAdminNoteDraft(e.target.value)}
+              placeholder="e.g. Strongly recommended: candidate has GIS experience and quick communication..."
+              className="min-h-11 w-full rounded-xl border border-amber-200 bg-white p-2.5 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+            />
+            <div className="mt-2 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingAdminNote(false)}
+                className="min-h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAdminNote}
+                disabled={isSavingAdminNote}
+                className="min-h-9 rounded-lg bg-amber-600 px-3.5 py-1 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {isSavingAdminNote ? 'Saving…' : 'Save Recommendation Note'}
+              </button>
+            </div>
           </div>
         ) : null}
 

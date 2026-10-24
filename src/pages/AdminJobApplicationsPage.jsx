@@ -9,7 +9,8 @@ import JobApplicationCard from '../components/jobApplications/JobApplicationCard
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   ALL_APPLICATION_STATUSES,
-  filterApplicationsByStatus,
+  filterApplications,
+  extractApplicationFilterOptions,
 } from '../lib/applicationFilters';
 import { summarizeApplicationStatuses } from '../lib/applicationExport';
 import { mergeApplicationsWithApplyClicks } from '../lib/applyClickExport';
@@ -31,7 +32,13 @@ export default function AdminJobApplicationsPage() {
   const [applications, setApplications] = useState([]);
   const [applyClicks, setApplyClicks] = useState([]);
   const [clickProfiles, setClickProfiles] = useState(() => new Map());
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(ALL_APPLICATION_STATUSES);
+  const [qualificationFilter, setQualificationFilter] = useState('all');
+  const [passoutYearFilter, setPassoutYearFilter] = useState('all');
+  const [skillFilter, setSkillFilter] = useState('all');
+  const [isStarredOnly, setIsStarredOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
@@ -72,16 +79,49 @@ export default function AdminJobApplicationsPage() {
     };
   }, [jobId]);
 
-  const filteredApplications = useMemo(
-    () => filterApplicationsByStatus(applications, statusFilter),
-    [applications, statusFilter],
+  const filterOptions = useMemo(
+    () => extractApplicationFilterOptions(applications),
+    [applications],
   );
+
+  const filteredApplications = useMemo(
+    () =>
+      filterApplications(applications, {
+        search: searchQuery,
+        status: statusFilter,
+        qualification: qualificationFilter,
+        passoutYear: passoutYearFilter,
+        skill: skillFilter,
+        isStarredOnly,
+        sortBy,
+      }),
+    [
+      applications,
+      searchQuery,
+      statusFilter,
+      qualificationFilter,
+      passoutYearFilter,
+      skillFilter,
+      isStarredOnly,
+      sortBy,
+    ],
+  );
+
+  const isAnyFilterActive =
+    Boolean(searchQuery.trim()) ||
+    statusFilter !== ALL_APPLICATION_STATUSES ||
+    qualificationFilter !== 'all' ||
+    passoutYearFilter !== 'all' ||
+    skillFilter !== 'all' ||
+    isStarredOnly;
+
   const exportApplications = useMemo(() => {
-    if (statusFilter !== ALL_APPLICATION_STATUSES) {
+    if (isAnyFilterActive) {
       return filteredApplications;
     }
     return mergeApplicationsWithApplyClicks(applications, applyClicks, clickProfiles);
-  }, [statusFilter, filteredApplications, applications, applyClicks, clickProfiles]);
+  }, [isAnyFilterActive, filteredApplications, applications, applyClicks, clickProfiles]);
+
   const clickOnlyCount = useMemo(
     () => Math.max(0, exportApplications.length - applications.length),
     [exportApplications.length, applications.length],
@@ -90,6 +130,16 @@ export default function AdminJobApplicationsPage() {
     () => summarizeApplicationStatuses(filteredApplications),
     [filteredApplications],
   );
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter(ALL_APPLICATION_STATUSES);
+    setQualificationFilter('all');
+    setPassoutYearFilter('all');
+    setSkillFilter('all');
+    setIsStarredOnly(false);
+    setSortBy('newest');
+  };
 
   const handleStatusChange = async (applicationId, status) => {
     const updated = await updateApplicationStatus({ applicationId, status });
@@ -101,7 +151,7 @@ export default function AdminJobApplicationsPage() {
   const handleApplicationUpdate = (updated) => {
     if (!updated) return;
     setApplications((current) =>
-      current.map((row) => (row.id === updated.id ? updated : row)),
+      current.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)),
     );
   };
 
@@ -188,10 +238,27 @@ export default function AdminJobApplicationsPage() {
 
       {!isLoading && applications.length > 0 ? (
         <ApplicationFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           status={statusFilter}
           onStatusChange={setStatusFilter}
+          qualification={qualificationFilter}
+          onQualificationChange={setQualificationFilter}
+          passoutYear={passoutYearFilter}
+          onPassoutYearChange={setPassoutYearFilter}
+          skill={skillFilter}
+          onSkillChange={setSkillFilter}
+          isStarredOnly={isStarredOnly}
+          onStarredToggle={setIsStarredOnly}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
           filteredCount={filteredApplications.length}
           totalCount={applications.length}
+          onClear={handleClearFilters}
+          availableYears={filterOptions.availableYears}
+          availableDegrees={filterOptions.availableDegrees}
+          topSkills={filterOptions.topSkills}
+          starredCount={filterOptions.starredCount}
         />
       ) : null}
 
@@ -205,7 +272,7 @@ export default function AdminJobApplicationsPage() {
       {!isLoading && applications.length > 0 && filteredApplications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No matching applicants</h3>
-          <p className="mt-2 text-sm text-slate-600">Try selecting a different status or clear the filter.</p>
+          <p className="mt-2 text-sm text-slate-600">Try adjusting your search keywords or clear the filters.</p>
         </div>
       ) : null}
 
@@ -217,6 +284,8 @@ export default function AdminJobApplicationsPage() {
               application={application}
               onStatusChange={handleStatusChange}
               onApplicationUpdate={handleApplicationUpdate}
+              isAdmin={true}
+              job={job}
             />
           ))}
         </div>

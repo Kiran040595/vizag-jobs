@@ -162,6 +162,11 @@ export default function JobApplicationTable({
                       <div>
                         <div className="flex items-center gap-1.5 font-bold text-slate-900">
                           <span>{name}</span>
+                          {app.isStarred || snapshot.is_starred ? (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
+                              ⭐ Recommended
+                            </span>
+                          ) : null}
                           {app.isSuitableProfile ? (
                             <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[10px] font-bold text-amber-900">
                               🌟 Suitable

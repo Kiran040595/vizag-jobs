@@ -43,6 +43,17 @@ const mapApplication = (row) => {
       }
     : null;
 
+  const isStarred = Boolean(
+    row.is_starred ||
+      row.profile_snapshot?.is_starred ||
+      row.profile_snapshot?.isStarred
+  );
+  const adminNotes =
+    row.admin_notes ||
+    row.profile_snapshot?.admin_notes ||
+    row.profile_snapshot?.adminNotes ||
+    '';
+
   const application = {
     id: row.id,
     jobId: row.job_id,
@@ -53,6 +64,9 @@ const mapApplication = (row) => {
     resumeShareToken: row.resume_share_token || '',
     profileSnapshot: row.profile_snapshot || {},
     recruiterNotes: row.recruiter_notes || '',
+    adminNotes,
+    isStarred,
+    starredAt: row.starred_at || null,
     interviewScheduledAt: row.interview_scheduled_at || null,
     interviewMode: row.interview_mode || 'in_person',
     interviewLocation: row.interview_location || '',
@@ -156,14 +170,26 @@ export const fetchJobApplications = async (jobId) => {
     return [];
   }
 
-  const { data, error } = await supabase
+  let data;
+  const res = await supabase
     .from('job_applications')
-    .select(APPLICATION_COLUMNS)
+    .select(`${APPLICATION_COLUMNS}, is_starred, admin_notes, starred_at`)
     .eq('job_id', jobId)
     .order('submitted_at', { ascending: false });
 
-  if (error) {
-    throw new Error(error.message);
+  if (res.error) {
+    const fallbackRes = await supabase
+      .from('job_applications')
+      .select(APPLICATION_COLUMNS)
+      .eq('job_id', jobId)
+      .order('submitted_at', { ascending: false });
+
+    if (fallbackRes.error) {
+      throw new Error(fallbackRes.error.message);
+    }
+    data = fallbackRes.data;
+  } else {
+    data = res.data;
   }
 
   return (data || []).map(mapApplication);
@@ -180,36 +206,67 @@ export const fetchJobCandidates = async (jobId) => {
     });
 
     if (!error && Array.isArray(data)) {
-      const { data: quickDetails } = await supabase.from('job_applications')
-        .select('id,profile_snapshot').eq('job_id', jobId).not('quick_form_id', 'is', null);
-      const quickSnapshots = new Map((quickDetails || []).map(row => [row.id, row.profile_snapshot]));
-      return data.map((row) => ({
-        id: row.id,
-        jobId: row.job_id,
-        studentUserId: row.user_id,
-        status: normalizeApplicationStatus(row.status),
-        source: row.source,
-        coverNote: row.cover_note || '',
-        resumePath: row.resume_path || '',
-        resumeShareToken: row.resume_share_token || '',
-        profileSnapshot: {
-          fullName: row.full_name || '',
-          phone: row.phone || '',
-          contactEmail: row.email || '',
-          college: row.college || '',
-          degree: row.degree || '',
-          branch: row.branch || '',
-          graduationYear: row.graduation_year ?? null,
-          skills: Array.isArray(row.skills) ? row.skills : [],
-          isFresher: row.is_fresher !== false,
-        },
-        recruiterNotes: row.recruiter_notes || '',
-        interviewScheduledAt: row.interview_scheduled_at || null,
-        interviewMode: row.interview_mode || 'in_person',
-        interviewLocation: row.interview_location || '',
-        interviewInstructions: row.interview_instructions || '',
-        submittedAt: row.created_at,
-      })).map(candidate => enrichQuickCandidate(candidate, quickSnapshots.get(candidate.id)));
+      let appExtrasMap = new Map();
+      try {
+        const { data: appExtras } = await supabase
+          .from('job_applications')
+          .select('id,profile_snapshot,is_starred,admin_notes')
+          .eq('job_id', jobId);
+        if (appExtras) {
+          appExtrasMap = new Map(appExtras.map((row) => [row.id, row]));
+        }
+      } catch {
+        // ignore fallback
+      }
+
+      return data
+        .map((row) => {
+          const extra = appExtrasMap.get(row.id) || {};
+          const isStarred = Boolean(
+            extra.is_starred ||
+              extra.profile_snapshot?.is_starred ||
+              extra.profile_snapshot?.isStarred
+          );
+          const adminNotes =
+            extra.admin_notes ||
+            extra.profile_snapshot?.admin_notes ||
+            extra.profile_snapshot?.adminNotes ||
+            '';
+
+          return {
+            id: row.id,
+            jobId: row.job_id,
+            studentUserId: row.user_id,
+            status: normalizeApplicationStatus(row.status),
+            source: row.source,
+            coverNote: row.cover_note || '',
+            resumePath: row.resume_path || '',
+            resumeShareToken: row.resume_share_token || '',
+            isStarred,
+            adminNotes,
+            profileSnapshot: {
+              fullName: row.full_name || '',
+              phone: row.phone || '',
+              contactEmail: row.email || '',
+              college: row.college || '',
+              degree: row.degree || '',
+              branch: row.branch || '',
+              graduationYear: row.graduation_year ?? null,
+              skills: Array.isArray(row.skills) ? row.skills : [],
+              isFresher: row.is_fresher !== false,
+            },
+            recruiterNotes: row.recruiter_notes || '',
+            interviewScheduledAt: row.interview_scheduled_at || null,
+            interviewMode: row.interview_mode || 'in_person',
+            interviewLocation: row.interview_location || '',
+            interviewInstructions: row.interview_instructions || '',
+            submittedAt: row.created_at,
+          };
+        })
+        .map((candidate) => {
+          const extra = appExtrasMap.get(candidate.id);
+          return enrichQuickCandidate(candidate, extra?.profile_snapshot);
+        });
     }
   } catch (rpcError) {
     console.warn('get_job_applicant_records RPC failed, falling back to fetchJobApplications:', rpcError);
@@ -468,4 +525,134 @@ export const formatApplicationTime = (value) => {
     hour: 'numeric',
     minute: '2-digit',
   });
+};
+
+/**
+ * Toggle star status and optionally update admin recommendation notes on an application.
+ * Supports both direct applications (job_applications) and assigned suitable profiles (job_suitable_profiles).
+ */
+export const updateApplicationStar = async ({
+  applicationId,
+  isStarred,
+  adminNotes,
+  isSuitableProfile = false,
+}) => {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  if (isSuitableProfile) {
+    const updatePayload = {
+      is_starred: isStarred,
+      starred_at: isStarred ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    };
+    if (adminNotes !== undefined) {
+      updatePayload.admin_notes = adminNotes;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('job_suitable_profiles')
+        .update(updatePayload)
+        .eq('id', applicationId)
+        .select()
+        .single();
+
+      if (!error && data) {
+        return {
+          id: data.id,
+          isStarred: Boolean(data.is_starred),
+          adminNotes: data.admin_notes || '',
+          isSuitableProfile: true,
+        };
+      }
+    } catch {
+      // fallback
+    }
+
+    return {
+      id: applicationId,
+      isStarred,
+      adminNotes: adminNotes || '',
+      isSuitableProfile: true,
+    };
+  }
+
+  // Direct application in job_applications
+  let currentSnapshot = {};
+  try {
+    const { data: current } = await supabase
+      .from('job_applications')
+      .select('profile_snapshot, admin_notes')
+      .eq('id', applicationId)
+      .maybeSingle();
+    if (current?.profile_snapshot) {
+      currentSnapshot = current.profile_snapshot;
+    }
+  } catch {
+    // ignore
+  }
+
+  const updatedSnapshot = {
+    ...currentSnapshot,
+    is_starred: isStarred,
+    isStarred,
+    ...(adminNotes !== undefined ? { admin_notes: adminNotes, adminNotes } : {}),
+  };
+
+  const payload = {
+    is_starred: isStarred,
+    starred_at: isStarred ? new Date().toISOString() : null,
+    profile_snapshot: updatedSnapshot,
+    updated_at: new Date().toISOString(),
+  };
+  if (adminNotes !== undefined) {
+    payload.admin_notes = adminNotes;
+  }
+
+  let updateError = null;
+  let updatedRow = null;
+
+  try {
+    const res = await supabase
+      .from('job_applications')
+      .update(payload)
+      .eq('id', applicationId)
+      .select(APPLICATION_COLUMNS)
+      .single();
+
+    if (!res.error) {
+      updatedRow = res.data;
+    } else {
+      updateError = res.error;
+    }
+  } catch (err) {
+    updateError = err;
+  }
+
+  // Fallback updating profile_snapshot only if dedicated columns fail
+  if (updateError) {
+    const fallbackRes = await supabase
+      .from('job_applications')
+      .update({
+        profile_snapshot: updatedSnapshot,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', applicationId)
+      .select(APPLICATION_COLUMNS)
+      .single();
+
+    if (fallbackRes.error) {
+      throw new Error(fallbackRes.error.message);
+    }
+    updatedRow = fallbackRes.data;
+  }
+
+  const mapped = mapApplication(updatedRow);
+  mapped.isStarred = isStarred;
+  if (adminNotes !== undefined) {
+    mapped.adminNotes = adminNotes;
+  }
+  return mapped;
 };

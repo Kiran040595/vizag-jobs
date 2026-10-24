@@ -9,6 +9,11 @@ import JobApplicationCard from '../components/jobApplications/JobApplicationCard
 import JobApplicationTable from '../components/jobApplications/JobApplicationTable';
 import { normalizeApplicationStatus } from '../lib/applicationStatus';
 import {
+  QUALIFICATION_CATEGORIES,
+  getQualificationBucket,
+  extractApplicationFilterOptions,
+} from '../lib/applicationFilters';
+import {
   fetchJobCandidates,
   updateApplicationStatus,
 } from '../services/jobApplications';
@@ -109,6 +114,9 @@ function EmployerJobApplicationsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [hasResumeOnly, setHasResumeOnly] = useState(false);
   const [hasPhoneOnly, setHasPhoneOnly] = useState(false);
+  const [qualificationFilter, setQualificationFilter] = useState('all');
+  const [passoutYearFilter, setPassoutYearFilter] = useState('all');
+  const [isStarredOnly, setIsStarredOnly] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
   const [isLoading, setIsLoading] = useState(true);
@@ -214,6 +222,7 @@ function EmployerJobApplicationsContent() {
       rejected: 0,
       withResume: 0,
       withPhone: 0,
+      starred: 0,
     };
 
     for (const item of activeCandidates) {
@@ -230,10 +239,23 @@ function EmployerJobApplicationsContent() {
 
       if (item.resumePath) counts.withResume += 1;
       if (item.profileSnapshot?.phone) counts.withPhone += 1;
+      if (
+        item.isStarred ||
+        item.profileSnapshot?.is_starred ||
+        item.profileSnapshot?.isStarred ||
+        (item.isSuitableProfile && Boolean(item.adminNotes))
+      ) {
+        counts.starred += 1;
+      }
     }
 
     return counts;
   }, [activeCandidates]);
+
+  const filterOptions = useMemo(
+    () => extractApplicationFilterOptions(activeCandidates),
+    [activeCandidates],
+  );
 
   // Filtered and sorted candidate list
   const filteredCandidates = useMemo(() => {
@@ -260,7 +282,39 @@ function EmployerJobApplicationsContent() {
       list = list.filter((item) => Boolean(item.profileSnapshot?.phone));
     }
 
-    // 4. Search query
+    // 4. Starred / Recommended only filter
+    if (isStarredOnly) {
+      list = list.filter((item) =>
+        Boolean(
+          item.isStarred ||
+            item.profileSnapshot?.is_starred ||
+            item.profileSnapshot?.isStarred ||
+            (item.isSuitableProfile && Boolean(item.adminNotes))
+        )
+      );
+    }
+
+    // 5. Qualification filter
+    if (qualificationFilter !== 'all') {
+      list = list.filter((item) => {
+        const degree = item.profileSnapshot?.degree || '';
+        const bucket = getQualificationBucket(degree);
+        return (
+          bucket === qualificationFilter.toLowerCase() ||
+          degree.toLowerCase().includes(qualificationFilter.toLowerCase())
+        );
+      });
+    }
+
+    // 6. Passout Year filter
+    if (passoutYearFilter !== 'all') {
+      list = list.filter((item) => {
+        const yr = String(item.profileSnapshot?.graduationYear || '').trim();
+        return yr === String(passoutYearFilter).trim();
+      });
+    }
+
+    // 7. Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter((item) => {
@@ -286,13 +340,27 @@ function EmployerJobApplicationsContent() {
       });
     }
 
-    // 5. Sorting
+    // 8. Sorting
     return [...list].sort((a, b) => {
       const timeA = new Date(a.createdAt || a.submittedAt || 0).getTime();
       const timeB = new Date(b.createdAt || b.submittedAt || 0).getTime();
 
       if (sortBy === 'oldest') {
         return timeA - timeB;
+      }
+      if (sortBy === 'starred_first') {
+        const starA = Boolean(
+          a.isStarred ||
+            a.profileSnapshot?.is_starred ||
+            (a.isSuitableProfile && a.adminNotes)
+        );
+        const starB = Boolean(
+          b.isStarred ||
+            b.profileSnapshot?.is_starred ||
+            (b.isSuitableProfile && b.adminNotes)
+        );
+        if (starA !== starB) return starA ? -1 : 1;
+        return timeB - timeA;
       }
       if (sortBy === 'name_asc') {
         const nameA = (a.profileSnapshot?.fullName || '').toLowerCase();
@@ -307,7 +375,17 @@ function EmployerJobApplicationsContent() {
       }
       return timeB - timeA;
     });
-  }, [activeCandidates, statusFilter, hasResumeOnly, hasPhoneOnly, searchQuery, sortBy]);
+  }, [
+    activeCandidates,
+    statusFilter,
+    hasResumeOnly,
+    hasPhoneOnly,
+    isStarredOnly,
+    qualificationFilter,
+    passoutYearFilter,
+    searchQuery,
+    sortBy,
+  ]);
 
   const handleStatusChange = async (targetId, nextStatus, meta = {}) => {
     const isSuitable = meta.isSuitableProfile || activeTab === 'suitable';
@@ -399,12 +477,23 @@ function EmployerJobApplicationsContent() {
 
   const publicJobPath = job ? getJobDetailPath(job) : null;
   const isAnyFilterActive =
-    statusFilter !== 'all' || hasResumeOnly || hasPhoneOnly || searchQuery.trim() !== '';
+    statusFilter !== 'all' ||
+    hasResumeOnly ||
+    hasPhoneOnly ||
+    isStarredOnly ||
+    qualificationFilter !== 'all' ||
+    passoutYearFilter !== 'all' ||
+    sortBy !== 'newest' ||
+    searchQuery.trim() !== '';
 
   const clearAllFilters = () => {
     setStatusFilter('all');
     setHasResumeOnly(false);
     setHasPhoneOnly(false);
+    setIsStarredOnly(false);
+    setQualificationFilter('all');
+    setPassoutYearFilter('all');
+    setSortBy('newest');
     setSearchQuery('');
   };
 
@@ -666,6 +755,21 @@ function EmployerJobApplicationsContent() {
 
           {/* Quick Filters, Sorter & View Toggle */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Starred / Admin Recommended Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsStarredOnly(!isStarredOnly)}
+              className={`inline-flex min-h-11 items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                isStarredOnly
+                  ? 'border border-amber-300 bg-amber-500 text-white shadow-xs'
+                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+              title="Show candidates recommended or referred by platform admin"
+            >
+              <span>⭐</span>
+              <span>Recommended ({stageCounts.starred})</span>
+            </button>
+
             {/* Has Resume Filter Toggle */}
             <button
               type="button"
@@ -692,6 +796,37 @@ function EmployerJobApplicationsContent() {
               📞 Has Phone ({stageCounts.withPhone})
             </button>
 
+            {/* Qualification Filter */}
+            <select
+              value={qualificationFilter}
+              onChange={(e) => setQualificationFilter(e.target.value)}
+              aria-label="Filter candidates by qualification"
+              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
+            >
+              {QUALIFICATION_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Passout Year Filter */}
+            {filterOptions.availableYears.length > 0 ? (
+              <select
+                value={passoutYearFilter}
+                onChange={(e) => setPassoutYearFilter(e.target.value)}
+                aria-label="Filter candidates by passout year"
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
+              >
+                <option value="all">All Passout Years</option>
+                {filterOptions.availableYears.map((yr) => (
+                  <option key={yr} value={yr}>
+                    Class of {yr}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+
             {/* Sort Dropdown */}
             <select
               value={sortBy}
@@ -699,7 +834,8 @@ function EmployerJobApplicationsContent() {
               className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
             >
               <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
+              <option value="oldest">Earliest applied (Early register)</option>
+              <option value="starred_first">⭐ Recommended first</option>
               <option value="name_asc">Name (A–Z)</option>
               <option value="has_resume">Has Resume first</option>
             </select>

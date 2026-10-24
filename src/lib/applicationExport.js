@@ -215,6 +215,14 @@ export const APPLICATION_EXPORT_COLUMNS = /** @type {ApplicationExportColumn[]} 
     getValue: (app) => formatAppliedAt(app.submittedAt),
   },
   {
+    id: 'isStarred',
+    label: 'Admin recommended / Starred',
+    group: 'Consultancy',
+    defaultSelected: true,
+    getValue: (app) =>
+      app.isStarred || app.profileSnapshot?.is_starred ? '⭐ Yes' : 'No',
+  },
+  {
     id: 'adminNotes',
     label: 'Admin recommendation notes',
     group: 'Consultancy',

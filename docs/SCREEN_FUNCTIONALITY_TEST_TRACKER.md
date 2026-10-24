@@ -1,5 +1,30 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-24-Job-Applications-Search-Filters-And-Star-Referrals
+
+- Scope: S035 `/admin/jobs/:jobId/applications` and S019 `/employer/jobs/:jobId/applications`; `supabase/migrations/20261024220000_application_star_and_admin_notes.sql`, `src/lib/applicationFilters.js`, `src/services/jobApplications.js`, `src/components/jobApplications/ApplicationFilters.jsx`, `src/components/jobApplications/JobApplicationCard.jsx`, `src/components/jobApplications/JobApplicationTable.jsx`, `src/pages/AdminJobApplicationsPage.jsx`, `src/pages/EmployerJobApplicationsPage.jsx`, `src/lib/applicationExport.js`, `tests/application-filters.test.mjs`.
+- Problem resolved:
+  - Admin and companies reviewing candidates who applied to jobs had only a basic status dropdown, with no way to search by candidate name, filter by specific skills, qualification, graduation year, or sort by early applicants/registrations.
+  - Admins had no mechanism to highlight candidate profiles with a star or denote someone as an important/referred profile with a recommendation note visible to the hiring company.
+- Solution delivered:
+  - Implemented multi-facet candidate filtering and live search in `src/lib/applicationFilters.js` supporting:
+    - Candidate name, phone, email, college, branch, and cover note search.
+    - Qualification categorization (`btech`, `degree`, `diploma`, `pg`, `iti`, `intermediate`, `other`).
+    - Passout year matching dynamically extracted from applicant records.
+    - Skill filtering dynamically extracted from top candidate skills.
+    - Earliest applied / early register sorting and 1-click early applicant isolation.
+  - Built comprehensive, touch-friendly, mobile-first `ApplicationFilters.jsx` toolbar with min-h-11 targets.
+  - Implemented Admin Star ⭐ candidate highlighting with instant toggle, database persistence (`job_applications.is_starred`, `job_suitable_profiles.is_starred`, and `profile_snapshot` fallback), and admin recommendation note editor.
+  - Added visual highlight cards with gold border, star badges (`⭐ Admin Recommended` / `⭐ Referred Candidate`), and recommendation note banners visible to both admin and employer recruiters.
+  - Added 1-click `⭐ Recommended` filtering and qualification/passout year controls to employer candidate toolbar in `EmployerJobApplicationsPage.jsx` and `JobApplicationTable.jsx`.
+  - Added `isStarred` column to Excel exports in `src/lib/applicationExport.js`.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 204/204 tests.
+  - Unit tests added in `tests/application-filters.test.mjs` verifying name search, qualification categorization, passout year matching, star filtering, and early register sorting.
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 4.20s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-24-Quick-Jobs-Candidate-Integration
 
 - Scope: S044 `/admin/students` and S006 `/admin/candidates`; `src/lib/quickCandidateProfile.js`, `src/services/adminStudents.js`, `src/lib/adminCandidateSearch.js`, `src/pages/AdminStudentsPage.jsx`, `src/components/admin/CandidateFinderFilters.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `src/services/jobSuitableProfiles.js`, `tests/admin-candidate-search.test.mjs`.
