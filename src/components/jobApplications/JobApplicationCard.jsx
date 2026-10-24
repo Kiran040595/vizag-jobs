@@ -275,6 +275,7 @@ export default function JobApplicationCard({
         applicationId: application.id,
         isStarred: nextStarred,
         isSuitableProfile: application.isSuitableProfile,
+        existingProfileSnapshot: snapshot,
       });
       if (onApplicationUpdate) {
         onApplicationUpdate(updated);
@@ -300,6 +301,7 @@ export default function JobApplicationCard({
         isStarred: true,
         adminNotes: adminNoteDraft,
         isSuitableProfile: application.isSuitableProfile,
+        existingProfileSnapshot: snapshot,
       });
       if (onApplicationUpdate) {
         onApplicationUpdate(updated);

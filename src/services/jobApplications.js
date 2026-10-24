@@ -192,7 +192,46 @@ export const fetchJobApplications = async (jobId) => {
     data = res.data;
   }
 
-  return (data || []).map(mapApplication);
+  const mapped = (data || []).map(mapApplication);
+
+  // If any application has an incomplete snapshot, enrich from student_profiles
+  const missingStudentUserIds = mapped
+    .filter((app) => !app.profileSnapshot?.fullName && app.studentUserId)
+    .map((app) => app.studentUserId);
+
+  if (missingStudentUserIds.length > 0) {
+    try {
+      const { data: students } = await supabase
+        .from('student_profiles')
+        .select('user_id, full_name, phone, contact_email, college, degree, branch, graduation_year, is_fresher, skills')
+        .in('user_id', missingStudentUserIds);
+
+      if (students && students.length > 0) {
+        const studentMap = new Map(students.map((s) => [s.user_id, s]));
+        for (const app of mapped) {
+          if (!app.profileSnapshot?.fullName && studentMap.has(app.studentUserId)) {
+            const student = studentMap.get(app.studentUserId);
+            app.profileSnapshot = {
+              ...(app.profileSnapshot || {}),
+              fullName: student.full_name || '',
+              phone: student.phone || '',
+              contactEmail: student.contact_email || '',
+              college: student.college || '',
+              degree: student.degree || '',
+              branch: student.branch || '',
+              graduationYear: student.graduation_year ?? null,
+              isFresher: student.is_fresher !== false,
+              skills: Array.isArray(student.skills) ? student.skills : (app.profileSnapshot?.skills || []),
+            };
+          }
+        }
+      }
+    } catch {
+      // ignore fallback
+    }
+  }
+
+  return mapped;
 };
 
 export const fetchJobCandidates = async (jobId) => {
@@ -536,6 +575,7 @@ export const updateApplicationStar = async ({
   isStarred,
   adminNotes,
   isSuitableProfile = false,
+  existingProfileSnapshot = {},
 }) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Supabase is not configured.');
@@ -565,6 +605,7 @@ export const updateApplicationStar = async ({
           isStarred: Boolean(data.is_starred),
           adminNotes: data.admin_notes || '',
           isSuitableProfile: true,
+          profileSnapshot: existingProfileSnapshot,
         };
       }
     } catch {
@@ -576,22 +617,55 @@ export const updateApplicationStar = async ({
       isStarred,
       adminNotes: adminNotes || '',
       isSuitableProfile: true,
+      profileSnapshot: existingProfileSnapshot,
     };
   }
 
   // Direct application in job_applications
-  let currentSnapshot = {};
+  let currentSnapshot = { ...existingProfileSnapshot };
+  let studentUserId = null;
   try {
     const { data: current } = await supabase
       .from('job_applications')
-      .select('profile_snapshot, admin_notes')
+      .select('student_user_id, profile_snapshot, admin_notes')
       .eq('id', applicationId)
       .maybeSingle();
-    if (current?.profile_snapshot) {
-      currentSnapshot = current.profile_snapshot;
+    studentUserId = current?.student_user_id;
+    if (current?.profile_snapshot && Object.keys(current.profile_snapshot).length > 0) {
+      currentSnapshot = {
+        ...currentSnapshot,
+        ...current.profile_snapshot,
+      };
     }
   } catch {
     // ignore
+  }
+
+  // If candidate name is still missing in snapshot, look up student_profiles
+  if (!currentSnapshot.fullName && studentUserId) {
+    try {
+      const { data: student } = await supabase
+        .from('student_profiles')
+        .select('full_name, phone, contact_email, college, degree, branch, graduation_year, is_fresher, skills')
+        .eq('user_id', studentUserId)
+        .maybeSingle();
+      if (student) {
+        currentSnapshot = {
+          fullName: student.full_name || '',
+          phone: student.phone || '',
+          contactEmail: student.contact_email || '',
+          college: student.college || '',
+          degree: student.degree || '',
+          branch: student.branch || '',
+          graduationYear: student.graduation_year ?? null,
+          isFresher: student.is_fresher !== false,
+          skills: Array.isArray(student.skills) ? student.skills : [],
+          ...currentSnapshot,
+        };
+      }
+    } catch {
+      // ignore
+    }
   }
 
   const updatedSnapshot = {
@@ -650,9 +724,18 @@ export const updateApplicationStar = async ({
   }
 
   const mapped = mapApplication(updatedRow);
-  mapped.isStarred = isStarred;
-  if (adminNotes !== undefined) {
-    mapped.adminNotes = adminNotes;
+  if (mapped) {
+    mapped.isStarred = isStarred;
+    if (adminNotes !== undefined) {
+      mapped.adminNotes = adminNotes;
+    }
+    mapped.profileSnapshot = {
+      ...currentSnapshot,
+      ...(mapped.profileSnapshot || {}),
+      is_starred: isStarred,
+      isStarred,
+      ...(adminNotes !== undefined ? { admin_notes: adminNotes, adminNotes } : {}),
+    };
   }
   return mapped;
 };

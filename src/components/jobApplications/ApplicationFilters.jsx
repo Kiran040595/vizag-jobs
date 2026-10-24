@@ -88,13 +88,14 @@ export default function ApplicationFilters({
           onClick={() => onStarredToggle?.(!isStarredOnly)}
           className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-bold transition ${
             isStarredOnly
-              ? 'border border-amber-300 bg-amber-500 text-white shadow-xs'
+              ? 'border border-amber-400 bg-amber-500 text-white shadow-xs'
               : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
           }`}
-          title="Filter for candidates starred or referred by Admin"
+          title={isStarredOnly ? 'Currently showing only Starred candidates. Click to show all.' : 'Filter for candidates starred or referred by Admin'}
         >
           <span>⭐</span>
-          <span>Starred {starredCount > 0 ? `(${starredCount})` : ''}</span>
+          <span>{isStarredOnly ? 'Showing Starred Only' : 'Starred'} {starredCount > 0 ? `(${starredCount})` : ''}</span>
+          {isStarredOnly ? <span className="ml-1 text-[11px] font-black underline">✕</span> : null}
         </button>
       </div>
 
@@ -200,10 +201,17 @@ export default function ApplicationFilters({
 
       {/* Active Filter Summary Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-        <div>
-          Showing <span className="font-black text-slate-950">{filteredCount}</span> of{' '}
-          <span className="font-black text-slate-950">{totalCount}</span> application{totalCount === 1 ? '' : 's'}
-          {isFiltered ? <span className="ml-1 text-cyan-800 font-bold">(filtered)</span> : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <span>
+            Showing <span className="font-black text-slate-950">{filteredCount}</span> of{' '}
+            <span className="font-black text-slate-950">{totalCount}</span> application{totalCount === 1 ? '' : 's'}
+            {isFiltered ? <span className="ml-1 text-cyan-800 font-bold">(filtered)</span> : null}
+          </span>
+          {isStarredOnly ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-300">
+              ⭐ Starred only
+            </span>
+          ) : null}
         </div>
 
         {isFiltered ? (

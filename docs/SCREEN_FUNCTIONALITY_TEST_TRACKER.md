@@ -1,5 +1,30 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-24-Application-Star-Unstar-Snapshot-Preservation
+
+- Scope: S035 `/admin/jobs/:jobId/applications` and S019 `/employer/jobs/:jobId/applications`; `src/services/jobApplications.js`, `src/pages/AdminJobApplicationsPage.jsx`, `src/pages/EmployerJobApplicationsPage.jsx`, `src/components/jobApplications/ApplicationFilters.jsx`, `src/components/jobApplications/JobApplicationCard.jsx`, `tests/application-filters.test.mjs`.
+- Problem resolved:
+  - User reported: "here i just clicked a person started and removed the star now i can t find that person in the applied list can you check once name indrani i think".
+  - Diagnosis:
+    1. In database `job_applications` row `4836ee92-c628-4a97-be60-6d942df6483d` (Badamsetti Indrani for job `a3a07a3b-ff91-42ad-a2ce-db52a9876f85`), when the admin toggled star and then unstarred, `updateApplicationStar` saved `{ is_starred: false, isStarred: false }` into `profile_snapshot`, overwriting the candidate snapshot in the database.
+    2. In `AdminJobApplicationsPage.jsx`, applications were loaded via `fetchJobApplications` which did not join with `student_profiles`. Because `profile_snapshot` had no name, candidate name became blank and searching for "indrani" returned 0 results.
+    3. In React state, `handleApplicationUpdate` did a shallow merge `{ ...row, ...updated }` which replaced `row.profileSnapshot` with `updated.profileSnapshot` (lacking candidate details).
+    4. If the user had the "⭐ Starred" toolbar toggle active, unstarring a candidate excluded them immediately because they were no longer starred.
+- Solution delivered:
+  - Repaired and restored Badamsetti Indrani's complete `profile_snapshot` in live database (`fullName: 'Badamsetti indrani'`, `degree: 'B.Com'`, `skills`, `phone`, `college`, `branch: 'Commerce'`, `graduationYear: 2026`).
+  - Backfilled and verified all applications in `job_applications` to guarantee complete snapshots from `student_profiles`.
+  - Updated `updateApplicationStar` in `src/services/jobApplications.js` to accept `existingProfileSnapshot`, query `student_profiles` if name is missing, and deep merge so candidate personal/educational facts are NEVER overwritten or lost.
+  - Updated `fetchJobApplications` to enrich candidate records from `student_profiles` when snapshot is incomplete.
+  - Updated `AdminJobApplicationsPage.jsx` to load via `fetchJobCandidates(jobId)` (joining `student_profiles` via `get_job_applicant_records` with fallback).
+  - Updated `handleApplicationUpdate` in both Admin and Employer pages to perform deep merge of `profileSnapshot`.
+  - Passed `existingProfileSnapshot` from `JobApplicationCard.jsx`.
+  - Added clear active indicator badge for "⭐ Starred only" in `ApplicationFilters.jsx` with an explicit reset button in the empty results state so admins never get stranded when unstarring.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 205/205 tests.
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-24-Job-Applications-Search-Filters-And-Star-Referrals
 
 - Scope: S035 `/admin/jobs/:jobId/applications` and S019 `/employer/jobs/:jobId/applications`; `supabase/migrations/20261024220000_application_star_and_admin_notes.sql`, `src/lib/applicationFilters.js`, `src/services/jobApplications.js`, `src/components/jobApplications/ApplicationFilters.jsx`, `src/components/jobApplications/JobApplicationCard.jsx`, `src/components/jobApplications/JobApplicationTable.jsx`, `src/pages/AdminJobApplicationsPage.jsx`, `src/pages/EmployerJobApplicationsPage.jsx`, `src/lib/applicationExport.js`, `tests/application-filters.test.mjs`.

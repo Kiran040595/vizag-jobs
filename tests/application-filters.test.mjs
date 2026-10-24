@@ -174,3 +174,31 @@ test('extractApplicationFilterOptions extracts facets and counts', () => {
   assert.ok(facets.topSkills.length > 0);
   assert.ok(facets.topSkills.some((s) => s.label.toLowerCase() === 'gis'));
 });
+
+test('unstarred candidate is found by name search when starred filter is off', () => {
+  // Simulate candidate Indrani whose star was toggled off
+  const indraniApp = {
+    id: 'app-indrani',
+    isStarred: false,
+    profileSnapshot: {
+      fullName: 'Badamsetti Indrani',
+      phone: '+919390337465',
+      degree: 'B.Com',
+      graduationYear: 2026,
+      skills: ['customer support', 'communication'],
+      is_starred: false,
+    },
+  };
+  const list = [...mockApplicants, indraniApp];
+
+  // 1. With isStarredOnly = true, Indrani is filtered out
+  const starredOnly = filterApplications(list, { isStarredOnly: true });
+  assert.ok(!starredOnly.some((a) => a.id === 'app-indrani'));
+
+  // 2. With isStarredOnly = false and search = 'indrani', Indrani is found
+  const searchResult = filterApplications(list, { search: 'indrani' });
+  assert.equal(searchResult.length, 1);
+  assert.equal(searchResult[0].id, 'app-indrani');
+  assert.equal(searchResult[0].profileSnapshot.fullName, 'Badamsetti Indrani');
+});
+

@@ -16,7 +16,7 @@ import { summarizeApplicationStatuses } from '../lib/applicationExport';
 import { mergeApplicationsWithApplyClicks } from '../lib/applyClickExport';
 import { fetchAdminJobById, getAdminJobsListPath } from '../services/adminJobs';
 import {
-  fetchJobApplications,
+  fetchJobCandidates,
   formatApplicationStatus,
   updateApplicationStatus,
 } from '../services/jobApplications';
@@ -50,7 +50,7 @@ export default function AdminJobApplicationsPage() {
       try {
         const [jobRow, rows, clicks] = await Promise.all([
           fetchAdminJobById(jobId),
-          fetchJobApplications(jobId),
+          fetchJobCandidates(jobId),
           fetchJobApplyClicks(jobId).catch(() => []),
         ]);
         const clickUserIds = (clicks || []).map((click) => click.user_id).filter(Boolean);
@@ -151,7 +151,17 @@ export default function AdminJobApplicationsPage() {
   const handleApplicationUpdate = (updated) => {
     if (!updated) return;
     setApplications((current) =>
-      current.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)),
+      current.map((row) => {
+        if (row.id !== updated.id) return row;
+        return {
+          ...row,
+          ...updated,
+          profileSnapshot: {
+            ...(row.profileSnapshot || {}),
+            ...(updated.profileSnapshot || {}),
+          },
+        };
+      }),
     );
   };
 
@@ -272,7 +282,18 @@ export default function AdminJobApplicationsPage() {
       {!isLoading && applications.length > 0 && filteredApplications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
           <h3 className="text-lg font-bold text-slate-900">No matching applicants</h3>
-          <p className="mt-2 text-sm text-slate-600">Try adjusting your search keywords or clear the filters.</p>
+          <p className="mt-2 text-sm text-slate-600">
+            {isStarredOnly
+              ? 'You have the Starred filter active. If you just unstarred a candidate, reset filters to see all applicants.'
+              : 'Try adjusting your search keywords or clear the filters.'}
+          </p>
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className="mt-4 inline-flex min-h-11 items-center rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500"
+          >
+            Clear all filters
+          </button>
         </div>
       ) : null}
 

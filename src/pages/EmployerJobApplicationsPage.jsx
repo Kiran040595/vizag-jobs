@@ -454,7 +454,15 @@ function EmployerJobApplicationsContent() {
             row.id === updated.id ||
             (row.studentUserId && row.studentUserId === updated.studentUserId)
           ) {
-            return { ...row, ...updated, isSuitableProfile: true };
+            return {
+              ...row,
+              ...updated,
+              isSuitableProfile: true,
+              profileSnapshot: {
+                ...(row.profileSnapshot || {}),
+                ...(updated.profileSnapshot || {}),
+              },
+            };
           }
           return row;
         }),
@@ -468,7 +476,14 @@ function EmployerJobApplicationsContent() {
           row.id === updated.id ||
           (row.studentUserId && row.studentUserId === updated.studentUserId)
         ) {
-          return { ...row, ...updated };
+          return {
+            ...row,
+            ...updated,
+            profileSnapshot: {
+              ...(row.profileSnapshot || {}),
+              ...(updated.profileSnapshot || {}),
+            },
+          };
         }
         return row;
       }),
