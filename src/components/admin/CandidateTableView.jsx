@@ -11,6 +11,7 @@ export default function CandidateTableView({
   onSkill,
   onShare,
   onToggleActive,
+  onEditCredentials,
   busyUserId,
 }) {
   const isSkillMatched = (skill) => {
@@ -301,6 +302,16 @@ export default function CandidateTableView({
                     >
                       📤 Share
                     </button>
+                    {onEditCredentials && (student.studentUserId || student.candidateSource !== 'quick_apply') && (
+                      <button
+                        type="button"
+                        onClick={() => onEditCredentials(student)}
+                        className="inline-flex min-h-7 items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-900 hover:bg-indigo-100"
+                        title="View account status, change login email, or set new password"
+                      >
+                        🔑 Login &amp; Status
+                      </button>
+                    )}
                     {onToggleActive && (
                       <button
                         type="button"

@@ -8,6 +8,11 @@ const mapError = (error, fallbackMessage) =>
 
 export { formatStudentRegisteredAt, mapStudentProfileRow } from '../lib/adminStudentProfile.js';
 export { studentSearchBlob } from '../lib/adminStudentProfile.js';
+export {
+  fetchUserAccountStatus,
+  fetchUsersAccountStatus,
+  updateUserCredentials,
+} from './adminAuthManagement.js';
 
 export const fetchAdminStudentProfiles = async () => {
   if (!supabase) {

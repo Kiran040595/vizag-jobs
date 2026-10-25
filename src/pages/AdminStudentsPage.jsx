@@ -9,6 +9,7 @@ import CandidateTableView from '../components/admin/CandidateTableView';
 import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
 import AssignCandidatesDialog from '../components/admin/AssignCandidatesDialog';
+import AdminUserCredentialsModal from '../components/admin/AdminUserCredentialsModal';
 import { fetchAdminStudentProfiles, fetchAdminQuickCandidates, setStudentActiveStatus } from '../services/adminStudents';
 import { fetchAllCompanyJobsForAssignment, fetchCandidateMatchingJobs } from '../services/adminJobs';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
@@ -44,6 +45,7 @@ export default function AdminStudentsPage() {
   const [shareStudent, setShareStudent] = useState(null);
   const [exportScope, setExportScope] = useState(null);
   const [assignScope, setAssignScope] = useState(null);
+  const [credentialsStudent, setCredentialsStudent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [viewMode, setViewMode] = useState('cards');
@@ -337,10 +339,11 @@ export default function AdminStudentsPage() {
               onSkill={toggleSkill}
               onShare={setShareStudent}
               onToggleActive={toggleActive}
+              onEditCredentials={setCredentialsStudent}
               busyUserId={busyUserId}
             />
           ) : (
-            <div className="space-y-3">{visibleEntries.map(entry => <CandidateSearchCard key={entry.student.userId} entry={entry} filters={deferredFilters} selected={shortlist.has(entry.student.userId)} onSelect={() => toggleShortlist(entry.student.userId)} onSkill={toggleSkill} onShare={() => setShareStudent(entry.student)} onToggleActive={() => toggleActive(entry.student)} busy={busyUserId === entry.student.userId} />)}</div>
+            <div className="space-y-3">{visibleEntries.map(entry => <CandidateSearchCard key={entry.student.userId} entry={entry} filters={deferredFilters} selected={shortlist.has(entry.student.userId)} onSelect={() => toggleShortlist(entry.student.userId)} onSkill={toggleSkill} onShare={() => setShareStudent(entry.student)} onToggleActive={() => toggleActive(entry.student)} onEditCredentials={setCredentialsStudent} busy={busyUserId === entry.student.userId} />)}</div>
           )}
           {pageCount > 1 && <nav aria-label="Candidate result pages" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-3"><span className="text-sm">Page {page} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={page <= 1} onClick={() => setCurrentPage(page - 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Previous</button><button type="button" disabled={page >= pageCount} onClick={() => setCurrentPage(page + 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Next</button></div></nav>}
         </>}
@@ -359,6 +362,27 @@ export default function AdminStudentsPage() {
       )}
       {shareStudent && <ShareStudentDialog key={shareStudent.userId} open student={shareStudent} onClose={() => setShareStudent(null)} />}
       <StudentExportDialog open={Boolean(exportScope)} onClose={() => setExportScope(null)} students={exportScope?.students || []} scopeLabel={exportScope?.label || ''} />
+      {credentialsStudent && (
+        <AdminUserCredentialsModal
+          open={Boolean(credentialsStudent)}
+          onClose={() => setCredentialsStudent(null)}
+          user={credentialsStudent}
+          onSuccess={({ userId, newEmail, emailUpdated, passwordUpdated }) => {
+            setStudents((current) =>
+              current.map((stu) =>
+                stu.userId === userId
+                  ? { ...stu, contactEmail: newEmail || stu.contactEmail }
+                  : stu
+              )
+            );
+            setNotice(
+              `Updated credentials for ${credentialsStudent?.fullName || 'Candidate'}${
+                emailUpdated ? ` (Email: ${newEmail})` : ''
+              }${passwordUpdated ? ' (New password set)' : ''}.`
+            );
+          }}
+        />
+      )}
     </AdminShell>
   </>;
 }

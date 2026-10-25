@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WhatsAppContactLink from '../components/WhatsAppContactLink';
 import AdminShell from '../components/admin/AdminShell';
+import AdminUserCredentialsModal from '../components/admin/AdminUserCredentialsModal';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import {
   EMPLOYER_INDUSTRY_OPTIONS,
@@ -65,6 +66,7 @@ export default function AdminEmployersPage() {
   const [busyUserId, setBusyUserId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [credentialsEmployer, setCredentialsEmployer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
@@ -476,6 +478,14 @@ export default function AdminEmployersPage() {
                       ) : null}
                       <button
                         type="button"
+                        onClick={() => setCredentialsEmployer(employer)}
+                        className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-900 transition hover:bg-indigo-100"
+                        title="View account status, change login email, or set new password"
+                      >
+                        🔑 Login &amp; Status
+                      </button>
+                      <button
+                        type="button"
                         disabled={busyUserId === employer.userId}
                         onClick={() => handleToggleActive(employer)}
                         className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
@@ -489,6 +499,26 @@ export default function AdminEmployersPage() {
             ))}
           </div>
         )}
+
+        <AdminUserCredentialsModal
+          open={Boolean(credentialsEmployer)}
+          onClose={() => setCredentialsEmployer(null)}
+          user={credentialsEmployer}
+          onSuccess={({ userId, newEmail, emailUpdated, passwordUpdated }) => {
+            setEmployers((current) =>
+              current.map((emp) =>
+                emp.userId === userId
+                  ? { ...emp, contactEmail: newEmail || emp.contactEmail }
+                  : emp
+              )
+            );
+            setNotice(
+              `Updated credentials for ${credentialsEmployer?.companyName || 'Employer'}${
+                emailUpdated ? ` (Email: ${newEmail})` : ''
+              }${passwordUpdated ? ' (New password set)' : ''}.`
+            );
+          }}
+        />
       </AdminShell>
     </>
   );

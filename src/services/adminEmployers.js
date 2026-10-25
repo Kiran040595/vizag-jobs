@@ -11,6 +11,11 @@ const mapError = (error, fallbackMessage) =>
 
 export { formatEmployerRegisteredAt, mapEmployerProfileRow } from '../lib/adminEmployerProfile.js';
 export { employerSearchBlob } from '../lib/adminEmployerProfile.js';
+export {
+  fetchUserAccountStatus,
+  fetchUsersAccountStatus,
+  updateUserCredentials,
+} from './adminAuthManagement.js';
 
 const getAdminCreateEmployerUrl = () => {
   const base = import.meta.env.VITE_SUPABASE_URL?.trim()?.replace(/\/$/, '');

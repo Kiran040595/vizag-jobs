@@ -20,6 +20,7 @@ export default function CandidateSearchCard({
   onSkill,
   onShare,
   onToggleActive,
+  onEditCredentials,
   busy,
 }) {
   const { student, reasons, eligibility, missingFacts } = entry;
@@ -359,6 +360,16 @@ export default function CandidateSearchCard({
         >
           📤 Share profile
         </button>
+        {onEditCredentials && (student.studentUserId || student.candidateSource !== 'quick_apply') && (
+          <button
+            type="button"
+            onClick={() => onEditCredentials(student)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-bold text-indigo-900 hover:bg-indigo-100 transition"
+            title="View account status, change login email, or set new password"
+          >
+            🔑 Login &amp; Status
+          </button>
+        )}
         <button
           type="button"
           disabled={busy}

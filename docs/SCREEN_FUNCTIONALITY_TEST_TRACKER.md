@@ -1,5 +1,31 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-25-Admin-User-Credentials-And-Account-Status
+
+- Scope: S041 `/admin/employers` and S044 `/admin/students`; `supabase/migrations/20261025160000_admin_manage_user_credentials.sql`, `src/lib/adminUserCredentials.js`, `src/services/adminAuthManagement.js`, `src/components/admin/AdminUserCredentialsModal.jsx`, `src/pages/AdminEmployersPage.jsx`, `src/pages/AdminStudentsPage.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `tests/admin-user-credentials.test.mjs`.
+- Problem resolved:
+  - User requested: "allow admin to chnage employer or students mailid and password and view to check the status in the admin panel".
+  - Admins had no in-app mechanism to inspect live authentication status (email confirmed vs unconfirmed, last sign-in timestamp, registered date, password presence, active vs suspended status) or change email and reset passwords for employer companies or registered student candidates.
+- Solution delivered:
+  - Deployed database migration `supabase/migrations/20261025160000_admin_manage_user_credentials.sql` with three secure `SECURITY DEFINER` procedures guarded by `public.is_admin(auth.uid())`:
+    1. `admin_update_user_credentials`: allows updating email and/or setting a new password (hashed with `extensions.crypt` bcrypt), synchronizes `auth.users`, `auth.identities`, `employer_profiles.contact_email`, and `student_profiles.contact_email`, and auto-confirms updated email to prevent lockout.
+    2. `admin_get_user_account_status`: queries real-time auth details (`email`, `email_confirmed`, `last_sign_in_at`, `created_at`, `has_password`, `account_type`, `is_active`, `phone`).
+    3. `admin_get_users_account_status`: batch query version for multiple candidate/employer IDs.
+  - Built `src/lib/adminUserCredentials.js` with validation (`EMAIL_REGEX`, minimum password length 6), random strong password generator (`Vizag#2026!7x`), formatted sharing text generator for WhatsApp/Email with portal links, and timestamp formatting.
+  - Built `src/services/adminAuthManagement.js` wrapping the RPC calls with local input validation and clean error handling. Re-exported helpers in `adminEmployers.js` and `adminStudents.js`.
+  - Built mobile-first, accessible `AdminUserCredentialsModal.jsx` displaying:
+    - Live authentication overview: Email status badge (Confirmed / Pending), Last login time, Registered date, Password active badge, Phone number, and User ID.
+    - Editable Login Email field with automatic confirmation & profile sync.
+    - Editable New Password field with Show/Hide toggle and 1-click "🎲 Generate Strong Password" button.
+    - Post-update 1-click "📋 Copy Login Details" and "💬 Send to User on WhatsApp" actions.
+  - Integrated into `AdminEmployersPage.jsx`: added "🔑 Login & Status" button to each employer card and wired state synchronization.
+  - Integrated into `AdminStudentsPage.jsx`, `CandidateSearchCard.jsx`, and `CandidateTableView.jsx`: added "🔑 Login & Status" button to each registered candidate card and table row with live state synchronization.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 231/231 tests (including 11 new tests in `tests/admin-user-credentials.test.mjs`).
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 5.27s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-24-Application-Star-Unstar-Snapshot-Preservation
 
 - Scope: S035 `/admin/jobs/:jobId/applications` and S019 `/employer/jobs/:jobId/applications`; `src/services/jobApplications.js`, `src/pages/AdminJobApplicationsPage.jsx`, `src/pages/EmployerJobApplicationsPage.jsx`, `src/components/jobApplications/ApplicationFilters.jsx`, `src/components/jobApplications/JobApplicationCard.jsx`, `tests/application-filters.test.mjs`.
