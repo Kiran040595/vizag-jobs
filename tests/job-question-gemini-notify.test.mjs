@@ -11,20 +11,18 @@ import assert from 'node:assert/strict';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// 1. Verify SQL migration for auto-publishing and notifying students
-const migrationSrc = readFileSync(
-  path.join(repoRoot, 'supabase/migrations/20261005_auto_publish_job_question_notify_students.sql'),
+// 1. Verify SQL migration stops broadcasting Q&A questions to other students
+const stopBroadcastMigrationSrc = readFileSync(
+  path.join(repoRoot, 'supabase/migrations/20261025170000_stop_broadcasting_job_questions_to_students.sql'),
   'utf8',
 );
-assert.match(migrationSrc, /create or replace function public\.create_job_question_reply_notification/);
-assert.match(migrationSrc, /after insert or update of answer_body, status on public\.job_questions/);
-assert.match(migrationSrc, /insert into public\.reply_notifications/);
-assert.match(migrationSrc, /from public\.job_applications ja/);
-assert.match(migrationSrc, /from public\.student_profiles sp/);
-assert.match(migrationSrc, /\/community-qa\?question=/);
-assert.match(migrationSrc, /on conflict \(user_id, kind, ref_id\)/);
+assert.match(stopBroadcastMigrationSrc, /create or replace function public\.create_job_question_reply_notification/);
+assert.match(stopBroadcastMigrationSrc, /new\.asker_user_id/);
+assert.ok(!stopBroadcastMigrationSrc.includes('from public.job_applications'), 'Must not broadcast to job applicants');
+assert.ok(!stopBroadcastMigrationSrc.includes('from public.student_profiles'), 'Must not broadcast to all registered students');
+assert.match(stopBroadcastMigrationSrc, /delete from public\.reply_notifications/);
 
-// 2. Verify Edge Function answer-job-question implementation
+// 2. Verify Edge Function answer-job-question only notifies asker, never broadcasts to applicants or students
 const edgeFunctionSrc = readFileSync(
   path.join(repoRoot, 'supabase/functions/answer-job-question/index.ts'),
   'utf8',
@@ -34,19 +32,19 @@ assert.match(edgeFunctionSrc, /JOB_SYSTEM_PROMPT/);
 assert.match(edgeFunctionSrc, /GENERAL_SYSTEM_PROMPT/);
 assert.match(edgeFunctionSrc, /status:\s*'published'/);
 assert.match(edgeFunctionSrc, /buildJobQuestionReplyEmail/);
-assert.match(edgeFunctionSrc, /from\('job_applications'\)/);
-assert.match(edgeFunctionSrc, /from\('student_profiles'\)/);
 assert.match(edgeFunctionSrc, /New response for your question/);
-assert.match(edgeFunctionSrc, /New Q&A answered for/);
+assert.ok(!edgeFunctionSrc.includes("from('job_applications')"), 'Edge function must not query job_applications for broadcasting');
+assert.ok(!edgeFunctionSrc.includes("from('student_profiles')"), 'Edge function must not query student_profiles for broadcasting');
+assert.ok(!edgeFunctionSrc.includes('New Q&A answered for'), 'Edge function must not send broadcast Q&A notifications');
 
-// 3. Verify Vercel Serverless API implementation
+// 3. Verify Vercel Serverless API only notifies asker, never broadcasts to applicants or students
 const apiSrc = readFileSync(path.join(repoRoot, 'api/answer-job-question.js'), 'utf8');
 assert.match(apiSrc, /createServiceClient/);
 assert.match(apiSrc, /callGemini/);
 assert.match(apiSrc, /status:\s*'published'/);
 assert.match(apiSrc, /from\('reply_notifications'\)/);
-assert.match(apiSrc, /from\('job_applications'\)/);
-assert.match(apiSrc, /from\('student_profiles'\)/);
+assert.ok(!apiSrc.includes("from('job_applications')"), 'API must not query job_applications for broadcasting');
+assert.ok(!apiSrc.includes("from('student_profiles')"), 'API must not query student_profiles for broadcasting');
 
 // 4. Verify jobQuestions client service
 const jobQuestionsSrc = readFileSync(path.join(repoRoot, 'src/services/jobQuestions.js'), 'utf8');

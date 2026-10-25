@@ -32,7 +32,18 @@ export const fetchReplyNotifications = async (userId) => {
     throw new Error(error.message);
   }
 
-  return (data || []).map(mapReplyNotification);
+  // Filter out any broadcast Q&A spam so students only see notifications directed to them
+  const rows = (data || []).filter((row) => {
+    if (row.kind === 'job_question') {
+      const title = String(row.title || '');
+      if (title.startsWith('New Q&A:') || title.startsWith('New Q&A answered for')) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  return rows.map(mapReplyNotification);
 };
 
 export const fetchUnreadReplyNotificationCount = async (userId) => {

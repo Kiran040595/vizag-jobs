@@ -248,7 +248,7 @@ export default async function handler(req, res) {
           const jobSlug = jobContext?.slug || (jobId ? String(jobId) : null);
           const link = jobSlug ? `/job/${jobSlug}?question=${inserted.id}` : `/community-qa?question=${inserted.id}`;
 
-          // 1. Notify the asking student in reply_notifications
+          // 1. Notify only the asking student in reply_notifications (never broadcast to other students)
           if (askerUserId) {
             try {
               await admin
@@ -267,71 +267,6 @@ export default async function handler(req, res) {
             } catch (notifErr) {
               console.warn('Failed to insert asker reply notification:', notifErr);
             }
-          }
-
-          // 2. Notify students who applied to this specific job
-          if (jobId) {
-            try {
-              const { data: applicants } = await admin
-                .from('job_applications')
-                .select('student_user_id')
-                .eq('job_id', jobId);
-
-              if (Array.isArray(applicants) && applicants.length > 0) {
-                const notifications = applicants
-                  .filter((app) => app?.student_user_id && app.student_user_id !== askerUserId)
-                  .map((app) => ({
-                    user_id: app.student_user_id,
-                    kind: 'job_question',
-                    ref_id: inserted.id,
-                    title: `New Q&A answered for ${jobTitle.slice(0, 60)}`,
-                    preview: `Q: ${question.slice(0, 80)} · A: ${answerText.slice(0, 95)}`,
-                    link_path: link,
-                    is_read: false,
-                    is_dismissed: false,
-                  }));
-
-                if (notifications.length > 0) {
-                  await admin
-                    .from('reply_notifications')
-                    .upsert(notifications, { onConflict: 'user_id,kind,ref_id' });
-                }
-              }
-            } catch (appErr) {
-              console.warn('Failed to notify job applicants:', appErr);
-            }
-          }
-
-          // 3. Notify registered students in student_profiles
-          try {
-            const { data: profiles } = await admin
-              .from('student_profiles')
-              .select('user_id')
-              .not('user_id', 'is', null)
-              .limit(100);
-
-            if (Array.isArray(profiles) && profiles.length > 0) {
-              const studentNotifs = profiles
-                .filter((sp) => sp?.user_id && sp.user_id !== askerUserId)
-                .map((sp) => ({
-                  user_id: sp.user_id,
-                  kind: 'job_question',
-                  ref_id: inserted.id,
-                  title: `New Q&A: ${jobTitle.slice(0, 60)}`,
-                  preview: `Q: ${question.slice(0, 80)} · A: ${answerText.slice(0, 95)}`,
-                  link_path: link,
-                  is_read: false,
-                  is_dismissed: false,
-                }));
-
-              if (studentNotifs.length > 0) {
-                await admin
-                  .from('reply_notifications')
-                  .upsert(studentNotifs, { onConflict: 'user_id,kind,ref_id' });
-              }
-            }
-          } catch (profileErr) {
-            console.warn('Failed to notify student profiles:', profileErr);
           }
         }
       } catch (saveError) {

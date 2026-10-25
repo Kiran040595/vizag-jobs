@@ -1,5 +1,33 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-25-Stop-Broadcasting-Job-Questions-To-Students
+
+- Scope: `supabase/migrations/20261025170000_stop_broadcasting_job_questions_to_students.sql`, `api/answer-job-question.js`, `supabase/functions/answer-job-question/index.ts`, `src/services/replyNotifications.js`, `tests/job-question-gemini-notify.test.mjs`.
+- Problem resolved:
+  - User requested: "the studenst get notified if anyone asked q&a on any jobs. we should not do that .".
+  - Previously, database trigger `create_job_question_reply_notification()` from migration `20261005_auto_publish_job_question_notify_students.sql` as well as the backend answer API handlers (`api/answer-job-question.js` and `supabase/functions/answer-job-question/index.ts`) broadcast an in-app notification to *every single registered student* and *every applicant* on the job whenever any question was answered or published.
+  - This flooded the notification bell and inboxes of thousands of innocent students with over 23,900 irrelevant Q&A notifications (`New Q&A:` / `New Q&A answered for`).
+- Solution delivered:
+  - Deployed migration `supabase/migrations/20261025170000_stop_broadcasting_job_questions_to_students.sql`:
+    - Updated trigger function `public.create_job_question_reply_notification()` to notify ONLY the specific asking candidate (`new.asker_user_id`) when `asker_user_id` is present and the answer is published.
+    - Stopped querying `job_applications` and `student_profiles` on question creation/answering.
+    - Purged 23,900 broadcast spam rows from `public.reply_notifications` where `title like 'New Q&A:%' or title like 'New Q&A answered for%'`, preserving legitimate asker notifications and all application status updates.
+  - Updated backend endpoint `api/answer-job-question.js`:
+    - Removed Section 2 (applicant broadcast) and Section 3 (registered student broadcast).
+    - Preserved targeted notification exclusively to `question.asker_user_id`.
+  - Updated edge function `supabase/functions/answer-job-question/index.ts`:
+    - Removed applicant and student profile broadcast queries.
+    - Preserved targeted notification exclusively to `question.asker_user_id`.
+  - Added frontend defense in `src/services/replyNotifications.js`:
+    - Added filter in `fetchReplyNotifications` to ignore any broadcast Q&A titles starting with `New Q&A:` or `New Q&A answered for`.
+  - Updated tests in `tests/job-question-gemini-notify.test.mjs`:
+    - Asserted that answering questions only targets the asking user and does not broadcast to `job_applications` or `student_profiles`.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 244/244 tests across all 10 test suites.
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 2.28s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-25-Mobile-Header-Notification-Bell-Always-Visible
 
 - Scope: `src/components/Navbar.jsx`, `src/components/QuestionNotificationBell.jsx`, `src/components/NavbarStudentAuth.jsx`, `tests/navbar-mobile-notifications.test.mjs`.
