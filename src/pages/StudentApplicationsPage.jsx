@@ -5,6 +5,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import StudentShell from '../components/student/StudentShell';
 import StudentSessionRoute from '../components/student/StudentSessionRoute';
 import HiringProgressCard from '../components/student/HiringProgressCard';
+import ApplicationPushOptInCard from '../components/student/ApplicationPushOptInCard';
+import { useStudentAuth } from '../hooks/useStudentAuth';
 import {
   formatApplicationStatus,
   formatApplicationTime,
@@ -20,6 +22,7 @@ import {
 
 function StudentApplicationsContent() {
   const [searchParams] = useSearchParams();
+  const { session, profile } = useStudentAuth();
   const highlightApplicationId = searchParams.get('application') || '';
   const [applications, setApplications] = useState([]);
   const [hiringProgressByJobId, setHiringProgressByJobId] = useState(() => new Map());
@@ -94,6 +97,13 @@ function StudentApplicationsContent() {
 
       {error ? (
         <p className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
+      ) : null}
+
+      {!isLoading && applications.length > 0 ? (
+        <ApplicationPushOptInCard
+          variant="banner"
+          studentUserId={session?.user?.id || profile?.user_id}
+        />
       ) : null}
 
       {!isLoading && applications.length > 0 ? (

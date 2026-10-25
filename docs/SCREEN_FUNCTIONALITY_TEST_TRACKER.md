@@ -1,5 +1,33 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-25-Student-Application-Push-Notification-Opt-In-And-Status-Alerts
+
+- Scope: S028 `/student/apply/:jobId`, S026 `/student/applied-jobs`, `ApplySuccessGroupModal.jsx`, `ApplicationPushOptInCard.jsx`, `api/notify-application-status.js`, `src/lib/applicationPushNotify.js`, `src/services/jobApplications.js`, `src/lib/webPush.js`, `vite.config.js`, `tests/application-push-notify.test.mjs`.
+- Problem resolved:
+  - User requested: "if any student applied employer or admin jobs we should ask stundets to activate push notification to get notifcation fro thsi jobs . if the students allowd we shudl send the brower push notifications if their job satus chnaged /plan".
+  - When students applied to employer or admin posted jobs, there was no prompt to opt in to Web Push notifications to receive critical status changes (shortlisted, interview scheduled, reviewed, hired, etc.) on their phone or browser.
+  - Recruiter/admin pipeline updates only triggered internal in-app bell notifications; candidates with closed browser tabs were unaware of interview invitations or status updates.
+- Solution delivered:
+  - Built `src/components/student/ApplicationPushOptInCard.jsx`:
+    - Provides a high-intent prompt embedded directly inside `ApplySuccessGroupModal.jsx` upon applying to any job, plus a gentle reminder banner inside `StudentApplicationsPage.jsx`.
+    - Handles browser permission states (`default`, `granted`, `denied`, `unsupported`), asks for user permission, registers the service worker push subscription with VAPID public key, and persists to `web_push_subscriptions` linked to `user_id`.
+    - Mobile-first, accessible, responsive design with clear benefits ("Get notified instantly if the employer shortlists you, reviews your profile, or schedules an interview").
+  - Built `src/lib/applicationPushNotify.js`:
+    - Tailors contextual push notification title and message based on application status: `interview_scheduled` ("🎉 Interview Scheduled!"), `shortlisted` ("⭐ Application Shortlisted!"), `reviewed` ("👀 Application Reviewed"), `hired` ("🎊 Congratulations - You are Hired!"), `rejected` ("Application Status Updated").
+    - Formats target URL to deep link into `/student/applied-jobs?application=:id` so tapping the push alert immediately spotlights the specific application.
+  - Built serverless dispatch API `api/notify-application-status.js`:
+    - Dispatches Web Push notifications using `web-push` library and VAPID credentials.
+    - Queries candidate subscriptions in `web_push_subscriptions` where `user_id = studentUserId`.
+    - Dispatches notifications concurrently; automatically cleans up stale or uninstalled subscriptions (HTTP 404/410 Gone).
+    - Integrated with Vite dev server middleware in `vite.config.js`.
+  - Integrated with `updateCandidatePipelineStage` in `src/services/jobApplications.js`:
+    - Dispatches real-time Web Push notification automatically whenever employer or admin updates pipeline stage or application status via RPC or direct update.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 239/239 tests (including 8 new tests in `tests/application-push-notify.test.mjs`).
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 1.95s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-25-Admin-User-Credentials-And-Account-Status
 
 - Scope: S041 `/admin/employers` and S044 `/admin/students`; `supabase/migrations/20261025160000_admin_manage_user_credentials.sql`, `src/lib/adminUserCredentials.js`, `src/services/adminAuthManagement.js`, `src/components/admin/AdminUserCredentialsModal.jsx`, `src/pages/AdminEmployersPage.jsx`, `src/pages/AdminStudentsPage.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `tests/admin-user-credentials.test.mjs`.
@@ -216,9 +244,9 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S023 | `/student/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | In progress | In progress | UI continuation 2026-10-14: Student recovery pages: bottom navigation clearance and 44px return link |
 | S024 | `/student` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
 | S025 | `/student/profile` | Load, validate, edit and save profile; reload to verify persistence; resume upload, viewing signed URL and replacement; preferences and shared roles | In progress | In progress | QA-2026-10-23-Candidate-Resume: resume attachment status, signed URL viewing, and upload/replace integrated into profile form; affected persistence/E2E and mobile verification reopened/pending |
-| S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records; hiring progress card & transparency (applicant count > 50 & employer activity trigger); funnel metrics and stage badges; privacy preservation | In progress | In progress | QA-2026-10-25: Candidate hiring progress transparency unlocked (>50 apps & employer action) with aggregate funnel cards (reviewed, shortlisted, interviews) and locked pending state verified |
+| S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records; hiring progress card & transparency (applicant count > 50 & employer activity trigger); funnel metrics and stage badges; Web Push notification opt-in banner and status change deep linking | In progress | In progress | QA-2026-10-25: Candidate hiring progress transparency unlocked (>50 apps & employer action) verified; Web Push opt-in banner and deep-link alert focusing added |
 | S027 | `/student/applications` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
-| S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
+| S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views; instant post-apply Web Push opt-in prompt card in success modal | In progress | In progress | QA-2026-10-25: Post-apply Web Push opt-in prompt card integrated into success modal with instant browser permission request and subscription persistence |
 | S029 | `/admin` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
 | S030 | `/admin/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
 | S031 | `/admin/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries; bell icon alert on new employer job submissions; expired job indicator and quick extend/clear actions | In progress | In progress | QA-2026-10-25: Job expiration detection, expired badge, status filter, and extend/clear expiry controls added and verified |

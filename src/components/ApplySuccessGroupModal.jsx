@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import ApplicationCommunicationPrompt from './ApplicationCommunicationPrompt';
+import ApplicationPushOptInCard from './student/ApplicationPushOptInCard';
 
-export default function ApplySuccessGroupModal({ jobTitle = '', jobCompany = '', groupLink, onClose }) {
+export default function ApplySuccessGroupModal({ jobTitle = '', jobCompany = '', groupLink, studentUserId = null, onClose }) {
   const panelRef = useRef(null);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -33,6 +34,7 @@ export default function ApplySuccessGroupModal({ jobTitle = '', jobCompany = '',
         <p className="mt-3 break-words text-base leading-7 text-slate-600">
           You applied successfully for <span className="font-semibold text-slate-900">{jobTitle || 'this job'}</span>{jobCompany ? <> at <span className="font-semibold text-slate-900">{jobCompany}</span></> : null}.
         </p>
+        <ApplicationPushOptInCard jobTitle={jobTitle} jobCompany={jobCompany} studentUserId={studentUserId} />
         <ApplicationCommunicationPrompt job={{ groupLink }} />
         <button type="button" onClick={onClose} className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-200 px-5 py-3 text-base font-semibold text-slate-700 hover:bg-slate-50">Done</button>
       </div>

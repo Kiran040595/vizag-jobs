@@ -8,6 +8,7 @@ import {
 import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';
 import { fetchStudentProfile } from './studentJobs';
 import { mapHiringProgressRow } from '../lib/hiringProgress';
+import { notifyApplicationStatusChange } from '../lib/applicationPushNotify';
 
 const APPLICATION_COLUMNS = `
   id,
@@ -441,7 +442,20 @@ export const updateCandidatePipelineStage = async ({
       });
 
       if (!error && Array.isArray(data) && data.length > 0) {
-        return mapApplication(data[0]);
+        const mapped = mapApplication(data[0]);
+        if (studentUserId || mapped?.studentUserId) {
+          notifyApplicationStatusChange({
+            applicationId: mapped.id,
+            jobId: mapped.jobId || jobId,
+            studentUserId: mapped.studentUserId || studentUserId,
+            newStatus: mapped.status || normalizedStatus,
+            interviewScheduledAt: mapped.interviewScheduledAt || interviewScheduledAt,
+            interviewMode: mapped.interviewMode || interviewMode,
+            interviewLocation: mapped.interviewLocation || interviewLocation,
+            interviewInstructions: mapped.interviewInstructions || interviewInstructions,
+          }).catch((err) => console.warn('Status push notification dispatch failed:', err?.message));
+        }
+        return mapped;
       }
       if (error) {
         console.warn('update_job_applicant_stage RPC returned error, attempting fallback:', error);
@@ -476,7 +490,20 @@ export const updateCandidatePipelineStage = async ({
     if (error) {
       throw new Error(error.message);
     }
-    return mapApplication(data);
+    const mapped = mapApplication(data);
+    if (studentUserId || mapped?.studentUserId) {
+      notifyApplicationStatusChange({
+        applicationId: mapped.id,
+        jobId: mapped.jobId || jobId,
+        studentUserId: mapped.studentUserId || studentUserId,
+        newStatus: mapped.status || normalizedStatus,
+        interviewScheduledAt: mapped.interviewScheduledAt || interviewScheduledAt,
+        interviewMode: mapped.interviewMode || interviewMode,
+        interviewLocation: mapped.interviewLocation || interviewLocation,
+        interviewInstructions: mapped.interviewInstructions || interviewInstructions,
+      }).catch((err) => console.warn('Status push notification dispatch failed:', err?.message));
+    }
+    return mapped;
   }
 
   throw new Error('Could not update application stage.');

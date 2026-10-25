@@ -1,7 +1,10 @@
 const PROMPT_DISMISSED_KEY = 'vizag_job_push_prompt_dismissed_v1';
 
+const DEFAULT_VAPID_PUBLIC_KEY =
+  'BOkYxfJw2R5MPN-Owmhr1eB1CImHSHZc8iVT_mpMgl_FWyvmkrAeuuK9hGRuzycGI_m1_MJw9zxNV-El0B3mJNY';
+
 export const getVapidPublicKey = () =>
-  String(import.meta.env.VITE_VAPID_PUBLIC_KEY || '').trim();
+  String(import.meta.env.VITE_VAPID_PUBLIC_KEY || DEFAULT_VAPID_PUBLIC_KEY).trim();
 
 export const isWebNotificationSupported = () =>
   typeof window !== 'undefined' && 'Notification' in window;
@@ -109,4 +112,5 @@ export const showJobAlertBrowserNotification = (alert) => {
     return false;
   }
 };
+
 

@@ -278,6 +278,7 @@ function StudentApplyContent() {
           jobTitle={job?.title || ''}
           jobCompany={displayCompanyName(job?.company)}
           groupLink={getJobGroupLink(job)}
+          studentUserId={session?.user?.id || profile?.user_id}
           onClose={() => {
             setShowGroupModal(false);
             navigate(returnPath, { replace: true });
