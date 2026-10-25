@@ -14,9 +14,11 @@ import {
   rejectAdminJob,
   toggleAdminJobFeatured,
   toggleAdminJobInstagram,
+  updateAdminJobExpiry,
   updateAdminJobGroupLink,
   updateAdminJobStatus,
 } from '../services/adminJobs';
+import { isJobExpired } from '../lib/jobPostingSchema';
 import { fetchAdminEmployerProfiles } from '../services/adminEmployers';
 import { fetchJobApplicationCounts } from '../services/jobApplications';
 import {
@@ -188,6 +190,22 @@ export default function AdminJobsPage({ scope = 'employer' }) {
       }
 
       if (statusFilter === 'pending' && job.status !== 'pending') {
+        return false;
+      }
+
+      if (statusFilter === 'published' && (job.status !== 'published' || isJobExpired(job))) {
+        return false;
+      }
+
+      if (statusFilter === 'expired' && !isJobExpired(job)) {
+        return false;
+      }
+
+      if (statusFilter === 'draft' && job.status !== 'draft') {
+        return false;
+      }
+
+      if (statusFilter === 'archived' && job.status !== 'archived') {
         return false;
       }
 
@@ -447,6 +465,39 @@ export default function AdminJobsPage({ scope = 'employer' }) {
     }
   };
 
+  const handleExtendExpiry = async (job) => {
+    setBusyJobId(job.id);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const nextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const updatedJob = await updateAdminJobExpiry(job.id, nextDate);
+      setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+      setNotice(`Job expiry extended to ${formatDateTime(nextDate)}. It is now live on the public site.`);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not extend expiry date.');
+    } finally {
+      setBusyJobId('');
+    }
+  };
+
+  const handleClearExpiry = async (job) => {
+    setBusyJobId(job.id);
+    setLoadError('');
+    setNotice('');
+
+    try {
+      const updatedJob = await updateAdminJobExpiry(job.id, null);
+      setJobs((currentJobs) => upsertJob(currentJobs, updatedJob));
+      setNotice('Job expiry cleared. The job follows the standard display window and is live on the public site.');
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not clear expiry date.');
+    } finally {
+      setBusyJobId('');
+    }
+  };
+
   return (
     <AdminShell
       title={isAdminScope ? 'Admin jobs' : 'Employer submissions'}
@@ -488,6 +539,10 @@ export default function AdminJobsPage({ scope = 'employer' }) {
             >
               <option value="all">All statuses</option>
               {!isAdminScope ? <option value="pending">Pending review only</option> : null}
+              <option value="published">Published (Active on site)</option>
+              <option value="expired">Expired (Hidden from public)</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
             </select>
             <input
               type="search"
@@ -598,6 +653,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
               const isPending = job.status === 'pending';
               const isSelected = selectedJobIds.has(job.id);
               const ownerLabel = job.created_by ? employerLabelById.get(job.created_by) : '';
+              const isExpired = isJobExpired(job);
 
               return (
                 <article
@@ -607,7 +663,9 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                       ? 'border-violet-300 bg-violet-50/40'
                       : isPending
                         ? 'border-blue-200 bg-blue-50/50'
-                        : 'border-slate-200 bg-slate-50/70'
+                        : isExpired
+                          ? 'border-rose-200 bg-rose-50/30'
+                          : 'border-slate-200 bg-slate-50/70'
                   }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
@@ -629,6 +687,14 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                           >
                             {job.status}
                           </span>
+                          {isExpired ? (
+                            <span
+                              className="rounded-full border border-rose-300 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-800"
+                              title="This job has passed its expiration date and is hidden from public visitor search and homepage"
+                            >
+                              ⏰ Expired (Hidden from public)
+                            </span>
+                          ) : null}
                           {job.created_by ? (
                             <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
                               {ownerLabel ? `Owner: ${ownerLabel}` : 'Employer submitted'}
@@ -668,6 +734,11 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                         </p>
                         <p className="mt-2 text-xs text-slate-500">Slug: {job.slug}</p>
                         <p className="mt-1 text-xs text-slate-500">Posted: {formatDateTime(job.posted_at)}</p>
+                        {job.expires_at ? (
+                          <p className={`mt-0.5 text-xs ${isExpired ? 'font-semibold text-rose-600' : 'text-slate-500'}`}>
+                            Expires: {formatDateTime(job.expires_at)} {isExpired ? '— Expired (hidden from public)' : ''}
+                          </p>
+                        ) : null}
                         {job.rejection_reason ? (
                           <p className="mt-2 text-xs text-rose-600">Rejection note: {job.rejection_reason}</p>
                         ) : null}
@@ -722,6 +793,28 @@ export default function AdminJobsPage({ scope = 'employer' }) {
                       >
                         Edit
                       </button>
+                      {isExpired ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleExtendExpiry(job)}
+                            className="rounded-2xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Extend expiry by 30 days so it immediately displays to the public"
+                          >
+                            Extend (+30d)
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleClearExpiry(job)}
+                            className="rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Remove expiry date so it follows default display window"
+                          >
+                            Clear expiry
+                          </button>
+                        </>
+                      ) : null}
                       <button
                         type="button"
                         disabled={isBusy}

@@ -95,6 +95,7 @@ export default function AdminJobForm({
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [liveRoles, setLiveRoles] = useState([]);
+  const [nowTimestamp] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -412,8 +413,16 @@ export default function AdminJobForm({
           <Field label="Warning">
             <TextArea name="warning" value={formValues.warning} onChange={handleFieldChange} className="min-h-[96px]" />
           </Field>
-          <Field label="Expires at">
+          <Field
+            label="Expires at"
+            hint="Optional. Once this date and time passes, the job is marked as expired and automatically hidden from public search and homepage. Leave empty for standard active duration."
+          >
             <TextInput type="datetime-local" name="expires_at" value={formValues.expires_at} onChange={handleFieldChange} />
+            {formValues.expires_at && new Date(formValues.expires_at).getTime() <= nowTimestamp ? (
+              <p className="mt-1 text-xs font-semibold text-amber-700">
+                ⚠️ Warning: This date is in the past! Saving will immediately hide this job from public visitors.
+              </p>
+            ) : null}
           </Field>
           <Field label="Source name">
             <TextInput name="source_name" value={formValues.source_name} onChange={handleFieldChange} placeholder="Naukri" />

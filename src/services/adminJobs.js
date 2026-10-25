@@ -1240,6 +1240,26 @@ export const updateAdminJobStatus = async (jobId, status) => {
   return rememberPublishedJob(data);
 };
 
+export const updateAdminJobExpiry = async (jobId, expiresAtIsoOrNull) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from(JOBS_TABLE)
+    .update({ expires_at: expiresAtIsoOrNull })
+    .eq('id', jobId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw mapError(error, 'Could not update the job expiry date.');
+  }
+
+  invalidatePublicJobCache();
+  return rememberPublishedJob(data);
+};
+
 export const approveAdminJob = async (jobId) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
