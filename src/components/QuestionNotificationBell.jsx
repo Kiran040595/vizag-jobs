@@ -43,11 +43,16 @@ export default function QuestionNotificationBell(props) {
   return <NotificationBellInbox key={identity} {...props} />;
 }
 
-function NotificationBellInbox({ className = '' }) {
+function NotificationBellInbox({ className = '', onOpenChange }) {
   const { isAdmin, user: adminUser, isLoading: isAdminLoading } = useAdminAuth();
   const { isEmployer, user: employerUser, isLoading: isEmployerLoading } = useEmployerAuth();
   const { isStudent, session: studentSession, isLoading: isStudentLoading } = useStudentAuth();
   const [isOpen, setIsOpen] = useState(false);
+
+  const updateIsOpen = useCallback((next) => {
+    setIsOpen(next);
+    onOpenChange?.(next);
+  }, [onOpenChange]);
   const [questionNotifications, setQuestionNotifications] = useState([]);
   const [feedbackNotifications, setFeedbackNotifications] = useState([]);
   const [replyNotifications, setReplyNotifications] = useState([]);
@@ -174,13 +179,13 @@ function NotificationBellInbox({ className = '' }) {
 
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target) && !popupRef.current?.contains(event.target)) {
-        setIsOpen(false);
+        updateIsOpen(false);
       }
     };
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
-        setIsOpen(false);
+        updateIsOpen(false);
         triggerRef.current?.focus();
       }
     };
@@ -190,7 +195,7 @@ function NotificationBellInbox({ className = '' }) {
       document.removeEventListener('pointerdown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen, updateIsOpen]);
 
   useLayoutEffect(() => {
     if (!isOpen) return undefined;
@@ -303,7 +308,7 @@ function NotificationBellInbox({ className = '' }) {
   };
 
   const handleOpenQuestionNotification = async (notification) => {
-    setIsOpen(false);
+    updateIsOpen(false);
     if (!moderatorUser?.id) return;
 
     try {
@@ -318,12 +323,12 @@ function NotificationBellInbox({ className = '' }) {
       pushToast({ type: 'error', message: 'Could not mark notification as read. Please retry from the bell.' });
     }
 
-    setIsOpen(false);
+    updateIsOpen(false);
     loadNotifications();
   };
 
   const handleOpenFeedbackNotification = async (notification) => {
-    setIsOpen(false);
+    updateIsOpen(false);
     if (!moderatorUser?.id) return;
 
     try {
@@ -338,12 +343,12 @@ function NotificationBellInbox({ className = '' }) {
       pushToast({ type: 'error', message: 'Could not mark notification as read. Please retry from the bell.' });
     }
 
-    setIsOpen(false);
+    updateIsOpen(false);
     loadNotifications();
   };
 
   const handleOpenReplyNotification = async (notification) => {
-    setIsOpen(false);
+    updateIsOpen(false);
     if (!inboxUserId) return;
 
     try {
@@ -358,7 +363,7 @@ function NotificationBellInbox({ className = '' }) {
       pushToast({ type: 'error', message: 'Could not mark notification as read. Please retry from the bell.' });
     }
 
-    setIsOpen(false);
+    updateIsOpen(false);
     loadNotifications();
   };
 
@@ -383,12 +388,13 @@ function NotificationBellInbox({ className = '' }) {
       <button
         type="button"
         onClick={() => {
-          setIsOpen((current) => !current);
-          if (!isOpen) {
+          const next = !isOpen;
+          updateIsOpen(next);
+          if (next) {
             loadNotifications();
           }
         }}
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
         aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
         ref={triggerRef}
         aria-controls={isOpen ? popupId : undefined}
@@ -410,7 +416,7 @@ function NotificationBellInbox({ className = '' }) {
           <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-100 px-4 py-3">
             <div><p className="text-sm font-bold text-slate-900">Notifications</p>
             <p className="text-xs text-slate-500">{subtitle}</p></div>
-            <button ref={closeRef} type="button" aria-label="Close notifications" onClick={() => { setIsOpen(false); triggerRef.current?.focus(); }} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-cyan-600">×</button>
+            <button ref={closeRef} type="button" aria-label="Close notifications" onClick={() => { updateIsOpen(false); triggerRef.current?.focus(); }} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-cyan-600">×</button>
           </div>
 
           <div className="min-h-0 max-h-96 overflow-y-auto overscroll-contain break-words">

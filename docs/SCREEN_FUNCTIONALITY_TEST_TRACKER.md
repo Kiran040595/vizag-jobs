@@ -1,5 +1,24 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-25-Mobile-Header-Notification-Bell-Always-Visible
+
+- Scope: `src/components/Navbar.jsx`, `src/components/QuestionNotificationBell.jsx`, `src/components/NavbarStudentAuth.jsx`, `tests/navbar-mobile-notifications.test.mjs`.
+- Problem resolved:
+  - User requested: "we have notification icon in the header right . in the mobiel view that is hiddn inside the menu for studets logn it should always visible in the top".
+  - In mobile viewport (`lg:hidden`), the notification bell was placed inside the expandable drawer (`#mobile-nav-drawer`). Students and recruiters on phones had to tap the hamburger menu and scroll to the bottom of the drawer just to check if they had unread alerts.
+- Solution delivered:
+  - Relocated `<QuestionNotificationBell />` directly into the mobile top header bar (`div.ml-auto.flex.items-center.gap-1.5.lg:hidden`) next to the hamburger menu toggle and student profile pill.
+  - Added `shrink-0` to guarantee the bell never gets squished or wraps.
+  - Added `onOpenChange` handler to auto-close the mobile menu drawer whenever the student taps the notification bell popup.
+  - Removed the duplicate/redundant `<QuestionNotificationBell />` from inside the mobile drawer.
+  - Adjusted `NavbarStudentAuth.jsx` profile pill with responsive `max-w-[5.5rem] xs:max-w-[7.5rem] sm:max-w-[10rem]` to ensure narrow 320px/360px viewports fit the logo, profile pill, bell button (44px), and hamburger button (44px) without horizontal overflow.
+  - Added accessible focus rings (`focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2`) to the notification trigger button.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 244/244 tests across all 10 test suites (including 5 new tests in `tests/navbar-mobile-notifications.test.mjs`).
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 1.99s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-25-Student-Application-Push-Notification-Opt-In-And-Status-Alerts
 
 - Scope: S028 `/student/apply/:jobId`, S026 `/student/applied-jobs`, `ApplySuccessGroupModal.jsx`, `ApplicationPushOptInCard.jsx`, `api/notify-application-status.js`, `src/lib/applicationPushNotify.js`, `src/services/jobApplications.js`, `src/lib/webPush.js`, `vite.config.js`, `tests/application-push-notify.test.mjs`.

@@ -211,6 +211,12 @@ export default function Navbar() {
 
         <div className="ml-auto flex min-w-0 items-center gap-1.5 lg:hidden">
           <NavbarStudentAuth variant="mobileHeader" />
+          <QuestionNotificationBell
+            className="shrink-0"
+            onOpenChange={(bellOpen) => {
+              if (bellOpen) setIsOpen(false);
+            }}
+          />
           <button
             type="button"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100"
@@ -271,9 +277,8 @@ export default function Navbar() {
           <NavbarStudentAuth variant="mobile" onNavigate={() => setIsOpen(false)} />
 
           <div className="mt-3 flex flex-col gap-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            <div className="flex items-center justify-center gap-2 pb-1">
+            <div className="flex items-center justify-center pb-1">
               <NavbarSavedJobsLink onClick={() => setIsOpen(false)} />
-              <QuestionNotificationBell />
             </div>
             <NavbarPostJobLink
               onClick={() => setIsOpen(false)}

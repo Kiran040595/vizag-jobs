@@ -38,7 +38,7 @@ export default function NavbarStudentAuth({ variant = 'desktop', onNavigate }) {
         <Link
           to="/student/profile"
           onClick={handleNavigate}
-          className="max-w-[7.5rem] truncate rounded-xl border border-cyan-200 bg-cyan-50 px-2.5 py-2 text-xs font-semibold text-cyan-800 sm:max-w-[10rem]"
+          className="max-w-[5.5rem] truncate rounded-xl border border-cyan-200 bg-cyan-50 px-2.5 py-2 text-xs font-semibold text-cyan-800 xs:max-w-[7.5rem] sm:max-w-[10rem]"
           title={profileLabel}
         >
           {profileLabel}
