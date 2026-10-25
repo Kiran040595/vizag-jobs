@@ -4,10 +4,12 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StudentShell from '../components/student/StudentShell';
 import StudentSessionRoute from '../components/student/StudentSessionRoute';
+import HiringProgressCard from '../components/student/HiringProgressCard';
 import {
   formatApplicationStatus,
   formatApplicationTime,
   fetchMyApplications,
+  fetchMyAppliedJobsHiringProgress,
 } from '../services/jobApplications';
 import {
   getApplicationStatusDescription,
@@ -20,6 +22,7 @@ function StudentApplicationsContent() {
   const [searchParams] = useSearchParams();
   const highlightApplicationId = searchParams.get('application') || '';
   const [applications, setApplications] = useState([]);
+  const [hiringProgressByJobId, setHiringProgressByJobId] = useState(() => new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -29,9 +32,13 @@ function StudentApplicationsContent() {
 
     const load = async () => {
       try {
-        const rows = await fetchMyApplications();
+        const [rows, progressMap] = await Promise.all([
+          fetchMyApplications(),
+          fetchMyAppliedJobsHiringProgress(),
+        ]);
         if (!ignore) {
           setApplications(rows);
+          setHiringProgressByJobId(progressMap || new Map());
           setError('');
         }
       } catch (loadError) {
@@ -192,6 +199,11 @@ function StudentApplicationsContent() {
                 <p className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   {getApplicationStatusDescription(normalizedStatus)}
                 </p>
+
+                <HiringProgressCard
+                  progress={hiringProgressByJobId.get(application.jobId || application.job?.id)}
+                  applicationStatus={application.status}
+                />
 
                 {application.jobPath ? (
                   <Link

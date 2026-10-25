@@ -7,6 +7,7 @@ import {
 } from '../lib/applicationStatus';
 import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';
 import { fetchStudentProfile } from './studentJobs';
+import { mapHiringProgressRow } from '../lib/hiringProgress';
 
 const APPLICATION_COLUMNS = `
   id,
@@ -742,3 +743,61 @@ export const updateApplicationStar = async ({
   }
   return mapped;
 };
+
+/**
+ * Fetch hiring progress for all jobs applied by the signed-in student.
+ * Returns a Map keyed by jobId.
+ */
+export const fetchMyAppliedJobsHiringProgress = async () => {
+  if (!isSupabaseConfigured || !supabase) {
+    return new Map();
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_my_applied_jobs_hiring_progress');
+    if (error) {
+      console.warn('get_my_applied_jobs_hiring_progress rpc error:', error);
+      return new Map();
+    }
+
+    const map = new Map();
+    if (Array.isArray(data)) {
+      for (const row of data) {
+        const mapped = mapHiringProgressRow(row);
+        if (mapped?.jobId) {
+          map.set(mapped.jobId, mapped);
+        }
+      }
+    }
+    return map;
+  } catch (err) {
+    console.warn('fetchMyAppliedJobsHiringProgress exception:', err);
+    return new Map();
+  }
+};
+
+/**
+ * Fetch hiring progress for a single job (for applied student or authorized admin/employer).
+ */
+export const fetchJobHiringProgress = async (jobId) => {
+  if (!isSupabaseConfigured || !supabase || !jobId) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_job_hiring_progress', { p_job_id: jobId });
+    if (error) {
+      console.warn('get_job_hiring_progress rpc error:', error);
+      return null;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      return mapHiringProgressRow(data[0]);
+    }
+    return null;
+  } catch (err) {
+    console.warn('fetchJobHiringProgress exception:', err);
+    return null;
+  }
+};
+

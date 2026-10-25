@@ -39,7 +39,8 @@ import {
   shouldShowAdminApplicantCount,
 } from '../lib/jobApplicationCount';
 import JobApplicantsModal from '../components/admin/JobApplicantsModal';
-import { fetchMyApplicationForJob } from '../services/jobApplications';
+import HiringProgressCard from '../components/student/HiringProgressCard';
+import { fetchJobHiringProgress, fetchMyApplicationForJob } from '../services/jobApplications';
 import JobShareButtons from '../components/JobShareButtons';
 import JobSourceAttribution from '../components/JobSourceAttribution';
 import JobQuestionsSection from '../components/JobQuestionsSection';
@@ -75,6 +76,7 @@ export default function JobDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [existingApplication, setExistingApplication] = useState(null);
+  const [appliedHiringProgress, setAppliedHiringProgress] = useState(null);
   const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const [authWelcome] = useState(() => consumeStudentAuthSuccess());
 
@@ -162,6 +164,7 @@ export default function JobDetailsPage() {
   useEffect(() => {
     if (!job?.id || !isInternalApplyJob(job) || !studentSession || !isStudent) {
       setExistingApplication(null);
+      setAppliedHiringProgress(null);
       return;
     }
 
@@ -171,11 +174,27 @@ export default function JobDetailsPage() {
       .then((application) => {
         if (!ignore) {
           setExistingApplication(application);
+          if (application) {
+            fetchJobHiringProgress(job.id)
+              .then((progress) => {
+                if (!ignore) {
+                  setAppliedHiringProgress(progress);
+                }
+              })
+              .catch(() => {
+                if (!ignore) {
+                  setAppliedHiringProgress(null);
+                }
+              });
+          } else {
+            setAppliedHiringProgress(null);
+          }
         }
       })
       .catch(() => {
         if (!ignore) {
           setExistingApplication(null);
+          setAppliedHiringProgress(null);
         }
       });
 
@@ -402,6 +421,15 @@ export default function JobDetailsPage() {
                 </p>
               ) : null}
             </div>
+
+            {existingApplication ? (
+              <div className="mt-4">
+                <HiringProgressCard
+                  progress={appliedHiringProgress}
+                  applicationStatus={existingApplication.status}
+                />
+              </div>
+            ) : null}
 
             {jobExpired && <p role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-base text-amber-900">Applications for this job are closed. <Link to="/jobs" className="font-semibold underline">Browse current openings</Link></p>}
             <JobEligibilityNotice job={job} />
