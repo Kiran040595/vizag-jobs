@@ -1146,6 +1146,29 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
   - Production build: `npm run build` completed cleanly in 7.57s with 0 errors.
 
+## QA-2026-10-26: Employer Student Contact Masking & Dynamic 'Viewed' Job Status Updates
 
-
-
+- Scope:
+  - S019 `/employer/jobs/:jobId/applications` (Employer Candidate Review & Contact Masking)
+  - S011 `/jobs/:slug` (`JobDetailsPage.jsx` & `StudentApplyButton.jsx`)
+  - S012 `/student/applied-jobs` (`StudentApplicationsPage.jsx` & `HiringProgressCard.jsx`)
+- User Requests Addressed:
+  1. *"in the employer login we should mask students mail and phone number . if emploers view the mobiel number or email or resume it should automatically chnage to teh viewd and students should get notifed throu web and in application notication also ."*
+  2. *"the status of the job also should chnage to viewd ."*
+- Implementation & Key Changes:
+  1. **Candidate Contact Masking**:
+     - Contact details (phone and email) are masked by default for employers (`98••••••10`, `ki••••••@gmail.com`).
+     - Clicking `👁 View` on phone, email, WhatsApp, or resume reveals the full details and transitions application status to `'viewed'`.
+  2. **Multi-Channel Student Notifications**:
+     - Immediate dispatch of in-app bell notification in `public.reply_notifications` (`kind = 'application_status'`).
+     - Web Push notification dispatched to student device with tailored payload (`👀 Contact Viewed: <Role>` or `👀 Resume Viewed: <Role>`).
+  3. **Job Status Dynamically Changes to 'Viewed'**:
+     - `StudentApplyButton.jsx` now takes `applicationStatus`. When `alreadyApplied` is true, the button dynamically displays `Viewed` with dedicated badge styling (`bg-slate-800 text-white ring-2 ring-slate-400/50`) instead of being statically hardcoded to `Applied`.
+     - `JobDetailsPage.jsx` forwards `applicationStatus={existingApplication?.status}` to both desktop and mobile sticky buttons.
+     - `HiringProgressCard.jsx` now checks `applicationStatus` even when hiring progress metrics are locked (`< 50` applicants), displaying `👁️ Application viewed by employer` with description: *"The employer has opened and reviewed your application details."*
+     - `AdminJobApplicationsPage.jsx` forwards `meta` parameters in `handleStatusChange` for full feature parity.
+- Verification Evidence:
+  - Automated tests: `node --test tests/*.test.mjs` passed 260/260 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly with 0 errors.
+  - Mobile UI verified with min 44px (`min-h-11`/`min-h-12`) touch targets.

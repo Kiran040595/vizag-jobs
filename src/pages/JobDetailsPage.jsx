@@ -370,6 +370,7 @@ export default function JobDetailsPage() {
                     jobTitle={job.title}
                     jobCompany={displayCompanyName(job.company)}
                     alreadyApplied={Boolean(existingApplication)}
+                    applicationStatus={existingApplication?.status}
                   />
                 ) : null}
                 <JobShareButtons job={job} />
@@ -523,12 +524,13 @@ export default function JobDetailsPage() {
           <StudentApplyButton
             applyLink={job.applyLink}
             applyMode={job.applyMode}
-                    isQuickJob={job.isQuickJob}
+            isQuickJob={job.isQuickJob}
             jobId={job.id}
             jobPath={jobDetailPath}
             jobTitle={job.title}
             jobCompany={displayCompanyName(job.company)}
             alreadyApplied={Boolean(existingApplication)}
+            applicationStatus={existingApplication?.status}
             className="min-h-12 w-full rounded-xl bg-blue-600 px-5 py-3.5 text-base font-semibold text-white transition hover:bg-blue-700"
           />
         </div>

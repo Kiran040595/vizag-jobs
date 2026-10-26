@@ -4,19 +4,47 @@ import {
   getHiringStageLabel,
   isHiringProgressUnlocked,
 } from '../../lib/hiringProgress';
-import { formatApplicationStatus } from '../../lib/applicationStatus';
+import {
+  formatApplicationStatus,
+  getApplicationStatusDescription,
+  normalizeApplicationStatus,
+} from '../../lib/applicationStatus';
 
 export default function HiringProgressCard({ progress, applicationStatus }) {
   const isUnlocked = isHiringProgressUnlocked(progress);
 
   if (!isUnlocked) {
+    const normalized = normalizeApplicationStatus(applicationStatus);
+    const isViewed = normalized === 'viewed';
+    const isAdvanced = normalized && normalized !== 'applied' && normalized !== 'external_click';
+
     return (
-      <div className="mt-3.5 flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 text-xs text-slate-600">
-        <span className="text-base leading-none">⏳</span>
+      <div
+        className={`mt-3.5 flex items-start gap-2.5 rounded-2xl border p-3 text-xs ${
+          isViewed
+            ? 'border-cyan-200 bg-cyan-50/70 text-slate-700'
+            : isAdvanced
+              ? 'border-indigo-200 bg-indigo-50/70 text-slate-700'
+              : 'border-slate-100 bg-slate-50/70 text-slate-600'
+        }`}
+      >
+        <span className="text-base leading-none">
+          {isViewed ? '👁️' : isAdvanced ? '✓' : '⏳'}
+        </span>
         <div className="flex-1">
-          <p className="font-semibold text-slate-700">Application submitted · Review pending</p>
+          <p className="font-semibold text-slate-900">
+            {isViewed
+              ? 'Application viewed by employer'
+              : isAdvanced
+                ? `Application status: ${formatApplicationStatus(normalized)}`
+                : 'Application submitted · Review pending'}
+          </p>
           <p className="mt-0.5 text-slate-500">
-            Hiring metrics and review progress will display here once the employer begins reviewing applications.
+            {isViewed
+              ? 'The employer has opened and reviewed your application details.'
+              : isAdvanced
+                ? getApplicationStatusDescription(normalized)
+                : 'Hiring metrics and review progress will display here once the employer begins reviewing applications.'}
           </p>
         </div>
       </div>

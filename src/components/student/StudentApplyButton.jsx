@@ -6,6 +6,10 @@ import { useStudentAuth } from '../../hooks/useStudentAuth';
 import { applyButtonLabel, isInternalApplyJob } from '../../lib/jobApplyMode.js';
 import { isStaffApplicantSession } from '../../lib/staffApplyAccess.js';
 import {
+  formatApplicationStatus,
+  normalizeApplicationStatus,
+} from '../../lib/applicationStatus.js';
+import {
   buildInternalApplyPath,
   buildStudentAuthPath,
   openExternalApplyLink,
@@ -24,6 +28,7 @@ export default function StudentApplyButton({
   jobTitle = '',
   jobCompany = '',
   alreadyApplied = false,
+  applicationStatus = null,
   className = 'rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700',
   label,
 }) {
@@ -45,8 +50,14 @@ export default function StudentApplyButton({
     apply: true,
   });
 
+  const normalizedStatus = alreadyApplied ? normalizeApplicationStatus(applicationStatus) : null;
+  const appliedLabel =
+    normalizedStatus === 'viewed'
+      ? 'Viewed'
+      : formatApplicationStatus(normalizedStatus || 'applied');
+
   const buttonLabel =
-    label || (alreadyApplied ? 'Applied' : applyButtonLabel({ applyMode }));
+    label || (alreadyApplied ? appliedLabel : applyButtonLabel({ applyMode }));
 
   const handleClick = () => {
     if (isQuickJob) { navigate(`/apply/${jobId}`); return; }
@@ -102,7 +113,13 @@ export default function StudentApplyButton({
         type="button"
         onClick={handleClick}
         disabled={isLoading || alreadyApplied}
-        className={`${className}${alreadyApplied ? ' cursor-default bg-emerald-600 hover:bg-emerald-600' : ''}`}
+        className={`${className}${
+          alreadyApplied
+            ? normalizedStatus === 'viewed'
+              ? ' cursor-default bg-slate-800 text-white hover:bg-slate-800 ring-2 ring-slate-400/50'
+              : ' cursor-default bg-emerald-600 text-white hover:bg-emerald-600'
+            : ''
+        }`}
       >
         {buttonLabel}
       </button>

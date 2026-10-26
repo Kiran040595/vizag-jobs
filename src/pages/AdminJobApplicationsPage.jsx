@@ -141,8 +141,8 @@ export default function AdminJobApplicationsPage() {
     setSortBy('newest');
   };
 
-  const handleStatusChange = async (applicationId, status) => {
-    const updated = await updateApplicationStatus({ applicationId, status });
+  const handleStatusChange = async (applicationId, status, meta = {}) => {
+    const updated = await updateApplicationStatus({ applicationId, status, ...meta });
     setApplications((current) =>
       current.map((row) => (row.id === updated.id ? updated : row)),
     );

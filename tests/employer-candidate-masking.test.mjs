@@ -2,6 +2,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { maskPhoneNumber, maskEmail } from '../src/lib/contactMasking.js';
 import { buildApplicationStatusPushPayload } from '../src/lib/applicationPushNotify.js';
+import {
+  formatApplicationStatus,
+  normalizeApplicationStatus,
+  getApplicationStatusDescription,
+} from '../src/lib/applicationStatus.js';
 
 describe('Employer Candidate Contact Masking & View Notifications', () => {
   describe('maskPhoneNumber', () => {
@@ -128,4 +133,34 @@ describe('Employer Candidate Contact Masking & View Notifications', () => {
       assert.match(payload.body, /HDFC just reviewed your application and profile\./);
     });
   });
+
+  describe('Job Application Status Display & Viewed Transitions', () => {
+    it('correctly maps and normalizes viewed status', () => {
+      assert.equal(normalizeApplicationStatus('viewed'), 'viewed');
+      assert.equal(formatApplicationStatus('viewed'), 'Viewed');
+      assert.equal(
+        getApplicationStatusDescription('viewed'),
+        'The employer or recruiter has opened your application.',
+      );
+    });
+
+    it('resolves applied job button label dynamically to Viewed when application status is viewed', () => {
+      const resolveButtonLabel = (alreadyApplied, applicationStatus) => {
+        const normalized = alreadyApplied ? normalizeApplicationStatus(applicationStatus) : null;
+        return normalized === 'viewed' ? 'Viewed' : formatApplicationStatus(normalized || 'applied');
+      };
+
+      assert.equal(resolveButtonLabel(true, 'viewed'), 'Viewed');
+      assert.equal(resolveButtonLabel(true, 'applied'), 'Applied');
+      assert.equal(resolveButtonLabel(true, null), 'Applied');
+      assert.equal(resolveButtonLabel(true, 'screened'), 'Screened');
+      assert.equal(resolveButtonLabel(true, 'interview_scheduled'), 'Interview Scheduled');
+    });
+
+    it('handles legacy submitted and shortlisted DB statuses correctly', () => {
+      assert.equal(normalizeApplicationStatus('submitted'), 'applied');
+      assert.equal(normalizeApplicationStatus('shortlisted'), 'screened');
+    });
+  });
 });
+
