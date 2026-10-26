@@ -132,25 +132,65 @@ describe('Employer Candidate Contact Masking & View Notifications', () => {
       assert.match(payload.title, /👀 Resume Viewed: Sales Manager/);
       assert.match(payload.body, /HDFC just reviewed your application and profile\./);
     });
+
+    it('tailors push notification when candidate is contacted via Call or WhatsApp', () => {
+      const payload = buildApplicationStatusPushPayload({
+        applicationId: 'app-contacted',
+        jobTitle: 'DevOps Engineer',
+        companyName: 'Miracle Software',
+        status: 'contacted',
+        origin: 'https://vizagjobs.in',
+      });
+
+      assert.match(payload.title, /📞 Recruiter Contacted: DevOps Engineer/);
+      assert.match(payload.body, /Miracle Software reached out to you via Call \/ WhatsApp regarding DevOps Engineer\./);
+      assert.equal(payload.data.status, 'contacted');
+    });
+
+    it('tailors push notification when candidate is screened/shortlisted', () => {
+      const payload = buildApplicationStatusPushPayload({
+        applicationId: 'app-screened',
+        jobTitle: 'React Developer',
+        companyName: 'Wipro',
+        status: 'screened',
+        origin: 'https://vizagjobs.in',
+      });
+
+      assert.match(payload.title, /⭐ Profile Shortlisted: React Developer/);
+      assert.match(payload.body, /Great news! Wipro has shortlisted your profile for the next round\./);
+      assert.equal(payload.data.status, 'screened');
+    });
   });
 
   describe('Job Application Status Display & Viewed Transitions', () => {
-    it('correctly maps and normalizes viewed status', () => {
+    it('correctly maps and normalizes viewed and contacted status', () => {
       assert.equal(normalizeApplicationStatus('viewed'), 'viewed');
       assert.equal(formatApplicationStatus('viewed'), 'Viewed');
       assert.equal(
         getApplicationStatusDescription('viewed'),
         'The employer or recruiter has opened your application.',
       );
+
+      assert.equal(normalizeApplicationStatus('contacted'), 'contacted');
+      assert.equal(formatApplicationStatus('contacted'), 'Contacted');
+      assert.equal(
+        getApplicationStatusDescription('contacted'),
+        'Candidate has been contacted by the recruiter via Call or WhatsApp.',
+      );
     });
 
-    it('resolves applied job button label dynamically to Viewed when application status is viewed', () => {
+    it('resolves applied job button label dynamically to Viewed or Contacted when application status updates', () => {
       const resolveButtonLabel = (alreadyApplied, applicationStatus) => {
         const normalized = alreadyApplied ? normalizeApplicationStatus(applicationStatus) : null;
-        return normalized === 'viewed' ? 'Viewed' : formatApplicationStatus(normalized || 'applied');
+        return normalized === 'viewed'
+          ? 'Viewed'
+          : normalized === 'contacted'
+            ? 'Contacted'
+            : formatApplicationStatus(normalized || 'applied');
       };
 
       assert.equal(resolveButtonLabel(true, 'viewed'), 'Viewed');
+      assert.equal(resolveButtonLabel(true, 'contacted'), 'Contacted');
       assert.equal(resolveButtonLabel(true, 'applied'), 'Applied');
       assert.equal(resolveButtonLabel(true, null), 'Applied');
       assert.equal(resolveButtonLabel(true, 'screened'), 'Screened');

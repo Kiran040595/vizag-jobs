@@ -2,6 +2,7 @@
 export const APPLICATION_STATUSES = [
   'applied',
   'viewed',
+  'contacted',
   'screened',
   'interview_scheduled',
   'processing',
@@ -15,6 +16,7 @@ export const APPLICATION_STATUSES = [
 export const ADMIN_STATUS_OPTIONS = [
   'applied',
   'viewed',
+  'contacted',
   'screened',
   'interview_scheduled',
   'processing',
@@ -131,6 +133,7 @@ export const STUDENT_STATUS_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'applied', label: 'Applied' },
   { id: 'viewed', label: 'Viewed' },
+  { id: 'contacted', label: 'Contacted' },
   { id: 'screened', label: 'Screened' },
   { id: 'interview_scheduled', label: 'Interview' },
   { id: 'processing', label: 'Processing' },

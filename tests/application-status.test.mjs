@@ -11,6 +11,7 @@ import {
 assert.deepEqual(APPLICATION_STATUSES, [
   'applied',
   'viewed',
+  'contacted',
   'screened',
   'interview_scheduled',
   'processing',
@@ -23,6 +24,7 @@ assert.deepEqual(APPLICATION_STATUSES, [
 assert.deepEqual(ADMIN_STATUS_OPTIONS, [
   'applied',
   'viewed',
+  'contacted',
   'screened',
   'interview_scheduled',
   'processing',

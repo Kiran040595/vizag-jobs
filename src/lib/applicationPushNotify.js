@@ -52,7 +52,10 @@ export function buildApplicationStatusPushPayload({
     body = timeText
       ? `${cleanCompany} scheduled an interview with you for ${timeText}. Tap to view location and instructions.`
       : `${cleanCompany} scheduled an interview with you. Tap to view location and instructions.`;
-  } else if (normStatus === 'shortlisted') {
+  } else if (normStatus === 'contacted') {
+    title = `📞 Recruiter Contacted: ${cleanTitle}`;
+    body = `${cleanCompany} reached out to you via Call / WhatsApp regarding ${cleanTitle}.`;
+  } else if (normStatus === 'screened' || normStatus === 'shortlisted') {
     title = `⭐ Profile Shortlisted: ${cleanTitle}`;
     body = `Great news! ${cleanCompany} has shortlisted your profile for the next round.`;
   } else if (normStatus === 'reviewed' || normStatus === 'viewed') {

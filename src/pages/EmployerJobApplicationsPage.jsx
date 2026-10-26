@@ -28,6 +28,7 @@ const APPLICANT_FUNNEL_STAGES = [
   { id: 'all', label: 'All Candidates' },
   { id: 'applied', label: 'Applied' },
   { id: 'viewed', label: 'Viewed' },
+  { id: 'contacted', label: 'Contacted' },
   { id: 'screened', label: 'Shortlisted' },
   { id: 'interview_scheduled', label: 'Interview Scheduled' },
   { id: 'processing', label: 'Processing' },

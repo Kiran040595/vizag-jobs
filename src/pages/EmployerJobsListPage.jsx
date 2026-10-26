@@ -24,7 +24,7 @@ const STATUS_STYLES = {
   archived: 'border-slate-200 bg-slate-100 text-slate-600',
 };
 
-const SUMMARY_STATUS_ORDER = ['applied', 'viewed', 'processing', 'hired', 'rejected'];
+const SUMMARY_STATUS_ORDER = ['applied', 'viewed', 'contacted', 'screened', 'processing', 'hired', 'rejected'];
 
 const statusLabel = (job) => {
   if (job.status === 'published') return 'Live on portal';

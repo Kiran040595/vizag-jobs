@@ -54,7 +54,9 @@ export default function StudentApplyButton({
   const appliedLabel =
     normalizedStatus === 'viewed'
       ? 'Viewed'
-      : formatApplicationStatus(normalizedStatus || 'applied');
+      : normalizedStatus === 'contacted'
+        ? 'Contacted'
+        : formatApplicationStatus(normalizedStatus || 'applied');
 
   const buttonLabel =
     label || (alreadyApplied ? appliedLabel : applyButtonLabel({ applyMode }));
@@ -115,9 +117,11 @@ export default function StudentApplyButton({
         disabled={isLoading || alreadyApplied}
         className={`${className}${
           alreadyApplied
-            ? normalizedStatus === 'viewed'
-              ? ' cursor-default bg-slate-800 text-white hover:bg-slate-800 ring-2 ring-slate-400/50'
-              : ' cursor-default bg-emerald-600 text-white hover:bg-emerald-600'
+            ? normalizedStatus === 'contacted'
+              ? ' cursor-default bg-sky-700 text-white hover:bg-sky-700 ring-2 ring-sky-400/50'
+              : normalizedStatus === 'viewed'
+                ? ' cursor-default bg-slate-800 text-white hover:bg-slate-800 ring-2 ring-slate-400/50'
+                : ' cursor-default bg-emerald-600 text-white hover:bg-emerald-600'
             : ''
         }`}
       >

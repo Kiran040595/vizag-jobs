@@ -492,6 +492,29 @@ export const updateCandidatePipelineStage = async ({
       .single();
 
     if (error) {
+      if (normalizedStatus === 'contacted' && error.message?.toLowerCase().includes('status')) {
+        const fallback = await supabase
+          .from('job_applications')
+          .update({ ...updates, status: 'viewed' })
+          .eq('id', applicationId)
+          .select(APPLICATION_COLUMNS)
+          .single();
+
+        if (!fallback.error && fallback.data) {
+          const mapped = mapApplication(fallback.data);
+          if (studentUserId || mapped?.studentUserId) {
+            notifyApplicationStatusChange({
+              applicationId: mapped.id,
+              jobId: mapped.jobId || jobId,
+              studentUserId: mapped.studentUserId || studentUserId,
+              newStatus: 'contacted',
+              viewType,
+              forceNotify: true,
+            }).catch(() => {});
+          }
+          return { ...mapped, status: 'contacted' };
+        }
+      }
       throw new Error(error.message);
     }
     const mapped = mapApplication(data);

@@ -123,6 +123,46 @@ export default function JobApplicationTable({
     }
   };
 
+  const handleContactOutreach = async (application, method = 'whatsapp', openUrl = null) => {
+    setRevealedIds((prev) => new Set(prev).add(application.id));
+    if (openUrl) {
+      window.open(openUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    const currentStatus = normalizeApplicationStatus(application.status);
+    const canAdvanceToContacted =
+      currentStatus === 'applied' ||
+      currentStatus === 'viewed' ||
+      currentStatus === 'external_click' ||
+      currentStatus === 'suitable';
+
+    const nextStatus = canAdvanceToContacted ? 'contacted' : currentStatus;
+
+    if (onStatusChange) {
+      try {
+        await onStatusChange(
+          application.id,
+          nextStatus,
+          {
+            jobId: application.jobId || job?.id,
+            studentUserId: application.studentUserId,
+            isSuitableProfile: application.isSuitableProfile,
+            viewType: 'phone',
+            forceNotify: true,
+          },
+        );
+        pushToast({
+          message: canAdvanceToContacted
+            ? `Candidate marked as Contacted (${method === 'call' ? 'Phone Call' : 'WhatsApp'}) & student notified.`
+            : `Contact initiated (${method === 'call' ? 'Phone Call' : 'WhatsApp'}) & student notified.`,
+          type: 'success',
+        });
+      } catch (err) {
+        console.warn('Could not auto-advance status to contacted:', err);
+      }
+    }
+  };
+
   const handleOpenResume = async (application) => {
     try {
       setOpeningResumeId(application.id);
@@ -272,8 +312,9 @@ export default function JobApplicationTable({
                           <div className="flex items-center gap-1.5">
                             <a
                               href={`tel:${snapshot.phone}`}
+                              onClick={() => handleContactOutreach(app, 'call')}
                               className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 hover:text-cyan-700"
-                              title={`Call ${snapshot.phone}`}
+                              title={`Call ${snapshot.phone} (advances status to Contacted)`}
                             >
                               <PhoneIcon />
                               <span>{snapshot.phone}</span>
@@ -283,8 +324,9 @@ export default function JobApplicationTable({
                                 href={whatsappUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() => handleContactOutreach(app, 'whatsapp')}
                                 className="rounded-md bg-emerald-600 p-1 text-white shadow-2xs transition hover:bg-emerald-700"
-                                title="Chat on WhatsApp"
+                                title="Chat on WhatsApp (advances status to Contacted)"
                                 aria-label={`Chat with ${name} on WhatsApp`}
                               >
                                 <WhatsAppIcon />
@@ -325,9 +367,9 @@ export default function JobApplicationTable({
                             {whatsappUrl ? (
                               <button
                                 type="button"
-                                onClick={() => handleRevealContact(app, 'phone', whatsappUrl)}
+                                onClick={() => handleContactOutreach(app, 'whatsapp', whatsappUrl)}
                                 className="rounded-md bg-emerald-600 p-1 text-white shadow-2xs transition hover:bg-emerald-700"
-                                title="Reveal & Chat on WhatsApp"
+                                title="Reveal & Chat on WhatsApp (advances status to Contacted)"
                                 aria-label={`Chat with ${name} on WhatsApp`}
                               >
                                 <WhatsAppIcon />

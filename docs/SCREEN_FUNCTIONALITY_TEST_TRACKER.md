@@ -1172,3 +1172,32 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
   - Production build: `npm run build` completed cleanly with 0 errors.
   - Mobile UI verified with min 44px (`min-h-11`/`min-h-12`) touch targets.
+
+## QA-2026-10-26: Candidate Call/WhatsApp Auto-Contacted & Shortlist Push Automation
+
+- Scope:
+  - S019 `/employer/jobs/:jobId/applications` (Candidate Cards & Table view)
+  - S011 `/jobs/:slug` (`JobDetailsPage.jsx` & `StudentApplyButton.jsx`)
+  - S012 `/student/applied-jobs` (`StudentApplicationsPage.jsx` & `HiringProgressCard.jsx`)
+  - Backend & Push Notifications (`applicationPushNotify.js`, `api/notify-application-status.js`)
+- User Request Addressed:
+  - *"Option 1: Automate Call / WhatsApp click → changes status to Contacted & notifies student; Automate Shortlist click → updates status to Screened & notifies student; Fix screened notification template in applicationPushNotify.js."*
+- Implementation & Key Changes:
+  1. **Call & WhatsApp Auto-Contacted**:
+     - Clicking the direct Phone Call (`tel:`) or WhatsApp Candidate button now automatically advances the candidate's stage to `'contacted'` (from `applied`, `viewed`, or `suitable`), reveals contact details, and notifies the student immediately.
+     - Student receives Web Push & in-app bell notification: `📞 Recruiter Contacted: <Role> - <Company> reached out to you via Call / WhatsApp regarding <Role>.`
+  2. **Shortlist (`✓ Shortlist`) Quick Action**:
+     - The `✓ Shortlist` pill is now visible and active for candidates in `applied`, `viewed`, `contacted`, `external_click`, and `suitable` stages.
+     - Clicking `✓ Shortlist` immediately advances the status to `'screened'` with `forceNotify: true`.
+     - Student receives Web Push & in-app bell notification: `⭐ Profile Shortlisted: <Role> - Great news! <Company> has shortlisted your profile for the next round.`
+  3. **Templates & Filters**:
+     - Fixed `buildApplicationStatusPushPayload` to support `screened` (in addition to legacy `shortlisted`) and `contacted`.
+     - Added `'contacted'` to `APPLICATION_STATUSES`, `ADMIN_STATUS_OPTIONS`, `APPLICANT_FUNNEL_STAGES`, `SUMMARY_STATUS_ORDER`, and `STUDENT_STATUS_FILTERS`.
+     - Updated `StudentApplyButton` to display `Contacted` (`bg-sky-700`) and `HiringProgressCard` to display `📞 Contacted by employer`.
+     - Added database migration `20261026_application_status_contacted.sql` with graceful fallback in `updateCandidatePipelineStage`.
+- Verification Evidence:
+  - Automated tests: `node --test tests/*.test.mjs` passed 262/262 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly in 7.97s with 0 errors.
+  - Mobile touch targets adhere to min 44px standard (`min-h-11`/`min-h-12`).
+

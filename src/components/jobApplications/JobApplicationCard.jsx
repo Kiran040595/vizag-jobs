@@ -230,6 +230,46 @@ export default function JobApplicationCard({
     }
   };
 
+  const handleContactOutreach = async (method = 'whatsapp', openUrl = null) => {
+    setIsContactRevealed(true);
+    if (openUrl) {
+      window.open(openUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    const currentStatus = normalizeApplicationStatus(application.status);
+    const canAdvanceToContacted =
+      currentStatus === 'applied' ||
+      currentStatus === 'viewed' ||
+      currentStatus === 'external_click' ||
+      currentStatus === 'suitable';
+
+    const nextStatus = canAdvanceToContacted ? 'contacted' : currentStatus;
+
+    if (onStatusChange) {
+      try {
+        await onStatusChange(
+          application.id,
+          nextStatus,
+          {
+            jobId: application.jobId || resolvedJob?.id,
+            studentUserId: application.studentUserId,
+            isSuitableProfile: application.isSuitableProfile,
+            viewType: 'phone',
+            forceNotify: true,
+          },
+        );
+        pushToast({
+          message: canAdvanceToContacted
+            ? `Candidate marked as Contacted (${method === 'call' ? 'Phone Call' : 'WhatsApp'}) & student notified.`
+            : `Contact initiated (${method === 'call' ? 'Phone Call' : 'WhatsApp'}) & student notified.`,
+          type: 'success',
+        });
+      } catch (statusErr) {
+        console.warn('Could not auto-advance status to contacted:', statusErr);
+      }
+    }
+  };
+
   const handleViewResume = async () => {
     try {
       setIsOpeningResume(true);
@@ -304,9 +344,13 @@ export default function JobApplicationCard({
         jobId: application.jobId || resolvedJob?.id,
         studentUserId: application.studentUserId,
         isSuitableProfile: application.isSuitableProfile,
+        forceNotify: true,
       });
       pushToast({
-        message: `Candidate moved to ${formatApplicationStatus(nextStatus)}.`,
+        message:
+          nextStatus === 'screened'
+            ? 'Candidate shortlisted & student notified ⭐'
+            : `Candidate moved to ${formatApplicationStatus(nextStatus)}.`,
         type: 'success',
       });
     } catch (err) {
@@ -707,8 +751,9 @@ export default function JobApplicationCard({
               ) : (
                 <a
                   href={`tel:${snapshot.phone}`}
+                  onClick={() => handleContactOutreach('call')}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
-                  title={`Call ${snapshot.phone}`}
+                  title={`Call ${snapshot.phone} (advances status to Contacted)`}
                 >
                   <PhoneIcon />
                   <span>{snapshot.phone}</span>
@@ -723,9 +768,9 @@ export default function JobApplicationCard({
               showMasked ? (
                 <button
                   type="button"
-                  onClick={() => handleRevealAndMarkViewed('phone', true)}
+                  onClick={() => handleContactOutreach('whatsapp', directWhatsAppUrl)}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
-                  title="View phone number and message candidate on WhatsApp"
+                  title="View phone number and message candidate on WhatsApp (advances status to Contacted)"
                   aria-label={`WhatsApp ${candidateName}`}
                 >
                   <WhatsAppIcon />
@@ -736,8 +781,9 @@ export default function JobApplicationCard({
                   href={directWhatsAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => handleContactOutreach('whatsapp')}
                   className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
-                  title="Message candidate on WhatsApp"
+                  title="Message candidate on WhatsApp (advances status to Contacted)"
                 >
                   <WhatsAppIcon />
                   <span>WhatsApp Candidate</span>
@@ -1048,9 +1094,9 @@ export default function JobApplicationCard({
                 📞 Mark Contacted
               </button>
             ) : null}
-            {application.status === 'applied' ||
-            application.status === 'external_click' ||
-            (application.isSuitableProfile && (application.status === 'suitable' || application.status === 'contacted')) ? (
+            {['applied', 'viewed', 'contacted', 'external_click', 'suitable'].includes(
+              normalizeApplicationStatus(application.status),
+            ) ? (
               <button
                 type="button"
                 onClick={() => handleQuickStageClick('screened')}
