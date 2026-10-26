@@ -4,7 +4,9 @@ import {
   SUITABLE_PROFILE_STATUS_OPTIONS,
   formatApplicationStatus,
   getApplicationStatusStyle,
+  normalizeApplicationStatus,
 } from '../../lib/applicationStatus';
+import { maskPhoneNumber, maskEmail } from '../../lib/contactMasking';
 import {
   formatApplicationTime,
   getApplicationResumeUrl,
@@ -162,6 +164,10 @@ export default function JobApplicationCard({
   const [showScheduler, setShowScheduler] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [isOpeningResume, setIsOpeningResume] = useState(false);
+  const [isContactRevealed, setIsContactRevealed] = useState(false);
+
+  // In employer login (!isAdmin), contact details are masked by default until revealed
+  const showMasked = !isAdmin && !isContactRevealed;
 
   // Scheduler Form State
   const [scheduledAt, setScheduledAt] = useState(
@@ -187,6 +193,43 @@ export default function JobApplicationCard({
       )
     : null;
 
+  const handleRevealAndMarkViewed = async (viewType, openWhatsApp = false) => {
+    setIsContactRevealed(true);
+    if (openWhatsApp && directWhatsAppUrl) {
+      window.open(directWhatsAppUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    const currentStatus = normalizeApplicationStatus(application.status);
+    const needsStatusAdvance =
+      currentStatus === 'applied' ||
+      currentStatus === 'external_click' ||
+      currentStatus === 'suitable';
+
+    if (onStatusChange) {
+      try {
+        await onStatusChange(
+          application.id,
+          needsStatusAdvance ? 'viewed' : currentStatus,
+          {
+            jobId: application.jobId || resolvedJob?.id,
+            studentUserId: application.studentUserId,
+            isSuitableProfile: application.isSuitableProfile,
+            viewType,
+            forceNotify: true,
+          },
+        );
+        pushToast({
+          message: needsStatusAdvance
+            ? 'Candidate marked as Viewed & student notified.'
+            : 'Candidate contact revealed & student notified.',
+          type: 'info',
+        });
+      } catch (statusErr) {
+        console.warn('Could not auto-advance status or notify student:', statusErr);
+      }
+    }
+  };
+
   const handleViewResume = async () => {
     try {
       setIsOpeningResume(true);
@@ -195,6 +238,40 @@ export default function JobApplicationCard({
         throw new Error('Resume file link is not available.');
       }
       window.open(url, '_blank', 'noopener,noreferrer');
+
+      if (!isAdmin) {
+        setIsContactRevealed(true);
+        const currentStatus = normalizeApplicationStatus(application.status);
+        const needsStatusAdvance =
+          currentStatus === 'applied' ||
+          currentStatus === 'external_click' ||
+          currentStatus === 'suitable';
+
+        if (onStatusChange) {
+          onStatusChange(
+            application.id,
+            needsStatusAdvance ? 'viewed' : currentStatus,
+            {
+              jobId: application.jobId || resolvedJob?.id,
+              studentUserId: application.studentUserId,
+              isSuitableProfile: application.isSuitableProfile,
+              viewType: 'resume',
+              forceNotify: true,
+            },
+          )
+            .then(() => {
+              pushToast({
+                message: needsStatusAdvance
+                  ? 'Resume opened. Candidate marked as Viewed & notified.'
+                  : 'Resume opened. Candidate notified.',
+                type: 'info',
+              });
+            })
+            .catch((err) => {
+              console.warn('Could not auto-advance status on resume view:', err);
+            });
+        }
+      }
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Could not open resume.');
     } finally {
@@ -613,42 +690,95 @@ export default function JobApplicationCard({
           <div className="flex flex-wrap items-center gap-2">
             {/* Phone & Direct Call */}
             {snapshot.phone ? (
-              <a
-                href={`tel:${snapshot.phone}`}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
-                title={`Call ${snapshot.phone}`}
-              >
-                <PhoneIcon />
-                <span>{snapshot.phone}</span>
-              </a>
+              showMasked ? (
+                <button
+                  type="button"
+                  onClick={() => handleRevealAndMarkViewed('phone')}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-cyan-300 bg-cyan-50/80 px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-2xs transition hover:border-cyan-400 hover:bg-cyan-100"
+                  title="Click to view candidate mobile number (candidate will be notified)"
+                  aria-label={`View mobile number for ${candidateName}`}
+                >
+                  <PhoneIcon />
+                  <span className="font-mono tracking-tight">{maskPhoneNumber(snapshot.phone)}</span>
+                  <span className="rounded-md bg-cyan-200/90 px-1.5 py-0.5 text-[10px] font-black uppercase text-cyan-950">
+                    👁 View
+                  </span>
+                </button>
+              ) : (
+                <a
+                  href={`tel:${snapshot.phone}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                  title={`Call ${snapshot.phone}`}
+                >
+                  <PhoneIcon />
+                  <span>{snapshot.phone}</span>
+                </a>
+              )
             ) : (
               <span className="text-xs text-slate-400">No phone provided</span>
             )}
 
             {/* Direct WhatsApp Outreach */}
-            {directWhatsAppUrl ? (
-              <a
-                href={directWhatsAppUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
-                title="Message candidate on WhatsApp"
-              >
-                <WhatsAppIcon />
-                <span>WhatsApp Candidate</span>
-              </a>
+            {snapshot.phone ? (
+              showMasked ? (
+                <button
+                  type="button"
+                  onClick={() => handleRevealAndMarkViewed('phone', true)}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+                  title="View phone number and message candidate on WhatsApp"
+                  aria-label={`WhatsApp ${candidateName}`}
+                >
+                  <WhatsAppIcon />
+                  <span>WhatsApp Candidate</span>
+                </button>
+              ) : directWhatsAppUrl ? (
+                <a
+                  href={directWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+                  title="Message candidate on WhatsApp"
+                >
+                  <WhatsAppIcon />
+                  <span>WhatsApp Candidate</span>
+                </a>
+              ) : null
             ) : null}
 
             {/* Email link */}
             {snapshot.contactEmail ? (
-              <a
-                href={`mailto:${snapshot.contactEmail}`}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
-                title={`Email ${snapshot.contactEmail}`}
-              >
-                <MailIcon />
-                <span className="max-w-[160px] truncate sm:max-w-[220px]">{snapshot.contactEmail}</span>
-              </a>
+              showMasked ? (
+                <button
+                  type="button"
+                  onClick={() => handleRevealAndMarkViewed('email')}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-400 hover:bg-slate-50"
+                  title="Click to view candidate email address (candidate will be notified)"
+                  aria-label={`View email address for ${candidateName}`}
+                >
+                  <MailIcon />
+                  <span className="max-w-[160px] truncate sm:max-w-[220px] font-mono tracking-tight">
+                    {maskEmail(snapshot.contactEmail)}
+                  </span>
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
+                    👁 View
+                  </span>
+                </button>
+              ) : (
+                <a
+                  href={`mailto:${snapshot.contactEmail}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                  title={`Email ${snapshot.contactEmail}`}
+                >
+                  <MailIcon />
+                  <span className="max-w-[160px] truncate sm:max-w-[220px]">{snapshot.contactEmail}</span>
+                </a>
+              )
+            ) : null}
+
+            {!showMasked && isContactRevealed ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                ✓ Contact Revealed
+              </span>
             ) : null}
           </div>
 

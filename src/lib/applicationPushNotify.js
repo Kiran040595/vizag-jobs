@@ -33,10 +33,12 @@ export function buildApplicationStatusPushPayload({
   jobTitle = 'Job Application',
   companyName = 'Company',
   status,
+  viewType = null,
   interviewScheduledAt = null,
   origin = DEFAULT_ORIGIN,
 } = {}) {
   const normStatus = String(status || '').trim().toLowerCase();
+  const normViewType = String(viewType || '').trim().toLowerCase();
   const cleanTitle = String(jobTitle || 'Job Application').slice(0, 80);
   const cleanCompany = String(companyName || 'Company').slice(0, 80);
   const site = origin.replace(/\/$/, '');
@@ -54,8 +56,19 @@ export function buildApplicationStatusPushPayload({
     title = `⭐ Profile Shortlisted: ${cleanTitle}`;
     body = `Great news! ${cleanCompany} has shortlisted your profile for the next round.`;
   } else if (normStatus === 'reviewed' || normStatus === 'viewed') {
-    title = `👀 Resume Viewed: ${cleanTitle}`;
-    body = `${cleanCompany} just reviewed your application and profile.`;
+    if (normViewType === 'phone') {
+      title = `👀 Contact Viewed: ${cleanTitle}`;
+      body = `${cleanCompany} just viewed your mobile number for ${cleanTitle}.`;
+    } else if (normViewType === 'email') {
+      title = `👀 Contact Viewed: ${cleanTitle}`;
+      body = `${cleanCompany} just viewed your email address for ${cleanTitle}.`;
+    } else if (normViewType === 'resume') {
+      title = `👀 Resume Viewed: ${cleanTitle}`;
+      body = `${cleanCompany} just opened and viewed your resume for ${cleanTitle}.`;
+    } else {
+      title = `👀 Resume Viewed: ${cleanTitle}`;
+      body = `${cleanCompany} just reviewed your application and profile.`;
+    }
   } else if (normStatus === 'hired') {
     title = `🎊 Congratulations! Hired at ${cleanCompany}`;
     body = `${cleanCompany} marked your application as Hired for ${cleanTitle}!`;
@@ -80,6 +93,7 @@ export function buildApplicationStatusPushPayload({
       url: trackingUrl,
       applicationId: applicationId || null,
       status: normStatus,
+      viewType: normViewType || null,
     },
   };
 }
@@ -94,6 +108,8 @@ export async function notifyApplicationStatusChange({
   studentUserId,
   newStatus,
   oldStatus,
+  viewType = null,
+  forceNotify = false,
   interviewScheduledAt = null,
   interviewMode = null,
   interviewLocation = null,
@@ -109,7 +125,7 @@ export async function notifyApplicationStatusChange({
   if (normNew === 'submitted' || normNew === 'applied') {
     return { ok: true, skipped: true, reason: 'initial_submission' };
   }
-  if (normOld && normOld === normNew && !interviewScheduledAt) {
+  if (normOld && normOld === normNew && !interviewScheduledAt && !viewType && !forceNotify) {
     return { ok: true, skipped: true, reason: 'status_unchanged' };
   }
 
@@ -131,6 +147,7 @@ export async function notifyApplicationStatusChange({
       jobId,
       studentUserId,
       newStatus: normNew,
+      viewType: viewType || undefined,
       interviewScheduledAt,
       interviewMode,
       interviewLocation,

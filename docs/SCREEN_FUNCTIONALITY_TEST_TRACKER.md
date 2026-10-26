@@ -1,5 +1,33 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-26-Employer-Student-Contact-Masking-And-View-Alerts
+
+- Scope: `src/lib/contactMasking.js`, `src/lib/applicationPushNotify.js`, `api/notify-application-status.js`, `src/services/jobApplications.js`, `src/services/jobSuitableProfiles.js`, `src/components/jobApplications/JobApplicationCard.jsx`, `src/components/jobApplications/JobApplicationTable.jsx`, `src/pages/EmployerJobApplicationsPage.jsx`, `tests/employer-candidate-masking.test.mjs`.
+- Problem resolved:
+  - User requested: "in the employer login we should mask students mail and phone number . if emploers view the mobiel number or email or resume it should automatically chnage to teh viewd and students should get notifed throu web and in application notication also .".
+  - Previously, employer candidate views (`JobApplicationCard` and `JobApplicationTable`) displayed candidate mobile numbers and email addresses in plaintext immediately. Employers scrolling past lists exposed student private contacts, and there was no automatic pipeline progression to `viewed` or candidate notifications when an employer viewed contact details or opened resumes.
+- Solution delivered:
+  - Contact privacy masking:
+    - Built `src/lib/contactMasking.js` with `maskPhoneNumber` (e.g. `98••••••10`, `+91 98••••••10`) and `maskEmail` (e.g. `ki••••••@gmail.com`).
+    - Configured default masking in employer login (`!isAdmin`) for both candidate card view and candidate table view, preserving domain information while hiding sensitive digits and usernames.
+  - Interactive reveal & automatic status update to `viewed`:
+    - Added accessible `👁 View` action buttons for phone number, email address, and WhatsApp outreach.
+    - When an employer clicks to view phone, email, WhatsApp, or opens the resume (PDF):
+      - Reveals the contact information inline immediately with a `✓ Contact Revealed` badge.
+      - Automatically changes the application stage to `viewed` if currently in `applied`, `external_click`, or `suitable` stage.
+      - Seamlessly updates employer funnel counts and table rows.
+  - Web & in-application notifications:
+    - Enhanced `src/lib/applicationPushNotify.js` with contextual `viewType` support (`phone`, `email`, `resume`) and tailored notification copy.
+    - Updated backend endpoint `api/notify-application-status.js`:
+      - Dispatches Web Push notifications to active student device/browser subscriptions.
+      - Persists in-app notifications into `public.reply_notifications` (`kind = 'application_status'`), updating student notification bell and inbox in real time.
+    - Updated `src/services/jobApplications.js` and `src/services/jobSuitableProfiles.js` to dispatch notifications on pipeline transitions and contact views.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 257/257 tests across 14 test suites (including 13 new unit tests in `tests/employer-candidate-masking.test.mjs`).
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 4.32s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-25-Stop-Broadcasting-Job-Questions-To-Students
 
 - Scope: `supabase/migrations/20261025170000_stop_broadcasting_job_questions_to_students.sql`, `api/answer-job-question.js`, `supabase/functions/answer-job-question/index.ts`, `src/services/replyNotifications.js`, `tests/job-question-gemini-notify.test.mjs`.

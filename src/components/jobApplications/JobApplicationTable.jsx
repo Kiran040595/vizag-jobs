@@ -3,7 +3,9 @@ import {
   ADMIN_STATUS_OPTIONS,
   SUITABLE_PROFILE_STATUS_OPTIONS,
   formatApplicationStatus,
+  normalizeApplicationStatus,
 } from '../../lib/applicationStatus';
+import { maskPhoneNumber, maskEmail } from '../../lib/contactMasking';
 import {
   formatApplicationTime,
   getApplicationResumeUrl,
@@ -79,8 +81,47 @@ export default function JobApplicationTable({
   onStatusChange,
   job = null,
   onSelectCandidate,
+  isAdmin = false,
 }) {
   const [openingResumeId, setOpeningResumeId] = useState(null);
+  const [revealedIds, setRevealedIds] = useState(() => new Set());
+
+  const handleRevealContact = async (application, viewType, openUrl = null) => {
+    setRevealedIds((prev) => new Set(prev).add(application.id));
+    if (openUrl) {
+      window.open(openUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    const currentStatus = normalizeApplicationStatus(application.status);
+    const needsStatusAdvance =
+      currentStatus === 'applied' ||
+      currentStatus === 'external_click' ||
+      currentStatus === 'suitable';
+
+    if (onStatusChange) {
+      try {
+        await onStatusChange(
+          application.id,
+          needsStatusAdvance ? 'viewed' : currentStatus,
+          {
+            jobId: application.jobId || job?.id,
+            studentUserId: application.studentUserId,
+            isSuitableProfile: application.isSuitableProfile,
+            viewType,
+            forceNotify: true,
+          },
+        );
+        pushToast({
+          message: needsStatusAdvance
+            ? 'Candidate marked as Viewed & notified.'
+            : 'Candidate contact revealed & student notified.',
+          type: 'info',
+        });
+      } catch (err) {
+        console.warn('Could not auto-advance status or notify student:', err);
+      }
+    }
+  };
 
   const handleOpenResume = async (application) => {
     try {
@@ -90,6 +131,40 @@ export default function JobApplicationTable({
         throw new Error('Resume file link is not available.');
       }
       window.open(url, '_blank', 'noopener,noreferrer');
+
+      if (!isAdmin) {
+        setRevealedIds((prev) => new Set(prev).add(application.id));
+        const currentStatus = normalizeApplicationStatus(application.status);
+        const needsStatusAdvance =
+          currentStatus === 'applied' ||
+          currentStatus === 'external_click' ||
+          currentStatus === 'suitable';
+
+        if (onStatusChange) {
+          onStatusChange(
+            application.id,
+            needsStatusAdvance ? 'viewed' : currentStatus,
+            {
+              jobId: application.jobId || job?.id,
+              studentUserId: application.studentUserId,
+              isSuitableProfile: application.isSuitableProfile,
+              viewType: 'resume',
+              forceNotify: true,
+            },
+          )
+            .then(() => {
+              pushToast({
+                message: needsStatusAdvance
+                  ? 'Resume opened. Candidate marked as Viewed & notified.'
+                  : 'Resume opened. Candidate notified.',
+                type: 'info',
+              });
+            })
+            .catch((err) => {
+              console.warn('Could not auto-advance status on resume view:', err);
+            });
+        }
+      }
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Could not open resume.');
     } finally {
@@ -191,43 +266,94 @@ export default function JobApplicationTable({
 
                   {/* Contact / WhatsApp */}
                   <td className="px-5 py-4">
-                    <div className="flex flex-col gap-1.5">
-                      {snapshot.phone ? (
-                        <div className="flex items-center gap-1.5">
-                          <a
-                            href={`tel:${snapshot.phone}`}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 hover:text-cyan-700"
-                            title={`Call ${snapshot.phone}`}
-                          >
-                            <PhoneIcon />
-                            <span>{snapshot.phone}</span>
-                          </a>
-                          {whatsappUrl ? (
+                    {isAdmin || revealedIds.has(app.id) ? (
+                      <div className="flex flex-col gap-1.5">
+                        {snapshot.phone ? (
+                          <div className="flex items-center gap-1.5">
                             <a
-                              href={whatsappUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="rounded-md bg-emerald-600 p-1 text-white shadow-2xs transition hover:bg-emerald-700"
-                              title="Chat on WhatsApp"
-                              aria-label={`Chat with ${name} on WhatsApp`}
+                              href={`tel:${snapshot.phone}`}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 hover:text-cyan-700"
+                              title={`Call ${snapshot.phone}`}
                             >
-                              <WhatsAppIcon />
+                              <PhoneIcon />
+                              <span>{snapshot.phone}</span>
                             </a>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">No phone</span>
-                      )}
-                      {snapshot.contactEmail ? (
-                        <a
-                          href={`mailto:${snapshot.contactEmail}`}
-                          className="max-w-[170px] truncate text-xs text-slate-500 hover:text-slate-800"
-                          title={snapshot.contactEmail}
-                        >
-                          {snapshot.contactEmail}
-                        </a>
-                      ) : null}
-                    </div>
+                            {whatsappUrl ? (
+                              <a
+                                href={whatsappUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-md bg-emerald-600 p-1 text-white shadow-2xs transition hover:bg-emerald-700"
+                                title="Chat on WhatsApp"
+                                aria-label={`Chat with ${name} on WhatsApp`}
+                              >
+                                <WhatsAppIcon />
+                              </a>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">No phone</span>
+                        )}
+                        {snapshot.contactEmail ? (
+                          <a
+                            href={`mailto:${snapshot.contactEmail}`}
+                            className="max-w-[170px] truncate text-xs text-slate-500 hover:text-slate-800"
+                            title={snapshot.contactEmail}
+                          >
+                            {snapshot.contactEmail}
+                          </a>
+                        ) : null}
+                        {!isAdmin && revealedIds.has(app.id) ? (
+                          <span className="text-[10px] font-bold text-emerald-700">✓ Revealed</span>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        {snapshot.phone ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs text-slate-700 tracking-tight">
+                              {maskPhoneNumber(snapshot.phone)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRevealContact(app, 'phone')}
+                              className="rounded bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 px-1.5 py-0.5 text-[10px] font-bold"
+                              title="Reveal phone (candidate notified)"
+                            >
+                              👁 View
+                            </button>
+                            {whatsappUrl ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRevealContact(app, 'phone', whatsappUrl)}
+                                className="rounded-md bg-emerald-600 p-1 text-white shadow-2xs transition hover:bg-emerald-700"
+                                title="Reveal & Chat on WhatsApp"
+                                aria-label={`Chat with ${name} on WhatsApp`}
+                              >
+                                <WhatsAppIcon />
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">No phone</span>
+                        )}
+                        {snapshot.contactEmail ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="max-w-[130px] truncate font-mono text-xs text-slate-500 tracking-tight">
+                              {maskEmail(snapshot.contactEmail)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRevealContact(app, 'email')}
+                              className="rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold"
+                              title="Reveal email (candidate notified)"
+                            >
+                              👁 View
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                   </td>
 
                   {/* Education */}

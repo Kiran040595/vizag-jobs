@@ -396,6 +396,8 @@ function EmployerJobApplicationsContent() {
         status: nextStatus,
         jobId: meta.jobId || jobId,
         studentUserId: meta.studentUserId,
+        viewType: meta.viewType,
+        forceNotify: meta.forceNotify,
       });
 
       setSuitableProfiles((current) =>
@@ -424,6 +426,8 @@ function EmployerJobApplicationsContent() {
       status: nextStatus,
       jobId: meta.jobId || jobId,
       studentUserId: meta.studentUserId,
+      viewType: meta.viewType,
+      forceNotify: meta.forceNotify,
     });
 
     setApplications((current) =>

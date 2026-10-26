@@ -1,6 +1,7 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
 import { normalizeApplicationStatus } from '../lib/applicationStatus.js';
 import { enrichQuickCandidate } from '../lib/quickApply.js';
+import { notifyApplicationStatusChange } from '../lib/applicationPushNotify.js';
 
 export const buildCandidateSnapshot = (student) => {
   if (!student) return {};
@@ -229,6 +230,8 @@ export const updateSuitableProfileStage = async ({
   clearInterview = false,
   jobId,
   studentUserId,
+  viewType = null,
+  forceNotify = false,
 }) => {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('Database service is not configured.');
@@ -274,7 +277,25 @@ export const updateSuitableProfileStage = async ({
     throw new Error(error.message || 'Could not update candidate status.');
   }
 
-  return mapSuitableProfile(data);
+  const mapped = mapSuitableProfile(data);
+  const targetStudentId = studentUserId || mapped?.studentUserId;
+  const targetJobId = jobId || mapped?.jobId;
+  if (targetStudentId && (status !== undefined || forceNotify)) {
+    notifyApplicationStatusChange({
+      applicationId: mapped.id,
+      jobId: targetJobId,
+      studentUserId: targetStudentId,
+      newStatus: mapped.status,
+      viewType,
+      forceNotify,
+      interviewScheduledAt: mapped.interviewScheduledAt,
+      interviewMode: mapped.interviewMode,
+      interviewLocation: mapped.interviewLocation,
+      interviewInstructions: mapped.interviewInstructions,
+    }).catch((err) => console.warn('Status push notification dispatch failed for suitable profile:', err?.message));
+  }
+
+  return mapped;
 };
 
 /**

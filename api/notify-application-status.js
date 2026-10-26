@@ -83,6 +83,7 @@ export default async function handler(req, res) {
     const jobId = String(body.jobId || '').trim();
     const studentUserId = String(body.studentUserId || '').trim();
     const newStatus = String(body.newStatus || '').trim().toLowerCase();
+    const viewType = String(body.viewType || '').trim().toLowerCase() || null;
     const interviewScheduledAt = body.interviewScheduledAt || null;
 
     if (!applicationId || !studentUserId || !newStatus) {
@@ -96,21 +97,6 @@ export default async function handler(req, res) {
     // Skip notifications for initial applied/submitted state
     if (newStatus === 'submitted' || newStatus === 'applied') {
       sendJson(res, 200, { ok: true, skipped: true, reason: 'initial_submission', sent: 0 });
-      return;
-    }
-
-    // Fetch the candidate's active push subscriptions
-    const { data: subscriptions, error: subError } = await admin
-      .from('web_push_subscriptions')
-      .select('id, endpoint, p256dh, auth, user_id')
-      .eq('user_id', studentUserId);
-
-    if (subError) {
-      throw new Error(subError.message);
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      sendJson(res, 200, { ok: true, skipped: true, reason: 'no_subscriptions', sent: 0 });
       return;
     }
 
@@ -130,23 +116,73 @@ export default async function handler(req, res) {
       }
     }
 
-    const vapid = await loadVapid(admin);
-    if (!vapid.publicKey || !vapid.privateKey) {
-      sendJson(res, 200, { ok: true, skipped: true, reason: 'vapid_not_configured', sent: 0 });
-      return;
-    }
-
-    const webpush = (await import('web-push')).default;
-    webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
-
     const pushPayload = buildApplicationStatusPushPayload({
       applicationId,
       jobTitle,
       companyName,
       status: newStatus,
+      viewType,
       interviewScheduledAt,
       origin: SITE_ORIGIN,
     });
+
+    // 1. In-Application Notification (Persist to reply_notifications for notification bell)
+    const cleanNotifTitle = pushPayload.title.replace(/^[\p{Emoji}\s]+/u, '').trim() || 'Application Viewed';
+    await admin
+      .from('reply_notifications')
+      .upsert(
+        {
+          user_id: studentUserId,
+          kind: 'application_status',
+          ref_id: applicationId,
+          title: cleanNotifTitle,
+          preview: pushPayload.body,
+          link_path: `/student/applied-jobs?application=${encodeURIComponent(applicationId)}`,
+          is_read: false,
+          is_dismissed: false,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,kind,ref_id' },
+      )
+      .catch((dbErr) => {
+        console.warn('Could not upsert in-app reply_notification:', dbErr?.message);
+      });
+
+    // 2. Web Push Notification to active browser/device subscriptions
+    const { data: subscriptions, error: subError } = await admin
+      .from('web_push_subscriptions')
+      .select('id, endpoint, p256dh, auth, user_id')
+      .eq('user_id', studentUserId);
+
+    if (subError) {
+      throw new Error(subError.message);
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      sendJson(res, 200, {
+        ok: true,
+        inAppSaved: true,
+        skippedPush: true,
+        reason: 'no_subscriptions',
+        sent: 0,
+      });
+      return;
+    }
+
+    const vapid = await loadVapid(admin);
+    if (!vapid.publicKey || !vapid.privateKey) {
+      sendJson(res, 200, {
+        ok: true,
+        inAppSaved: true,
+        skippedPush: true,
+        reason: 'vapid_not_configured',
+        sent: 0,
+      });
+      return;
+    }
+
+    const webpush = (await import('web-push')).default;
+    webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey);
 
     const messageString = JSON.stringify(pushPayload);
     let sent = 0;

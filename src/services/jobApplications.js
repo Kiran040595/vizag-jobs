@@ -410,6 +410,8 @@ export const updateCandidatePipelineStage = async ({
   jobId,
   studentUserId,
   status,
+  viewType = null,
+  forceNotify = false,
   recruiterNotes = null,
   interviewScheduledAt = null,
   interviewMode = null,
@@ -449,6 +451,8 @@ export const updateCandidatePipelineStage = async ({
             jobId: mapped.jobId || jobId,
             studentUserId: mapped.studentUserId || studentUserId,
             newStatus: mapped.status || normalizedStatus,
+            viewType,
+            forceNotify,
             interviewScheduledAt: mapped.interviewScheduledAt || interviewScheduledAt,
             interviewMode: mapped.interviewMode || interviewMode,
             interviewLocation: mapped.interviewLocation || interviewLocation,
@@ -497,6 +501,8 @@ export const updateCandidatePipelineStage = async ({
         jobId: mapped.jobId || jobId,
         studentUserId: mapped.studentUserId || studentUserId,
         newStatus: mapped.status || normalizedStatus,
+        viewType,
+        forceNotify,
         interviewScheduledAt: mapped.interviewScheduledAt || interviewScheduledAt,
         interviewMode: mapped.interviewMode || interviewMode,
         interviewLocation: mapped.interviewLocation || interviewLocation,
@@ -514,12 +520,16 @@ export const updateApplicationStatus = async ({
   status,
   jobId,
   studentUserId,
+  viewType = null,
+  forceNotify = false,
 }) => {
   return updateCandidatePipelineStage({
     applicationId,
     status,
     jobId,
     studentUserId,
+    viewType,
+    forceNotify,
   });
 };
 
