@@ -31,6 +31,7 @@ export const CATEGORY_OPTIONS = FILTER_CATEGORY_OPTIONS;
 export const TAB_OPTIONS = [
   { id: 'all', label: 'All Jobs' },
   { id: 'direct', label: 'Direct Company Jobs' },
+  { id: 'matching', label: 'Jobs matching your profile' },
 ];
 
 export const JOB_TYPE_OPTIONS = [
@@ -72,6 +73,7 @@ export const cleanSearchBrand = (term = '') => {
 
 export const readFiltersFromSearchParams = (searchParams) => {
   const rawTab = (searchParams.get('tab') ?? 'all').toLowerCase();
+  const normalizedTab = rawTab === 'for-you' ? 'matching' : rawTab;
   const rawCategory = (searchParams.get('category') ?? 'all').toLowerCase();
   const rawJobType = (searchParams.get('jobType') ?? 'all').toLowerCase();
   const rawFreshness = (searchParams.get('freshness') ?? 'all').toLowerCase();
@@ -85,7 +87,7 @@ export const readFiltersFromSearchParams = (searchParams) => {
     '';
 
   return {
-    tab: rawTab === 'direct' ? 'direct' : 'all',
+    tab: isOptionId(normalizedTab, TAB_OPTIONS) ? normalizedTab : 'all',
     q: rawQuery,
     company: rawCompany,
     category: isOptionId(rawCategory, CATEGORY_OPTIONS) ? rawCategory : 'all',
@@ -212,7 +214,7 @@ export const sortJobsForListing = (jobs) =>
     return postedAtMs(right) - postedAtMs(left);
   });
 
-export const applyJobFilters = (jobs, filters) => {
+export const applyJobFilters = (jobs, filters, options = {}) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return [];
   const q = (filters.q ?? '').trim().toLowerCase();
   const targetCompany = (filters.company ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -227,6 +229,9 @@ export const applyJobFilters = (jobs, filters) => {
       matchesAdminSourceFilter(job, filters.source) &&
       (targetCompany ? true : matchesSearchText(job, q)),
   );
+  if (options.preserveOrder) {
+    return filtered;
+  }
   return sortJobsForListing(filtered);
 };
 

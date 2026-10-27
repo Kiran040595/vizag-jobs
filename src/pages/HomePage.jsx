@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
@@ -12,10 +12,12 @@ import BlogTeaserSection from '../components/BlogTeaserSection';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import JobsForYou from '../components/JobsForYou';
 import JobSourceTabs from '../components/JobSourceTabs';
 import CommunityQaSection from '../components/CommunityQaSection';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useStudentAuth } from '../hooks/useStudentAuth';
+import { useEmployerAuth } from '../hooks/useEmployerAuth';
+import { rankJobsForStudent } from '../lib/studentJobMatch';
 import { JOB_LIST_SESSION_CACHE_TTL_MS, fetchJobs } from '../services/jobs';
 import { readHomeBootstrapJobs } from '../lib/homePageBootstrap';
 import {
@@ -198,14 +200,131 @@ export default function HomePage() {
     };
   }, [refreshJobsInBackground]);
 
+  const { isStudent, profile, profileComplete, session } = useStudentAuth();
+  const { isEmployer } = useEmployerAuth();
+
+  const matchingJobsRanked = useMemo(() => {
+    if (!session || !isStudent || !profileComplete || !profile) {
+      return [];
+    }
+    return rankJobsForStudent(allJobs, profile, 100);
+  }, [allJobs, isStudent, profile, profileComplete, session]);
+
+  const matchingCandidateJobs = useMemo(() => {
+    return matchingJobsRanked.map((item) => ({
+      ...item.job,
+      _matchReasons: item.reasons,
+      _eligibility: item.eligibility,
+      _matchScore: item.score,
+    }));
+  }, [matchingJobsRanked]);
+
   // ---------- Filter / pagination derivations ----------
-  const filteredJobs = useMemo(() => applyJobFilters(allJobs, filters), [allJobs, filters]);
+  const filteredJobs = useMemo(() => {
+    if (filters.tab === 'matching') {
+      if (!session || !isStudent || !profileComplete) {
+        return [];
+      }
+      return applyJobFilters(matchingCandidateJobs, filters, { preserveOrder: true });
+    }
+    return applyJobFilters(allJobs, filters);
+  }, [allJobs, filters, isStudent, matchingCandidateJobs, profileComplete, session]);
+
   const directJobsCount = useMemo(() => countDirectJobs(allJobs), [allJobs]);
   const siteStats = useMemo(() => computeSiteStats(allJobs), [allJobs]);
   const pagination = useMemo(
     () => paginate(filteredJobs, filters.page, PAGE_SIZE),
     [filteredJobs, filters.page],
   );
+
+  const jobListTitle = useMemo(() => {
+    if (filters.tab === 'matching') return 'Jobs Matching Your Profile';
+    if (filters.tab === 'direct') return 'Direct Company Job Openings';
+    return 'Recent Job Openings';
+  }, [filters.tab]);
+
+  const jobListSubtitle = useMemo(() => {
+    if (filters.tab === 'matching' && isStudent && profileComplete) {
+      return 'Ranked from your skills, target roles, fresher eligibility, and preferred locations.';
+    }
+    return '';
+  }, [filters.tab, isStudent, profileComplete]);
+
+  const matchingEmptyState = useMemo(() => {
+    if (filters.tab !== 'matching') {
+      return null;
+    }
+    if (!session || !isStudent) {
+      return (
+        <div className="py-6 text-center sm:py-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-cyan-100 text-3xl">
+            ✨
+          </div>
+          <h3 className="mt-4 text-xl font-bold text-slate-900">Get Jobs Matching Your Profile</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+            Sign in or create a free student profile to see personalized job recommendations tailored to your skills, qualifications, and preferred roles in Vizag.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/student/login?next=/?tab=matching"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+            >
+              Student Sign In
+            </Link>
+            <Link
+              to="/student/register?next=/?tab=matching"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            >
+              Create Free Account
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    if (!profileComplete) {
+      return (
+        <div className="py-6 text-center sm:py-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-3xl">
+            🎯
+          </div>
+          <h3 className="mt-4 text-xl font-bold text-slate-900">Complete your profile to see matched jobs</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+            Add your degree, skills, and primary target role in your student profile. We'll automatically match and score openings for you.
+          </p>
+          <div className="mt-6">
+            <Link
+              to="/student/profile"
+              className="inline-flex items-center rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 transition"
+            >
+              Complete Profile Now
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    if (matchingCandidateJobs.length === 0) {
+      return (
+        <div className="py-6 text-center sm:py-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-3xl">
+            🔍
+          </div>
+          <h3 className="mt-4 text-xl font-bold text-slate-900">No jobs match your profile yet</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+            We scan and add verified Visakhapatnam job openings daily. Try updating your target roles or adding more skills to broaden your matches.
+          </p>
+          <div className="mt-6">
+            <Link
+              to="/student/profile"
+              className="inline-flex items-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+            >
+              Update Profile Preferences
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }, [filters.tab, isStudent, matchingCandidateJobs.length, profileComplete, session]);
 
   // If the URL says page=5 but there are only 2 pages of results, snap back.
   useEffect(() => {
@@ -316,12 +435,15 @@ export default function HomePage() {
 
         {!isLoading || allJobs.length > 0 ? (
           <>
-            <JobsForYou jobs={allJobs} />
             <JobSourceTabs
               activeTab={filters.tab}
               onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
               totalCount={allJobs.length}
               directCount={directJobsCount}
+              matchingCount={matchingJobsRanked.length}
+              showMatchingTab={!isEmployer}
+              isStudent={Boolean(session && isStudent)}
+              profileComplete={Boolean(profileComplete)}
             />
             <JobFilters
               filters={filters}
@@ -337,6 +459,9 @@ export default function HomePage() {
         <JobList
           jobs={pagination.items}
           total={filteredJobs.length}
+          title={jobListTitle}
+          subtitle={jobListSubtitle}
+          emptyState={matchingEmptyState}
           onResetFilters={clearAllFilters}
           headerRef={listSectionRef}
           isLoading={isLoading && allJobs.length === 0}

@@ -131,7 +131,7 @@ Lean student accounts for job seekers in Vizag. Designed to stay within Supabase
 - Resume / CV upload on apply (new uploads → Cloudflare R2 with `r2:` path prefix; older files stay in Supabase Storage `student-resumes`; path stored on `student_profiles.resume_path`)
 - On-platform applications with status tracking (`job_applications`)
 - Admin list at `/admin/students` (complete vs incomplete, search by skills/categories/roles)
-- Signed-in students with a complete profile see **Jobs matching your profile** on the home page (ranked by target roles, skills, fresher fit, and preferred locations)
+- Signed-in students with a complete profile see **Jobs matching your profile** in the "For You" tab on the home page (ranked by target roles, skills, fresher fit, and preferred locations)
 
 ### Live role targeting
 

@@ -125,6 +125,12 @@ export default function JobFilters({
           onRemove={() => onUpdate({ tab: 'all' })}
         />
       ) : null}
+      {filters.tab === 'matching' ? (
+        <ActiveFilterChip
+          label="Jobs Matching Profile"
+          onRemove={() => onUpdate({ tab: 'all' })}
+        />
+      ) : null}
       {isAdmin && filters.source !== 'all' ? (
         <ActiveFilterChip
           label={labelFor(filters.source, SOURCE_OPTIONS)}

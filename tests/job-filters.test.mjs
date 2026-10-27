@@ -87,6 +87,18 @@ section('readFiltersFromSearchParams — defaults & invalid values');
 }
 {
   const r = readFiltersFromSearchParams(
+    new URLSearchParams('tab=matching'),
+  );
+  eq(r.tab, 'matching', 'tab=matching is parsed');
+}
+{
+  const r = readFiltersFromSearchParams(
+    new URLSearchParams('tab=for-you'),
+  );
+  eq(r.tab, 'matching', 'tab=for-you alias is parsed as matching');
+}
+{
+  const r = readFiltersFromSearchParams(
     new URLSearchParams('tab=bogus&category=bogus&jobType=bogus&freshness=bogus&page=-2'),
   );
   eq(
@@ -121,6 +133,13 @@ section('writeFiltersToSearchParams — defaults are NEVER serialized');
 {
   const out = writeFiltersToSearchParams({
     ...DEFAULT_FILTERS,
+    tab: 'matching',
+  }).toString();
+  ok(out.includes('tab=matching'), 'tab=matching is serialized');
+}
+{
+  const out = writeFiltersToSearchParams({
+    ...DEFAULT_FILTERS,
     source: 'linkedin_jobs',
   }).toString();
   ok(out.includes('source=linkedin_jobs'), 'admin source filter is serialized');
@@ -137,6 +156,7 @@ ok(isAnyFilterActive({ ...DEFAULT_FILTERS, q: 'foo' }), 'q -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, category: 'it' }), 'category -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: 'naukri' }), 'source -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'direct' }), 'tab=direct -> active');
+ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'matching' }), 'tab=matching -> active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, page: 5 }), 'page change alone -> not active');
 
 // ------------------------------------------------------------

@@ -1,5 +1,34 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-27-Home-Jobs-Matching-Profile-Tab
+
+- Scope: `src/lib/jobFilters.js`, `src/components/JobSourceTabs.jsx`, `src/components/JobFilters.jsx`, `src/components/JobList.jsx`, `src/pages/HomePage.jsx`, `tests/job-filters.test.mjs`, `docs/student-registration.md`.
+- Problem resolved:
+  - User requested: "in this for the studets login the first page is showing Jobs matching your profile . we should move to the another tab after Direct Company Jobs . is it good".
+  - Previously, for signed-in students with a complete profile, "Jobs matching your profile" rendered as a large intrusive block of cards directly above the tab switchers, filters, and standard job list on the homepage. On mobile devices, this forced candidates to scroll past screens of cards before reaching search, category filters, and direct employer tabs.
+- Solution delivered:
+  - Moved "Jobs Matching Profile" into a dedicated 3rd tab in `JobSourceTabs` directly after "Direct Company Jobs".
+  - Updated `src/lib/jobFilters.js`:
+    - Added `{ id: 'matching', label: 'Jobs matching your profile' }` to `TAB_OPTIONS`.
+    - Handled `tab=matching` and `tab=for-you` alias in `readFiltersFromSearchParams`.
+    - Supported `options.preserveOrder` in `applyJobFilters` to retain match relevance score ordering.
+  - Updated `src/components/JobSourceTabs.jsx`:
+    - Mobile-first responsive 3-column tab layout (`grid-cols-3`) with compact labels ("All", "Direct", "For You") and badge indicators.
+    - Full labels on desktop ("All Openings", "Direct Company Jobs", "Jobs Matching Profile").
+    - Highlight banner when viewing matching tab with quick link to update student profile preferences.
+  - Updated `src/components/JobList.jsx`:
+    - Added dynamic `title`, `subtitle`, and `emptyState` props.
+    - Displays match reason chips and eligibility badges directly above job cards when match metadata is present.
+  - Updated `src/pages/HomePage.jsx`:
+    - Removed intrusive top `<JobsForYou>` block from the homepage.
+    - Connected student matching scores and employer check to `JobSourceTabs` and `JobList`.
+    - Handled states for logged-out guests (sign-in/register CTA), incomplete profiles (profile completion CTA), and 0 matches.
+- Automated checks:
+  - `node --test tests/*.test.mjs` passed 262/262 tests across 15 suites.
+  - `npm run lint` clean (0 errors, 0 warnings).
+  - Production build `npm run build` passed successfully in 6.80s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-26-Employer-Student-Contact-Masking-And-View-Alerts
 
 - Scope: `src/lib/contactMasking.js`, `src/lib/applicationPushNotify.js`, `api/notify-application-status.js`, `src/services/jobApplications.js`, `src/services/jobSuitableProfiles.js`, `src/components/jobApplications/JobApplicationCard.jsx`, `src/components/jobApplications/JobApplicationTable.jsx`, `src/pages/EmployerJobApplicationsPage.jsx`, `tests/employer-candidate-masking.test.mjs`.

@@ -1,23 +1,31 @@
 import { memo } from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * Tab switcher component displayed above the job list on the homepage.
  * Allows candidates to toggle between:
  * - "All Openings" (combined feed from all sources)
- * - "Direct Company & Admin" (exclusive jobs posted directly by local employers or admins)
+ * - "Direct Company Jobs" (exclusive jobs posted directly by local employers or admins)
+ * - "Jobs Matching Profile" (personalized recommendations based on student's skills & roles)
  */
 function JobSourceTabs({
   activeTab = 'all',
   onTabChange,
   totalCount = 0,
   directCount = 0,
+  matchingCount = 0,
+  showMatchingTab = true,
+  isStudent = false,
+  profileComplete = false,
 }) {
   return (
     <div className="w-full">
       <div
         role="tablist"
         aria-label="Filter job listings by source type"
-        className="grid w-full grid-cols-2 gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner sm:inline-flex sm:w-auto sm:gap-2"
+        className={`grid w-full ${
+          showMatchingTab ? 'grid-cols-3' : 'grid-cols-2'
+        } gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner sm:inline-flex sm:w-auto sm:gap-2`}
       >
         {/* Tab 1: All Openings */}
         <button
@@ -27,13 +35,13 @@ function JobSourceTabs({
           aria-selected={activeTab === 'all'}
           aria-controls="job-list-section"
           onClick={() => onTabChange('all')}
-          className={`group flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+          className={`group flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
             activeTab === 'all'
               ? 'bg-white text-slate-900 shadow-sm shadow-slate-300/40 ring-1 ring-slate-950/5'
               : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
           }`}
         >
-          <span className="flex min-w-0 items-center gap-1.5">
+          <span className="flex min-w-0 items-center gap-1 sm:gap-1.5">
             <svg
               className={`h-4 w-4 shrink-0 transition-colors ${
                 activeTab === 'all' ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
@@ -45,8 +53,9 @@ function JobSourceTabs({
               <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
             </svg>
             <span className="min-w-0 break-words">
-              <span className="min-[400px]:hidden">All Jobs</span>
-              <span className="hidden min-[400px]:inline">All Openings</span>
+              <span className="min-[400px]:hidden">All</span>
+              <span className="hidden min-[400px]:inline sm:hidden">All Jobs</span>
+              <span className="hidden sm:inline">All Openings</span>
             </span>
           </span>
           <span
@@ -68,13 +77,13 @@ function JobSourceTabs({
           aria-selected={activeTab === 'direct'}
           aria-controls="job-list-section"
           onClick={() => onTabChange('direct')}
-          className={`group relative flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+          className={`group relative flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
             activeTab === 'direct'
               ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-700/20'
               : 'text-slate-700 hover:bg-emerald-50/60 hover:text-emerald-800'
           }`}
         >
-          <span className="flex min-w-0 items-center gap-1.5">
+          <span className="flex min-w-0 items-center gap-1 sm:gap-1.5">
             <svg
               className={`h-4 w-4 shrink-0 transition-colors ${
                 activeTab === 'direct' ? 'text-white' : 'text-emerald-600'
@@ -90,8 +99,8 @@ function JobSourceTabs({
               />
             </svg>
             <span className="min-w-0 break-words">
-              <span className="min-[400px]:hidden">Direct Jobs</span>
-              <span className="hidden min-[400px]:inline sm:hidden">Direct Company</span>
+              <span className="min-[400px]:hidden">Direct</span>
+              <span className="hidden min-[400px]:inline sm:hidden">Direct Jobs</span>
               <span className="hidden sm:inline">Direct Company Jobs</span>
             </span>
           </span>
@@ -107,11 +116,68 @@ function JobSourceTabs({
           </span>
 
           {activeTab !== 'direct' && directCount > 0 ? (
-            <span className="hidden rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 sm:inline-block">
+            <span className="hidden rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 md:inline-block">
               Verified
             </span>
           ) : null}
         </button>
+
+        {/* Tab 3: Matching Your Profile */}
+        {showMatchingTab ? (
+          <button
+            type="button"
+            role="tab"
+            id="tab-matching-jobs"
+            aria-selected={activeTab === 'matching'}
+            aria-controls="job-list-section"
+            onClick={() => onTabChange('matching')}
+            className={`group relative flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+              activeTab === 'matching'
+                ? 'bg-cyan-700 text-white shadow-md shadow-cyan-700/30 ring-1 ring-cyan-800/20'
+                : 'text-slate-700 hover:bg-cyan-50/60 hover:text-cyan-800'
+            }`}
+          >
+            <span className="flex min-w-0 items-center gap-1 sm:gap-1.5">
+              <svg
+                className={`h-4 w-4 shrink-0 transition-colors ${
+                  activeTab === 'matching' ? 'text-cyan-200' : 'text-cyan-600'
+                }`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span className="min-w-0 break-words">
+                <span className="min-[400px]:hidden">For You</span>
+                <span className="hidden min-[400px]:inline sm:hidden">For You</span>
+                <span className="hidden sm:inline">Jobs Matching Profile</span>
+              </span>
+            </span>
+
+            {isStudent && profileComplete ? (
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-bold transition-colors sm:px-2 ${
+                  activeTab === 'matching'
+                    ? 'bg-white text-cyan-800'
+                    : 'bg-cyan-100 text-cyan-800'
+                }`}
+              >
+                {matchingCount}
+              </span>
+            ) : (
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-colors sm:text-xs ${
+                  activeTab === 'matching'
+                    ? 'bg-white text-cyan-800'
+                    : 'bg-cyan-100 text-cyan-700'
+                }`}
+              >
+                Match
+              </span>
+            )}
+          </button>
+        ) : null}
       </div>
 
       {/* Helpful banner when viewing Direct tab */}
@@ -122,6 +188,25 @@ function JobSourceTabs({
             <strong className="font-semibold">Direct Openings:</strong> Jobs posted directly by
             local Visakhapatnam employers and verified by admin. No external redirects.
           </p>
+        </div>
+      ) : null}
+
+      {/* Helpful banner when viewing Matching tab */}
+      {activeTab === 'matching' && isStudent && profileComplete ? (
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-cyan-200 bg-cyan-50/80 px-3.5 py-2 text-xs text-cyan-900 shadow-sm sm:text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🎯</span>
+            <p>
+              <strong className="font-semibold">Jobs Matching Your Profile:</strong> Ranked from your
+              target roles, skills, fresher status, and preferred locations.
+            </p>
+          </div>
+          <Link
+            to="/student/profile"
+            className="font-semibold text-cyan-700 hover:text-cyan-800 hover:underline"
+          >
+            Update preferences →
+          </Link>
         </div>
       ) : null}
     </div>
