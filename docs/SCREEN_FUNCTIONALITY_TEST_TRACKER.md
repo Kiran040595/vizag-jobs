@@ -4,6 +4,7 @@
 
 - Added a prominent student-portal push notification opt-in card with job-alert benefits, `Enable job alerts`, and `Not now` actions.
 - The reminder appears on student portal screens when permission is still undecided and returns after 24 hours if postponed.
+- Added contextual re-prompts after saving a job or completing a student profile, plus selectable alert categories stored with the opt-in event.
 - Functional E2E & Mobile UI: Pending authenticated browser-permission journey evidence.
 
 ## QA-2026-10-31-Admin-Growth-Analytics

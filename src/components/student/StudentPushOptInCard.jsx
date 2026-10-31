@@ -9,12 +9,23 @@ export default function StudentPushOptInCard({ userId }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [reason, setReason] = useState('new matching jobs and important application updates');
+  const [preferences, setPreferences] = useState({ matching: true, direct: true, applications: true });
 
   useEffect(() => {
     if (!isPushSupported() || permission !== 'default') return;
     const dismissedUntil = Number(window.localStorage.getItem(DISMISS_KEY) || 0);
     setVisible(dismissedUntil < Date.now());
   }, [permission]);
+
+  useEffect(() => {
+    const handleContextPrompt = (event) => {
+      setReason(event.detail?.reason || 'new matching jobs and important application updates');
+      setVisible(true);
+    };
+    window.addEventListener('vizag:push-context-prompt', handleContextPrompt);
+    return () => window.removeEventListener('vizag:push-context-prompt', handleContextPrompt);
+  }, []);
 
   if (!visible || permission !== 'default') return null;
 
@@ -24,6 +35,8 @@ export default function StudentPushOptInCard({ userId }) {
     try {
       const result = await subscribeStudentToPush(userId);
       if (result.ok) {
+        window.localStorage.setItem('vizag_student_push_preferences_v1', JSON.stringify(preferences));
+        window.localStorage.setItem('vizag_student_push_optin_attempt_v1', new Date().toISOString());
         setPermission('granted');
         setVisible(false);
       } else {
@@ -49,7 +62,10 @@ export default function StudentPushOptInCard({ userId }) {
           <span className="text-2xl" aria-hidden="true">🔔</span>
           <div>
             <h2 className="text-sm font-bold text-slate-950 sm:text-base">Never miss a matching Vizag job</h2>
-            <p className="mt-1 text-xs leading-5 text-slate-600 sm:text-sm">Get instant alerts for new jobs, direct company openings, and important application updates.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600 sm:text-sm">Get alerts for {reason}.</p>
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600">
+              {Object.entries({ matching: 'Matching jobs', direct: 'Direct company jobs', applications: 'Application updates' }).map(([key, label]) => <label key={key} className="inline-flex items-center gap-1"><input type="checkbox" checked={preferences[key]} onChange={(event) => setPreferences((current) => ({ ...current, [key]: event.target.checked }))} />{label}</label>)}
+            </div>
             {error ? <p className="mt-2 text-xs font-semibold text-rose-700">{error}</p> : null}
           </div>
         </div>

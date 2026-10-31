@@ -68,6 +68,9 @@ const JobCard = ({
       message: wasSaved ? 'Job removed from saved jobs.' : 'Job saved.',
       type: 'success',
     });
+    if (!wasSaved && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('vizag:push-context-prompt', { detail: { reason: 'new jobs like this one and application updates' } }));
+    }
   };
 
   const handleCardClick = (event) => {

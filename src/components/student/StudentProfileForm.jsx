@@ -196,6 +196,9 @@ export default function StudentProfileForm({ onSaved }) {
       }
       setResumeFile(null);
       setNotice('Student profile saved. You can now apply to jobs.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('vizag:push-context-prompt', { detail: { reason: 'new jobs matching your completed profile' } }));
+      }
       onSaved?.(saved);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Could not save profile.');
