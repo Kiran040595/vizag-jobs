@@ -43,7 +43,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Cognizant': {
     website: 'https://www.cognizant.com',
-    careers_url: 'https://careers.cognizant.com/india-en/',
+    careers_url: 'https://careers.cognizant.com/india-en/locations/',
     category: 'IT & Software',
   },
   'Tech Mahindra': {

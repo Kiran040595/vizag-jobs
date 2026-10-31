@@ -137,7 +137,7 @@ export const CURATED_COMPANIES = {
   },
   'Cognizant': {
     website: 'https://www.cognizant.com',
-    careers_url: 'https://careers.cognizant.com/global/en',
+    careers_url: 'https://careers.cognizant.com/india-en/locations/',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },

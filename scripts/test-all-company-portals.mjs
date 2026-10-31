@@ -91,7 +91,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Cognizant',
-    careers_url: 'https://careers.cognizant.com/india-en/',
+    careers_url: 'https://careers.cognizant.com/india-en/locations/',
     category: 'IT & Software',
     location: 'Visakhapatnam',
   },
