@@ -170,7 +170,7 @@ export default async function handler(req, res) {
     ];
     const now = Date.now();
     const countRowsSince = async (table, since, requiresEmployerJob = false) => {
-      let query = admin.from(table).select('id', { count: 'exact', head: true }).gte('created_at', new Date(since).toISOString());
+      let query = admin.from(table).select('*', { count: 'exact', head: true }).gte('created_at', new Date(since).toISOString());
       if (requiresEmployerJob) query = query.not('created_by', 'is', null);
       const result = await query;
       return result.error ? 0 : (result.count || 0);
