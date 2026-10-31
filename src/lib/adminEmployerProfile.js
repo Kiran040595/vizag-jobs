@@ -32,6 +32,7 @@ export const mapEmployerProfileRow = (row, jobStats = null) => {
     industry: row.industry || '',
     location: row.location || '',
     website: row.website || '',
+    linkedinUrl: row.linkedin_url || '',
     companyLogoUrl: row.company_logo_url || '',
     isActive: Boolean(row.is_active),
     createdAt: row.created_at,
@@ -50,6 +51,7 @@ export const employerSearchBlob = (employer) =>
     employer.industry,
     employer.location,
     employer.website,
+    employer.linkedinUrl,
     employer.userId,
   ]
     .filter(Boolean)

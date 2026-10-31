@@ -19,6 +19,7 @@ export default function EmployerRegisterPage() {
   const [phone, setPhone] = useState('');
   const [industry, setIndustry] = useState('');
   const [location, setLocation] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
@@ -86,6 +87,7 @@ export default function EmployerRegisterPage() {
         phone: cleanPhone,
         industry,
         location,
+        linkedinUrl: linkedinUrl.trim(),
       });
       if (result?.session) {
         return;
@@ -181,6 +183,11 @@ export default function EmployerRegisterPage() {
                 </select>
               </label>
             </div>
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700 sm:text-sm">LinkedIn Company Page <span className="font-normal text-slate-400">(optional)</span></span>
+              <input type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://www.linkedin.com/company/your-company" className="mt-1.5 h-12 w-full rounded-2xl border border-slate-200 px-4 text-base outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" />
+              <span className="mt-1 block text-[11px] text-slate-500">Help candidates verify your company and learn more about your team.</span>
+            </label>
           </div>
 
           {/* Section 2: Contact Person */}

@@ -92,6 +92,7 @@ export const upsertEmployerProfile = async (profile) => {
     industry: profile.industry?.trim() || null,
     location: profile.location?.trim() || null,
     website: profile.website?.trim() || null,
+    linkedin_url: profile.linkedin_url?.trim() || null,
     company_logo_url: profile.company_logo_url?.trim() || null,
     is_active: true,
   };

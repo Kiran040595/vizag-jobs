@@ -682,7 +682,7 @@ export async function fetchAdminCompanies() {
   // 3. Fetch employer profiles to pick up registered companies with websites
   const employersPromise = supabase
     .from('employer_profiles')
-    .select('company_name, website, industry, location')
+    .select('company_name, website, linkedin_url, industry, location')
     .then((res) => (res.error ? { data: [] } : res))
     .catch(() => ({ data: [] }));
 
@@ -773,6 +773,9 @@ export async function fetchAdminCompanies() {
       inferWebsiteFromUrl(comp.sampleUrl) ||
       '';
 
+    const linkedinUrl =
+      local.linkedin_url || dbRecord?.linkedin_url || employerProfile?.linkedin_url || '';
+
     const careersUrl =
       local.careers_url ||
       dbRecord?.careers_url ||
@@ -807,6 +810,7 @@ export async function fetchAdminCompanies() {
       id: dbRecord?.id || null,
       name: comp.name,
       website,
+      linkedinUrl,
       careersUrl,
       category,
       location: comp.location || 'Visakhapatnam',
@@ -839,6 +843,7 @@ export async function fetchAdminCompanies() {
 export async function saveCompanyDetails({
   name,
   website,
+  linkedinUrl,
   careersUrl,
   category,
   location,
@@ -860,6 +865,7 @@ export async function saveCompanyDetails({
   // Always save to local fallback for instant resilience
   setLocalCompanyOverride(cleanName, {
     website: cleanWebsite,
+    linkedin_url: linkedinUrl?.trim() || null,
     careers_url: cleanCareersUrl,
     category: cleanCategory,
     location: cleanLocation,
@@ -873,6 +879,7 @@ export async function saveCompanyDetails({
   const payload = {
     name: cleanName,
     website: cleanWebsite,
+    linkedin_url: linkedinUrl?.trim() || null,
     careers_url: cleanCareersUrl,
     category: cleanCategory,
     location: cleanLocation,
@@ -1010,7 +1017,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
   // Fetch approved companies
   const companiesRes = await supabase
     .from('companies')
-    .select('id, name, website, careers_url, category, location, is_directory_approved, notes')
+    .select('id, name, website, linkedin_url, careers_url, category, location, is_directory_approved, notes')
     .eq('is_directory_approved', true)
     .limit(1000);
 
@@ -1062,12 +1069,14 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       const sector = mapCategoryToSector(local.category || c.category || known.category);
       const activeJobsCount = exactJobCounts.get(key) || 0;
       const website = local.website || c.website || known.website || '';
+      const linkedinUrl = local.linkedin_url || c.linkedin_url || '';
       const careersUrl = local.careers_url || c.careers_url || known.careers_url || '';
 
       return {
         id: c.id,
         name: c.name,
         website,
+        linkedinUrl,
         careersUrl,
         category: local.category || c.category || known.category || sector.label,
         sectorId: sector.id,

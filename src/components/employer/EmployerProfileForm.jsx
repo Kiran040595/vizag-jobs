@@ -19,6 +19,7 @@ export default function EmployerProfileForm({ onSaved }) {
     industry: '',
     location: '',
     website: '',
+    linkedin_url: '',
     company_logo_url: '',
   });
   const [error, setError] = useState('');
@@ -35,6 +36,7 @@ export default function EmployerProfileForm({ onSaved }) {
         industry: profile.industry || '',
         location: profile.location || '',
         website: profile.website || '',
+        linkedin_url: profile.linkedin_url || '',
         company_logo_url: profile.company_logo_url || '',
       });
     } else if (user?.email) {
@@ -151,6 +153,10 @@ export default function EmployerProfileForm({ onSaved }) {
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Website</span>
           <input name="website" value={form.website} onChange={handleChange} className={INPUT_CLASS} placeholder="https://..." />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">LinkedIn Company Page</span>
+          <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={handleChange} className={INPUT_CLASS} placeholder="https://www.linkedin.com/company/..." />
         </label>
         <label className="block sm:col-span-2">
           <span className="text-sm font-semibold text-slate-700">Company logo URL</span>

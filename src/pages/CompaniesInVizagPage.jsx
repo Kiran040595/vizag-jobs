@@ -123,6 +123,11 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
             </svg>
           </a>
         ) : null}
+        {company.linkedinUrl ? (
+          <a href={company.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${company.name} on LinkedIn`} className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 font-semibold text-blue-700 transition hover:bg-blue-100 active:scale-95">
+            <span>LinkedIn</span><span aria-hidden="true">↗</span>
+          </a>
+        ) : null}
       </div>
 
       {/* Admin Publish / Unpublish overlay button */}

@@ -259,6 +259,7 @@ export function EmployerAuthProvider({ children }) {
     phone,
     industry,
     location,
+    linkedinUrl,
   }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
@@ -269,6 +270,7 @@ export function EmployerAuthProvider({ children }) {
     const trimmedPhone = String(phone || '').trim();
     const trimmedIndustry = String(industry || '').trim();
     const trimmedLocation = String(location || '').trim();
+    const trimmedLinkedinUrl = String(linkedinUrl || '').trim();
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -281,6 +283,7 @@ export function EmployerAuthProvider({ children }) {
           phone: trimmedPhone,
           industry: trimmedIndustry,
           location: trimmedLocation,
+          linkedin_url: trimmedLinkedinUrl,
         },
         emailRedirectTo: getAuthRedirectUrl('/employer/login'),
       },
@@ -299,6 +302,7 @@ export function EmployerAuthProvider({ children }) {
           phone: trimmedPhone,
           industry: trimmedIndustry,
           location: trimmedLocation,
+          linkedin_url: trimmedLinkedinUrl,
         });
         notifyAdminsNewEmployer({
           userId: data.user.id,

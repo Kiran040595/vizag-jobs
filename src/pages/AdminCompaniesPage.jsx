@@ -57,6 +57,7 @@ export default function AdminCompaniesPage() {
   // Edit Modal State
   const [editingCompany, setEditingCompany] = useState(null);
   const [editWebsite, setEditWebsite] = useState('');
+  const [editLinkedinUrl, setEditLinkedinUrl] = useState('');
   const [editCareersUrl, setEditCareersUrl] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editLocation, setEditLocation] = useState('');
@@ -157,6 +158,7 @@ export default function AdminCompaniesPage() {
   const handleOpenEdit = (comp) => {
     setEditingCompany(comp);
     setEditWebsite(comp.website || '');
+    setEditLinkedinUrl(comp.linkedinUrl || '');
     setEditCareersUrl(comp.careersUrl || '');
     setEditCategory(comp.category || 'General');
     setEditLocation(comp.location || 'Visakhapatnam');
@@ -179,6 +181,7 @@ export default function AdminCompaniesPage() {
       const payload = {
         name: editingCompany.name,
         website: editWebsite,
+        linkedinUrl: editLinkedinUrl,
         careersUrl: editCareersUrl,
         category: editCategory,
         location: editLocation,
@@ -1002,6 +1005,10 @@ export default function AdminCompaniesPage() {
                   placeholder="https://example.com"
                   className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base font-medium text-slate-800 transition focus:border-cyan-500 focus:bg-white focus:outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700">LinkedIn Company Page</label>
+                <input type="url" value={editLinkedinUrl} onChange={(e) => setEditLinkedinUrl(e.target.value)} placeholder="https://www.linkedin.com/company/..." className="mt-1.5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-base font-medium text-slate-800 transition focus:border-cyan-500 focus:bg-white focus:outline-none" />
               </div>
 
               <div>

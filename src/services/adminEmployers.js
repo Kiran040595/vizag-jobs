@@ -170,6 +170,7 @@ export const createAdminEmployerAccount = async (payload) => {
           industry: payload.industry || data.employer.industry,
           location: payload.location || data.employer.location,
           website: data.employer.website,
+          linkedin_url: payload.linkedinUrl || data.employer.linkedinUrl,
           company_logo_url: data.employer.companyLogoUrl,
           is_active: data.employer.isActive,
           created_at: data.employer.createdAt,
