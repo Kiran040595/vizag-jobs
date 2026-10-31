@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 import QuestionNotificationBell from '../QuestionNotificationBell';
+import AdminGrowthAnalytics from './AdminGrowthAnalytics';
 
 const navItems = [
   { label: 'Quick Job', to: '/admin/quick-jobs/new' },
@@ -88,7 +89,10 @@ export default function AdminShell({ children, title, description }) {
         </div>
       </header>
 
-      <main className="admin-workspace mx-auto w-full max-w-7xl min-w-0 px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">{children}</main>
+      <main className="admin-workspace mx-auto w-full max-w-7xl min-w-0 px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">
+        <AdminGrowthAnalytics />
+        {children}
+      </main>
     </div>
   );
 }
