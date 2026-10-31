@@ -312,6 +312,11 @@ async function main() {
         const { data: page, error } = await client
           .from('companies')
           .select('*')
+          // Only scrape URLs that an admin/curation process has approved.
+          // The companies table also contains imported job-card names with
+          // generated or placeholder career URLs; those must never become
+          // direct fetch targets.
+          .eq('is_directory_approved', true)
           .eq('is_active_for_scrape', true)
           .not('careers_url', 'is', null)
           .range(from, from + pageSize - 1);
