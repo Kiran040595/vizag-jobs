@@ -746,6 +746,30 @@ export default function AdminNotificationsPage() {
           </div>
         </div>
 
+        <section className="rounded-[2rem] border border-cyan-100 bg-gradient-to-br from-cyan-50 via-white to-indigo-50 p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">Growth analytics</p>
+              <h2 className="mt-1 text-xl font-black text-slate-950">Audience and employer activity</h2>
+              <p className="mt-1 text-sm text-slate-600">New records created in each period. Push counts are browser/device subscriptions, not unique people.</p>
+            </div>
+          </div>
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <tr><th className="pb-3 pr-4">Period</th><th className="pb-3 pr-4">Push subscribers</th><th className="pb-3 pr-4">Student registrations</th><th className="pb-3 pr-4">Employer registrations</th><th className="pb-3">Employer submissions</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(analyticsData?.stats?.timeRangeAnalytics || []).map((row) => (
+                  <tr key={row.id}><th className="py-3 pr-4 font-semibold text-slate-800">{row.label}</th><td className="py-3 pr-4 font-bold text-cyan-700">{row.pushSubscribers.toLocaleString()}</td><td className="py-3 pr-4 font-bold text-indigo-700">{row.studentRegistrations.toLocaleString()}</td><td className="py-3 pr-4 font-bold text-emerald-700">{row.employerRegistrations.toLocaleString()}</td><td className="py-3 font-bold text-amber-700">{row.employerSubmissions.toLocaleString()}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            {!isLoading && !(analyticsData?.stats?.timeRangeAnalytics || []).length ? <p className="py-6 text-sm text-slate-500">No time-range data available.</p> : null}
+          </div>
+        </section>
+
+
         {/* Secondary Navigation / Tabs & Filters */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-3">
           <div className="flex flex-wrap items-center gap-1">

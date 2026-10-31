@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-31-Admin-Growth-Analytics
+
+- Added time-range analytics to the admin Notifications dashboard for push subscriptions, student registrations, employer registrations, and employer job submissions.
+- Periods: last 24 hours, 7 days, 30 days, 90 days, and 1 year.
+- Functional E2E & Mobile UI: Pending authenticated admin dashboard evidence.
+
 ## QA-2026-10-31-Company-LinkedIn-Profile
 
 - Scope: employer registration/profile, admin company editor, and public `/companies` directory cards.

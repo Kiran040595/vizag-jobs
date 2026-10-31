@@ -111,6 +111,9 @@ export default async function handler(req, res) {
       jobAlertsRes,
       replyNotificationsRes,
       vapidConfigRes,
+      studentProfilesRes,
+      employerProfilesRes,
+      employerJobsRes,
     ] = await Promise.all([
       safeQuery(
         admin
@@ -153,6 +156,9 @@ export default async function handler(req, res) {
           .maybeSingle(),
         { data: null },
       ),
+      safeQuery(admin.from('student_profiles').select('created_at')),
+      safeQuery(admin.from('employer_profiles').select('created_at')),
+      safeQuery(admin.from('jobs').select('created_at, created_by').not('created_by', 'is', null)),
     ]);
 
     const subscriptions = subscriptionsRes.data || [];
@@ -160,6 +166,26 @@ export default async function handler(req, res) {
     const rawOpens = opensRes.data || [];
     const jobAlerts = jobAlertsRes.data || [];
     const replyNotifications = replyNotificationsRes.data || [];
+
+    const timeRanges = [
+      { id: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
+      { id: '7d', label: 'Last 7 days', ms: 7 * 24 * 60 * 60 * 1000 },
+      { id: '30d', label: 'Last 30 days', ms: 30 * 24 * 60 * 60 * 1000 },
+      { id: '90d', label: 'Last 90 days', ms: 90 * 24 * 60 * 60 * 1000 },
+      { id: '1y', label: 'Last 1 year', ms: 365 * 24 * 60 * 60 * 1000 },
+    ];
+    const countSince = (rows, field, since) => rows.filter((row) => {
+      const timestamp = Date.parse(row?.[field] || '');
+      return Number.isFinite(timestamp) && timestamp >= since;
+    }).length;
+    const now = Date.now();
+    const timeRangeAnalytics = timeRanges.map((range) => ({
+      ...range,
+      pushSubscribers: countSince(subscriptions, 'created_at', now - range.ms),
+      studentRegistrations: countSince(studentProfilesRes.data || [], 'created_at', now - range.ms),
+      employerRegistrations: countSince(employerProfilesRes.data || [], 'created_at', now - range.ms),
+      employerSubmissions: countSince(employerJobsRes.data || [], 'created_at', now - range.ms),
+    }));
 
     // Fetch jobs and employer profiles referenced by dispatches, alerts, and opens
     const allJobIds = [
@@ -673,6 +699,7 @@ export default async function handler(req, res) {
         totalInAppRead,
         inAppReadRate,
         vapidConfigured,
+        timeRangeAnalytics,
       },
       deviceBreakdown: {
         devices: deviceCounts,
