@@ -433,6 +433,7 @@ export default function AdminNotificationsPage() {
   const [loadError, setLoadError] = useState('');
   const [notice, setNotice] = useState('');
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsRange, setAnalyticsRange] = useState('24h');
 
   // Active sub-tab: 'jobs' | 'dispatches' | 'opens' | 'audience' | 'inapp'
   const [activeTab, setActiveTab] = useState('jobs');
@@ -521,6 +522,7 @@ export default function AdminNotificationsPage() {
 
   const rawSubscribers = analyticsData?.subscribers;
   const subscribers = useMemo(() => rawSubscribers || [], [rawSubscribers]);
+  const selectedAnalyticsRange = (stats.timeRangeAnalytics || []).find((row) => row.id === analyticsRange);
 
   const matchesTriggerFilter = (triggersOrSingle, filterValue) => {
     if (filterValue === 'all') return true;
@@ -751,21 +753,32 @@ export default function AdminNotificationsPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700">Growth analytics</p>
               <h2 className="mt-1 text-xl font-black text-slate-950">Audience and employer activity</h2>
-              <p className="mt-1 text-sm text-slate-600">New records created in each period. Push counts are browser/device subscriptions, not unique people.</p>
+              <p className="mt-1 text-sm text-slate-600">New records created during the selected period. Push counts are browser/device subscriptions, not unique people.</p>
             </div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <span className="sr-only">Analytics period</span>
+              <select value={analyticsRange} onChange={(event) => setAnalyticsRange(event.target.value)} className="min-h-11 rounded-xl border border-cyan-200 bg-white px-3 py-2 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
+                <option value="24h">Last 24 hours</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last 1 year</option>
+              </select>
+            </label>
           </div>
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                <tr><th className="pb-3 pr-4">Period</th><th className="pb-3 pr-4">Push subscribers</th><th className="pb-3 pr-4">Student registrations</th><th className="pb-3 pr-4">Employer registrations</th><th className="pb-3">Employer submissions</th></tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {(analyticsData?.stats?.timeRangeAnalytics || []).map((row) => (
-                  <tr key={row.id}><th className="py-3 pr-4 font-semibold text-slate-800">{row.label}</th><td className="py-3 pr-4 font-bold text-cyan-700">{row.pushSubscribers.toLocaleString()}</td><td className="py-3 pr-4 font-bold text-indigo-700">{row.studentRegistrations.toLocaleString()}</td><td className="py-3 pr-4 font-bold text-emerald-700">{row.employerRegistrations.toLocaleString()}</td><td className="py-3 font-bold text-amber-700">{row.employerSubmissions.toLocaleString()}</td></tr>
-                ))}
-              </tbody>
-            </table>
-            {!isLoading && !(analyticsData?.stats?.timeRangeAnalytics || []).length ? <p className="py-6 text-sm text-slate-500">No time-range data available.</p> : null}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ['Push subscribers', selectedAnalyticsRange?.pushSubscribers, 'text-cyan-700'],
+              ['Student registrations', selectedAnalyticsRange?.studentRegistrations, 'text-indigo-700'],
+              ['Employer registrations', selectedAnalyticsRange?.employerRegistrations, 'text-emerald-700'],
+              ['Employer submissions', selectedAnalyticsRange?.employerSubmissions, 'text-amber-700'],
+            ].map(([label, value, color]) => (
+              <div key={label} className="rounded-2xl border border-white/80 bg-white/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+                <p className={`mt-2 text-3xl font-black ${color}`}>{isLoading ? '…' : (value ?? 0).toLocaleString()}</p>
+                <p className="mt-1 text-xs text-slate-500">{selectedAnalyticsRange?.label || 'Selected period'}</p>
+              </div>
+            ))}
           </div>
         </section>
 
