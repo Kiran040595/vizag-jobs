@@ -56,7 +56,7 @@ Jobs **without** an apply link are skipped (logged, not inserted).
 Already required for manual fetch — see `docs/supabase-setup.md`:
 
 - `APIFY_API_TOKEN_NAUKRI` (or `APIFY_API_TOKEN`)
-- Optional fallback configuration: `APIFY_API_TOKEN_NAUKRI_FALLBACK` and `APIFY_NAUKRI_ACTOR_FALLBACK=alpcnRV9YI9lYVPWk`. The fallback is attempted when the primary actor cannot start or returns no usable items.
+- Optional fallback configuration: `APIFY_API_TOKEN_NAUKRI_FALLBACK` and `APIFY_NAUKRI_ACTOR_FALLBACK=olcRsxLcViAF8Jw5O`. The fallback is attempted when the primary actor cannot start or returns no usable items. The actor ID is also the code default, so only the rotated fallback token is required unless you switch actors again.
 - The KumarDadi fallback receives an actor-specific payload: `{ locations: ["Visakhapatnam"], roles: ["Fresher", "Trainee", "Intern"] }` for the fresher batch, or the configured role batch, plus `timeFrame: "1"`.
 - `GEMINI_API_KEY` or `GEMINI_API_KEY_SEO`
 - `FETCH_JOBS_CRON_SECRET` — long random string for headless auth

@@ -66,7 +66,7 @@ export function getApifyFallbackTokenForNaukri(): string | null {
 }
 
 export function getNaukriFallbackActorId(): string | null {
-  return Deno.env.get('APIFY_NAUKRI_ACTOR_FALLBACK')?.trim() || null;
+  return Deno.env.get('APIFY_NAUKRI_ACTOR_FALLBACK')?.trim() || 'olcRsxLcViAF8Jw5O';
 }
 
 export function getNaukriProvider(): NaukriProvider {

@@ -2,7 +2,7 @@
 
 ## QA-2026-10-31-KumarDadi-Naukri-Fallback-Configuration
 
-- Documented the private secret name and fallback actor ID for the KumarDadi Naukri account.
+- Documented the private secret name and fallback actor ID (`olcRsxLcViAF8Jw5O`) for the KumarDadi Naukri account.
 - No API token is stored in source control.
 - Functional E2E: Pending rotated token configuration and fallback actor compatibility test.
 
