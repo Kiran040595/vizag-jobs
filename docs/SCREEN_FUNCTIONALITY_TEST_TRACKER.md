@@ -5,6 +5,7 @@
 - Scope: employer registration/profile, admin company editor, and public `/companies` directory cards.
 - Added optional official LinkedIn company-page URL capture for employer registration and profile updates.
 - Added admin LinkedIn URL editing for directory companies and a visible LinkedIn button on public company cards.
+- Added LinkedIn editing and admin-created LinkedIn capture for self-registered companies in `Admin → Employers`.
 - Added Supabase migration `supabase/migrations/20261031120000_company_linkedin_profile.sql` for `employer_profiles.linkedin_url` and `companies.linkedin_url`.
 - Functional E2E & Mobile UI: Pending authenticated registration/admin/public-directory journey evidence.
 

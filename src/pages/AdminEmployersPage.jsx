@@ -16,6 +16,7 @@ import {
   fetchAdminEmployerProfiles,
   formatEmployerRegisteredAt,
   setEmployerActiveStatus,
+  updateEmployerLinkedinUrl,
 } from '../services/adminEmployers';
 
 const emptyForm = {
@@ -25,6 +26,7 @@ const emptyForm = {
   phone: '',
   industry: '',
   location: '',
+  linkedinUrl: '',
   password: '',
 };
 
@@ -67,6 +69,9 @@ export default function AdminEmployersPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [credentialsEmployer, setCredentialsEmployer] = useState(null);
+  const [linkedinEmployer, setLinkedinEmployer] = useState(null);
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [isSavingLinkedin, setIsSavingLinkedin] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearch = useDeferredValue(searchTerm.trim().toLowerCase());
 
@@ -121,6 +126,22 @@ export default function AdminEmployersPage() {
     }
   };
 
+  const handleSaveLinkedin = async (event) => {
+    event.preventDefault();
+    if (!linkedinEmployer) return;
+    setIsSavingLinkedin(true);
+    try {
+      const updated = await updateEmployerLinkedinUrl({ userId: linkedinEmployer.userId, linkedinUrl });
+      setEmployers((current) => upsertEmployer(current, { ...updated, jobStats: linkedinEmployer.jobStats }));
+      setNotice(`LinkedIn page saved for ${updated.companyName}.`);
+      setLinkedinEmployer(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not update the company LinkedIn page.');
+    } finally {
+      setIsSavingLinkedin(false);
+    }
+  };
+
   const handleCreateEmployer = async (event) => {
     event.preventDefault();
     setFormError('');
@@ -135,6 +156,7 @@ export default function AdminEmployersPage() {
         phone: form.phone.trim(),
         industry: form.industry || '',
         location: form.location || '',
+        linkedinUrl: form.linkedinUrl.trim(),
         password: form.password,
       });
 
@@ -235,6 +257,10 @@ export default function AdminEmployersPage() {
                 className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 placeholder="Hiring manager"
               />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">LinkedIn company page (optional)</span>
+              <input type="url" value={form.linkedinUrl} onChange={(event) => setForm((current) => ({ ...current, linkedinUrl: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-base outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100" placeholder="https://www.linkedin.com/company/..." />
             </label>
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">Phone</span>
@@ -376,6 +402,12 @@ export default function AdminEmployersPage() {
                           </dd>
                         </div>
                         <div>
+                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">LinkedIn company page</dt>
+                          <dd className="mt-0.5 break-all text-slate-800">
+                            {employer.linkedinUrl ? <a href={employer.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline">{employer.linkedinUrl}</a> : 'Not provided'}
+                          </dd>
+                        </div>
+                        <div>
                           <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Office Location (Vizag)
                           </dt>
@@ -486,6 +518,13 @@ export default function AdminEmployersPage() {
                       </button>
                       <button
                         type="button"
+                        onClick={() => { setLinkedinEmployer(employer); setLinkedinUrl(employer.linkedinUrl || ''); }}
+                        className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900 transition hover:bg-blue-100"
+                      >
+                        {employer.linkedinUrl ? 'Edit LinkedIn' : 'Add LinkedIn'}
+                      </button>
+                      <button
+                        type="button"
                         disabled={busyUserId === employer.userId}
                         onClick={() => handleToggleActive(employer)}
                         className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
@@ -519,6 +558,19 @@ export default function AdminEmployersPage() {
             );
           }}
         />
+        {linkedinEmployer ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-label="Edit company LinkedIn page">
+            <form onSubmit={handleSaveLinkedin} className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
+              <h2 className="text-lg font-bold text-slate-950">LinkedIn company page</h2>
+              <p className="mt-1 text-sm text-slate-600">{linkedinEmployer.companyName}</p>
+              <input type="url" autoFocus value={linkedinUrl} onChange={(event) => setLinkedinUrl(event.target.value)} placeholder="https://www.linkedin.com/company/..." className="mt-4 w-full rounded-xl border border-slate-200 px-3 py-3 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <div className="mt-5 flex justify-end gap-2">
+                <button type="button" onClick={() => setLinkedinEmployer(null)} className="min-h-11 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                <button type="submit" disabled={isSavingLinkedin} className="min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isSavingLinkedin ? 'Saving…' : 'Save LinkedIn page'}</button>
+              </div>
+            </form>
+          </div>
+        ) : null}
       </AdminShell>
     </>
   );

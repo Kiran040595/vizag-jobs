@@ -102,6 +102,18 @@ export const setEmployerActiveStatus = async ({ userId, isActive }) => {
   return mapEmployerProfileRow(data);
 };
 
+export const updateEmployerLinkedinUrl = async ({ userId, linkedinUrl }) => {
+  if (!supabase) throw new Error('Supabase is not configured.');
+  const { data, error } = await supabase
+    .from('employer_profiles')
+    .update({ linkedin_url: linkedinUrl?.trim() || null })
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+  if (error) throw mapError(error, 'Could not update the company LinkedIn page.');
+  return mapEmployerProfileRow(data);
+};
+
 /**
  * Admin-provisioned employer account (service-role edge function).
  * @param {{ companyName: string, email: string, password: string, phone: string, contactName?: string }} payload
@@ -141,6 +153,7 @@ export const createAdminEmployerAccount = async (payload) => {
       contactName: payload.contactName || '',
       industry: payload.industry || '',
       location: payload.location || '',
+      linkedinUrl: payload.linkedinUrl || '',
     }),
   });
 
@@ -149,12 +162,13 @@ export const createAdminEmployerAccount = async (payload) => {
     throw new Error(data?.error || `Could not create employer (HTTP ${response.status}).`);
   }
 
-  if (data.employer?.userId && (payload.industry || payload.location)) {
+  if (data.employer?.userId && (payload.industry || payload.location || payload.linkedinUrl)) {
     await supabase
       .from('employer_profiles')
       .update({
         industry: payload.industry || null,
         location: payload.location || null,
+        linkedin_url: payload.linkedinUrl || null,
       })
       .eq('user_id', data.employer.userId);
   }
