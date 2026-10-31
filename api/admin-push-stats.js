@@ -111,9 +111,6 @@ export default async function handler(req, res) {
       jobAlertsRes,
       replyNotificationsRes,
       vapidConfigRes,
-      studentProfilesRes,
-      employerProfilesRes,
-      employerJobsRes,
     ] = await Promise.all([
       safeQuery(
         admin
@@ -156,9 +153,6 @@ export default async function handler(req, res) {
           .maybeSingle(),
         { data: null },
       ),
-      safeQuery(admin.from('student_profiles').select('created_at')),
-      safeQuery(admin.from('employer_profiles').select('created_at')),
-      safeQuery(admin.from('jobs').select('created_at, created_by').not('created_by', 'is', null)),
     ]);
 
     const subscriptions = subscriptionsRes.data || [];
