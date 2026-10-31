@@ -61,6 +61,8 @@ export default function CandidateFinderFilters({
   years,
   colleges = [],
   locations = [],
+  areas = [],
+  genders = [],
   jobs,
   jobCounts,
   onClear,
@@ -675,11 +677,22 @@ export default function CandidateFinderFilters({
             Current area / locality
             <input
               className={INPUT}
+            list="current-area-options"
               value={filters.area}
               onChange={(event) => onChange({ area: event.target.value })}
               placeholder="e.g. MVP Colony, Gajuwaka"
             />
+          <datalist id="current-area-options">
+            {areas.map((area) => <option key={area.value} value={area.value}>{area.label}</option>)}
+          </datalist>
           </label>
+        <CandidateSelect
+          label="Gender"
+          value={filters.gender}
+          onChange={(gender) => onChange({ gender })}
+          options={genders}
+          emptyLabel="All genders"
+        />
           <label className="min-w-0 text-sm font-semibold text-slate-700">
             Certification / course
             <input

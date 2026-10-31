@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-31-Student-Gender-Locality-Filters
+
+- Student registration/profile already captures optional gender and current locality; Admin Students now exposes gender filtering and locality suggestions from saved candidate data.
+- Added gender and current-area matching to the admin candidate search URL filters and result logic.
+- Functional E2E & Mobile UI: Pending registration/profile and admin filter journey evidence.
+
 ## QA-2026-10-31-Student-Push-Opt-In
 
 - Added a prominent student-portal push notification opt-in card with job-alert benefits, `Enable job alerts`, and `Not now` actions.

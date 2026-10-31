@@ -125,6 +125,8 @@ export default function AdminStudentsPage() {
       years: countOptions(scoped, student => [student.graduationYear ? String(student.graduationYear) : '']).sort((a, b) => Number(b.value) - Number(a.value)).map(item => ({ ...item, label: `Batch ${item.value} (${item.count})` })),
       colleges: countOptions(scoped, student => [student.college]).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
       locations: countOptions(scoped, student => student.preferredLocations || []).map(item => ({ ...item, label: `${item.value} (${item.count})` })),
+      genders: countOptions(scoped, student => [student.gender]).map(item => ({ ...item, label: `${item.value.replaceAll('_', ' ')} (${item.count})` })),
+      areas: countOptions(scoped, student => [student.currentArea]),
     };
   }, [students, filters.accountStatus]);
   const criteriaLabels = candidateFilterLabels(deferredFilters);

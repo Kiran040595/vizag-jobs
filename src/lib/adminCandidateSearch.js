@@ -14,7 +14,7 @@ export const candidateSkills = student => unique(student.skills || [], candidate
 export const EMPTY_CANDIDATE_FILTERS = {
   search: '', skills: [], skillMode: 'all', degrees: [], roleQuery: '', role: '',
   category: '', branch: '', year: '', experience: '', college: '', hasResume: 'all',
-  city: '', area: '', preferredLocation: '', educationStatus: '', relocation: '',
+  city: '', area: '', gender: '', preferredLocation: '', educationStatus: '', relocation: '',
   availability: '', certification: '', accountStatus: 'active', dataStatus: '',
   job: '', jobStatus: 'eligible', sort: 'relevance', talentPool: '', candidateSource: 'all',
 };
@@ -245,6 +245,7 @@ export const matchesCandidateRequirements = (student, filters) => {
   // Current residence and preferred work locations are different facts.
   if (filters.city && (!text(student.currentCity) || !normalizeCandidateLocation(student.currentCity).includes(normalizeCandidateLocation(filters.city)))) return false;
   if (filters.area && (!text(student.currentArea) || !normalizeCandidateLocation(student.currentArea).includes(normalizeCandidateLocation(filters.area)))) return false;
+  if (filters.gender && text(student.gender) !== text(filters.gender)) return false;
   if (filters.preferredLocation && (!student.preferredLocations || !student.preferredLocations.some(loc => normalizeCandidateLocation(loc).includes(normalizeCandidateLocation(filters.preferredLocation))))) return false;
   if (filters.educationStatus && student.educationStatus !== filters.educationStatus) return false;
   if (filters.relocation && String(student.willingToRelocate ?? '') !== filters.relocation) return false;
@@ -270,6 +271,7 @@ export const candidateMatchReasons = (student, filters, job) => {
   if (filters.college) reasons.push(`College: ${student.college}`);
   if (filters.hasResume === 'yes') reasons.push('Resume attached');
   if (filters.city || filters.area) reasons.push(`Current location: ${[student.currentCity, student.currentArea].filter(Boolean).join(', ')}`);
+  if (filters.gender) reasons.push(`Gender: ${filters.gender.replaceAll('_', ' ')}`);
   if (filters.preferredLocation) reasons.push(`Preferred work location: ${filters.preferredLocation}`);
   if (filters.experience) reasons.push(`Experience: ${student.roleExperienceLabel || (student.isFresher === true ? 'Fresher' : student.isFresher === false ? 'Experienced' : 'Not provided')}`);
   if (filters.availability) reasons.push(`Joining: ${student.availabilityLabel}`);
