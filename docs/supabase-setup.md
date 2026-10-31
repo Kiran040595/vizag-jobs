@@ -232,6 +232,8 @@ supabase functions deploy fetch-external-jobs --no-verify-jwt
 | `APIFY_API_TOKEN` | **LinkedIn fetch (recommended).** Apify API token from [Apify Console → Integrations](https://console.apify.com/account/integrations). |
 | `APIFY_API_TOKEN_LINKEDIN_JOBS` | Optional. Apify token used only for **LinkedIn Jobs** channel (`fetch_channel=linkedin_jobs`). |
 | `APIFY_API_TOKEN_LINKEDIN_POSTS` | Optional. Apify token used only for **LinkedIn Posts** channel. |
+| `APIFY_API_TOKEN_NAUKRI_FALLBACK` | Optional rotated token for the KumarDadi Naukri fallback actor. Store only as a Supabase Edge Function secret; never commit it. |
+| `APIFY_NAUKRI_ACTOR_FALLBACK` | Optional KumarDadi Naukri fallback actor ID: `alpcnRV9YI9lYVPWk`. |
 | `FIRECRAWL_API_KEY_NAUKRI` | Optional. Firecrawl key for **Naukri** channel only. |
 | `FIRECRAWL_API_KEY_LINKEDIN_JOBS` | Optional. Firecrawl fallback for LinkedIn jobs listing. |
 | `FIRECRAWL_API_KEY_LINKEDIN_POSTS` | Optional. Firecrawl fallback for LinkedIn posts. |

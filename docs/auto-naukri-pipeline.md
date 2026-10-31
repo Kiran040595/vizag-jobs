@@ -56,6 +56,7 @@ Jobs **without** an apply link are skipped (logged, not inserted).
 Already required for manual fetch — see `docs/supabase-setup.md`:
 
 - `APIFY_API_TOKEN_NAUKRI` (or `APIFY_API_TOKEN`)
+- Optional fallback configuration: `APIFY_API_TOKEN_NAUKRI_FALLBACK` and `APIFY_NAUKRI_ACTOR_FALLBACK=alpcnRV9YI9lYVPWk`.
 - `GEMINI_API_KEY` or `GEMINI_API_KEY_SEO`
 - `FETCH_JOBS_CRON_SECRET` — long random string for headless auth
 

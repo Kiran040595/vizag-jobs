@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-31-KumarDadi-Naukri-Fallback-Configuration
+
+- Documented the private secret name and fallback actor ID for the KumarDadi Naukri account.
+- No API token is stored in source control.
+- Functional E2E: Pending rotated token configuration and fallback actor compatibility test.
+
 ## QA-2026-10-31-Student-Gender-Locality-Filters
 
 - Student registration/profile already captures optional gender and current locality; Admin Students now exposes gender filtering and locality suggestions from saved candidate data.
