@@ -174,17 +174,26 @@ export default async function handler(req, res) {
       { id: '90d', label: 'Last 90 days', ms: 90 * 24 * 60 * 60 * 1000 },
       { id: '1y', label: 'Last 1 year', ms: 365 * 24 * 60 * 60 * 1000 },
     ];
-    const countSince = (rows, field, since) => rows.filter((row) => {
-      const timestamp = Date.parse(row?.[field] || '');
-      return Number.isFinite(timestamp) && timestamp >= since;
-    }).length;
     const now = Date.now();
-    const timeRangeAnalytics = timeRanges.map((range) => ({
+    const countRowsSince = async (table, since, requiresEmployerJob = false) => {
+      let query = admin.from(table).select('id', { count: 'exact', head: true }).gte('created_at', new Date(since).toISOString());
+      if (requiresEmployerJob) query = query.not('created_by', 'is', null);
+      const result = await query;
+      return result.error ? 0 : (result.count || 0);
+    };
+    const exactGrowthCounts = await Promise.all(timeRanges.map(async (range) => {
+      const since = now - range.ms;
+      const [pushSubscribers, studentRegistrations, employerRegistrations, employerSubmissions] = await Promise.all([
+        countRowsSince('web_push_subscriptions', since),
+        countRowsSince('student_profiles', since),
+        countRowsSince('employer_profiles', since),
+        countRowsSince('jobs', since, true),
+      ]);
+      return { pushSubscribers, studentRegistrations, employerRegistrations, employerSubmissions };
+    }));
+    const timeRangeAnalytics = timeRanges.map((range, index) => ({
       ...range,
-      pushSubscribers: countSince(subscriptions, 'created_at', now - range.ms),
-      studentRegistrations: countSince(studentProfilesRes.data || [], 'created_at', now - range.ms),
-      employerRegistrations: countSince(employerProfilesRes.data || [], 'created_at', now - range.ms),
-      employerSubmissions: countSince(employerJobsRes.data || [], 'created_at', now - range.ms),
+      ...exactGrowthCounts[index],
     }));
 
     // Fetch jobs and employer profiles referenced by dispatches, alerts, and opens
