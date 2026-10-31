@@ -452,6 +452,18 @@ export function listNaukriActorInputs(): NaukriActorInputBatch[] {
   ];
 }
 
+/** Input contract used by the KumarDadi fallback actor. */
+function kumarDadiNaukriInput(batch: NaukriActorInputBatch): Record<string, unknown> {
+  const roles = batch.key === 'fresher'
+    ? ['Fresher', 'Trainee', 'Intern']
+    : ['Developer', 'Associate', 'Executive'];
+  return {
+    locations: ['Visakhapatnam'],
+    roles,
+    timeFrame: '1',
+  };
+}
+
 export function buildNaukriActorInput(): Record<string, unknown> {
   return { ...listNaukriActorInputs()[0].input };
 }
@@ -627,7 +639,7 @@ export async function startNaukriApifyRunAsync(
     const fallbackToken = getApifyFallbackTokenForNaukri();
     const fallbackActor = getNaukriFallbackActorId();
     if (fallbackToken && fallbackActor) {
-      started = await startSingleNaukriApifyRun(fallbackToken, fallbackActor, batch.input, `${batch.key}:fallback`);
+      started = await startSingleNaukriApifyRun(fallbackToken, fallbackActor, kumarDadiNaukriInput(batch), `${batch.key}:fallback`);
       selectedActorId = fallbackActor;
     }
   }
@@ -914,7 +926,7 @@ export async function discoverNaukriViaApify(
     const fallbackActor = getNaukriFallbackActorId();
     if (fallbackToken && fallbackActor && fallbackActor !== actorId) {
       for (const batch of batches) {
-        const run = await apifyRunActor(fallbackActor, batch.input, fallbackToken, budget, {
+        const run = await apifyRunActor(fallbackActor, kumarDadiNaukriInput(batch), fallbackToken, budget, {
           timeoutSec: naukriApifySyncTimeoutSec(budget),
           syncOnly: true,
         });
