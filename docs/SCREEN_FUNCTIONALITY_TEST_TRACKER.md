@@ -5,6 +5,7 @@
 - Documented the private secret name and fallback actor ID (`olcRsxLcViAF8Jw5O`) for the KumarDadi Naukri account.
 - Switched the scheduled external-job source to the direct company-career pipeline; Naukri remains manual-only for rollback.
 - Restricted the scheduled direct fetch to `companies.is_directory_approved = true` records so imported placeholder/generated URLs are not scraped.
+- Added `scripts/audit-approved-company-portals.mjs` to recheck the live approved company list and distinguish Vizag evidence, reachable generic portals, HTTP errors, and fetch errors without changing database records.
 - No API token is stored in source control.
 - Functional E2E: Pending rotated token configuration and fallback actor compatibility test.
 

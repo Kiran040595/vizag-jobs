@@ -83,6 +83,14 @@ Add these under **Settings → Secrets and variables → Actions**:
 
 ## Local test
 
+### Audit approved company portals
+
+```bash
+node scripts/audit-approved-company-portals.mjs
+```
+
+This is read-only. It checks the live admin-approved company list and reports whether each portal is reachable and contains Vizag-related location evidence.
+
 ### Admin UI (manual)
 
 1. Sign in at `/admin/login`
