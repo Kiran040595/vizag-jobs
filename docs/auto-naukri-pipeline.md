@@ -4,7 +4,8 @@
 
 | Channel | Admin UI | CLI | Daily cron (IST) |
 |---------|----------|-----|------------------|
-| **Naukri** | Start automation on Naukri card | `npm run auto:naukri` | **4:00 PM** |
+| **Naukri** | Manual fallback only | `npm run auto:naukri` | **No automatic schedule** |
+| **Company careers** | Fetch active companies directly from their configured career portals | `npm run auto:company-careers` | **Daily, 4:00 PM IST** |
 | **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | **6:00 PM** (general preset) |
 | **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | **9:00 PM** |
 

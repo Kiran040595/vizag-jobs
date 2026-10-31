@@ -1,9 +1,9 @@
-name: Auto weekly direct company career fetch
+name: Auto direct company career fetch
 
 on:
   schedule:
-    # 6:00 AM IST = 00:30 UTC every Monday (day 1 of the week)
-    - cron: '30 0 * * 1'
+    # 4:00 PM IST = 10:30 UTC every day
+    - cron: '30 10 * * *'
   workflow_dispatch:
 
 concurrency:

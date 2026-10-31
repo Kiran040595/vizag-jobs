@@ -1,12 +1,9 @@
 name: Auto daily Naukri fetch
 
-# Own workflow file so GitHub does not delay this cron behind LinkedIn / blog / Shorts
-# in auto-naukri-daily.yml (those shared schedules were starting Naukri 3–6 hours late).
+# Naukri is retained as a manual fallback only. Scheduled job collection now uses
+# verified company career portals via auto-company-careers-weekly.yml.
 
 on:
-  schedule:
-    # 4:00 PM IST = 10:30 UTC
-    - cron: '30 10 * * *'
   workflow_dispatch:
 
 concurrency:
