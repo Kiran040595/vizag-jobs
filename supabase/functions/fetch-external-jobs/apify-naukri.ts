@@ -61,6 +61,14 @@ export function getApifyTokenForNaukri(): string | null {
   );
 }
 
+export function getApifyFallbackTokenForNaukri(): string | null {
+  return Deno.env.get('APIFY_API_TOKEN_NAUKRI_FALLBACK')?.trim() || null;
+}
+
+export function getNaukriFallbackActorId(): string | null {
+  return Deno.env.get('APIFY_NAUKRI_ACTOR_FALLBACK')?.trim() || null;
+}
+
 export function getNaukriProvider(): NaukriProvider {
   const raw = Deno.env.get('FETCH_NAUKRI_PROVIDER')?.trim().toLowerCase();
   if (raw === 'firecrawl') {
@@ -613,7 +621,16 @@ export async function startNaukriApifyRunAsync(
     return empty('APIFY_API_TOKEN_NAUKRI (or APIFY_API_TOKEN) not set');
   }
 
-  const started = await startSingleNaukriApifyRun(token, actorId, batch.input, batch.key);
+  let started = await startSingleNaukriApifyRun(token, actorId, batch.input, batch.key);
+  let selectedActorId = actorId;
+  if (!started.runId) {
+    const fallbackToken = getApifyFallbackTokenForNaukri();
+    const fallbackActor = getNaukriFallbackActorId();
+    if (fallbackToken && fallbackActor) {
+      started = await startSingleNaukriApifyRun(fallbackToken, fallbackActor, batch.input, `${batch.key}:fallback`);
+      selectedActorId = fallbackActor;
+    }
+  }
   if (!started.runId) {
     return empty(started.error || `Failed to start Naukri Apify run (${batch.key}).`);
   }
@@ -621,7 +638,7 @@ export async function startNaukriApifyRunAsync(
   return {
     runId: started.runId,
     runIds: [started.runId],
-    actorId,
+    actorId: selectedActorId,
     input: batch.input,
     inputLabel: `${batch.key}:{${batch.label}}`,
     batchLabels: [`${batch.key}: ${batch.label}`],
@@ -642,9 +659,11 @@ async function collectNaukriApifyRunRaw(
   rawCount: number;
   error: string | null;
 }> {
-  const token = getApifyTokenForNaukri();
+  let token = getApifyTokenForNaukri();
   const fallbackHubUrl =
     Deno.env.get('APIFY_NAUKRI_SEARCH_URL')?.trim() || NAUKRI_VIZAG_24H_SEARCH_URL;
+
+  token = token || getApifyFallbackTokenForNaukri();
 
   if (!token) {
     return {
@@ -656,9 +675,18 @@ async function collectNaukriApifyRunRaw(
     };
   }
 
-  const statusRes = await fetch(`${APIFY_API_BASE}/actor-runs/${runId}`, {
+  let statusRes = await fetch(`${APIFY_API_BASE}/actor-runs/${runId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+  if (!statusRes.ok) {
+    const fallbackToken = getApifyFallbackTokenForNaukri();
+    if (fallbackToken && fallbackToken !== token) {
+      token = fallbackToken;
+      statusRes = await fetch(`${APIFY_API_BASE}/actor-runs/${runId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+  }
   const statusPayload = await statusRes.json().catch(() => null);
   if (!statusRes.ok) {
     const msg =
@@ -879,6 +907,22 @@ export async function discoverNaukriViaApify(
         error: run.error,
       }),
     );
+  }
+
+  if (allItems.length === 0) {
+    const fallbackToken = getApifyFallbackTokenForNaukri();
+    const fallbackActor = getNaukriFallbackActorId();
+    if (fallbackToken && fallbackActor && fallbackActor !== actorId) {
+      for (const batch of batches) {
+        const run = await apifyRunActor(fallbackActor, batch.input, fallbackToken, budget, {
+          timeoutSec: naukriApifySyncTimeoutSec(budget),
+          syncOnly: true,
+        });
+        if (run.runId) runIds.push(run.runId);
+        allItems.push(...run.items);
+        if (run.error) errors.push(`${batch.key}:fallback: ${run.error}`);
+      }
+    }
   }
 
   const jobs = mergeNaukriJobs(
