@@ -14,8 +14,35 @@ export default function AdminGrowthAnalytics() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    fetchNotificationAnalyticsData().then(setData).catch(() => setData(null));
-  }, []);
+    const cacheKey = `vizag_admin_growth_analytics_${range}`;
+    try {
+      const cached = JSON.parse(window.sessionStorage.getItem(cacheKey) || 'null');
+      if (cached?.savedAt && Date.now() - cached.savedAt < 5 * 60 * 1000) {
+        setData(cached.data);
+        return undefined;
+      }
+    } catch {
+      // Fetch fresh data when session storage is unavailable or malformed.
+    }
+
+    let active = true;
+    fetchNotificationAnalyticsData()
+      .then((nextData) => {
+        if (!active) return;
+        setData(nextData);
+        try {
+          window.sessionStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), data: nextData }));
+        } catch {
+          // Ignore storage quota/private-mode errors.
+        }
+      })
+      .catch(() => {
+        if (active) setData(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [range]);
 
   const selected = data?.stats?.timeRangeAnalytics?.find((item) => item.id === range);
   const cards = [
