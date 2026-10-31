@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-10-31-Student-Push-Opt-In
+
+- Added a prominent student-portal push notification opt-in card with job-alert benefits, `Enable job alerts`, and `Not now` actions.
+- The reminder appears on student portal screens when permission is still undecided and returns after 24 hours if postponed.
+- Functional E2E & Mobile UI: Pending authenticated browser-permission journey evidence.
+
 ## QA-2026-10-31-Admin-Growth-Analytics
 
 - Added time-range analytics to the admin Notifications dashboard for push subscriptions, student registrations, employer registrations, and employer job submissions.

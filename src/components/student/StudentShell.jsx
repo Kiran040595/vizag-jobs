@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
 import QuestionNotificationBell from '../QuestionNotificationBell';
+import StudentPushOptInCard from './StudentPushOptInCard';
 
 const navItems = [
   { label: 'My profile', to: '/student/profile' },
@@ -63,7 +64,10 @@ export default function StudentShell({ children, title, description }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl min-w-0 px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl min-w-0 px-3 py-6 pb-mobile-chrome sm:px-6 sm:py-8 lg:px-8">
+        <StudentPushOptInCard userId={user?.id} />
+        {children}
+      </main>
     </div>
   );
 }
