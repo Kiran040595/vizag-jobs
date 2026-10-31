@@ -29,7 +29,7 @@ export const CURATED_COMPANIES = {
   },
   'Tech Mahindra': {
     website: 'https://www.techmahindra.com',
-    careers_url: 'https://careers.techmahindra.com',
+    careers_url: 'https://careers.techmahindra.com/CurrentOpportunity.aspx',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },

@@ -48,7 +48,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Tech Mahindra': {
     website: 'https://www.techmahindra.com',
-    careers_url: 'https://careers.techmahindra.com/',
+    careers_url: 'https://careers.techmahindra.com/CurrentOpportunity.aspx',
     category: 'IT & Software',
   },
   'Conduent': {

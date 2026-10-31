@@ -73,7 +73,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Tech Mahindra',
-    careers_url: 'https://careers.techmahindra.com/',
+    careers_url: 'https://careers.techmahindra.com/CurrentOpportunity.aspx',
     category: 'IT & Software',
     location: 'Visakhapatnam, Tech Mahindra SEZ Rushikonda',
   },
