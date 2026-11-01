@@ -51,6 +51,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'miracle software systems inc': 'https://careers.miraclesoft.com/open-positions/',
   miraclesoft: 'https://careers.miraclesoft.com/open-positions/',
   innocito: 'https://innocito.com/careers',
+  paytm: 'https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -155,7 +156,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const sailsSoftware = host === 'careers.sailssoftware.com' && parsedUrl.pathname.startsWith('/sailssoftware');
   const miracle = host === 'careers.miraclesoft.com' && parsedUrl.pathname === '/open-positions/';
   const innocito = ['innocito.com', 'www.innocito.com'].includes(host) && parsedUrl.pathname === '/careers';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito) return null;
+  const paytm = host === 'jobs.lever.co' && parsedUrl.pathname === '/paytm' && parsedUrl.searchParams.get('location') === 'Vizag, Andhra Pradesh';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -221,6 +223,32 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         } as ExtractedCompanyCareerJob;
       } catch { return null; }
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (paytm) {
+    const response = await fetch('https://api.lever.co/v0/postings/paytm?mode=json', { signal: AbortSignal.timeout(20000) });
+    if (!response.ok) throw new Error(`Official careers API returned ${response.status}`);
+    const payload = await response.json();
+    const jobs = (Array.isArray(payload) ? payload : []).flatMap((posting: Record<string, unknown>) => {
+      const categories = posting.categories as { location?: string; commitment?: string; team?: string } | undefined;
+      const location = String(categories?.location || '');
+      const title = String(posting.text || '').trim();
+      const id = String(posting.id || '');
+      const hostedUrl = String(posting.hostedUrl || '');
+      const description = String(posting.descriptionPlain || '').trim().slice(0, 20000);
+      if (!/^(vizag|visakhapatnam),\s*andhra pradesh$/i.test(location) || !title || !/^[0-9a-f-]{36}$/i.test(id)) return [];
+      if (hostedUrl !== `https://jobs.lever.co/paytm/${id}` || description.length < 80) return [];
+      return [{
+        title,
+        company,
+        location: 'Visakhapatnam, Andhra Pradesh, India',
+        category: String(categories?.team || ''),
+        job_type: String(categories?.commitment || ''),
+        work_mode: String(posting.workplaceType || ''),
+        description,
+        apply_link: hostedUrl,
+      } as ExtractedCompanyCareerJob];
+    });
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   const fetchUrl = amazon ? url.replace('/en/search?', '/en/search.json?') + '&result_limit=100' : url;

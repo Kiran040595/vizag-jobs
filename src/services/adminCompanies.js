@@ -501,6 +501,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://www.phonepe.com/careers/',
     category: 'Banking & Finance',
   },
+  'Paytm': {
+    website: 'https://paytm.com',
+    careers_url: 'https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh',
+    category: 'Banking & Finance',
+  },
 
   // Hospitality & Retail
   'Accor': {

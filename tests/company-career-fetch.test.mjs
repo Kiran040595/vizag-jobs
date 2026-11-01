@@ -180,6 +180,32 @@ test('Innocito server-rendered records retain Vizag jobs and reject Hyderabad jo
   assert.deepEqual(jobs[0].skills, ['Python, Django/Flask']);
 });
 
+test('Paytm official Lever feed retains only its Vizag posting with a direct link', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.equal(String(url), 'https://api.lever.co/v0/postings/paytm?mode=json');
+    const posting = (id, location) => ({
+      id,
+      text: location.startsWith('Vizag') ? 'Area Collection Manager' : 'Other City Manager',
+      categories: { location, commitment: 'Full-time Employment', team: 'Collections' },
+      workplaceType: 'onsite',
+      hostedUrl: `https://jobs.lever.co/paytm/${id}`,
+      descriptionPlain: 'Detailed official responsibilities, required experience, collection strategy, leadership expectations, and candidate qualifications for this current role.',
+    });
+    return Response.json([
+      posting('7c317d05-b1ff-443f-975a-5b96e2728ac5', 'Vizag, Andhra Pradesh'),
+      posting('1c317d05-b1ff-443f-975a-5b96e2728ac6', 'Hyderabad, Telangana'),
+    ]);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.paytm, 'Paytm');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Area Collection Manager');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.lever.co/paytm/7c317d05-b1ff-443f-975a-5b96e2728ac5');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

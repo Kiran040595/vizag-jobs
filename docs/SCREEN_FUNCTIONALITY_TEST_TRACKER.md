@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Paytm-Verified-Careers
+
+- Replaced Paytm's generated marketing careers URL with its official Lever board filtered to Vizag and added native Lever API extraction.
+- Live backend verification returned 1 current Paytm role with explicit Vizag location, a full description and a direct employer application link. Separate Paytm Payments Services roles are not attributed to the parent company.
+- Scraper tests, defaults and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Innocito-Verified-Careers
 
 - Verified Innocito's employer-owned careers page and added native parsing of its server-rendered vacancy records.

@@ -525,6 +525,12 @@ export const CURATED_COMPANIES = {
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
+  'Paytm': {
+    website: 'https://paytm.com',
+    careers_url: 'https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh',
+    category: 'Banking & Finance',
+    is_active_for_scrape: true,
+  },
   'Policybazaar': {
     website: 'https://www.policybazaar.com',
     careers_url: 'https://www.policybazaar.com/careers/',
