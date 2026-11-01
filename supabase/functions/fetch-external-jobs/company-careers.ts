@@ -44,6 +44,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'vodafone idea limited': 'https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam',
   'h&m': 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
   'celestinfo software solutions pvt. ltd.': 'https://www.celestinfo.com/careers.html',
+  xtglobal: 'https://xtglobal.zohorecruit.in/jobs/Careers',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -95,7 +96,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo) return null;
+  const xtglobal = host === 'xtglobal.zohorecruit.in' && parsedUrl.pathname === '/jobs/Careers';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -144,6 +146,33 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   const html = await page.text();
+  if (xtglobal) {
+    const marker = '<input type="hidden" value="[{&#34;Remote_Job&#34;';
+    const idx = html.indexOf(marker);
+    if (idx < 0) return { content: JSON.stringify({ jobs: [] }), structuredJobs: [], count: 0, resolvedUrl: url, source: 'direct_portal' as const };
+    const valueStart = idx + '<input type="hidden" value="'.length;
+    const endIdx = html.indexOf('}]"', valueStart);
+    if (endIdx < 0) return { content: JSON.stringify({ jobs: [] }), structuredJobs: [], count: 0, resolvedUrl: url, source: 'direct_portal' as const };
+    const raw = html.slice(valueStart, endIdx + 2);
+    const decoded = raw.replaceAll('&#34;', '"').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&#39;', "'");
+    const records = JSON.parse(decoded);
+    const vizagRecords = (Array.isArray(records) ? records : []).filter((r: Record<string, unknown>) => {
+      const city = String(r.City || '');
+      const desc = String(r.Job_Description || '');
+      return /\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(`${city} ${desc}`);
+    });
+    const jobs: ExtractedCompanyCareerJob[] = vizagRecords.map((r: Record<string, unknown>) => {
+      const title = String(r.Posting_Title || '');
+      let location = String(r.City || 'Visakhapatnam');
+      if (!/\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(location)) {
+        location = `${location} / Visakhapatnam`;
+      }
+      const description = htmlToCleanMarkdown(String(r.Job_Description || ''), url).slice(0, 20000);
+      const apply_link = `https://xtglobal.zohorecruit.in/jobs/Careers/${r.id}`;
+      return { title, company, location, description, apply_link };
+    }).filter((j: ExtractedCompanyCareerJob) => j.title && j.description.length >= 80);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   const rows = celestinfo ? [...new Set([...html.matchAll(/href=["'](https:\/\/nebula\.celestinfo\.com\/careers\/[^"'?]+)\/apply(?:\?[^"']*)?["']/gi)].map((m) => m[1]))]
     .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : marriott || accor ? [...new Set([...html.matchAll(/href=["'](\/[^"']*\/job\/[^"']+)["']/g)].map((m) => new URL(m[1], url).href))]
     .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
@@ -433,6 +462,14 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerUrl.includes('celestinfo.com/careers')
   ) {
     return 'https://celestinfo.com/careers.html';
+  }
+
+  if (
+    lowerName.includes('xtglobal') ||
+    lowerUrl.includes('xtglobal.com') ||
+    lowerUrl.includes('xtglobal.zohorecruit.in')
+  ) {
+    return 'https://xtglobal.zohorecruit.in/jobs/Careers';
   }
 
   if (

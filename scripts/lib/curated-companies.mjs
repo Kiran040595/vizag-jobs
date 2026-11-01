@@ -107,13 +107,13 @@ export const CURATED_COMPANIES = {
   },
   'XTGlobal': {
     website: 'https://xtglobal.com',
-    careers_url: 'https://xtglobal.com/careers/',
+    careers_url: 'https://xtglobal.zohorecruit.in/jobs/Careers',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
   'XTGLOBAL': {
     website: 'https://xtglobal.com',
-    careers_url: 'https://xtglobal.com/careers/',
+    careers_url: 'https://xtglobal.zohorecruit.in/jobs/Careers',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },

@@ -128,7 +128,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'XTGlobal': {
     website: 'https://www.xtglobal.com',
-    careers_url: 'https://xtglobal.com/careers/',
+    careers_url: 'https://xtglobal.zohorecruit.in/jobs/Careers',
     category: 'IT & Software',
   },
   'Amazon': {

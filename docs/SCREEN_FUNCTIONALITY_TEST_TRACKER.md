@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-XTGlobal-Verified-Careers
+
+- Added XTGlobal's official Zoho Recruit careers portal (`https://xtglobal.zohorecruit.in/jobs/Careers`) and native embedded catalog extraction.
+- Live backend verification extracted 61 roles with explicit Visakhapatnam/Vizag evidence in city or job description, complete descriptions, and direct application links (`https://xtglobal.zohorecruit.in/jobs/Careers/:id`).
+- Scraper tests, TypeScript validation, and directory defaults updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Celestinfo-Verified-Careers
 
 - Added Celestinfo's company-owned careers page and native detail extraction. Application tracking/query parameters are removed, employer schema is validated, and remote-only postings without explicit Visakhapatnam are excluded.

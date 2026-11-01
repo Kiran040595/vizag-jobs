@@ -18,6 +18,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Vodafone Idea Limited | https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam | Official SuccessFactors location search currently returns 1 active row explicitly in Visakhapatnam, with an individual official job page and full description |
 | H&M | https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam | Official SmartRecruiters API currently returns 2 active H&M Group postings explicitly in Vishakhapatnam. Native extraction validates the HMGroup employer identifier and posting city before retaining descriptions/direct links |
 | Celestinfo Software Solutions | https://www.celestinfo.com/careers.html | Company-owned page exposes individual current applications; native extraction follows each company-owned detail page, validates Celestinfo JobPosting employer schema, and keeps only roles whose posting location explicitly includes Visakhapatnam |
+| XTGlobal | https://xtglobal.zohorecruit.in/jobs/Careers | Official Zoho Recruit portal embeds 61 current roles explicitly mentioning Visakhapatnam/Vizag across hybrid and direct office postings; native extractor parses structured records and direct application links |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -47,9 +48,9 @@ Posting IDs from the live check:
 | --- | --- |
 | Miracle Software Systems | Jobs loaded through employer JavaScript/API; no verified city-filtered public URL yet |
 | Innocito | Current careers page mixes Hyderabad and Vizag; a persistent city-filtered URL is not yet verified |
-| Patra India | Official jobs site uses iCIMS/Jibe; city filter needs verification |
-| Mouri Tech | Corporate careers page links to India jobs; city-filtered destination needs verification |
-| XTGlobal | Corporate site links to xtglobal.zohorecruit.in; city-filtered destination needs verification |
+| Patra India | Official Jibe API (`/api/jobs?location=Visakhapatnam`) returns 200 but ignores city parameter and lists US/Canada roles; no active Vizag openings verified |
+| Mouri Tech | India careers page uses Ceipal ATS widget with API key, but Ceipal blocks external server requests (`400 This method is not allowed from outside of the Career Portal`); direct feed remains unverified |
+| Symbiosys Technologies | Careers page is a general resume intake/mailto portal rather than an individual job vacancy feed |
 | Sails Software | Corporate site links to careers.sailssoftware.com/sailssoftware/; city filter needs verification |
 | Biocon | Official locationsearch returned no rows; no live Vizag vacancy verified |
 | Adani | SuccessFactors-style search URL returns 404; actual employer ATS city filter remains unverified |

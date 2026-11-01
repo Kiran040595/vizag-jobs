@@ -73,6 +73,26 @@ test('Schema-based verified portals retain only current Vizag postings', async (
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('XTGlobal embedded Zoho Recruit jobs extract Vizag roles with direct links', async () => {
+  const originalFetch = globalThis.fetch;
+  const mockHtml = `<input type="hidden" value="[{&#34;Remote_Job&#34;:false,&#34;Posting_Title&#34;:&#34;Software Test Lead&#34;,&#34;Is_Locked&#34;:false,&#34;City&#34;:&#34;Hyderabad / Vizag&#34;,&#34;Job_Description&#34;:&#34;Software Test Lead in Visakhapatnam office with experience in testing. Full responsibilities and qualifications.&#34;,&#34;id&#34;:&#34;172414000004465027&#34;,&#34;Publish&#34;:true},{&#34;Remote_Job&#34;:false,&#34;Posting_Title&#34;:&#34;Dallas Developer&#34;,&#34;Is_Locked&#34;:false,&#34;City&#34;:&#34;Dallas&#34;,&#34;Job_Description&#34;:&#34;Dallas Texas role only with no India connection.&#34;,&#34;id&#34;:&#34;172414000009999999&#34;,&#34;Publish&#34;:true}]">`;
+  globalThis.fetch = async (url) => {
+    if (String(url) === VERIFIED_VIZAG_PORTALS.xtglobal) {
+      return new Response(mockHtml, { status: 200 });
+    }
+    return new Response('', { status: 404 });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.xtglobal, 'XTGlobal');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Software Test Lead');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://xtglobal.zohorecruit.in/jobs/Careers/172414000004465027');
+    assert.match(result.structuredJobs[0].description, /Software Test Lead in Visakhapatnam/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
