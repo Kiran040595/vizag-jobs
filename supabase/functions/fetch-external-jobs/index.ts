@@ -6121,9 +6121,8 @@ Deno.serve(async (req) => {
         if (!title) continue;
 
         const location =
-          (typeof rawJob.location === 'string' && rawJob.location.trim()) ||
-          companyTarget.location ||
-          'Visakhapatnam';
+          (typeof rawJob.location === 'string' && rawJob.location.trim()) || '';
+        if (!/\b(visakhapatnam|vishakhapatnam|vizag|vsp|rushikonda|duvvada|gajuwaka|gambheeram|parawada|sheela\s*nagar|madhurawada|pendurthi|anakapalle|anakapalli|bhimili|bheemili|vsez)\b/i.test(location)) continue;
         const category =
           normalizeJobCategory(rawJob.category || companyTarget.category) ||
           companyTarget.category ||

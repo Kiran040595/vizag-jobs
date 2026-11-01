@@ -18,6 +18,18 @@ import {
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
 import { resolveCanonicalCareerPortalUrl } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
+test('Company career publication requires explicit Vizag evidence', async () => {
+  for (const location of ['', 'India', 'Andhra Pradesh', 'Remote', 'Chennai', 'London']) {
+    let writes = 0;
+    await assert.rejects(publishSingleCompanyJob({
+      company: { name: 'Example', careersUrl: 'https://example.com/careers' },
+      job: { title: 'Developer', company: 'Example', location, apply_link: 'https://example.com/job/1' },
+      services: { createAdminJob: async () => { writes += 1; } },
+    }), /Cannot publish company job/);
+    assert.equal(writes, 0);
+  }
+});
+
 test('Company Career Fetch: URL & Title Key Normalization', async (t) => {
   await t.test('normalizes URLs by trimming and stripping trailing slashes', () => {
     assert.equal(

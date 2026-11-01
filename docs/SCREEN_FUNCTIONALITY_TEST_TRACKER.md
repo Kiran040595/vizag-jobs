@@ -1,5 +1,14 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Verified-Company-Directory
+
+- Public Directory now requires approval for the exact saved careers URL; URL changes revoke approval. Historical bulk approvals were cleared because keyword mentions do not verify vacancies.
+- Pfizer Workday CXS returned seven explicit Visakhapatnam roles on this pass; its matching records are reapproved. Other companies remain available privately to admins for fetch/review and verification.
+- Admin directory approval now asks the admin to certify the Vizag career destination. Scheduled fetching requires matching verified URL and no longer falls back to the unverified catalog when no approved companies exist.
+- Publication rejects missing/non-Vizag locations, including the final individual publish action. Company location no longer supplies a default for an unknown job location.
+- Automated company fetch orchestration and final publication rejection checks passed (32 tests); these are mocked checks, not browser E2E evidence.
+- Functional E2E: pending authenticated admin fetch/review/SEO/publish journey. Mobile UI: pending approval-control review. Live publication has not been exercised.
+
 ## QA-2026-10-31-KumarDadi-Naukri-Fallback-Configuration
 
 - Documented the private secret name and fallback actor ID (`olcRsxLcViAF8Jw5O`) for the KumarDadi Naukri account.

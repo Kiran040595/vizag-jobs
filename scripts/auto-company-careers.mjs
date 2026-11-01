@@ -321,7 +321,8 @@ async function main() {
           .not('careers_url', 'is', null)
           .range(from, from + pageSize - 1);
 
-        if (error || !page || page.length === 0) break;
+        if (error) throw error;
+        if (!page || page.length === 0) break;
         dbCompanies = dbCompanies.concat(page);
         if (page.length < pageSize) break;
         from += pageSize;
@@ -334,19 +335,16 @@ async function main() {
           careers_url: c.careers_url,
           category: c.category || 'General',
           location_hint: c.location || 'Visakhapatnam',
-          active: true,
+          active: c.verified_careers_url === c.careers_url,
         }));
       }
     }
   } catch (dbErr) {
-    log(`Notice: Database companies query skipped (${dbErr.message}). Using catalog file fallback.`);
+    throw new Error(`Cannot verify approved company targets: ${dbErr.message}`);
   }
 
   if (companies.length === 0) {
-    const catalogPath = path.join(projectRoot, 'data', 'vizag-company-careers.json');
-    if (fs.existsSync(catalogPath)) {
-      companies = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-    }
+    log('No approved company portals available. No jobs will be published.');
   }
 
   companies = companies.filter((c) => {
@@ -444,7 +442,7 @@ async function main() {
         const job = {
           ...rawJob,
           company: company.name,
-          location: rawJob.location || 'Visakhapatnam',
+          location: rawJob.location || '',
           category: rawJob.category || company.category || 'General',
           source_name: 'Direct Company Website',
           source_url: effectiveCareersUrl,

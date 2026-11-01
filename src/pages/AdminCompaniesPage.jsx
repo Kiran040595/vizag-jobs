@@ -219,6 +219,7 @@ export default function AdminCompaniesPage() {
 
   const handleToggleDirectoryApproval = async (comp) => {
     const nextVal = !comp.isDirectoryApproved;
+    if (nextVal && (!comp.careersUrl || !window.confirm(`Confirm you checked ${comp.name}'s careers URL and verified it provides this company's Vizag vacancies. Approving makes this URL public and eligible for scheduled fetching.`))) return;
     try {
       await toggleCompanyDirectoryApproval({
         name: comp.name,
@@ -857,9 +858,9 @@ export default function AdminCompaniesPage() {
                             ? 'border border-cyan-300 bg-cyan-50 text-cyan-800 hover:bg-cyan-100'
                             : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
                         }`}
-                        title="Toggle visibility in public /companies directory"
+                        title="Approve a verified Vizag careers URL for the public directory"
                       >
-                        <span>{comp.isDirectoryApproved ? '🌟 In Directory' : '+ Add to Directory'}</span>
+                        <span>{comp.isDirectoryApproved ? '🌟 In Directory' : 'Verify & Add to Directory'}</span>
                       </button>
 
                       {/* Auto-Scrape Toggle */}

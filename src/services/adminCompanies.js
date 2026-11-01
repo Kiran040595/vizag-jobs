@@ -924,15 +924,17 @@ export async function toggleCompanyDirectoryApproval({ name, isDirectoryApproved
   if (!supabase) return;
 
   try {
-    await supabase
+    const { error } = await supabase
       .from('companies')
       .update({
         is_directory_approved: Boolean(isDirectoryApproved),
         updated_at: new Date().toISOString(),
       })
       .eq('name', cleanName);
+    if (error) throw error;
   } catch (err) {
     console.warn('Could not update company directory approval:', err);
+    throw err;
   }
 }
 
@@ -1017,7 +1019,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
   // Fetch approved companies
   const companiesRes = await supabase
     .from('companies')
-    .select('id, name, website, linkedin_url, careers_url, category, location, is_directory_approved, notes')
+    .select('id, name, website, linkedin_url, careers_url, verified_careers_url, category, location, is_directory_approved, notes')
     .eq('is_directory_approved', true)
     .limit(1000);
 
@@ -1052,11 +1054,8 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
 
   const result = rawList
     .filter((c) => {
+      if (!c.careers_url || c.verified_careers_url !== c.careers_url) return false;
       const key = normalizeCompName(c.name);
-      const local = localOverrides[c.name];
-      if (local && local.is_directory_approved !== undefined) {
-        return Boolean(local.is_directory_approved);
-      }
       if (EXCLUDED_DIRECTORY_COMPANIES.has(key)) {
         return false;
       }
@@ -1070,7 +1069,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       const activeJobsCount = exactJobCounts.get(key) || 0;
       const website = local.website || c.website || known.website || '';
       const linkedinUrl = local.linkedin_url || c.linkedin_url || '';
-      const careersUrl = local.careers_url || c.careers_url || known.careers_url || '';
+      const careersUrl = c.verified_careers_url;
 
       return {
         id: c.id,

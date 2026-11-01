@@ -153,7 +153,7 @@ export function shouldSkipCompanyCareerJob(job, companyCareersUrl, existingIndex
   }
 
   const location = String(job?.location || '').trim();
-  if (location && !isVizagEligibleJobLocation(location, { isVizagCompany: true })) {
+  if (!VIZAG_LOCATION_KEYWORDS.test(location)) {
     return { skip: true, reason: `location "${location}" is outside Visakhapatnam / Vizag` };
   }
 
@@ -267,7 +267,7 @@ export async function fetchAndClassifyCompanyJobs({
       source_name: 'Direct Company Website',
       source_url: careersUrl,
       apply_link: resolveCompanyJobApplyLink(rawJob, careersUrl),
-      location: rawJob.location || 'Visakhapatnam',
+      location: rawJob.location || '',
       category: rawJob.category || company?.category || 'General',
     };
 
@@ -352,6 +352,9 @@ export async function publishSingleCompanyJob({
   const publishFn = services.createAdminJob ?? createAdminJob;
   const companyName = String(company?.name || job?.company || '').trim();
   const careersUrl = String(company?.careersUrl || company?.careers_url || job?.source_url || '').trim();
+
+  const validation = shouldSkipCompanyCareerJob(job, careersUrl, existingIndex);
+  if (validation.skip) throw new Error(`Cannot publish company job: ${validation.reason}`);
 
   const saved = await publishFn(job, 'published');
 
