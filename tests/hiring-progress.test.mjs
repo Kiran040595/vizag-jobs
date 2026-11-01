@@ -19,14 +19,18 @@ const studentApplicationsPageSrc = readFileSync(path.join(repoRoot, 'src/pages/S
 const jobDetailsPageSrc = readFileSync(path.join(repoRoot, 'src/pages/JobDetailsPage.jsx'), 'utf8');
 const hiringProgressCardSrc = readFileSync(path.join(repoRoot, 'src/components/student/HiringProgressCard.jsx'), 'utf8');
 
-test('MIN_APPLICATIONS_TO_UNLOCK is set to 50', () => {
-  assert.equal(MIN_APPLICATIONS_TO_UNLOCK, 50);
+test('MIN_APPLICATIONS_TO_UNLOCK is set to 10', () => {
+  assert.equal(MIN_APPLICATIONS_TO_UNLOCK, 10);
 });
 
-test('isHiringProgressUnlocked strictly requires total applications > 50 and unlocked flag', () => {
-  // Over threshold and unlocked -> true
+test('isHiringProgressUnlocked strictly requires total applications >= 10 and unlocked flag', () => {
+  // Reached threshold (>= 10) and unlocked -> true
   assert.equal(
-    isHiringProgressUnlocked({ unlocked: true, totalApplications: 51 }),
+    isHiringProgressUnlocked({ unlocked: true, totalApplications: 10 }),
+    true,
+  );
+  assert.equal(
+    isHiringProgressUnlocked({ unlocked: true, totalApplications: 11 }),
     true,
   );
   assert.equal(
@@ -34,21 +38,19 @@ test('isHiringProgressUnlocked strictly requires total applications > 50 and unl
     true,
   );
 
-  // Exactly 50 (not greater than 50) -> false
+  // Less than 10 -> false
   assert.equal(
-    isHiringProgressUnlocked({ unlocked: true, totalApplications: 50 }),
+    isHiringProgressUnlocked({ unlocked: true, totalApplications: 9 }),
     false,
   );
-
-  // Less than 50 -> false
   assert.equal(
-    isHiringProgressUnlocked({ unlocked: true, totalApplications: 24 }),
+    isHiringProgressUnlocked({ unlocked: true, totalApplications: 5 }),
     false,
   );
 
   // Over threshold but employer has not taken action (unlocked is false) -> false
   assert.equal(
-    isHiringProgressUnlocked({ unlocked: false, totalApplications: 90 }),
+    isHiringProgressUnlocked({ unlocked: false, totalApplications: 25 }),
     false,
   );
 

@@ -2,11 +2,11 @@
  * Utility functions for candidate-facing job hiring progress & application transparency.
  *
  * Rules:
- * 1. Progress is only unlocked when totalApplications > 50 AND employer/admin has acted on at least one application.
+ * 1. Progress is only unlocked when totalApplications >= 10 AND employer/admin has acted on at least one application.
  * 2. If locked, total application counts and funnel metrics are concealed to maintain privacy and calm UX.
  */
 
-export const MIN_APPLICATIONS_TO_UNLOCK = 50;
+export const MIN_APPLICATIONS_TO_UNLOCK = 10;
 
 export const HIRING_STAGE_LABELS = {
   reviewing: 'Actively reviewing applications',
@@ -29,7 +29,7 @@ export const mapHiringProgressRow = (row) => {
 
   const total = Number(row.total_applications ?? row.totalApplications);
   const totalApplications = Number.isFinite(total) && total > 0 ? total : null;
-  const unlocked = Boolean(row.unlocked && totalApplications !== null && totalApplications > MIN_APPLICATIONS_TO_UNLOCK);
+  const unlocked = Boolean(row.unlocked && totalApplications !== null && totalApplications >= MIN_APPLICATIONS_TO_UNLOCK);
 
   return {
     jobId: row.job_id || row.jobId || null,
@@ -49,7 +49,7 @@ export const isHiringProgressUnlocked = (progress) => {
     progress &&
     progress.unlocked &&
     typeof progress.totalApplications === 'number' &&
-    progress.totalApplications > MIN_APPLICATIONS_TO_UNLOCK,
+    progress.totalApplications >= MIN_APPLICATIONS_TO_UNLOCK,
   );
 };
 

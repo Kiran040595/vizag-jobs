@@ -450,7 +450,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S023 | `/student/reset-password` | Use valid/expired recovery link; validate matching passwords; sign in with new password | In progress | In progress | UI continuation 2026-10-14: Student recovery pages: bottom navigation clearance and 44px return link |
 | S024 | `/student` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
 | S025 | `/student/profile` | Load, validate, edit and save profile; reload to verify persistence; resume upload, viewing signed URL and replacement; preferences and shared roles | In progress | In progress | QA-2026-10-23-Candidate-Resume: resume attachment status, signed URL viewing, and upload/replace integrated into profile form; affected persistence/E2E and mobile verification reopened/pending |
-| S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records; hiring progress card & transparency (applicant count > 50 & employer activity trigger); funnel metrics and stage badges; Web Push notification opt-in banner and status change deep linking | In progress | In progress | QA-2026-10-25: Candidate hiring progress transparency unlocked (>50 apps & employer action) verified; Web Push opt-in banner and deep-link alert focusing added |
+| S026 | `/student/applied-jobs` | View own applications, counts, status and interview details; empty state; verify other users cannot access records; hiring progress card & transparency (applicant count >= 10 & employer activity trigger); funnel metrics and stage badges; Web Push notification opt-in banner and status change deep linking | In progress | In progress | QA-2026-10-25: Candidate hiring progress transparency unlocked (>50 apps & employer action) verified; Web Push opt-in banner and deep-link alert focusing added |
 | S027 | `/student/applications` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day4: mobile redirect verified, full journey pending |
 | S028 | `/student/apply/:jobId` | Authenticate; eligibility/profile checks; resume upload or reuse; submit once; verify application in student and recruiter views; instant post-apply Web Push opt-in prompt card in success modal | In progress | In progress | QA-2026-10-25: Post-apply Web Push opt-in prompt card integrated into success modal with instant browser permission request and subscription persistence |
 | S029 | `/admin` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | UI continuation 2026-10-14: Admin control sizing/focus baseline; stacked job/blog form actions; SQL toggle layout; labelled job filters; bounded import report and detail grids |
@@ -489,7 +489,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S062 | `/jobs/part-time` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S063 | `/jobs/vizagjobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S064 | `/jobs/:jobSegment/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
-| S065 | `/job/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job; applied candidate hiring progress card when unlocked (>50 apps & active review) | In progress | In progress | QA-2026-10-25: Applied student hiring progress display integrated into job details view |
+| S065 | `/job/:jobSlug` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job; applied candidate hiring progress card when unlocked (>= 10 apps & active review) | In progress | In progress | QA-2026-10-25: Applied student hiring progress display integrated into job details view |
 | S066 | `/jobs/:jobId` | Resolve job identifier; auth gate; details, eligibility, save/share/apply, questions and similar jobs; missing/expired job | In progress | In progress | QA-2026-10-14-UI-Day2: mobile UI verified, full journey pending |
 | S067 | `/jobs/civil` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S068 | `/jobs/mechanical` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
@@ -1331,4 +1331,28 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
   - Production build: `npm run build` completed cleanly in 7.97s with 0 errors.
   - Mobile touch targets adhere to min 44px standard (`min-h-11`/`min-h-12`).
+
+## QA-2026-11-01: Candidate Hiring Progress Transparency Threshold Adjusted to 10 Applications
+
+- Scope:
+  - S026 `/student/applied-jobs` (`StudentApplicationsPage.jsx` & `HiringProgressCard.jsx`)
+  - S065 `/job/:jobSlug` (`JobDetailsPage.jsx` & `HiringProgressCard.jsx`)
+  - Shared utility: `src/lib/hiringProgress.js`
+  - Database RPC functions: `supabase/migrations/20261101140000_adjust_hiring_progress_threshold_to_10.sql`
+- User Request Addressed:
+  - *"we are displying jobs status onformation to the applied students like how many applied , how may many viewd or interview scheduled all thsi information only if it reaches 50 applicatiosn right ? can we adjusted to show after 10 applications"*
+  - *"please adjust this and push teh code to git"*
+- Implementation & Key Changes:
+  1. **Threshold Lowered to 10 Applications**:
+     - Adjusted `MIN_APPLICATIONS_TO_UNLOCK` in `src/lib/hiringProgress.js` from 50 to 10.
+     - Changed condition to `totalApplications >= MIN_APPLICATIONS_TO_UNLOCK` so reaching 10 applications immediately unlocks transparency once employer reviews candidates.
+  2. **Database Migration**:
+     - Added `supabase/migrations/20261101140000_adjust_hiring_progress_threshold_to_10.sql` replacing `public.get_my_applied_jobs_hiring_progress()` and `public.get_job_hiring_progress(p_job_id)` with `total_apps >= 10`.
+  3. **Automated Tests**:
+     - Updated `tests/hiring-progress.test.mjs` verifying `MIN_APPLICATIONS_TO_UNLOCK = 10` and threshold unlocking at `>= 10` applications.
+- Verification Evidence:
+  - Automated tests: `node --test tests/*.test.mjs` passed 269/269 tests (100% pass rate).
+  - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Production build: `npm run build` completed cleanly with 0 errors.
+
 
