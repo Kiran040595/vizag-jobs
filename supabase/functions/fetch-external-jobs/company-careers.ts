@@ -40,6 +40,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   jll: 'https://jll.wd1.myworkdayjobs.com/JLLCareers?locations=38ccc50fa540014356996861e2cc9f0e',
   marriott: 'https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam',
   accor: 'https://careers.accor.com/global/en/jobs?options=992&page=1',
+  amazon: 'https://www.amazon.jobs/en/search?city=Visakhapatnam&country=IND&county=Visakhapatnam&latitude=17.7199&loc_query=Visakhapatnam%2C+Andhra+Pradesh%2C+India&longitude=83.26281&radius=24km&region=Andhra+Pradesh',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -80,16 +81,37 @@ export function parseSuccessFactorsVizagJobs(html: string, baseUrl: string, comp
 
 /** Read official filtered listings and each posting's description directly. */
 export async function scrapeVerifiedVizagPortal(url: string, company: string) {
-  const host = new URL(url).hostname;
+  const parsedUrl = new URL(url);
+  const host = parsedUrl.hostname;
+  const amazon = host === 'www.amazon.jobs' && parsedUrl.pathname === '/en/search' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
   const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com'].includes(host);
   const idfc = host === 'careers.idfcfirst.bank.in';
   const marriott = host === 'careers.marriott.com' && new URL(url).pathname === '/jobs';
   const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor) return null;
-  const page = await fetch(url, { signal: AbortSignal.timeout(20000) });
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon) return null;
+  const fetchUrl = amazon ? url.replace('/en/search?', '/en/search.json?') + '&result_limit=100' : url;
+  const page = await fetch(fetchUrl, { signal: AbortSignal.timeout(20000) });
   if (!page.ok) throw new Error(`Official careers search returned ${page.status}`);
+  if (amazon) {
+    const payload = await page.json();
+    const jobs = (Array.isArray(payload.jobs) ? payload.jobs : []).flatMap((posting: Record<string, unknown>) => {
+      const locations = (Array.isArray(posting.locations) ? posting.locations : []).flatMap((entry) => {
+        try { return [JSON.parse(String(entry))]; } catch { return []; }
+      });
+      const vizagLocations = locations.filter((entry) => /\b(visakhapatnam|vishakapatnam|vizag)\b/i.test(`${entry.city || ''} ${entry.normalizedLocation || ''}`));
+      if (!vizagLocations.length || !posting.title || !posting.job_path) return [];
+      const description = htmlToCleanMarkdown(`${posting.description || ''}\n${posting.basic_qualifications || ''}\n${posting.preferred_qualifications || ''}`, url).slice(0, 20000);
+      if (description.length < 80) return [];
+      return [{
+        title: String(posting.title), company,
+        location: vizagLocations.map((entry) => entry.city || entry.normalizedLocation).join(', '),
+        description, apply_link: new URL(String(posting.job_path), url).href,
+      } as ExtractedCompanyCareerJob];
+    });
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   const html = await page.text();
   const rows = marriott || accor ? [...new Set([...html.matchAll(/href=["'](\/[^"']*\/job\/[^"']+)["']/g)].map((m) => new URL(m[1], url).href))]
     .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
@@ -349,7 +371,7 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerName.includes('amazon') &&
     (lowerUrl === 'https://www.amazon.jobs' || lowerUrl === 'https://www.amazon.jobs/' || !lowerUrl.includes('base_query'))
   ) {
-    return 'https://www.amazon.jobs/en/search?base_query=Visakhapatnam';
+    return VERIFIED_VIZAG_PORTALS.amazon;
   }
 
   if (

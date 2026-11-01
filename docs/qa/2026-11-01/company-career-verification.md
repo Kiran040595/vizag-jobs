@@ -14,6 +14,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | JLL | https://jll.wd1.myworkdayjobs.com/JLLCareers?locations=38ccc50fa540014356996861e2cc9f0e | Workday's City facet identifies Visakhapatnam, AP. Filtered API returns 2 jobs. Shared Workday extractor fetched both descriptions and direct application links |
 | Marriott | https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam | Search shows 5 jobs. All five posting schemas identify Visakhapatnam; descriptions and direct job URLs extracted successfully |
 | Accor | https://careers.accor.com/global/en/jobs?options=992&page=1 | Official option 992 is labelled Visakhapatnam. The filtered page returns 8 jobs; every posting schema identifies Novotel Visakhapatnam Varun Beach and supplies a direct application URL |
+| Amazon | https://www.amazon.jobs/en/search?city=Visakhapatnam&country=IND&county=Visakhapatnam&latitude=17.7199&loc_query=Visakhapatnam%2C+Andhra+Pradesh%2C+India&longitude=83.26281&radius=24km&region=Andhra+Pradesh | Official city/radius search returns 5 current postings. Native JSON extraction keeps a posting only when its full location array explicitly includes Visakhapatnam, including multi-location virtual roles |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -31,6 +32,7 @@ Posting IDs from the live check:
 - JLL: REQ543568 (Professional, PDS Projects), REQ513383 (Design Coordination Assistant).
 - Marriott: P1-7199228-0, P1-7199249-0, P1-7090732-0, P1-7199285-0, P1-7169509-0.
 - Accor: 106835, 114610, 114343, 110930, 110932, 109729, 109559, 108883.
+- Amazon: 10394495, 10555915, 10514854, 10528078, 10438529.
 - Fluentgrid: database-engineer-postgresql, functional-domain-expert,
   java-integration-expert, system-engineer, security-engineer,
   infrastructure-lead, it-security-lead,
@@ -46,7 +48,6 @@ Posting IDs from the live check:
 | Mouri Tech | Corporate careers page links to India jobs; city-filtered destination needs verification |
 | XTGlobal | Corporate site links to xtglobal.zohorecruit.in; city-filtered destination needs verification |
 | Sails Software | Corporate site links to careers.sailssoftware.com/sailssoftware/; city filter needs verification |
-| Amazon | Existing search is a rendered shell; vacancy data and effective location restriction need verification |
 | Biocon | Official locationsearch returned no rows; no live Vizag vacancy verified |
 | Adani | SuccessFactors-style search URL returns 404; actual employer ATS city filter remains unverified |
 | KONE | Official Workday Careers search for Visakhapatnam returns zero jobs; no current Vizag vacancy verified |

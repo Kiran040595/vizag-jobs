@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Amazon-Verified-Careers
+
+- Replaced Amazon's loose keyword search with its official Visakhapatnam city/radius filter and enabled the existing verified-careers badge after database approval.
+- Added native Amazon JSON extraction. It returned 5 current roles during live verification and requires explicit Visakhapatnam evidence in each posting's full location array, including multi-location virtual roles.
+- Automated scraper tests and TypeScript validation cover the native feed and strict city filtering. Functional E2E: pending authenticated fetch/review/SEO/publication. Mobile UI: unchanged, not retested. No production jobs were published for verification.
+
 ## QA-2026-11-01-JLL-Marriott-Accor-Verified-Careers
 
 - Verified JLL's Workday city facet, Marriott's actual city query, and Accor's Visakhapatnam option facet; migrations/defaults use those exact URLs and approval enables the existing verified-careers badge.

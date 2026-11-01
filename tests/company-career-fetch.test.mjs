@@ -73,6 +73,25 @@ test('Schema-based verified portals retain only current Vizag postings', async (
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /search\.json/);
+    const job = (title, city, id) => ({
+      title, job_path: `/en/jobs/${id}/role`,
+      description: '<p>Detailed responsibilities, required experience, technical skills, and qualifications for this official Amazon vacancy.</p>',
+      locations: [JSON.stringify({ city, normalizedLocation: `${city}, India` })],
+    });
+    return Response.json({ jobs: [job('Vizag role', 'Visakhapatnam', 1), job('Other role', 'Hyderabad', 2)] });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.amazon, 'Amazon');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Vizag role');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://www.amazon.jobs/en/jobs/1/role');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Conduent embedded results exclude other cities and retain job apply links', () => {
   const rows = [
     { title: 'Associate', city: 'Visakhapatnam', location: 'Visakhapatnam, India', jobId: '123', descriptionTeaser: 'Customer support with "quoted" text and {braces}.' },
@@ -577,7 +596,7 @@ test('Company Career Fetch: Canonical Career Portal URL Resolution for Published
   await t.test('resolves Amazon to Visakhapatnam location search portal', () => {
     assert.equal(
       resolveCanonicalCareerPortalUrl('https://www.amazon.jobs', 'Amazon'),
-      'https://www.amazon.jobs/en/search?base_query=Visakhapatnam'
+      VERIFIED_VIZAG_PORTALS.amazon
     );
   });
 
