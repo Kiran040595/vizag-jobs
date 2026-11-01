@@ -1,5 +1,10 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-HM-Verified-Careers
+
+- Added H&M's filtered SmartRecruiters careers URL and native official-API extraction, with employer-identifier and posting-city validation.
+- Live verification returned 2 active Vishakhapatnam roles. Functional E2E: pending authenticated fetch/review/SEO/publication. Mobile UI: unchanged, not retested. No production jobs were published for verification.
+
 ## QA-2026-11-01-Vodafone-Idea-Verified-Careers
 
 - Replaced Vodafone Idea's generic marketing careers URL with its official SuccessFactors Visakhapatnam location search and enabled strict row-level city/direct-link extraction.

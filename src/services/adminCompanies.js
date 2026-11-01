@@ -550,7 +550,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'H&M': {
     website: 'https://www.hm.com',
-    careers_url: 'https://career.hm.com',
+    careers_url: 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
     category: 'Hospitality & Retail',
   },
   'Sodexo': {

@@ -42,6 +42,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   accor: 'https://careers.accor.com/global/en/jobs?options=992&page=1',
   amazon: 'https://www.amazon.jobs/en/search?city=Visakhapatnam&country=IND&county=Visakhapatnam&latitude=17.7199&loc_query=Visakhapatnam%2C+Andhra+Pradesh%2C+India&longitude=83.26281&radius=24km&region=Andhra+Pradesh',
   'vodafone idea limited': 'https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam',
+  'h&m': 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -85,13 +86,40 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const parsedUrl = new URL(url);
   const host = parsedUrl.hostname;
   const amazon = host === 'www.amazon.jobs' && parsedUrl.pathname === '/en/search' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
+  const hm = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/HMGroup' && parsedUrl.searchParams.get('search') === 'Vishakhapatnam';
   const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com', 'careers.vodafoneidea.com'].includes(host);
   const idfc = host === 'careers.idfcfirst.bank.in';
   const marriott = host === 'careers.marriott.com' && new URL(url).pathname === '/jobs';
   const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon) return null;
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm) return null;
+  if (hm) {
+    const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const rows = (Array.isArray(payload.content) ? payload.content : []).filter((posting: Record<string, unknown>) => {
+      const location = posting.location as { city?: string } | undefined;
+      return /\b(vishakhapatnam|visakhapatnam|vizag)\b/i.test(location?.city || '');
+    });
+    const jobs = (await Promise.all(rows.map(async (row: Record<string, unknown>) => {
+      try {
+        const response = await fetch(`https://api.smartrecruiters.com/v1/companies/HMGroup/postings/${row.id}`, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const posting = await response.json();
+        if (posting.company?.identifier !== 'HMGroup' || !/\b(vishakhapatnam|visakhapatnam|vizag)\b/i.test(posting.location?.city || '')) return null;
+        const description = Object.values(posting.jobAd?.sections || {}).map((section) => htmlToCleanMarkdown((section as { text?: string }).text || '', url)).join('\n\n');
+        if (!posting.name || description.length < 80) return null;
+        const applyUrl = String(posting.postingUrl || '');
+        if (!applyUrl.startsWith(`https://jobs.smartrecruiters.com/HMGroup/${posting.id}`)) return null;
+        return {
+          title: String(posting.name), company, location: String(posting.location.fullLocation || posting.location.city), description,
+          apply_link: applyUrl,
+        } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   const fetchUrl = amazon ? url.replace('/en/search?', '/en/search.json?') + '&result_limit=100' : url;
   const page = await fetch(fetchUrl, { signal: AbortSignal.timeout(20000) });
   if (!page.ok) throw new Error(`Official careers search returned ${page.status}`);

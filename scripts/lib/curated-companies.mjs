@@ -681,7 +681,7 @@ export const CURATED_COMPANIES = {
   },
   'H&M': {
     website: 'https://www.hm.com',
-    careers_url: 'https://career.hm.com',
+    careers_url: 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
