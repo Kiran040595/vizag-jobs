@@ -15,6 +15,8 @@ import {
 } from '../lib/companyCareerFetchAutomation';
 import CompanyCareerJobApprovalModal from '../components/admin/CompanyCareerJobApprovalModal';
 import { pushToast } from '../lib/toast';
+import VerifiedCareersBadge from '../components/VerifiedCareersBadge';
+import { hasVerifiedCompanyCareers } from '../lib/companyCareerVerification';
 
 const AVATAR_GRADIENTS = [
   'from-blue-600 to-indigo-700',
@@ -123,6 +125,7 @@ export default function AdminCompaniesPage() {
 
       // 3. Quick filter mode
       if (filterMode === 'DIRECTORY_APPROVED' && !c.isDirectoryApproved) return false;
+      if (filterMode === 'VERIFIED_CAREERS' && !hasVerifiedCompanyCareers(c)) return false;
       if (filterMode === 'PENDING_APPROVAL' && c.isDirectoryApproved) return false;
       if (filterMode === 'HAS_CAREERS' && !c.careersUrl) return false;
       if (filterMode === 'MISSING_URL' && Boolean(c.website || c.careersUrl)) return false;
@@ -148,11 +151,12 @@ export default function AdminCompaniesPage() {
   const stats = useMemo(() => {
     const total = companies.length;
     const directoryApproved = companies.filter((c) => Boolean(c.isDirectoryApproved)).length;
+    const verifiedCareers = companies.filter(hasVerifiedCompanyCareers).length;
     const pendingApproval = total - directoryApproved;
     const withWebsite = companies.filter((c) => Boolean(c.website)).length;
     const withCareers = companies.filter((c) => Boolean(c.careersUrl)).length;
     const autoScrape = companies.filter((c) => c.isActiveForScrape && Boolean(c.careersUrl)).length;
-    return { total, directoryApproved, pendingApproval, withWebsite, withCareers, autoScrape };
+    return { total, directoryApproved, verifiedCareers, pendingApproval, withWebsite, withCareers, autoScrape };
   }, [companies]);
 
   const handleOpenEdit = (comp) => {
@@ -226,13 +230,7 @@ export default function AdminCompaniesPage() {
         isDirectoryApproved: nextVal,
       });
 
-      setCompanies((prev) =>
-        prev.map((item) =>
-          item.name === comp.name
-            ? { ...item, isDirectoryApproved: nextVal }
-            : item,
-        ),
-      );
+      await loadCompanies();
 
       pushToast({
         message: nextVal
@@ -624,6 +622,7 @@ export default function AdminCompaniesPage() {
         <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
           {[
             { id: 'ALL', label: `All Companies (${stats.total})` },
+            { id: 'VERIFIED_CAREERS', label: `✓ Verified careers (${stats.verifiedCareers})` },
             { id: 'DIRECTORY_APPROVED', label: `🌟 Public Directory (${stats.directoryApproved})` },
             { id: 'PENDING_APPROVAL', label: `⏳ Pending Approval (${stats.pendingApproval})` },
             { id: 'HAS_CAREERS', label: `💼 Has Careers URL (${stats.withCareers})` },
@@ -745,6 +744,7 @@ export default function AdminCompaniesPage() {
                           <h3 className="text-base font-extrabold text-slate-950 sm:text-lg">
                             {comp.name}
                           </h3>
+                          <VerifiedCareersBadge company={comp} />
 
                           {comp.category && comp.category !== 'General' ? (
                             <span className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">

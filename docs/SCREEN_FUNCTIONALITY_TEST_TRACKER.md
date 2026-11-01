@@ -1,5 +1,12 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Verified-Careers-Badge
+
+- Added a green “Verified careers” badge beside company names in Admin Companies and the public `/companies` directory. It requires directory approval and an exact match between the saved and verified careers URLs.
+- Added an Admin Companies “Verified careers” filter with a matching-company count. Changing the current careers URL hides the badge until that URL is verified.
+- Replaced the public card's unconditional employer-verification icon with the specific careers-verification badge. Bumped directory cache version so old cached records are refreshed.
+- Functional E2E: reopened/pending authenticated admin filter and URL-change journey. Mobile UI: reopened/pending browser evidence for both affected screens; badge/header wraps at narrow widths in source.
+
 ## QA-2026-11-01-Remaining-Company-Career-URLs
 
 - Verified and configured city-filtered official searches for Brandix, GMR, WNS and Fluentgrid; defaults, catalog and migration match the verified URLs.

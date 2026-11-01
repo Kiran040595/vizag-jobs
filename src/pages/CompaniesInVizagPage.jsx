@@ -12,6 +12,7 @@ import {
 import { readCachedPublicCompanies } from '../lib/publicJobsSessionCache';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { pushToast } from '../lib/toast';
+import VerifiedCareersBadge from '../components/VerifiedCareersBadge';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -44,15 +45,11 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <h3 className="break-words font-semibold text-slate-900 text-base sm:text-base group-hover:text-cyan-700 transition-colors">
                 {company.name}
               </h3>
-              <span className="shrink-0 text-cyan-600" title="Verified Vizag Employer">
-                <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                </svg>
-              </span>
+              <VerifiedCareersBadge company={company} />
             </div>
 
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
