@@ -29,6 +29,39 @@ export type ExtractedCompanyCareerJob = {
   skills?: string[];
 };
 
+/** Conduent renders its verified search results from embedded Phenom data. */
+export function parseConduentSearchJobs(html: string): ExtractedCompanyCareerJob[] {
+  const marker = '"eagerLoadRefineSearch":';
+  const offset = html.indexOf(marker);
+  if (offset < 0) return [];
+  const start = offset + marker.length;
+  let depth = 0, quoted = false, escaped = false;
+  for (let i = start; i < html.length; i++) {
+    const c = html[i];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === '"') quoted = false;
+    } else if (c === '"') quoted = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) {
+      try {
+        const rows = JSON.parse(html.slice(start, i + 1))?.data?.jobs;
+        if (!Array.isArray(rows)) return [];
+        return rows.filter((row) => /^visakhapatnam$/i.test(String(row.city)) && row.title && /^\d+$/.test(String(row.jobId)))
+          .map((row) => ({
+            title: String(row.title), company: 'Conduent',
+            location: String(row.location || row.city),
+            apply_link: `https://careers.conduent.com/us/en/job/${row.jobId}/${String(row.title).replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+            description: String(row.descriptionTeaser || ''),
+            skills: Array.isArray(row.ml_skills) ? row.ml_skills.map(String) : [],
+          }));
+      } catch { return []; }
+    }
+  }
+  return [];
+}
+
 export const COMPANY_CAREERS_EXTRACT_SCHEMA = {
   type: 'OBJECT',
   properties: {
@@ -195,9 +228,9 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
 
   if (
     lowerName.includes('conduent') &&
-    lowerUrl.includes('careers.conduent.com/us/en')
+    lowerUrl.includes('careers.conduent.com')
   ) {
-    return 'https://careers.conduent.com/in/en';
+    return 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam';
   }
 
   if (
@@ -822,6 +855,13 @@ export async function scrapeCompanyCareerPage(
         throw new Error(`Direct HTTP fetch returned ${res.status}`);
       }
       const html = await res.text();
+      if (new URL(resolvedUrl).hostname === 'careers.conduent.com') {
+        const structuredJobs = parseConduentSearchJobs(html);
+        if (structuredJobs.length) return {
+          content: JSON.stringify({ jobs: structuredJobs }), source: 'direct_html', resolvedUrl,
+          count: structuredJobs.length, structuredJobs,
+        };
+      }
       const markdown = htmlToCleanMarkdown(html, resolvedUrl);
       if (markdown.length >= 50) {
         return { content: markdown, source: 'direct_html', resolvedUrl };

@@ -31,6 +31,7 @@ import {
   parseWorkdayPortalUrl,
   scrapeWorkdayCareerPortal,
   resolveCanonicalCareerPortalUrl,
+  parseConduentSearchJobs,
 } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -206,6 +207,10 @@ async function scrapeCareerPage(url, firecrawlKey, companyName) {
       throw new Error(`HTTP ${res.status}`);
     }
     const html = await res.text();
+    if (new URL(resolvedUrl).hostname === 'careers.conduent.com') {
+      const structuredJobs = parseConduentSearchJobs(html);
+      if (structuredJobs.length) return { content: JSON.stringify({ jobs: structuredJobs }), source: 'direct_html', resolvedUrl, structuredJobs };
+    }
     const markdown = htmlToCleanMarkdown(html, resolvedUrl);
     return { content: markdown, source: 'direct_html', resolvedUrl };
   } finally {

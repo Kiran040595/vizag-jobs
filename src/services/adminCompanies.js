@@ -53,7 +53,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Conduent': {
     website: 'https://www.conduent.com',
-    careers_url: 'https://careers.conduent.com/in/en',
+    careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',
     category: 'IT & Software',
   },
   'WNS': {

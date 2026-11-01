@@ -1,5 +1,13 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Conduent-Vizag-Careers
+
+- Verified official `https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam` embedded search response: totalHits=8, eight returned records, every city=Visakhapatnam. Job IDs: 26835, 26837, 26834, 25986, 26826, 26836, 26668, 26765.
+- Corrected defaults/catalog and canonical resolver, which previously rewrote US URLs to an unfiltered India landing page. Migration updates and approves the exact verified URL.
+- Direct fetch previously stripped embedded job data and returned only the page shell. Added embedded search-result extraction to both admin backend and scheduled fetch. Live shared scraper now returns eight structured Vizag jobs with individual application URLs.
+- Cognizant's official location-page Explore jobs link includes coordinates but the fetched response still lists international jobs; it remains hidden pending browser verification.
+- Functional E2E: pending authenticated fetch/review/publish. Mobile UI: unchanged, not retested. Live search response is evidence of filtering, not a completed publication journey.
+
 ## QA-2026-11-01-Verified-Company-Directory
 
 - Public Directory now requires approval for the exact saved careers URL; URL changes revoke approval. Historical bulk approvals were cleared because keyword mentions do not verify vacancies.

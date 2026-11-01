@@ -49,7 +49,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Conduent',
-    careers_url: 'https://careers.conduent.com/us/en',
+    careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',
     category: 'IT & Software',
     location: 'Visakhapatnam, IT SEZ Hill No. 2 Rushikonda',
   },

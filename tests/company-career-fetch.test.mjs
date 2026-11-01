@@ -16,7 +16,19 @@ import {
   runSingleCompanyCareerPipeline,
 } from '../src/lib/companyCareerFetchAutomation.js';
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
-import { resolveCanonicalCareerPortalUrl } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+
+test('Conduent embedded results exclude other cities and retain job apply links', () => {
+  const rows = [
+    { title: 'Associate', city: 'Visakhapatnam', location: 'Visakhapatnam, India', jobId: '123', descriptionTeaser: 'Customer support with "quoted" text and {braces}.' },
+    { title: 'Associate', city: 'Bangalore', jobId: '124' },
+  ];
+  const result = parseConduentSearchJobs(`script = {"eagerLoadRefineSearch":${JSON.stringify({ data: { jobs: rows } })},"other":{}};`);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].apply_link, 'https://careers.conduent.com/us/en/job/123/Associate');
+  assert.equal(result[0].description, rows[0].descriptionTeaser);
+  assert.deepEqual(parseConduentSearchJobs('invalid HTML'), []);
+});
 
 test('Company career publication requires explicit Vizag evidence', async () => {
   for (const location of ['', 'India', 'Andhra Pradesh', 'Remote', 'Chennai', 'London']) {
@@ -514,10 +526,10 @@ test('Company Career Fetch: Canonical Career Portal URL Resolution for Published
     );
   });
 
-  await t.test('resolves Conduent to India portal instead of US', () => {
+  await t.test('resolves Conduent to the verified Vizag search', () => {
     assert.equal(
       resolveCanonicalCareerPortalUrl('https://careers.conduent.com/us/en', 'Conduent'),
-      'https://careers.conduent.com/in/en'
+      'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam'
     );
   });
 

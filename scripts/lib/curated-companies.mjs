@@ -35,7 +35,7 @@ export const CURATED_COMPANIES = {
   },
   'Conduent': {
     website: 'https://www.conduent.com',
-    careers_url: 'https://careers.conduent.com/in/en',
+    careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',
     category: 'BPO / Customer Support',
     is_active_for_scrape: true,
   },
