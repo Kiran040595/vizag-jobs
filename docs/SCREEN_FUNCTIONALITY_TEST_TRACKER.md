@@ -1,5 +1,10 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Remaining-Careers-Audit-Batch
+
+- Audited Cognizant, Stantec, GITAM, Pema Wellness and Hetero against the public-directory requirements. Each has employer/location evidence, but none currently provides a backend-fetchable, durable Visakhapatnam-only vacancy feed with individual current postings.
+- All remain private and unverified. Evidence and exact blockers are recorded in `docs/qa/2026-11-01/company-career-verification.md`; no UI behavior changed, so functional E2E and mobile UI were not retested.
+
 ## QA-2026-11-01-HM-Verified-Careers
 
 - Added H&M's filtered SmartRecruiters careers URL and native official-API extraction, with employer-identifier and posting-city validation.

@@ -55,6 +55,11 @@ Posting IDs from the live check:
 | KONE | Official Workday Careers search for Visakhapatnam returns zero jobs; no current Vizag vacancy verified |
 | Miracle Software Systems | Official build-your-career-vizag page accepts Vizag-only resumes, but is not a vacancy feed; kept private pending a working filtered job search |
 | Dr. Reddy's Laboratories | Official option 3678 (`/jobs?options=3678&page=1`) is a real Visakhapatnam feed with current postings, but Cloudflare returns 403 to server-side fetching. Kept private until a reliable official API or approved rendering path is available |
+| Cognizant | Official locations page confirms a Visakhapatnam office and links to a coordinate search, but that search currently ignores its location parameters and returns about 2,099 global jobs; direct backend access is Cloudflare-blocked |
+| Stantec | Official India index contains 3 Visakhapatnam roles, but the stable page mixes 54 India-wide jobs and the city-search backend fails to return a durable filtered page. Kept private pending a working city endpoint |
+| GITAM | Official careers page lists academic and non-academic openings across campuses; no durable Visakhapatnam-only vacancy filter was found |
+| Pema Wellness | Official site identifies its Visakhapatnam location and broad career categories, but does not publish a current vacancy feed with individual application links |
+| Hetero | Official careers content accepts general resumes by email and links to broad opportunities, but no current Visakhapatnam-only vacancy feed was found |
 
 Unverified entries remain private in admin. No outreach, applications or job
 publication was performed during these read-only source checks.
