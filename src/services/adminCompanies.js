@@ -118,7 +118,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Sails Software': {
     website: 'https://sailssoftware.com',
-    careers_url: 'https://sailssoftware.com/careers/',
+    careers_url: 'https://careers.sailssoftware.com/sailssoftware/',
     category: 'IT & Software',
   },
   'iMerit': {

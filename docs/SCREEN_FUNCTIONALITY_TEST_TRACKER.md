@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Sails-Software-Verified-Careers
+
+- Added Sails Software's official Zwayam portal (`https://careers.sailssoftware.com/sailssoftware/`) and native Zwayam API search & detail extraction.
+- Validates active application status on job detail endpoint, rejecting closed postings (404), and extracts current Visakhapatnam role (Junior AI Software Engineer) with full markdown description, salary range, and direct job link.
+- Scraper unit tests, TypeScript validation, and directory defaults updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-XTGlobal-Verified-Careers
 
 - Added XTGlobal's official Zoho Recruit careers portal (`https://xtglobal.zohorecruit.in/jobs/Careers`) and native embedded catalog extraction.

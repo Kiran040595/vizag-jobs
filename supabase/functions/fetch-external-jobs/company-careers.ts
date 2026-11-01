@@ -45,6 +45,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'h&m': 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
   'celestinfo software solutions pvt. ltd.': 'https://www.celestinfo.com/careers.html',
   xtglobal: 'https://xtglobal.zohorecruit.in/jobs/Careers',
+  'sails software': 'https://careers.sailssoftware.com/sailssoftware/',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -97,7 +98,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
   const xtglobal = host === 'xtglobal.zohorecruit.in' && parsedUrl.pathname === '/jobs/Careers';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal) return null;
+  const sailsSoftware = host === 'careers.sailssoftware.com' && parsedUrl.pathname.startsWith('/sailssoftware');
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -119,6 +121,47 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         return {
           title: String(posting.name), company, location: String(posting.location.fullLocation || posting.location.city), description,
           apply_link: applyUrl,
+        } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (sailsSoftware) {
+    const fd = new FormData();
+    fd.append('domain', 'careers.sailssoftware.com');
+    fd.append('companyId', 'MTYyMzI=');
+    fd.append('filterCri', JSON.stringify({ paginationStartNo: 0, selectedCall: 'sort', sortCriteria: { name: 'modifiedDate', isAscending: false }, anyOfTheseWords: '' }));
+    const searchRes = await fetch('https://public.zwayam.com/jobs/search', {
+      method: 'POST',
+      headers: { 'User-Agent': 'Mozilla/5.0', Origin: 'https://careers.sailssoftware.com', Referer: 'https://careers.sailssoftware.com/' },
+      body: fd,
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!searchRes.ok) throw new Error(`Official careers API returned ${searchRes.status}`);
+    const payload = await searchRes.json();
+    const rawJobs = (payload.data?.data || []).map((j: { _source: Record<string, unknown> }) => j._source);
+    const vizagJobs = rawJobs.filter((j: Record<string, unknown>) => /\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(`${j.location || ''} ${j.locationSeparatedbySlash || ''} ${j.city || ''}`));
+    const jobs = (await Promise.all(vizagJobs.map(async (j: Record<string, unknown>) => {
+      try {
+        const detailRes = await fetch('https://public.zwayam.com/jobs-service/v1/jobs/careersite', {
+          method: 'POST',
+          headers: { 'User-Agent': 'Mozilla/5.0', 'Content-Type': 'application/json', Origin: 'https://careers.sailssoftware.com', Referer: 'https://careers.sailssoftware.com/' },
+          body: JSON.stringify({ jobUrl: j.jobUrl, companyID: 'MTYyMzI=', domain: 'careers.sailssoftware.com' }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!detailRes.ok) return null;
+        const d = await detailRes.json();
+        const description = htmlToCleanMarkdown(String(d.longDescription || d.shortDescription || ''), url).slice(0, 20000);
+        if (!d.jobTitle || description.length < 80) return null;
+        const apply_link = `https://careers.sailssoftware.com/sailssoftware/jobview/${j.jobUrl}`;
+        const salary = d.minJobSalary && d.maxJobSalary ? `${d.minJobSalary} - ${d.maxJobSalary}` : undefined;
+        return {
+          title: String(d.jobTitle),
+          company,
+          location: String(d.location || j.location || 'Visakhapatnam, Andhra Pradesh, India'),
+          description,
+          salary,
+          apply_link,
         } as ExtractedCompanyCareerJob;
       } catch { return null; }
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
@@ -470,6 +513,13 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerUrl.includes('xtglobal.zohorecruit.in')
   ) {
     return 'https://xtglobal.zohorecruit.in/jobs/Careers';
+  }
+
+  if (
+    lowerName.includes('sails software') ||
+    lowerUrl.includes('sailssoftware.com')
+  ) {
+    return 'https://careers.sailssoftware.com/sailssoftware/';
   }
 
   if (

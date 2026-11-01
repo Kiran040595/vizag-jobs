@@ -131,7 +131,7 @@ export const CURATED_COMPANIES = {
   },
   'Sails Software': {
     website: 'https://sailssoftware.com',
-    careers_url: 'https://sailssoftware.com/careers/',
+    careers_url: 'https://careers.sailssoftware.com/sailssoftware/',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },

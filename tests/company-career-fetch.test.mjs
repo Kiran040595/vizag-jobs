@@ -93,6 +93,48 @@ test('XTGlobal embedded Zoho Recruit jobs extract Vizag roles with direct links'
   }
 });
 
+test('Sails Software official Zwayam API extracts active Vizag jobs and rejects closed roles', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    const urlStr = String(url);
+    if (urlStr.includes('jobs/search')) {
+      return new Response(JSON.stringify({
+        data: {
+          data: [
+            { _source: { jobTitle: 'Junior AI Software Engineer', location: 'Visakhapatnam, Andhra Pradesh, India', jobUrl: 'junior-ai-software-engineer-vizag' } },
+            { _source: { jobTitle: 'Closed Engineer', location: 'Visakhapatnam, Andhra Pradesh, India', jobUrl: 'closed-engineer-vizag' } },
+            { _source: { jobTitle: 'US Platform Engineer', location: 'St. Louis, Missouri, United States', jobUrl: 'us-platform-engineer' } },
+          ],
+        },
+      }), { status: 200 });
+    }
+    if (urlStr.includes('jobs/careersite')) {
+      const body = JSON.parse(options?.body || '{}');
+      if (body.jobUrl === 'junior-ai-software-engineer-vizag') {
+        return new Response(JSON.stringify({
+          jobTitle: 'Junior AI Software Engineer',
+          location: 'Visakhapatnam, Andhra Pradesh, India',
+          longDescription: '<p>Junior AI Software Engineer role in Visakhapatnam with key requirements and responsibilities.</p>',
+          minJobSalary: 500000,
+          maxJobSalary: 1000000,
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ message: 'This job is no longer accepting applications.' }), { status: 404 });
+    }
+    return new Response('', { status: 404 });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['sails software'], 'Sails Software');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Junior AI Software Engineer');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://careers.sailssoftware.com/sailssoftware/jobview/junior-ai-software-engineer-vizag');
+    assert.match(result.structuredJobs[0].description, /Junior AI Software Engineer role in Visakhapatnam/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
