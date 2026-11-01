@@ -163,7 +163,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Celestinfo Software Solutions Pvt. Ltd.': {
     website: 'https://celestinfo.com',
-    careers_url: 'https://celestinfo.com/careers.html',
+    careers_url: 'https://www.celestinfo.com/careers.html',
     category: 'IT & Software',
   },
   'EDGE 3D TECHNOLOGIES Pvt. Ltd.': {

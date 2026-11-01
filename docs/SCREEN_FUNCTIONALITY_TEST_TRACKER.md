@@ -1,5 +1,10 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Celestinfo-Verified-Careers
+
+- Added Celestinfo's company-owned careers page and native detail extraction. Application tracking/query parameters are removed, employer schema is validated, and remote-only postings without explicit Visakhapatnam are excluded.
+- Live backend verification returned 7 roles with explicit Visakhapatnam location and excluded 4 remote-only/specialist roles. All scraper tests and TypeScript validation pass. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Remaining-Careers-Audit-Batch
 
 - Audited Cognizant, Stantec, GITAM, Pema Wellness and Hetero against the public-directory requirements. Each has employer/location evidence, but none currently provides a backend-fetchable, durable Visakhapatnam-only vacancy feed with individual current postings.

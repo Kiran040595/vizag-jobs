@@ -43,6 +43,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   amazon: 'https://www.amazon.jobs/en/search?city=Visakhapatnam&country=IND&county=Visakhapatnam&latitude=17.7199&loc_query=Visakhapatnam%2C+Andhra+Pradesh%2C+India&longitude=83.26281&radius=24km&region=Andhra+Pradesh',
   'vodafone idea limited': 'https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam',
   'h&m': 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
+  'celestinfo software solutions pvt. ltd.': 'https://www.celestinfo.com/careers.html',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -87,13 +88,14 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const host = parsedUrl.hostname;
   const amazon = host === 'www.amazon.jobs' && parsedUrl.pathname === '/en/search' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
   const hm = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/HMGroup' && parsedUrl.searchParams.get('search') === 'Vishakhapatnam';
+  const celestinfo = ['celestinfo.com', 'www.celestinfo.com'].includes(host) && parsedUrl.pathname === '/careers.html';
   const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com', 'careers.vodafoneidea.com'].includes(host);
   const idfc = host === 'careers.idfcfirst.bank.in';
   const marriott = host === 'careers.marriott.com' && new URL(url).pathname === '/jobs';
   const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm) return null;
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -142,7 +144,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   const html = await page.text();
-  const rows = marriott || accor ? [...new Set([...html.matchAll(/href=["'](\/[^"']*\/job\/[^"']+)["']/g)].map((m) => new URL(m[1], url).href))]
+  const rows = celestinfo ? [...new Set([...html.matchAll(/href=["'](https:\/\/nebula\.celestinfo\.com\/careers\/[^"'?]+)\/apply(?:\?[^"']*)?["']/gi)].map((m) => m[1]))]
+    .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : marriott || accor ? [...new Set([...html.matchAll(/href=["'](\/[^"']*\/job\/[^"']+)["']/g)].map((m) => new URL(m[1], url).href))]
     .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
     [...new Set([...html.matchAll(/href=["'](https:\/\/fluentgrid\.com\/jobs\/[^"'#]+)["']/g)].map((m) => m[1]))]
       .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) :
@@ -179,7 +182,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
           location = String(posting.location || posting.city || '');
           description = htmlToCleanMarkdown(posting.description, row.apply_link!).slice(0, 20000);
         }
-        if (fluentgrid || marriott || accor) {
+        if (fluentgrid || marriott || accor || celestinfo) {
           const blocks = [...detail.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
           for (const block of blocks) {
             try {
@@ -187,6 +190,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
               const records = Array.isArray(parsed) ? parsed : [parsed, ...(parsed['@graph'] || [])];
               const posting = records.find((item) => item['@type'] === 'JobPosting');
               if (!posting) continue;
+              if (celestinfo && posting.hiringOrganization?.name !== 'Celestinfo Software Solutions') return null;
               const expiry = Date.parse(posting.validThrough || '');
               if (Number.isFinite(expiry) && expiry < Date.now()) return null;
               title = posting.title;

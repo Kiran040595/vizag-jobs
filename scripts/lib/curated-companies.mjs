@@ -221,7 +221,7 @@ export const CURATED_COMPANIES = {
   },
   'Celestinfo Software Solutions Pvt. Ltd.': {
     website: 'https://celestinfo.com',
-    careers_url: 'https://celestinfo.com/careers.html',
+    careers_url: 'https://www.celestinfo.com/careers.html',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
