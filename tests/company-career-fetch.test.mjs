@@ -16,7 +16,7 @@ import {
   runSingleCompanyCareerPipeline,
 } from '../src/lib/companyCareerFetchAutomation.js';
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
-import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, scrapeVerifiedVizagPortal, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, parseInnocitoVizagJobs, scrapeVerifiedVizagPortal, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
 test('Expired Phenom postings are rejected even when present in search results', async () => {
   const originalFetch = globalThis.fetch;
@@ -164,6 +164,20 @@ test('Miracle official listing extracts Miracle Heights jobs and rejects its non
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('Innocito server-rendered records retain Vizag jobs and reject Hyderabad jobs', () => {
+  const payload = `route data ${JSON.stringify({ jobs: [
+    { title: 'Sr Python Developer', location: 'Vizag', type: 'Full Time', experience: '3-8 years', requiredSkill: 'Python, Django/Flask', jobNumber: 'ATCI-5104579-S1889366', description: 'Build scalable Python APIs and backend applications with cloud platforms, databases, performance optimization, and cross-functional delivery.' },
+    { title: 'Java Fullstack Developer', location: 'Hyderabad', type: 'Full Time', experience: '1-8 years', requiredSkill: 'Java', jobNumber: 'ATCI-5104579-S1889364', description: 'Build scalable Java applications with Spring Boot, APIs, databases, and modern deployment practices for enterprise customers.' },
+  ] })}`;
+  const html = `<script>self.__next_f.push([1,${JSON.stringify(payload)}])</script>`;
+  const jobs = parseInnocitoVizagJobs(html, VERIFIED_VIZAG_PORTALS.innocito, 'Innocito');
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].title, 'Sr Python Developer');
+  assert.equal(jobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+  assert.equal(jobs[0].apply_link, 'https://innocito.com/careers');
+  assert.deepEqual(jobs[0].skills, ['Python, Django/Flask']);
 });
 
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {

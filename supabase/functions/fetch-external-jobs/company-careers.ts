@@ -50,6 +50,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'miracle software systems inc.': 'https://careers.miraclesoft.com/open-positions/',
   'miracle software systems inc': 'https://careers.miraclesoft.com/open-positions/',
   miraclesoft: 'https://careers.miraclesoft.com/open-positions/',
+  innocito: 'https://innocito.com/careers',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -71,6 +72,55 @@ function embeddedCareerData(html: string, key: string) {
     }
   }
   return null;
+}
+
+function embeddedJsonArray(text: string, key: string): Record<string, unknown>[] {
+  const marker = `"${key}":[`;
+  const offset = text.indexOf(marker);
+  if (offset < 0) return [];
+  const start = offset + marker.length - 1;
+  let depth = 0, quoted = false, escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === '"') quoted = false;
+    } else if (c === '"') quoted = true;
+    else if (c === '[') depth++;
+    else if (c === ']' && --depth === 0) {
+      try {
+        const value = JSON.parse(text.slice(start, i + 1));
+        return Array.isArray(value) ? value : [];
+      } catch { return []; }
+    }
+  }
+  return [];
+}
+
+/** Parse the employer's server-rendered Next.js vacancy records, not visible accordion text. */
+export function parseInnocitoVizagJobs(html: string, url: string, company: string): ExtractedCompanyCareerJob[] {
+  const chunks = [...html.matchAll(/self\.__next_f\.push\(\[1,("(?:\\.|[^"\\])*")\]\)/g)].flatMap((match) => {
+    try { return [JSON.parse(match[1]) as string]; } catch { return []; }
+  });
+  return embeddedJsonArray(chunks.join('\n'), 'jobs').flatMap((record) => {
+    const location = String(record.location || '');
+    const title = String(record.title || '').trim();
+    const jobNumber = String(record.jobNumber || '').trim();
+    const description = String(record.description || '').trim();
+    if (!/^vizag$/i.test(location) || !title || !/^ATCI-[A-Z0-9-]+$/i.test(jobNumber) || description.length < 80) return [];
+    return [{
+      title,
+      company,
+      location: 'Visakhapatnam, Andhra Pradesh, India',
+      job_type: String(record.type || ''),
+      experience: String(record.experience || ''),
+      skills: [String(record.requiredSkill || record.skill || '')].filter(Boolean),
+      short_description: `Official Innocito vacancy ${jobNumber}.`,
+      description,
+      apply_link: url,
+    }];
+  });
 }
 
 /** SuccessFactors repeats mobile/desktop links; read one record per result row. */
@@ -104,7 +154,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const xtglobal = host === 'xtglobal.zohorecruit.in' && parsedUrl.pathname === '/jobs/Careers';
   const sailsSoftware = host === 'careers.sailssoftware.com' && parsedUrl.pathname.startsWith('/sailssoftware');
   const miracle = host === 'careers.miraclesoft.com' && parsedUrl.pathname === '/open-positions/';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle) return null;
+  const innocito = ['innocito.com', 'www.innocito.com'].includes(host) && parsedUrl.pathname === '/careers';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -194,6 +245,10 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   const html = await page.text();
+  if (innocito) {
+    const jobs = parseInnocitoVizagJobs(html, url, company);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (miracle) {
     const detailUrls = [...new Set(
       [...html.matchAll(/href=["'](?:https:\/\/careers\.miraclesoft\.com\/)?(?:open-positions\/)?open-positions-sub\?jobId=(MSSJ\d+)[^"']*["']/gi)]

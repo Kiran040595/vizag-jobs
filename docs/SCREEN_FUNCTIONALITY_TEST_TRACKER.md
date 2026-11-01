@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Innocito-Verified-Careers
+
+- Verified Innocito's employer-owned careers page and added native parsing of its server-rendered vacancy records.
+- Live backend verification returned 3 current Vizag roles with stable job numbers, experience, skills and full descriptions; 4 Hyderabad roles were excluded. Applications use the official shared careers email/page.
+- Scraper tests and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Miracle-Software-Verified-Careers
 
 - Replaced Miracle Software Systems' generic careers home with its official current-openings URL and added native individual-posting extraction.

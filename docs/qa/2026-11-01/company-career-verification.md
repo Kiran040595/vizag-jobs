@@ -21,6 +21,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | XTGlobal | https://xtglobal.zohorecruit.in/jobs/Careers | Official Zoho Recruit portal embeds 61 current roles explicitly mentioning Visakhapatnam/Vizag across hybrid and direct office postings; native extractor parses structured records and direct application links |
 | Sails Software | https://careers.sailssoftware.com/sailssoftware/ | Official Zwayam recruitment portal and API; native extraction validates active application status, extracts verified Visakhapatnam role (Junior AI Software Engineer) with full description, salary range, and direct application link while rejecting closed positions |
 | Miracle Software Systems | https://careers.miraclesoft.com/open-positions/ | Official current-jobs listing exposes individual posting IDs and full descriptions. Native extraction keeps 2 current Miracle Heights roles after the employer's official Vizag page identifies that campus as its Vizag APAC headquarters; the current Miracle City role is rejected because that campus is in Vizianagaram |
+| Innocito | https://innocito.com/careers | Employer-owned page contains server-rendered structured records for 3 current Vizag roles, including stable job numbers, experience, required skills and full descriptions. Native extraction rejects the 4 Hyderabad records and retains the official shared email/application page |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -49,7 +50,6 @@ Posting IDs from the live check:
 | Company | Finding / next verification needed |
 | --- | --- |
 | Miracle Software Systems | Jobs loaded through employer JavaScript/API; no verified city-filtered public URL yet |
-| Innocito | Current careers page mixes Hyderabad and Vizag; a persistent city-filtered URL is not yet verified |
 | Patra India | Official Jibe API (`/api/jobs?location=Visakhapatnam`) returns 200 but ignores city parameter and lists US/Canada roles; no active Vizag openings verified |
 | Mouri Tech | India careers page uses Ceipal ATS widget with API key, but Ceipal blocks external server requests (`400 This method is not allowed from outside of the Career Portal`); direct feed remains unverified |
 | Symbiosys Technologies | Careers page is a general resume intake/mailto portal rather than an individual job vacancy feed |
