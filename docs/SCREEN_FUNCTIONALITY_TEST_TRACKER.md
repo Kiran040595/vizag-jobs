@@ -1,5 +1,12 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-JLL-Marriott-Accor-Verified-Careers
+
+- Verified JLL's Workday city facet, Marriott's actual city query, and Accor's Visakhapatnam option facet; migrations/defaults use those exact URLs and approval enables the existing verified-careers badge.
+- Live direct extraction: JLL 2 roles, Marriott 5 roles, Accor 8 roles. Every role explicitly identifies Visakhapatnam, with readable description and individual application link. Evidence: `docs/qa/2026-11-01/company-career-verification.md`.
+- Added native Marriott and Accor result/detail extraction to the shared scraper used by admin and scheduled fetching, including schema expiry rejection.
+- Functional E2E: pending authenticated fetch/review/SEO/publication. Mobile UI: unchanged, not retested. No production jobs were published for verification.
+
 ## QA-2026-11-01-Verified-Careers-Badge
 
 - Added a green “Verified careers” badge beside company names in Admin Companies and the public `/companies` directory. It requires directory approval and an exact match between the saved and verified careers URLs.

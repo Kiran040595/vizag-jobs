@@ -37,6 +37,9 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   fluentgrid: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
   'asian paints': 'https://careers.asianpaints.com/search/?q=&locationsearch=Visakhapatnam',
   'idfc first bank': 'https://careers.idfcfirst.bank.in/in/en/search-results?keywords=Visakhapatnam',
+  jll: 'https://jll.wd1.myworkdayjobs.com/JLLCareers?locations=38ccc50fa540014356996861e2cc9f0e',
+  marriott: 'https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam',
+  accor: 'https://careers.accor.com/global/en/jobs?options=992&page=1',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -80,13 +83,16 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const host = new URL(url).hostname;
   const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com'].includes(host);
   const idfc = host === 'careers.idfcfirst.bank.in';
+  const marriott = host === 'careers.marriott.com' && new URL(url).pathname === '/jobs';
+  const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc) return null;
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor) return null;
   const page = await fetch(url, { signal: AbortSignal.timeout(20000) });
   if (!page.ok) throw new Error(`Official careers search returned ${page.status}`);
   const html = await page.text();
-  const rows = idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
+  const rows = marriott || accor ? [...new Set([...html.matchAll(/href=["'](\/[^"']*\/job\/[^"']+)["']/g)].map((m) => new URL(m[1], url).href))]
+    .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
     [...new Set([...html.matchAll(/href=["'](https:\/\/fluentgrid\.com\/jobs\/[^"'#]+)["']/g)].map((m) => m[1]))]
       .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) :
     [...new Set([...html.matchAll(/href=["'](https:\/\/jobs\.smartrecruiters\.com\/WNSGlobalServices144\/[^"']+)["']/g)].map((m) => m[1]))]
@@ -122,7 +128,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
           location = String(posting.location || posting.city || '');
           description = htmlToCleanMarkdown(posting.description, row.apply_link!).slice(0, 20000);
         }
-        if (fluentgrid) {
+        if (fluentgrid || marriott || accor) {
           const blocks = [...detail.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
           for (const block of blocks) {
             try {
@@ -130,6 +136,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
               const records = Array.isArray(parsed) ? parsed : [parsed, ...(parsed['@graph'] || [])];
               const posting = records.find((item) => item['@type'] === 'JobPosting');
               if (!posting) continue;
+              const expiry = Date.parse(posting.validThrough || '');
+              if (Number.isFinite(expiry) && expiry < Date.now()) return null;
               title = posting.title;
               const places = Array.isArray(posting.jobLocation) ? posting.jobLocation : [posting.jobLocation];
               location = places.map((place: { address?: string | { addressLocality?: string } }) => typeof place?.address === 'string' ? place.address : place?.address?.addressLocality || '').join(', ');

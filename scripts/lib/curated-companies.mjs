@@ -565,7 +565,7 @@ export const CURATED_COMPANIES = {
   },
   'JLL': {
     website: 'https://www.jll.co.in',
-    careers_url: 'https://www.jll.co.in/en/careers',
+    careers_url: 'https://jll.wd1.myworkdayjobs.com/JLLCareers?locations=38ccc50fa540014356996861e2cc9f0e',
     category: 'General',
     is_active_for_scrape: true,
   },
@@ -645,13 +645,13 @@ export const CURATED_COMPANIES = {
   // Hospitality & Lifestyle
   'Accor': {
     website: 'https://all.accor.com',
-    careers_url: 'https://careers.accor.com/',
+    careers_url: 'https://careers.accor.com/global/en/jobs?options=992&page=1',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
   'Marriott': {
     website: 'https://www.marriott.com',
-    careers_url: 'https://careers.marriott.com/',
+    careers_url: 'https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam',
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },

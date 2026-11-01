@@ -334,7 +334,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'JLL': {
     website: 'https://www.jll.co.in',
-    careers_url: 'https://www.jll.co.in/en/careers',
+    careers_url: 'https://jll.wd1.myworkdayjobs.com/JLLCareers?locations=38ccc50fa540014356996861e2cc9f0e',
     category: 'Manufacturing',
   },
   'JSE Engineering': {
@@ -505,12 +505,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   // Hospitality & Retail
   'Accor': {
     website: 'https://all.accor.com',
-    careers_url: 'https://careers.accor.com/',
+    careers_url: 'https://careers.accor.com/global/en/jobs?options=992&page=1',
     category: 'Hospitality & Retail',
   },
   'Marriott': {
     website: 'https://www.marriott.com',
-    careers_url: 'https://careers.marriott.com/',
+    careers_url: 'https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam',
     category: 'Hospitality & Retail',
   },
   'Pema Wellness Retreat': {

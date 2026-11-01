@@ -47,6 +47,32 @@ test('Verified city-filtered URLs survive canonicalization', () => {
   }
 });
 
+test('Schema-based verified portals retain only current Vizag postings', async () => {
+  const originalFetch = globalThis.fetch;
+  const links = ['/global/en/job/current-in-vizag-jid-1', '/global/en/job/expired-in-vizag-jid-2', '/global/en/job/current-in-pune-jid-3'];
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value === VERIFIED_VIZAG_PORTALS.accor) {
+      return new Response(links.map((link) => `<a href="${link}">Role</a>`).join(''));
+    }
+    const expired = value.includes('jid-2');
+    const pune = value.includes('jid-3');
+    return new Response(`<script type="application/ld+json">${JSON.stringify({
+      '@type': 'JobPosting',
+      title: expired ? 'Expired role' : pune ? 'Pune role' : 'Current Vizag role',
+      description: '<p>A detailed official vacancy description with responsibilities and qualifications.</p>',
+      validThrough: expired ? '2000-01-01' : '2999-01-01',
+      jobLocation: { address: { addressLocality: pune ? 'Pune' : 'Visakhapatnam' } },
+    })}</script>`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.accor, 'Accor');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Current Vizag role');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Conduent embedded results exclude other cities and retain job apply links', () => {
   const rows = [
     { title: 'Associate', city: 'Visakhapatnam', location: 'Visakhapatnam, India', jobId: '123', descriptionTeaser: 'Customer support with "quoted" text and {braces}.' },
