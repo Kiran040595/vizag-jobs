@@ -1,5 +1,10 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Vodafone-Idea-Verified-Careers
+
+- Replaced Vodafone Idea's generic marketing careers URL with its official SuccessFactors Visakhapatnam location search and enabled strict row-level city/direct-link extraction.
+- Live backend verification returned 1 current Visakhapatnam role. Functional E2E: pending authenticated fetch/review/SEO/publication. Mobile UI: unchanged, not retested. No production jobs were published for verification.
+
 ## QA-2026-11-01-Amazon-Verified-Careers
 
 - Replaced Amazon's loose keyword search with its official Visakhapatnam city/radius filter and enabled the existing verified-careers badge after database approval.

@@ -15,6 +15,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Marriott | https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam | Search shows 5 jobs. All five posting schemas identify Visakhapatnam; descriptions and direct job URLs extracted successfully |
 | Accor | https://careers.accor.com/global/en/jobs?options=992&page=1 | Official option 992 is labelled Visakhapatnam. The filtered page returns 8 jobs; every posting schema identifies Novotel Visakhapatnam Varun Beach and supplies a direct application URL |
 | Amazon | https://www.amazon.jobs/en/search?city=Visakhapatnam&country=IND&county=Visakhapatnam&latitude=17.7199&loc_query=Visakhapatnam%2C+Andhra+Pradesh%2C+India&longitude=83.26281&radius=24km&region=Andhra+Pradesh | Official city/radius search returns 5 current postings. Native JSON extraction keeps a posting only when its full location array explicitly includes Visakhapatnam, including multi-location virtual roles |
+| Vodafone Idea Limited | https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam | Official SuccessFactors location search currently returns 1 active row explicitly in Visakhapatnam, with an individual official job page and full description |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -52,6 +53,7 @@ Posting IDs from the live check:
 | Adani | SuccessFactors-style search URL returns 404; actual employer ATS city filter remains unverified |
 | KONE | Official Workday Careers search for Visakhapatnam returns zero jobs; no current Vizag vacancy verified |
 | Miracle Software Systems | Official build-your-career-vizag page accepts Vizag-only resumes, but is not a vacancy feed; kept private pending a working filtered job search |
+| Dr. Reddy's Laboratories | Official option 3678 (`/jobs?options=3678&page=1`) is a real Visakhapatnam feed with current postings, but Cloudflare returns 403 to server-side fetching. Kept private until a reliable official API or approved rendering path is available |
 
 Unverified entries remain private in admin. No outreach, applications or job
 publication was performed during these read-only source checks.

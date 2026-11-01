@@ -613,7 +613,7 @@ export const CURATED_COMPANIES = {
   },
   'Vodafone Idea Limited': {
     website: 'https://www.myvi.in',
-    careers_url: 'https://www.myvi.in/careers',
+    careers_url: 'https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Sales & Marketing',
     is_active_for_scrape: true,
   },

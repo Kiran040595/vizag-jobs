@@ -41,6 +41,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   marriott: 'https://careers.marriott.com/jobs?filter%5Bcity%5D%5B0%5D=Visakhapatnam',
   accor: 'https://careers.accor.com/global/en/jobs?options=992&page=1',
   amazon: 'https://www.amazon.jobs/en/search?city=Visakhapatnam&country=IND&county=Visakhapatnam&latitude=17.7199&loc_query=Visakhapatnam%2C+Andhra+Pradesh%2C+India&longitude=83.26281&radius=24km&region=Andhra+Pradesh',
+  'vodafone idea limited': 'https://careers.vodafoneidea.com/search/?q=&locationsearch=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -84,7 +85,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const parsedUrl = new URL(url);
   const host = parsedUrl.hostname;
   const amazon = host === 'www.amazon.jobs' && parsedUrl.pathname === '/en/search' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
-  const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com'].includes(host);
+  const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com', 'careers.vodafoneidea.com'].includes(host);
   const idfc = host === 'careers.idfcfirst.bank.in';
   const marriott = host === 'careers.marriott.com' && new URL(url).pathname === '/jobs';
   const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
