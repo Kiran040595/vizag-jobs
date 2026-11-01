@@ -467,7 +467,7 @@ export const CURATED_COMPANIES = {
   },
   'IDFC FIRST Bank': {
     website: 'https://www.idfcfirstbank.com',
-    careers_url: 'https://careers.idfcfirst.bank.in/in/en/home?utm_source=website&utm_medium=L1TheBankCareers&utm_campaign=Careers',
+    careers_url: 'https://careers.idfcfirst.bank.in/in/en/search-results?keywords=Visakhapatnam',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },
@@ -541,7 +541,7 @@ export const CURATED_COMPANIES = {
   // Manufacturing, Industrial, Engineering, Infrastructure
   'Asian Paints': {
     website: 'https://www.asianpaints.com',
-    careers_url: 'https://careers.asianpaints.com/',
+    careers_url: 'https://careers.asianpaints.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },

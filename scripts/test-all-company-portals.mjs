@@ -216,7 +216,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Asian Paints',
-    careers_url: 'https://careers.asianpaints.com/',
+    careers_url: 'https://careers.asianpaints.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     location: 'Visakhapatnam',
   },

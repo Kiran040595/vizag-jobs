@@ -6,6 +6,7 @@
 - Added direct listing/detail extraction for SuccessFactors, WNS public posting API and Fluentgrid JobPosting schema to both the admin backend and scheduled pipeline.
 - Evidence: `docs/qa/2026-11-01/company-career-verification.md`. Live extraction returned 12 Brandix, 1 GMR, 3 WNS and 8 Fluentgrid jobs. Every extracted job explicitly includes Vizag; three Fluentgrid roles additionally offer Vijayawada.
 - Functional E2E: pending authenticated admin fetch/review/SEO/publish. Mobile UI: unchanged, not retested. Live portal extraction is not publication E2E evidence.
+- Follow-up: verified Asian Paints (5 jobs). IDFC FIRST Bank's search returns 2 Vizag records but both detail expiry dates are past; extractor now rejects them, and a follow-up migration keeps IDFC private. Total approved in this batch: five companies, 29 current listed jobs. IDFC's corrected URL is retained privately. No production job publication performed.
 
 ## QA-2026-11-01-Conduent-Vizag-Careers
 

@@ -16,7 +16,22 @@ import {
   runSingleCompanyCareerPipeline,
 } from '../src/lib/companyCareerFetchAutomation.js';
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
-import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, scrapeVerifiedVizagPortal, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+
+test('Expired Phenom postings are rejected even when present in search results', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('search-results')) return new Response(`{"eagerLoadRefineSearch":${JSON.stringify({ data: { jobs: [1, 2].map((id) => ({ jobId: `P-${id}`, title: `Role ${id}`, city: 'Visakhapatnam' })) } })}}`);
+    const expired = String(url).includes('/P-1/');
+    return new Response(`{"jobDetail":${JSON.stringify({ data: { job: { title: 'Current role', location: 'Visakhapatnam', expiryDate: expired ? '2000-01-01' : '2999-01-01', description: '<p>Detailed responsibilities for the current Vizag vacancy, with qualifications and relevant skills for candidates.</p>' } } })}}`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['idfc first bank'], 'IDFC FIRST Bank');
+    assert.equal(result.count, 1);
+    assert.match(result.structuredJobs[0].apply_link, /\/P-2\//);
+    assert.match(result.structuredJobs[0].description, /Detailed responsibilities/);
+  } finally { globalThis.fetch = originalFetch; }
+});
 
 test('SuccessFactors reads result rows once and rejects non-Vizag or external links', () => {
   const row = (href, location) => `<tr class="data-row"><td><a href="${href}" class="jobTitle-link">Engineer</a><a href="${href}" class="jobTitle-link">Engineer</a><span class="jobLocation">${location}</span></td></tr>`;
