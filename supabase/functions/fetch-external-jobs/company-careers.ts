@@ -46,6 +46,10 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'celestinfo software solutions pvt. ltd.': 'https://www.celestinfo.com/careers.html',
   xtglobal: 'https://xtglobal.zohorecruit.in/jobs/Careers',
   'sails software': 'https://careers.sailssoftware.com/sailssoftware/',
+  'miracle software systems': 'https://careers.miraclesoft.com/open-positions/',
+  'miracle software systems inc.': 'https://careers.miraclesoft.com/open-positions/',
+  'miracle software systems inc': 'https://careers.miraclesoft.com/open-positions/',
+  miraclesoft: 'https://careers.miraclesoft.com/open-positions/',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -99,7 +103,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
   const xtglobal = host === 'xtglobal.zohorecruit.in' && parsedUrl.pathname === '/jobs/Careers';
   const sailsSoftware = host === 'careers.sailssoftware.com' && parsedUrl.pathname.startsWith('/sailssoftware');
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware) return null;
+  const miracle = host === 'careers.miraclesoft.com' && parsedUrl.pathname === '/open-positions/';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -189,6 +194,37 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   const html = await page.text();
+  if (miracle) {
+    const detailUrls = [...new Set(
+      [...html.matchAll(/href=["'](?:https:\/\/careers\.miraclesoft\.com\/)?(?:open-positions\/)?open-positions-sub\?jobId=(MSSJ\d+)[^"']*["']/gi)]
+        .map((match) => `https://careers.miraclesoft.com/open-positions/open-positions-sub?jobId=${match[1]}`),
+    )];
+    const jobs = (await Promise.all(detailUrls.map(async (apply_link) => {
+      try {
+        const response = await fetch(apply_link, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const detail = await response.text();
+        const block = [...detail.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
+          .map((match) => {
+            try { return JSON.parse(match[1]); } catch { return null; }
+          })
+          .find((item) => item?.['@type'] === 'JobTitle');
+        const jobId = new URL(apply_link).searchParams.get('jobId');
+        if (!block || block.ID !== jobId || !/^India-Miracle Heights$/i.test(String(block.location || ''))) return null;
+        const description = htmlToCleanMarkdown(String(block.description || ''), apply_link).slice(0, 20000);
+        if (!block.title || description.length < 80) return null;
+        return {
+          title: String(block.title).trim(),
+          company,
+          location: 'Miracle Heights, Visakhapatnam, Andhra Pradesh, India',
+          experience: String(block.experience || '').trim(),
+          description,
+          apply_link,
+        } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (xtglobal) {
     const marker = '<input type="hidden" value="[{&#34;Remote_Job&#34;';
     const idx = html.indexOf(marker);
@@ -439,7 +475,7 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerName.includes('miracle') ||
     lowerUrl.includes('miraclesoftwaresystems.com')
   ) {
-    return 'https://careers.miraclesoft.com/';
+    return 'https://careers.miraclesoft.com/open-positions/';
   }
 
   if (

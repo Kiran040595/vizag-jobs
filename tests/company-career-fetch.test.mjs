@@ -135,6 +135,37 @@ test('Sails Software official Zwayam API extracts active Vizag jobs and rejects 
   }
 });
 
+test('Miracle official listing extracts Miracle Heights jobs and rejects its non-Vizag campus', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value === VERIFIED_VIZAG_PORTALS['miracle software systems']) {
+      return new Response([
+        '<a href="open-positions/open-positions-sub?jobId=MSSJ1001">Vizag role</a>',
+        '<a href="open-positions/open-positions-sub?jobId=MSSJ1002">Other campus role</a>',
+      ].join(''));
+    }
+    const vizag = value.includes('MSSJ1001');
+    return new Response(`<script type="application/ld+json">${JSON.stringify({
+      '@type': 'JobTitle',
+      ID: vizag ? 'MSSJ1001' : 'MSSJ1002',
+      title: vizag ? 'GCP Data Engineer' : 'Technical Program Manager',
+      experience: '8-12 years',
+      location: vizag ? 'India-Miracle Heights' : 'India-Miracle City',
+      description: '<p>Detailed official responsibilities, qualifications, technical skills, and delivery expectations for this current vacancy.</p>',
+    })}</script>`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['miracle software systems'], 'Miracle Software Systems');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'GCP Data Engineer');
+    assert.equal(result.structuredJobs[0].location, 'Miracle Heights, Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://careers.miraclesoft.com/open-positions/open-positions-sub?jobId=MSSJ1001');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

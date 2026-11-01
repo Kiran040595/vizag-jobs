@@ -20,6 +20,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Celestinfo Software Solutions | https://www.celestinfo.com/careers.html | Company-owned page exposes individual current applications; native extraction follows each company-owned detail page, validates Celestinfo JobPosting employer schema, and keeps only roles whose posting location explicitly includes Visakhapatnam |
 | XTGlobal | https://xtglobal.zohorecruit.in/jobs/Careers | Official Zoho Recruit portal embeds 61 current roles explicitly mentioning Visakhapatnam/Vizag across hybrid and direct office postings; native extractor parses structured records and direct application links |
 | Sails Software | https://careers.sailssoftware.com/sailssoftware/ | Official Zwayam recruitment portal and API; native extraction validates active application status, extracts verified Visakhapatnam role (Junior AI Software Engineer) with full description, salary range, and direct application link while rejecting closed positions |
+| Miracle Software Systems | https://careers.miraclesoft.com/open-positions/ | Official current-jobs listing exposes individual posting IDs and full descriptions. Native extraction keeps 2 current Miracle Heights roles after the employer's official Vizag page identifies that campus as its Vizag APAC headquarters; the current Miracle City role is rejected because that campus is in Vizianagaram |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is

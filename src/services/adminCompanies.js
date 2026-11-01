@@ -63,12 +63,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Miracle Software Systems': {
     website: 'https://www.miraclesoft.com',
-    careers_url: 'https://careers.miraclesoft.com/',
+    careers_url: 'https://careers.miraclesoft.com/open-positions/',
     category: 'IT & Software',
   },
   'Miraclesoft': {
     website: 'https://www.miraclesoft.com',
-    careers_url: 'https://careers.miraclesoft.com/',
+    careers_url: 'https://careers.miraclesoft.com/open-positions/',
     category: 'IT & Software',
   },
   'Fluentgrid Limited': {

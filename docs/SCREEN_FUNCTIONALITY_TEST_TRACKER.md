@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Miracle-Software-Verified-Careers
+
+- Replaced Miracle Software Systems' generic careers home with its official current-openings URL and added native individual-posting extraction.
+- Employer-owned location evidence identifies Miracle Heights as the Vizag APAC headquarters. The extractor keeps those postings with explicit normalized Visakhapatnam location and rejects Miracle City roles because that campus is in Vizianagaram.
+- Live backend verification returned 2 current Miracle Heights roles with full descriptions and direct job links. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Sails-Software-Verified-Careers
 
 - Added Sails Software's official Zwayam portal (`https://careers.sailssoftware.com/sailssoftware/`) and native Zwayam API search & detail extraction.
