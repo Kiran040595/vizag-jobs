@@ -6,6 +6,7 @@ import {
   SOURCE_OPTIONS,
   isAnyFilterActive,
 } from '../lib/jobFilters';
+import { parseSourceFilter, toggleAdminSource } from '../lib/jobSourceFilter';
 
 const PILL_ON_COLOR = {
   blue: 'border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-200',
@@ -14,8 +15,8 @@ const PILL_ON_COLOR = {
 const PILL_OFF =
   'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700';
 
-function FilterPill({ id, label, current, onSelect, color = 'blue' }) {
-  const isOn = current === id;
+function FilterPill({ id, label, current, active, onSelect, color = 'blue' }) {
+  const isOn = typeof active === 'boolean' ? active : current === id;
   return (
     <button
       type="button"
@@ -93,6 +94,13 @@ export default function JobFilters({
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
 
+  const selectedSources = parseSourceFilter(filters.source);
+
+  const handleSourceSelect = (id) => {
+    const nextSources = toggleAdminSource(selectedSources, id);
+    onUpdate({ source: nextSources.length === 0 ? 'all' : nextSources.join(',') });
+  };
+
   const activeChips = (
     <>
       {filters.q?.trim() ? (
@@ -131,12 +139,18 @@ export default function JobFilters({
           onRemove={() => onUpdate({ tab: 'all' })}
         />
       ) : null}
-      {isAdmin && filters.source !== 'all' ? (
-        <ActiveFilterChip
-          label={labelFor(filters.source, SOURCE_OPTIONS)}
-          onRemove={() => onUpdate({ source: 'all' })}
-        />
-      ) : null}
+      {isAdmin && selectedSources.length > 0
+        ? selectedSources.map((sourceId) => (
+            <ActiveFilterChip
+              key={sourceId}
+              label={labelFor(sourceId, SOURCE_OPTIONS)}
+              onRemove={() => {
+                const next = selectedSources.filter((s) => s !== sourceId);
+                onUpdate({ source: next.length === 0 ? 'all' : next.join(',') });
+              }}
+            />
+          ))
+        : null}
     </>
   );
 
@@ -181,16 +195,23 @@ export default function JobFilters({
 
       {isAdmin ? (
         <PillRow label="Source (admin)">
-          {SOURCE_OPTIONS.map((opt) => (
-            <FilterPill
-              key={opt.id}
-              id={opt.id}
-              label={opt.label}
-              current={filters.source}
-              onSelect={(next) => onUpdate({ source: next })}
-              color="emerald"
-            />
-          ))}
+          {SOURCE_OPTIONS.map((opt) => {
+            const isPillActive =
+              opt.id === 'all'
+                ? selectedSources.length === 0
+                : selectedSources.includes(opt.id);
+
+            return (
+              <FilterPill
+                key={opt.id}
+                id={opt.id}
+                label={opt.label}
+                active={isPillActive}
+                onSelect={handleSourceSelect}
+                color="emerald"
+              />
+            );
+          })}
         </PillRow>
       ) : null}
     </div>

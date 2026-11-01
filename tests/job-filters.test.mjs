@@ -87,6 +87,18 @@ section('readFiltersFromSearchParams — defaults & invalid values');
 }
 {
   const r = readFiltersFromSearchParams(
+    new URLSearchParams('source=naukri,indeed'),
+  );
+  eq(r.source, 'naukri,indeed', 'comma-separated source params parsed');
+}
+{
+  const r = readFiltersFromSearchParams(
+    new URLSearchParams('source=naukri&source=indeed'),
+  );
+  eq(r.source, 'naukri,indeed', 'multiple source query keys parsed');
+}
+{
+  const r = readFiltersFromSearchParams(
     new URLSearchParams('tab=matching'),
   );
   eq(r.tab, 'matching', 'tab=matching is parsed');
@@ -145,6 +157,20 @@ section('writeFiltersToSearchParams — defaults are NEVER serialized');
   ok(out.includes('source=linkedin_jobs'), 'admin source filter is serialized');
 }
 {
+  const out = writeFiltersToSearchParams({
+    ...DEFAULT_FILTERS,
+    source: 'naukri,indeed',
+  }).toString();
+  ok(out.includes('source=naukri%2Cindeed') || out.includes('source=naukri,indeed'), 'multi-source filter is serialized');
+}
+{
+  const out = writeFiltersToSearchParams({
+    ...DEFAULT_FILTERS,
+    source: ['naukri', 'indeed'],
+  }).toString();
+  ok(out.includes('source=naukri%2Cindeed') || out.includes('source=naukri,indeed'), 'array source filter is serialized');
+}
+{
   const out = writeFiltersToSearchParams({ ...DEFAULT_FILTERS, page: 1 }).toString();
   eq(out, '', 'page=1 is omitted (canonical URL has no page param)');
 }
@@ -155,6 +181,10 @@ ok(!isAnyFilterActive(DEFAULT_FILTERS), 'defaults -> not active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, q: 'foo' }), 'q -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, category: 'it' }), 'category -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: 'naukri' }), 'source -> active');
+ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: 'naukri,indeed' }), 'multi-source -> active');
+ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: ['naukri'] }), 'array source -> active');
+ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, source: [] }), 'empty array source -> not active');
+ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, source: ['all'] }), 'all in array -> not active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'direct' }), 'tab=direct -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'matching' }), 'tab=matching -> active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, page: 5 }), 'page change alone -> not active');
@@ -215,6 +245,16 @@ section('applyJobFilters — admin source filter');
     applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'linkedin' }).map((j) => j.id).sort(),
     ['lj', 'lp'].sort(),
     'source=linkedin matches jobs and posts',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: 'naukri,admin' }).map((j) => j.id).sort(),
+    ['a', 'n'].sort(),
+    'source=naukri,admin matches both',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, source: ['linkedin_jobs', 'naukri'] }).map((j) => j.id).sort(),
+    ['lj', 'n'].sort(),
+    'source array matches linkedin_jobs and naukri',
   );
 }
 

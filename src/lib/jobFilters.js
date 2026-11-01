@@ -21,7 +21,7 @@ import {
   jobMatchesCategoryFilter,
   normalizeJobCategory,
 } from './jobCategoryTaxonomy.js';
-import { ADMIN_SOURCE_OPTIONS, matchesAdminSourceFilter } from './jobSourceFilter.js';
+import { ADMIN_SOURCE_OPTIONS, matchesAdminSourceFilter, parseSourceFilter } from './jobSourceFilter.js';
 import { isDirectPosting } from './jobDirectPosting.js';
 
 export const PAGE_SIZE = 12;
@@ -77,7 +77,9 @@ export const readFiltersFromSearchParams = (searchParams) => {
   const rawCategory = (searchParams.get('category') ?? 'all').toLowerCase();
   const rawJobType = (searchParams.get('jobType') ?? 'all').toLowerCase();
   const rawFreshness = (searchParams.get('freshness') ?? 'all').toLowerCase();
-  const rawSource = (searchParams.get('source') ?? 'all').toLowerCase();
+  const rawSourceParam = searchParams.getAll ? searchParams.getAll('source') : [searchParams.get('source')];
+  const parsedSources = parseSourceFilter(rawSourceParam);
+  const normalizedSource = parsedSources.length === 0 ? 'all' : parsedSources.join(',');
   const pageNum = Number(searchParams.get('page'));
   const rawCompany = (searchParams.get('company') ?? '').trim();
   const rawQuery =
@@ -93,7 +95,7 @@ export const readFiltersFromSearchParams = (searchParams) => {
     category: isOptionId(rawCategory, CATEGORY_OPTIONS) ? rawCategory : 'all',
     jobType: isOptionId(rawJobType, JOB_TYPE_OPTIONS) ? rawJobType : 'all',
     freshness: isOptionId(rawFreshness, FRESHNESS_OPTIONS) ? rawFreshness : 'all',
-    source: isOptionId(rawSource, SOURCE_OPTIONS) ? rawSource : 'all',
+    source: normalizedSource,
     page: Number.isFinite(pageNum) && pageNum > 0 ? Math.floor(pageNum) : 1,
   };
 };
@@ -108,7 +110,12 @@ export const writeFiltersToSearchParams = (filters) => {
   if (filters.category && filters.category !== 'all') out.set('category', filters.category);
   if (filters.jobType && filters.jobType !== 'all') out.set('jobType', filters.jobType);
   if (filters.freshness && filters.freshness !== 'all') out.set('freshness', filters.freshness);
-  if (filters.source && filters.source !== 'all') out.set('source', filters.source);
+  if (filters.source && filters.source !== 'all') {
+    const sources = parseSourceFilter(filters.source);
+    if (sources.length > 0) {
+      out.set('source', sources.join(','));
+    }
+  }
   if (filters.page && filters.page > 1) out.set('page', String(filters.page));
   return out;
 };
@@ -119,7 +126,7 @@ export const isAnyFilterActive = (filters) =>
   filters.category !== 'all' ||
   filters.jobType !== 'all' ||
   filters.freshness !== 'all' ||
-  filters.source !== 'all' ||
+  (Boolean(filters.source) && filters.source !== 'all' && parseSourceFilter(filters.source).length > 0) ||
   (filters.tab && filters.tab !== 'all');
 
 const matchesSearchText = (job, q) => {

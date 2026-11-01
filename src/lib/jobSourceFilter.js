@@ -77,16 +77,58 @@ export const inferJobAdminSourceId = (job) => {
   return 'admin';
 };
 
-export const matchesAdminSourceFilter = (job, sourceId) => {
-  if (!sourceId || sourceId === 'all') {
+export const parseSourceFilter = (source) => {
+  if (!source || source === 'all') {
+    return [];
+  }
+  const rawList = Array.isArray(source)
+    ? source.flatMap((s) => (typeof s === 'string' ? s.split(',') : []))
+    : String(source).split(',');
+  const validIds = new Set(ADMIN_SOURCE_OPTIONS.map((opt) => opt.id).filter((id) => id !== 'all'));
+  const cleaned = [];
+  for (const item of rawList) {
+    const s = String(item ?? '').trim().toLowerCase();
+    if (s && s !== 'all' && validIds.has(s) && !cleaned.includes(s)) {
+      cleaned.push(s);
+    }
+  }
+  return cleaned;
+};
+
+export const toggleAdminSource = (currentSources, sourceToToggle) => {
+  if (!sourceToToggle || sourceToToggle === 'all') {
+    return [];
+  }
+  const current = parseSourceFilter(currentSources);
+  const target = String(sourceToToggle).trim().toLowerCase();
+
+  if (current.includes(target)) {
+    return current.filter((s) => s !== target);
+  }
+
+  if (target === 'linkedin') {
+    return [...current.filter((s) => s !== 'linkedin_jobs' && s !== 'linkedin_posts'), 'linkedin'];
+  }
+
+  if (target === 'linkedin_jobs' || target === 'linkedin_posts') {
+    return [...current.filter((s) => s !== 'linkedin'), target];
+  }
+
+  return [...current, target];
+};
+
+export const matchesAdminSourceFilter = (job, sourceFilter) => {
+  const sources = parseSourceFilter(sourceFilter);
+  if (sources.length === 0) {
     return true;
   }
 
   const bucket = inferJobAdminSourceId(job);
 
-  if (sourceId === 'linkedin') {
-    return bucket === 'linkedin_jobs' || bucket === 'linkedin_posts';
-  }
-
-  return bucket === sourceId;
+  return sources.some((sourceId) => {
+    if (sourceId === 'linkedin') {
+      return bucket === 'linkedin_jobs' || bucket === 'linkedin_posts';
+    }
+    return bucket === sourceId;
+  });
 };

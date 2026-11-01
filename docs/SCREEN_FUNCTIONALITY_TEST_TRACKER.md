@@ -123,6 +123,23 @@
 - Added contextual re-prompts after saving a job or completing a student profile, plus selectable alert categories stored with the opt-in event.
 - Functional E2E & Mobile UI: Pending authenticated browser-permission journey evidence.
 
+## QA-2026-11-01-Home-Admin-Multi-Source-Filter
+
+- Scope: `src/components/JobFilters.jsx`, `src/lib/jobFilters.js`, `src/lib/jobSourceFilter.js`, `tests/job-filters.test.mjs`, `tests/job-source-filter.test.mjs`.
+- Problem resolved:
+  - User requested: "in the hoem page in thsi section i want to choose mutiple opetions in thsi" with screenshot of the SOURCE (ADMIN) filter row (All sources, Naukri, LinkedIn, LinkedIn Jobs, LinkedIn Posts, Indeed, Admin posted, Employer posted).
+  - Previously, the source filter was single-select only; clicking any source deselected any other source.
+- Solution delivered:
+  - Multi-select toggle support for Admin Source options:
+    - `src/lib/jobSourceFilter.js`: Added `parseSourceFilter` to normalize string or array of sources, `toggleAdminSource` to handle multi-selection logic (including clearing on 'all', umbrella 'linkedin' vs 'linkedin_jobs'/'linkedin_posts' resolution), and updated `matchesAdminSourceFilter` to match any selected source bucket.
+    - `src/lib/jobFilters.js`: Updated `readFiltersFromSearchParams` and `writeFiltersToSearchParams` to parse and serialize comma-separated source filters (`?source=naukri,indeed`) or multiple source keys, and updated `isAnyFilterActive` to detect active multi-sources.
+    - `src/components/JobFilters.jsx`: Enhanced `FilterPill` with an explicit `active` prop, multi-source toggle handler, and per-source removable active chips for both desktop and mobile viewports.
+- Verification:
+  - `node tests/job-source-filter.test.mjs` passed 33/33 tests.
+  - `node tests/job-filters.test.mjs` passed 81/81 tests.
+  - `npx vite build` built cleanly in 9.05s.
+- Functional E2E & Mobile UI: In progress per workflow guidelines until authenticated journey passes with recorded evidence.
+
 ## QA-2026-10-31-Admin-Growth-Analytics
 
 - Added time-range analytics to the admin Notifications dashboard for push subscriptions, student registrations, employer registrations, and employer job submissions.
