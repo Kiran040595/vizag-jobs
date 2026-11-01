@@ -29,7 +29,7 @@
   },
   {
     "name": "WNS",
-    "careers_url": "https://www.wns.com/about-us/careers",
+    "careers_url": "https://careers.smartrecruiters.com/WNSGlobalServices144?search=Visakhapatnam",
     "category": "BPO",
     "location_hint": "Visakhapatnam, IT SEZ Rushikonda",
     "active": true
@@ -43,7 +43,7 @@
   },
   {
     "name": "Fluentgrid Limited",
-    "careers_url": "https://fluentgrid.com/careers/",
+    "careers_url": "https://fluentgrid.com/careers/?job__location_spec=visakhapatnam",
     "category": "IT",
     "location_hint": "Visakhapatnam, IT SEZ Rushikonda",
     "active": true
@@ -106,7 +106,7 @@
   },
   {
     "name": "Brandix",
-    "careers_url": "https://careers.brandix.com/",
+    "careers_url": "https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam",
     "category": "Manufacturing",
     "location_hint": "Visakhapatnam, Brandix India Apparel City, Atchutapuram",
     "active": true

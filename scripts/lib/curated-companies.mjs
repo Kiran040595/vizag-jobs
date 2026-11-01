@@ -41,7 +41,7 @@ export const CURATED_COMPANIES = {
   },
   'WNS': {
     website: 'https://www.wns.com',
-    careers_url: 'https://www.wns.com/about-us/careers',
+    careers_url: 'https://careers.smartrecruiters.com/WNSGlobalServices144?search=Visakhapatnam',
     category: 'BPO / Customer Support',
     is_active_for_scrape: true,
   },
@@ -71,13 +71,13 @@ export const CURATED_COMPANIES = {
   },
   'Fluentgrid Limited': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
   'Fluentgrid': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
@@ -553,7 +553,7 @@ export const CURATED_COMPANIES = {
   },
   'GMR Group': {
     website: 'https://www.gmrgroup.in',
-    careers_url: 'https://careers.gmrgroup.in/',
+    careers_url: 'https://careers.gmrgroup.in/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },
@@ -705,13 +705,13 @@ export const CURATED_COMPANIES = {
   },
   'brandix': {
     website: 'https://brandix.com',
-    careers_url: 'https://careers.brandix.com/',
+    careers_url: 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },
   'Brandix': {
     website: 'https://brandix.com',
-    careers_url: 'https://careers.brandix.com/',
+    careers_url: 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     is_active_for_scrape: true,
   },

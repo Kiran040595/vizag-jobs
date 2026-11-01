@@ -32,6 +32,7 @@ import {
   scrapeWorkdayCareerPortal,
   resolveCanonicalCareerPortalUrl,
   parseConduentSearchJobs,
+  scrapeVerifiedVizagPortal,
 } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -141,6 +142,8 @@ function htmlToCleanMarkdown(html, baseUrl) {
 
 async function scrapeCareerPage(url, firecrawlKey, companyName) {
   const resolvedUrl = resolveCanonicalCareerPortalUrl(url, companyName);
+  const verifiedPortal = await scrapeVerifiedVizagPortal(resolvedUrl, companyName);
+  if (verifiedPortal) return verifiedPortal;
 
   // Strategy 0: Workday CXS JSON API (Pfizer, etc.)
   if (parseWorkdayPortalUrl(resolvedUrl)) {

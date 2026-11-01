@@ -58,7 +58,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'WNS': {
     website: 'https://www.wns.com',
-    careers_url: 'https://www.wns.com/about-us/careers',
+    careers_url: 'https://careers.smartrecruiters.com/WNSGlobalServices144?search=Visakhapatnam',
     category: 'IT & Software',
   },
   'Miracle Software Systems': {
@@ -73,12 +73,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Fluentgrid Limited': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
   },
   'Fluentgrid': {
     website: 'https://fluentgrid.com',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
   },
   'Symbiosis Technologies': {
@@ -309,12 +309,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'brandix': {
     website: 'https://brandix.com',
-    careers_url: 'https://careers.brandix.com/',
+    careers_url: 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
   },
   'Brandix': {
     website: 'https://brandix.com',
-    careers_url: 'https://careers.brandix.com/',
+    careers_url: 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
   },
   'Foxconn': {
@@ -324,7 +324,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'GMR Group': {
     website: 'https://www.gmrgroup.in',
-    careers_url: 'https://careers.gmrgroup.in/',
+    careers_url: 'https://careers.gmrgroup.in/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
   },
   'Indus Towers': {

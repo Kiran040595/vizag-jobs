@@ -1,5 +1,12 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Remaining-Company-Career-URLs
+
+- Verified and configured city-filtered official searches for Brandix, GMR, WNS and Fluentgrid; defaults, catalog and migration match the verified URLs.
+- Added direct listing/detail extraction for SuccessFactors, WNS public posting API and Fluentgrid JobPosting schema to both the admin backend and scheduled pipeline.
+- Evidence: `docs/qa/2026-11-01/company-career-verification.md`. Live extraction returned 12 Brandix, 1 GMR, 3 WNS and 8 Fluentgrid jobs. Every extracted job explicitly includes Vizag; three Fluentgrid roles additionally offer Vijayawada.
+- Functional E2E: pending authenticated admin fetch/review/SEO/publish. Mobile UI: unchanged, not retested. Live portal extraction is not publication E2E evidence.
+
 ## QA-2026-11-01-Conduent-Vizag-Careers
 
 - Verified official `https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam` embedded search response: totalHits=8, eight returned records, every city=Visakhapatnam. Job IDs: 26835, 26837, 26834, 25986, 26826, 26836, 26668, 26765.

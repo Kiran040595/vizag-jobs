@@ -16,7 +16,21 @@ import {
   runSingleCompanyCareerPipeline,
 } from '../src/lib/companyCareerFetchAutomation.js';
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
-import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
+
+test('SuccessFactors reads result rows once and rejects non-Vizag or external links', () => {
+  const row = (href, location) => `<tr class="data-row"><td><a href="${href}" class="jobTitle-link">Engineer</a><a href="${href}" class="jobTitle-link">Engineer</a><span class="jobLocation">${location}</span></td></tr>`;
+  const html = row('/job/Vizag/123/', 'Visakhapatnam, India') + row('/job/Pune/456/', 'Pune, India') + row('https://unrelated.example/job/1', 'Visakhapatnam');
+  const jobs = parseSuccessFactorsVizagJobs(html, VERIFIED_VIZAG_PORTALS.brandix, 'Brandix');
+  assert.equal(jobs.length, 1);
+  assert.equal(jobs[0].apply_link, 'https://careers.brandix.com/job/Vizag/123/');
+});
+
+test('Verified city-filtered URLs survive canonicalization', () => {
+  for (const [name, url] of Object.entries(VERIFIED_VIZAG_PORTALS)) {
+    assert.equal(resolveCanonicalCareerPortalUrl(url, name), url);
+  }
+});
 
 test('Conduent embedded results exclude other cities and retain job apply links', () => {
   const rows = [

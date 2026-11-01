@@ -29,6 +29,90 @@ export type ExtractedCompanyCareerJob = {
   skills?: string[];
 };
 
+export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
+  brandix: 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam',
+  'gmr group': 'https://careers.gmrgroup.in/search/?q=&locationsearch=Visakhapatnam',
+  wns: 'https://careers.smartrecruiters.com/WNSGlobalServices144?search=Visakhapatnam',
+  'fluentgrid limited': 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
+  fluentgrid: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
+};
+
+/** SuccessFactors repeats mobile/desktop links; read one record per result row. */
+export function parseSuccessFactorsVizagJobs(html: string, baseUrl: string, company: string): ExtractedCompanyCareerJob[] {
+  const jobs: ExtractedCompanyCareerJob[] = [];
+  for (const row of html.match(/<tr\b[^>]*class=["'][^"']*\bdata-row\b[^"']*["'][^>]*>[\s\S]*?<\/tr>/gi) || []) {
+    const anchor = row.match(/<a\b([^>]*)>([\s\S]*?)<\/a>/i);
+    const href = anchor?.[1].match(/href=["']([^"']+)["']/i)?.[1];
+    const location = row.match(/<span\b[^>]*class=["']jobLocation["'][^>]*>\s*([^<]+)/i)?.[1]?.trim();
+    if (!href || !location || !/\bvisakhapatnam\b/i.test(location)) continue;
+    const apply = new URL(href.replace(/&amp;/g, '&'), baseUrl);
+    if (apply.origin !== new URL(baseUrl).origin || !apply.pathname.startsWith('/job/')) continue;
+    jobs.push({ title: htmlToCleanMarkdown(anchor?.[2] || '', baseUrl), company, location, apply_link: apply.href });
+  }
+  return jobs;
+}
+
+/** Read official filtered listings and each posting's description directly. */
+export async function scrapeVerifiedVizagPortal(url: string, company: string) {
+  const host = new URL(url).hostname;
+  const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in'].includes(host);
+  const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
+  const fluentgrid = host === 'fluentgrid.com' && new URL(url).searchParams.get('job__location_spec') === 'visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid) return null;
+  const page = await fetch(url, { signal: AbortSignal.timeout(20000) });
+  if (!page.ok) throw new Error(`Official careers search returned ${page.status}`);
+  const html = await page.text();
+  const rows = successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
+    [...new Set([...html.matchAll(/href=["'](https:\/\/fluentgrid\.com\/jobs\/[^"'#]+)["']/g)].map((m) => m[1]))]
+      .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) :
+    [...new Set([...html.matchAll(/href=["'](https:\/\/jobs\.smartrecruiters\.com\/WNSGlobalServices144\/[^"']+)["']/g)].map((m) => m[1]))]
+      .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob));
+  const jobs: ExtractedCompanyCareerJob[] = [];
+  // Bounded batches avoid overloading the employer's public site.
+  for (let i = 0; i < rows.length; i += 4) {
+    const batch = await Promise.all(rows.slice(i, i + 4).map(async (row) => {
+      try {
+        if (wns) {
+          const id = new URL(row.apply_link!).pathname.split('/')[2].split('-')[0];
+          if (!/^\d+$/.test(id)) return null;
+          const response = await fetch(`https://api.smartrecruiters.com/v1/companies/WNSGlobalServices144/postings/${id}`, { signal: AbortSignal.timeout(15000) });
+          if (!response.ok) return null;
+          const posting = await response.json();
+          if (posting.company?.identifier !== 'WNSGlobalServices144' || !/\b(visakhapatnam|vizag)\b/i.test(posting.location?.city || '')) return null;
+          const description = Object.values(posting.jobAd?.sections || {}).map((section) => htmlToCleanMarkdown((section as { text?: string }).text || '', row.apply_link!)).join('\n\n');
+          if (description.length < 80 || !posting.name) return null;
+          return { ...row, title: String(posting.name), location: String(posting.location.fullLocation || posting.location.city), description };
+        }
+        const response = await fetch(row.apply_link!, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const detail = await response.text();
+        let description = htmlToCleanMarkdown(detail, row.apply_link!).slice(0, 20000);
+        let title = row.title;
+        let location = row.location;
+        if (fluentgrid) {
+          const blocks = [...detail.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+          for (const block of blocks) {
+            try {
+              const parsed = JSON.parse(block[1]);
+              const records = Array.isArray(parsed) ? parsed : [parsed, ...(parsed['@graph'] || [])];
+              const posting = records.find((item) => item['@type'] === 'JobPosting');
+              if (!posting) continue;
+              title = posting.title;
+              const places = Array.isArray(posting.jobLocation) ? posting.jobLocation : [posting.jobLocation];
+              location = places.map((place: { address?: string | { addressLocality?: string } }) => typeof place?.address === 'string' ? place.address : place?.address?.addressLocality || '').join(', ');
+              description = htmlToCleanMarkdown(posting.description || '', row.apply_link!).slice(0, 20000);
+            } catch { /* Unrelated/malformed schema is not vacancy evidence. */ }
+          }
+        }
+        if (!title || !location || !/\b(visakhapatnam|vizag)\b/i.test(location) || description.length < 80) return null;
+        return { ...row, title, location, description };
+      } catch { return null; }
+    }));
+    jobs.push(...batch.filter((item): item is NonNullable<typeof item> => item !== null));
+  }
+  return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_html' as const };
+}
+
 /** Conduent renders its verified search results from embedded Phenom data. */
 export function parseConduentSearchJobs(html: string): ExtractedCompanyCareerJob[] {
   const marker = '"eagerLoadRefineSearch":';
@@ -149,6 +233,7 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
   const trimmed = (rawUrl || '').trim();
   const lowerUrl = trimmed.toLowerCase();
   const lowerName = (companyName || '').trim().toLowerCase();
+  if (VERIFIED_VIZAG_PORTALS[lowerName]) return VERIFIED_VIZAG_PORTALS[lowerName];
 
   const PFIZER_DEFAULT_VIZAG_WORKDAY_URL =
     'https://pfizer.wd1.myworkdayjobs.com/PfizerCareers?locations=e2d3979e3af10195da701f58076c648f&startDate=a6e09e1f3296100014ae1d545f3c0098';
@@ -793,6 +878,8 @@ export async function scrapeCompanyCareerPage(
   reason?: string;
 }> {
   const resolvedUrl = resolveCanonicalCareerPortalUrl(url, options.companyName);
+  const verifiedPortal = await scrapeVerifiedVizagPortal(resolvedUrl, options.companyName || '');
+  if (verifiedPortal) return verifiedPortal;
   let lastError: Error | null = null;
 
   // Strategy 0: Native Workday CXS JSON API (for *.myworkdayjobs.com portals like Pfizer)

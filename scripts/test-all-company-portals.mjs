@@ -37,7 +37,7 @@ const PUBLISHED_COMPANIES = [
   // IT & Software
   {
     name: 'Fluentgrid Limited',
-    careers_url: 'https://fluentgrid.com/careers/',
+    careers_url: 'https://fluentgrid.com/careers/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
     location: 'Visakhapatnam, IT SEZ Rushikonda',
   },
@@ -55,7 +55,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'WNS',
-    careers_url: 'https://www.wns.com/about-us/careers',
+    careers_url: 'https://careers.smartrecruiters.com/WNSGlobalServices144?search=Visakhapatnam',
     category: 'IT & Software',
     location: 'Visakhapatnam, IT SEZ Rushikonda',
   },
@@ -222,7 +222,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Brandix',
-    careers_url: 'https://careers.brandix.com/',
+    careers_url: 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     location: 'Visakhapatnam, Brandix India Apparel City, Atchutapuram',
   },
@@ -234,7 +234,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'GMR Group',
-    careers_url: 'https://careers.gmrgroup.in/',
+    careers_url: 'https://careers.gmrgroup.in/search/?q=&locationsearch=Visakhapatnam',
     category: 'Manufacturing',
     location: 'Visakhapatnam / Bhogapuram Airport',
   },
