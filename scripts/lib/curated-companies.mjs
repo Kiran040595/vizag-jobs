@@ -691,6 +691,12 @@ export const CURATED_COMPANIES = {
     category: 'Hospitality & Retail',
     is_active_for_scrape: true,
   },
+  'Radisson Hotel Group': {
+    website: 'https://www.radissonhotels.com',
+    careers_url: 'https://careers.smartrecruiters.com/RHG?search=Visakhapatnam',
+    category: 'Hospitality & Retail',
+    is_active_for_scrape: true,
+  },
   'cult fit': {
     website: 'https://www.cult.fit',
     careers_url: 'https://careers.cult.fit/cult/',

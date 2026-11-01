@@ -206,6 +206,33 @@ test('Paytm official Lever feed retains only its Vizag posting with a direct lin
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Radisson official SmartRecruiters feed validates employer and exact city', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('/postings?q=')) {
+      return Response.json({ content: [
+        { id: '744000146178529', name: 'Sales Manager', location: { city: 'Visakhapatnam' } },
+        { id: '744000146178530', name: 'Other City Manager', location: { city: 'Hyderabad' } },
+      ] });
+    }
+    return Response.json({
+      id: '744000146178529', name: 'Sales Manager',
+      company: { identifier: 'RHG' },
+      location: { city: 'Visakhapatnam', fullLocation: 'Visakhapatnam, AP, India' },
+      postingUrl: 'https://jobs.smartrecruiters.com/RHG/744000146178529-sales-manager',
+      jobAd: { sections: { jobDescription: { text: '<p>Lead hotel sales strategy, client relationships, revenue growth, market planning, and commercial team performance in Visakhapatnam.</p>' } } },
+    });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['radisson hotel group'], 'Radisson Hotel Group');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Sales Manager');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, AP, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.smartrecruiters.com/RHG/744000146178529-sales-manager');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

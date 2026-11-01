@@ -52,6 +52,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   miraclesoft: 'https://careers.miraclesoft.com/open-positions/',
   innocito: 'https://innocito.com/careers',
   paytm: 'https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh',
+  'radisson hotel group': 'https://careers.smartrecruiters.com/RHG?search=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -157,7 +158,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const miracle = host === 'careers.miraclesoft.com' && parsedUrl.pathname === '/open-positions/';
   const innocito = ['innocito.com', 'www.innocito.com'].includes(host) && parsedUrl.pathname === '/careers';
   const paytm = host === 'jobs.lever.co' && parsedUrl.pathname === '/paytm' && parsedUrl.searchParams.get('location') === 'Vizag, Andhra Pradesh';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm) return null;
+  const radisson = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/RHG' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -179,6 +181,32 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         return {
           title: String(posting.name), company, location: String(posting.location.fullLocation || posting.location.city), description,
           apply_link: applyUrl,
+        } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (radisson) {
+    const search = await fetch('https://api.smartrecruiters.com/v1/companies/RHG/postings?q=Visakhapatnam', { signal: AbortSignal.timeout(20000) });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const rows = (Array.isArray(payload.content) ? payload.content : []).filter((posting: Record<string, unknown>) => {
+      const location = posting.location as { city?: string } | undefined;
+      return /^visakhapatnam$/i.test(location?.city || '');
+    });
+    const jobs = (await Promise.all(rows.map(async (row: Record<string, unknown>) => {
+      try {
+        const response = await fetch(`https://api.smartrecruiters.com/v1/companies/RHG/postings/${row.id}`, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const posting = await response.json();
+        if (posting.company?.identifier !== 'RHG' || !/^visakhapatnam$/i.test(posting.location?.city || '')) return null;
+        const description = Object.values(posting.jobAd?.sections || {}).map((section) => htmlToCleanMarkdown((section as { text?: string }).text || '', url)).join('\n\n');
+        const applyUrl = String(posting.postingUrl || '');
+        if (!posting.name || description.length < 80 || !applyUrl.startsWith(`https://jobs.smartrecruiters.com/RHG/${posting.id}`)) return null;
+        return {
+          title: String(posting.name), company,
+          location: String(posting.location.fullLocation || 'Visakhapatnam, Andhra Pradesh, India'),
+          description, apply_link: applyUrl,
         } as ExtractedCompanyCareerJob;
       } catch { return null; }
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);

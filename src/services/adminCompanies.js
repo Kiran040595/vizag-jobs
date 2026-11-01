@@ -558,6 +558,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://careers.smartrecruiters.com/HMGroup?search=Vishakhapatnam',
     category: 'Hospitality & Retail',
   },
+  'Radisson Hotel Group': {
+    website: 'https://www.radissonhotels.com',
+    careers_url: 'https://careers.smartrecruiters.com/RHG?search=Visakhapatnam',
+    category: 'Hospitality & Retail',
+  },
   'Sodexo': {
     website: 'https://www.sodexo.in',
     careers_url: 'https://www.sodexo.in/careers',

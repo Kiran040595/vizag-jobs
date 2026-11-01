@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-01-Radisson-Verified-Careers
+
+- Replaced Radisson Hotel Group's generic careers URL with its official SmartRecruiters Visakhapatnam search and added native API extraction.
+- Live backend verification returned 1 current role with exact Visakhapatnam city, validated RHG employer identifier, full description and direct application link.
+- Scraper tests, defaults and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Paytm-Verified-Careers
 
 - Replaced Paytm's generated marketing careers URL with its official Lever board filtered to Vizag and added native Lever API extraction.
