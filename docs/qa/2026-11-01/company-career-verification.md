@@ -25,6 +25,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Paytm | https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh | Official Paytm Lever board filtered to Vizag. Native Lever API extraction currently returns 1 Paytm role with exact Vizag location, a 3,101-character description and an individual employer application page; separate Paytm Payments Services listings are not merged into this company record |
 | Radisson Hotel Group | https://careers.smartrecruiters.com/RHG?search=Visakhapatnam | Official Radisson Hotel Group SmartRecruiters search. Native API extraction validates the RHG employer identifier and exact Visakhapatnam city; live verification returned 1 role with a 4,831-character cleaned description and direct application page |
 | Wipro | https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam | Official SuccessFactors search API returned 2 active records with exact Visakhapatnam city and India country fields. Native extraction validates current end dates, canonical IDs/detail paths, and scoped employer descriptions |
+| Concentrix | https://jobs.concentrix.com/job-search/?country=India&city=Visakhapatnam | Employer-owned search embeds current Workday recruitment data. Native extraction validates exact city/country, open status, Concentrix legal employer, listing/application flags, requisition ID and direct Workday application URL; live verification returned 1 Vizag role with a 2,039-character cleaned description |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -48,6 +49,7 @@ Posting IDs from the live check:
   infrastructure-lead, it-security-lead,
   project-manager-electricity-utility-billing-system-implementation.
 - Wipro: 207016 (Administrator L0 (Contract)), 212142 (Production Agent L1).
+- Concentrix: R1765090 (Asst Manager, Operations).
 
 ## Other official portals investigated in this batch
 

@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Concentrix-Verified-Careers
+
+- Replaced Concentrix's generic careers page with its employer-owned India/Visakhapatnam search and added native embedded Workday-record extraction.
+- Live backend verification returned 1 open Visakhapatnam role with validated Concentrix legal employer, application/listing flags, full description and direct Workday application URL.
+- Scraper tests, defaults and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-02-Wipro-Verified-Careers
 
 - Replaced Wipro's generic careers page with its official SuccessFactors search filtered to Visakhapatnam and added native recruiting-API extraction.

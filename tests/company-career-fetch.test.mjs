@@ -66,6 +66,34 @@ test('Wipro official recruiting API retains active exact-city jobs with scoped d
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Concentrix employer job data retains only open exact-city Workday applications', async () => {
+  const originalFetch = globalThis.fetch;
+  const posting = (overrides = {}) => ({
+    ats_external_id: 'R1765090', job_title: 'Asst Manager, Operations', city: 'Visakhapatnam', country: 'India',
+    job_category: 'Contact Center', job_type: 'full_time', allow_applications: '1', publish_on_job_listing: '1',
+    long_description: '<p>Lead contact-center operations, coach teams, manage performance targets, and deliver strong customer outcomes.</p>',
+    apply_url: 'https://cnx.wd1.myworkdayjobs.com/external_global/job/IND-Visakhapatnam/Asst-Manager--Operations_R1765090/apply',
+    workday_job_requisition_data: { status: { id: 'OPEN' }, company: { descriptor: 'Concentrix Daksh Services India Private Limited' } },
+    ...overrides,
+  });
+  globalThis.fetch = async (url) => {
+    assert.equal(String(url), VERIFIED_VIZAG_PORTALS.concentrix);
+    const payload = { data: [
+      posting(),
+      posting({ ats_external_id: 'R1765091', city: 'Hyderabad', apply_url: 'https://cnx.wd1.myworkdayjobs.com/external_global/job/IND-Hyderabad/Other_R1765091/apply' }),
+      posting({ ats_external_id: 'R1765092', workday_job_requisition_data: { status: { id: 'CLOSED' }, company: { descriptor: 'Concentrix Daksh Services India Private Limited' } }, apply_url: 'https://cnx.wd1.myworkdayjobs.com/external_global/job/IND-Visakhapatnam/Closed_R1765092/apply' }),
+    ] };
+    return new Response(`<script type="application/json" id="jobsData">${JSON.stringify(payload)}</script>`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.concentrix, 'Concentrix');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Asst Manager, Operations');
+    assert.equal(result.structuredJobs[0].category, 'Contact Center');
+    assert.match(result.structuredJobs[0].apply_link, /R1765090\/apply$/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Verified city-filtered URLs survive canonicalization', () => {
   for (const [name, url] of Object.entries(VERIFIED_VIZAG_PORTALS)) {
     assert.equal(resolveCanonicalCareerPortalUrl(url, name), url);

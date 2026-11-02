@@ -54,6 +54,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   paytm: 'https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh',
   'radisson hotel group': 'https://careers.smartrecruiters.com/RHG?search=Visakhapatnam',
   wipro: 'https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam',
+  concentrix: 'https://jobs.concentrix.com/job-search/?country=India&city=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -161,7 +162,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const paytm = host === 'jobs.lever.co' && parsedUrl.pathname === '/paytm' && parsedUrl.searchParams.get('location') === 'Vizag, Andhra Pradesh';
   const radisson = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/RHG' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
   const wipro = host === 'careers.wipro.com' && parsedUrl.pathname === '/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro) return null;
+  const concentrix = host === 'jobs.concentrix.com' && parsedUrl.pathname === '/job-search/' && parsedUrl.searchParams.get('country') === 'India' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -258,6 +260,40 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         } as ExtractedCompanyCareerJob;
       } catch { return null; }
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (concentrix) {
+    const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error(`Official careers search returned ${response.status}`);
+    const html = await response.text();
+    const rawPayload = html.match(/<script\b[^>]*id=["']jobsData["'][^>]*>([\s\S]*?)<\/script>/i)?.[1];
+    if (!rawPayload) throw new Error('Official careers search did not include its job data');
+    const payload = JSON.parse(rawPayload);
+    const jobs = (Array.isArray(payload.data) ? payload.data : []).flatMap((posting: Record<string, unknown>) => {
+      const workday = posting.workday_job_requisition_data as Record<string, unknown> | undefined;
+      const status = workday?.status as { id?: string } | undefined;
+      const employer = workday?.company as { descriptor?: string } | undefined;
+      const id = String(posting.ats_external_id || '');
+      const title = String(posting.job_title || '').trim();
+      if (!/^visakhapatnam$/i.test(String(posting.city || '')) || !/^india$/i.test(String(posting.country || ''))) return [];
+      if (status?.id !== 'OPEN' || !/^Concentrix\b/i.test(employer?.descriptor || '') || posting.allow_applications !== '1' || posting.publish_on_job_listing !== '1') return [];
+      if (!/^R\d+$/.test(id) || !title) return [];
+      const applyLink = String(posting.apply_url || '');
+      let parsedApply: URL;
+      try { parsedApply = new URL(applyLink); } catch { return []; }
+      if (parsedApply.hostname !== 'cnx.wd1.myworkdayjobs.com' || !parsedApply.pathname.startsWith('/external_global/job/') || !parsedApply.pathname.endsWith('/apply') || !parsedApply.pathname.includes(`_${id}/`)) return [];
+      const description = htmlToCleanMarkdown(String(posting.long_description || ''), url).slice(0, 20000);
+      if (description.length < 80) return [];
+      return [{
+        title,
+        company,
+        location: 'Visakhapatnam, Andhra Pradesh, India',
+        category: String(posting.job_category || ''),
+        job_type: String(posting.job_type || ''),
+        description,
+        apply_link: applyLink,
+      } as ExtractedCompanyCareerJob];
+    });
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   if (sailsSoftware) {

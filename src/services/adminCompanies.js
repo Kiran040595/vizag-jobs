@@ -56,6 +56,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam',
     category: 'IT & Software',
   },
+  'Concentrix': {
+    website: 'https://www.concentrix.com',
+    careers_url: 'https://jobs.concentrix.com/job-search/?country=India&city=Visakhapatnam',
+    category: 'BPO & KPO',
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',
