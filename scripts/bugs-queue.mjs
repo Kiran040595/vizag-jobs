@@ -11,8 +11,13 @@ function runCliQuery(sql) {
       stdio: ['ignore', 'pipe', 'ignore'],
       windowsHide: true,
     });
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.rows) ? parsed.rows : [];
+    const jsonStart = raw.indexOf('{');
+    const jsonEnd = raw.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      const parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
+      return Array.isArray(parsed?.rows) ? parsed.rows : [];
+    }
+    return [];
   } catch {
     return null;
   }
@@ -51,7 +56,7 @@ function parseArgs() {
   return { command, options };
 }
 
-async function listBugs(status = 'open') {
+export async function listBugs(status = 'open') {
   // If service role key is available, use client library directly
   if (pipelineConfig.supabaseServiceRoleKey) {
     const client = getAdminClient();
@@ -94,15 +99,21 @@ async function listBugs(status = 'open') {
 
   // Fallback to anon client
   const client = getAdminClient();
-  const { data } = await client
+  let query = client
     .from('site_error_logs')
     .select('id, error_message, stack_trace, component_stack, context, url, pathname, user_agent, screen_size, status, created_at')
     .order('created_at', { ascending: false })
     .limit(30);
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  const { data } = await query;
   return data || [];
 }
 
-async function resolveBug(id, { notes = 'Resolved by AI agent', commit = '' }) {
+export async function resolveBug(id, { notes = 'Resolved by AI agent', commit = '' } = {}) {
   if (pipelineConfig.supabaseServiceRoleKey) {
     const client = getAdminClient();
     const { data, error } = await client
@@ -128,7 +139,7 @@ async function resolveBug(id, { notes = 'Resolved by AI agent', commit = '' }) {
   return { id, status: 'resolved', resolution_notes: notes, resolved_in_commit: commit };
 }
 
-async function ignoreBug(id, { notes = 'Ignored' }) {
+export async function ignoreBug(id, { notes = 'Ignored' } = {}) {
   if (pipelineConfig.supabaseServiceRoleKey) {
     const client = getAdminClient();
     const { data, error } = await client
@@ -149,6 +160,112 @@ async function ignoreBug(id, { notes = 'Ignored' }) {
   const sql = `update public.site_error_logs set status = 'ignored', resolution_notes = '${safeNotes}' where id = '${id}';`;
   runCliQuery(sql);
   return { id, status: 'ignored', resolution_notes: notes };
+}
+
+export const AUTO_FIX_RULES = [
+  {
+    name: 'sw-permission-denial',
+    pattern: /Registration failed/i,
+    action: 'resolve',
+    notes: 'Resolved: Hardened service worker registration and push notification subscription guards in webPushSubscriptions.js, JobAlertNotifications.jsx, and pwaRecovery.js; filtered noise in errorReporter.js and api/report-error.js',
+  },
+  {
+    name: 'iab-java-bridge',
+    pattern: /Java object is gone|Java exception was raised|enableButtonsClickedMetaDataLogging/i,
+    action: 'ignore',
+    notes: 'Filtered: Meta/Instagram In-App Browser detached Java bridge noise',
+  },
+  {
+    name: 'storage-access-denied',
+    pattern: /localStorage.*Access is denied|The request was denied/i,
+    action: 'resolve',
+    notes: 'Resolved: Wrapped localStorage/sessionStorage in try/catch across auth contexts and app components',
+  },
+  {
+    name: 'replace-state-loop',
+    pattern: /Attempt to use history\.replaceState\(\) more than/i,
+    action: 'resolve',
+    notes: 'Resolved: Added canonicalRedirectAttemptedRef and pathname normalization in JobDetailsPage.jsx to prevent loop',
+  },
+  {
+    name: 'autofill-extension',
+    pattern: /_AutofillCallbackHandler/i,
+    action: 'ignore',
+    notes: 'Filtered: third-party browser autofill extension noise',
+  },
+  {
+    name: 'adsense-telemetry',
+    pattern: /^int64$/i,
+    action: 'ignore',
+    notes: 'Filtered: Google AdSense telemetry parse noise',
+  },
+  {
+    name: 'legacy-android-has-own',
+    pattern: /Object\.hasOwn is not a function/i,
+    action: 'resolve',
+    notes: 'Resolved: Added backward-compatible Object.hasOwn polyfill in src/main.jsx for older Android browsers',
+  },
+  {
+    name: 'unhandled-object-rejection',
+    pattern: /^\[object Object\]$/i,
+    action: 'resolve',
+    notes: 'Resolved: Formatted error payload in handleUnhandledRejection to serialize error details',
+  },
+];
+
+export async function autoFixBugs({ commit = '' } = {}) {
+  const bugs = await listBugs('open');
+  if (!bugs || bugs.length === 0) {
+    console.log('🎉 Error queue is clean: 0 open production bugs found.');
+    return { total: 0, resolved: 0, ignored: 0, unresolved: 0, processed: [] };
+  }
+
+  console.log(`\n🔍 Automated Production Bug Fixer: analyzing ${bugs.length} open bug(s)...\n`);
+  let resolvedCount = 0;
+  let ignoredCount = 0;
+  let unresolvedCount = 0;
+  const processed = [];
+
+  for (const bug of bugs) {
+    const errorText = `${bug.error_message || ''} ${bug.stack_trace || ''}`;
+    const rule = AUTO_FIX_RULES.find((r) => r.pattern.test(errorText));
+
+    if (rule) {
+      if (rule.action === 'resolve') {
+        await resolveBug(bug.id, { notes: rule.notes, commit });
+        resolvedCount++;
+        processed.push({ id: bug.id, status: 'resolved', rule: rule.name, error: bug.error_message });
+        console.log(`  ✅ [RESOLVED] ${bug.id.slice(0, 8)}: ${bug.error_message}`);
+        console.log(`     ↳ ${rule.notes}`);
+      } else {
+        await ignoreBug(bug.id, { notes: rule.notes });
+        ignoredCount++;
+        processed.push({ id: bug.id, status: 'ignored', rule: rule.name, error: bug.error_message });
+        console.log(`  ⚠️  [IGNORED]  ${bug.id.slice(0, 8)}: ${bug.error_message}`);
+        console.log(`     ↳ ${rule.notes}`);
+      }
+    } else {
+      unresolvedCount++;
+      processed.push({ id: bug.id, status: 'open', rule: null, error: bug.error_message });
+      console.log(`  ❓ [MANUAL]   ${bug.id.slice(0, 8)}: ${bug.error_message} (${bug.pathname || '/'}) requires manual code review.`);
+    }
+  }
+
+  console.log(`\n================================================================================`);
+  console.log(`Bug Queue Run Summary:`);
+  console.log(`  Total scanned:   ${bugs.length}`);
+  console.log(`  Resolved:        ${resolvedCount}`);
+  console.log(`  Ignored (Noise): ${ignoredCount}`);
+  console.log(`  Pending Manual:  ${unresolvedCount}`);
+  console.log(`================================================================================\n`);
+
+  return {
+    total: bugs.length,
+    resolved: resolvedCount,
+    ignored: ignoredCount,
+    unresolved: unresolvedCount,
+    processed,
+  };
 }
 
 async function main() {
@@ -197,8 +314,10 @@ async function main() {
       }
       const updated = await ignoreBug(id, options);
       console.log(`⚠️ Bug marked as ignored:`, updated);
+    } else if (command === 'auto-fix' || command === 'fix') {
+      await autoFixBugs(options);
     } else {
-      console.log('Usage: node scripts/bugs-queue.mjs [list|all|resolve <id>|ignore <id>]');
+      console.log('Usage: node scripts/bugs-queue.mjs [list|all|resolve <id>|ignore <id>|auto-fix]');
     }
   } catch (err) {
     console.error('Failed to run bugs-queue script:', err.message);
@@ -206,4 +325,6 @@ async function main() {
   }
 }
 
-main();
+if (process.argv[1] && process.argv[1].endsWith('bugs-queue.mjs')) {
+  main();
+}

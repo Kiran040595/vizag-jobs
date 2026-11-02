@@ -26,7 +26,7 @@ const waitForServiceWorker = async () => {
     return navigator.serviceWorker.getRegistration().then((reg) => {
       if (reg) window.__vizagJobsSwRegistration = reg;
       return reg || null;
-    });
+    }).catch(() => null);
   }
 };
 

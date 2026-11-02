@@ -66,28 +66,40 @@ export const subscribeStudentToPush = async (userId = null) => {
     return { ok: false, error: 'Push notifications are not supported on this browser or device.' };
   }
 
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    return { ok: false, permission, error: 'Notification permission was not granted.' };
+  try {
+    const permission = await Notification.requestPermission().catch(() => 'denied');
+    if (permission !== 'granted') {
+      return { ok: false, permission, error: 'Notification permission was not granted.' };
+    }
+
+    const registration =
+      window.__vizagJobsSwRegistration ||
+      (await navigator.serviceWorker?.ready?.catch(() => null));
+
+    if (!registration?.pushManager) {
+      return { ok: false, error: 'Service worker push manager is not available.' };
+    }
+
+    const vapidKey = getVapidPublicKey();
+    let subscription = await registration.pushManager.getSubscription().catch(() => null);
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      }).catch((err) => {
+        console.warn('[Push] Push subscription was denied or unavailable:', err?.message || err);
+        return null;
+      });
+    }
+
+    if (!subscription) {
+      return { ok: false, error: 'Push subscription could not be established.' };
+    }
+
+    const result = await saveWebPushSubscription(subscription, userId);
+    return { ok: result?.ok !== false, subscription, permission: 'granted' };
+  } catch (err) {
+    console.warn('[Push] Error during push subscription setup:', err?.message || err);
+    return { ok: false, error: err?.message || 'Failed to complete push subscription.' };
   }
-
-  const registration =
-    window.__vizagJobsSwRegistration ||
-    (await navigator.serviceWorker?.ready.catch(() => null));
-
-  if (!registration?.pushManager) {
-    return { ok: false, error: 'Service worker push manager is not available.' };
-  }
-
-  const vapidKey = getVapidPublicKey();
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey),
-    });
-  }
-
-  const result = await saveWebPushSubscription(subscription, userId);
-  return { ok: result?.ok !== false, subscription, permission: 'granted' };
 };

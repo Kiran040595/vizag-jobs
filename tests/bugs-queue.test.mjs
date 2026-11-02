@@ -16,17 +16,20 @@ assert.match(migrationSql, /create table if not exists public\.site_error_logs/,
 assert.match(migrationSql, /check \(status in \('open', 'investigating', 'resolved', 'ignored'\)\)/, 'Status check must include open, investigating, resolved, ignored');
 assert.match(migrationSql, /create index if not exists site_error_logs_open_idx/, 'Index on open status must be created');
 
-// 2. Queue runner script exists and exports list, resolve, ignore commands
+// 2. Queue runner script exists and exports list, resolve, ignore, and auto-fix commands
 assert.equal(existsSync(queueScriptPath), true, 'scripts/bugs-queue.mjs must exist');
 const queueScript = readFileSync(queueScriptPath, 'utf8');
 assert.match(queueScript, /listBugs/, 'bugs-queue.mjs must define listBugs');
 assert.match(queueScript, /resolveBug/, 'bugs-queue.mjs must define resolveBug');
 assert.match(queueScript, /ignoreBug/, 'bugs-queue.mjs must define ignoreBug');
+assert.match(queueScript, /autoFixBugs/, 'bugs-queue.mjs must define autoFixBugs');
+assert.match(queueScript, /AUTO_FIX_RULES/, 'bugs-queue.mjs must define AUTO_FIX_RULES');
 
 // 3. package.json exposes npm scripts
 const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
 assert.equal(typeof pkg.scripts['bugs:list'], 'string', 'package.json must contain bugs:list');
 assert.equal(typeof pkg.scripts['bugs:resolve'], 'string', 'package.json must contain bugs:resolve');
+assert.equal(typeof pkg.scripts['bugs:auto-fix'], 'string', 'package.json must contain bugs:auto-fix');
 
 // 4. api/report-error.js writes to site_error_logs with status
 const apiHandler = readFileSync(apiHandlerPath, 'utf8');

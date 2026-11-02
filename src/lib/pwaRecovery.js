@@ -22,14 +22,14 @@ export const unregisterLegacyServiceWorkers = async () => {
   }
 
   try {
-    const registrations = await navigator.serviceWorker.getRegistrations();
+    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
     await Promise.all(
-      registrations
+      (registrations || [])
         .filter((registration) => {
-          const scriptUrl = registration.active?.scriptURL || registration.installing?.scriptURL || '';
+          const scriptUrl = registration?.active?.scriptURL || registration?.installing?.scriptURL || '';
           return /\/service-worker\.js(\?|$)/.test(scriptUrl);
         })
-        .map((registration) => registration.unregister()),
+        .map((registration) => registration?.unregister?.().catch(() => false)),
     );
   } catch (error) {
     console.warn('[PWA] Could not unregister legacy service worker:', error);

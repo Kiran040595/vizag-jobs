@@ -23,7 +23,8 @@
     "bugs:list": "node scripts/bugs-queue.mjs list",
     "bugs:all": "node scripts/bugs-queue.mjs all",
     "bugs:resolve": "node scripts/bugs-queue.mjs resolve",
-    "bugs:ignore": "node scripts/bugs-queue.mjs ignore"
+    "bugs:ignore": "node scripts/bugs-queue.mjs ignore",
+    "bugs:auto-fix": "node scripts/bugs-queue.mjs auto-fix"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1097.0",
