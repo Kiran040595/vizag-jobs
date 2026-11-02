@@ -1141,6 +1141,19 @@ Pushed batches this continuation: 6a7b765 student recovery/checklist; b465c1a ca
 Remaining: authenticated journeys/ownership/persistence and exports, valid password recovery flows, all negative/loading/error states, actual Android/iOS/keyboard/landscape/zoom checks, nested protected modals and overlay-collision review. Existing notification inbox/bell local work remains preserved and excluded from scoped commits. No new Tested/Verified claims. docs/MOBILE_UI_STATUS.md summary now distinguishes implementation coverage from acceptance evidence.
 - Final integration regression: node --test tests/*.test.mjs exited 0, 127 passed / 0 failed. Log: docs/qa/2026-10-14/ui-pass-tests.txt. Existing notification tests are included in the working-tree run; notification source changes are not part of the UI deliveries.
 
+## QA-2026-11-02: Production Bug Noise Suppression & Scheduled Bug Fixer Automation
+
+- Scope: Endpoint `/api/report-error.js`, `src/lib/errorReporter.js`, `tests/error-reporter.test.mjs`, `sidecars/daily-production-bug-fixer/sidecar.json`.
+- Deliverables:
+  - Added filter patterns in `src/lib/errorReporter.js` and `/api/report-error.js` to suppress third-party in-app browser crashes (Meta/Instagram In-App Browser `iabjs://navigation_performance_logger_android`, detached Java bridge `Error invoking postMessage: Java object is gone`, and private window storage denial `localStorage Access is denied`).
+  - Configured scheduled automation `Daily Production Bug Fixer` (`daily-production-bug-fixer`) running hourly during active working windows (6–10 AM & 6–10 PM Asia/Kolkata).
+  - Automation checks live production error logs via `node scripts/bugs-queue.mjs list`, resolves/filters bugs, runs verification tests, and asks the developer for confirmation before pushing to `origin/develop`.
+- Verification:
+  - `node tests/error-reporter.test.mjs`: Passed (verifies IAB postMessage, buttons clicked, and localStorage errors are ignored while real bugs are reported).
+  - `node tests/bugs-queue.test.mjs`: Passed (verifies site_error_logs contract and status checks).
+  - `npx vite build`: Passed cleanly in 6.63s.
+  - Successfully purged 9 historical IAB noise errors in `site_error_logs` to 'ignored'.
+
 ## QA-2026-10-15: Production Error Reporting & Automated Resolution Pipeline
 
 - Scope: Endpoint `/api/report-error`, `src/lib/errorReporter.js`, `src/components/ErrorBoundary.jsx`, `scripts/bugs-queue.mjs`, `supabase/migrations/20261015120000_create_site_error_logs.sql`.

@@ -23,6 +23,23 @@ function shouldThrottle(fingerprint) {
   return false;
 }
 
+const NOISE_PATTERNS = [
+  /ResizeObserver loop/i,
+  /chrome-extension:\/\//i,
+  /moz-extension:\/\//i,
+  /safari-extension:\/\//i,
+  /^Script error\.?$/i,
+  /iabjs:\/\//i,
+  /navigation_performance_logger_android/i,
+  /Java object is gone/i,
+  /localStorage.*Access is denied/i,
+  /SecurityError: The request was denied/i,
+];
+
+function isNoise(msg = '', st = '') {
+  return NOISE_PATTERNS.some((p) => p.test(msg) || p.test(st));
+}
+
 function escapeHtml(str = '') {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -70,6 +87,7 @@ export default async function handler(req, res) {
     });
 
     const fingerprint = `${pathname}::${message}::${String(stack).split('\n')[0] || ''}`;
+    const isNoiseReport = isNoise(message, stack);
     const isThrottled = test ? false : shouldThrottle(fingerprint);
 
     // Save to Supabase table if table exists
@@ -86,7 +104,7 @@ export default async function handler(req, res) {
           user_agent: String(userAgent).slice(0, 500),
           screen_size: String(screen).slice(0, 50),
           status: test ? 'ignored' : 'open',
-          resolution_notes: test ? 'Synthetic test ping / diagnostic' : null,
+          resolution_notes: test ? 'Synthetic test ping / diagnostic' : isNoiseReport ? 'Filtered 3rd-party browser/IAB noise' : null,
           created_at: timestamp,
         });
       }
@@ -105,6 +123,12 @@ export default async function handler(req, res) {
         reason: 'RESEND_API_KEY environment variable is missing on Vercel.',
       };
       console.warn('[Client Bug Alert] RESEND_API_KEY is not set in Vercel environment variables.');
+    } else if (isNoiseReport) {
+      emailResult = {
+        attempted: false,
+        sent: false,
+        reason: 'Filtered: third-party browser/IAB noise or extension error.',
+      };
     } else if (isThrottled) {
       emailResult = {
         attempted: false,

@@ -10,6 +10,13 @@ const IGNORE_PATTERNS = [
   /moz-extension:\/\//i,
   /safari-extension:\/\//i,
   /^Script error\.?$/i,
+  // Instagram & Android In-App Browser (IAB) injected scripts & detached bridge
+  /iabjs:\/\//i,
+  /navigation_performance_logger_android/i,
+  /Java object is gone/i,
+  // Browser privacy modes / blocked storage access
+  /localStorage.*Access is denied/i,
+  /SecurityError: The request was denied/i,
 ];
 
 function getErrorFingerprint(error, url) {

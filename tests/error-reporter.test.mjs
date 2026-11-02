@@ -17,6 +17,17 @@ assert.equal(shouldIgnoreError(new Error('ResizeObserver loop completed with und
 assert.equal(shouldIgnoreError(new Error('chrome-extension://xyz/content.js error')), true, 'chrome-extension should be ignored');
 assert.equal(shouldIgnoreError('Script error.'), true, 'raw script error should be ignored');
 
+// Instagram & In-App Browser noise should be ignored
+const iabPostMessageError = new Error('Error invoking postMessage: Java object is gone');
+iabPostMessageError.stack = 'Error: Error invoking postMessage: Java object is gone\n    at sendDataToNative (iabjs://navigation_performance_logger_android:1:11853)';
+assert.equal(shouldIgnoreError(iabPostMessageError), true, 'Instagram IAB Java object error must be ignored');
+
+const iabButtonsError = new Error('Error invoking enableButtonsClickedMetaDataLogging: Java object is gone');
+assert.equal(shouldIgnoreError(iabButtonsError), true, 'IAB enableButtons error must be ignored');
+
+const storageDeniedError = new Error("Failed to read the 'localStorage' property from 'Window': Access is denied for this document.");
+assert.equal(shouldIgnoreError(storageDeniedError), true, 'Storage access denied noise must be ignored');
+
 // 2. Legitimate errors MUST NOT be ignored
 const realError = new TypeError("Cannot read properties of undefined (reading 'title')");
 assert.equal(shouldIgnoreError(realError), false, 'Real application error should NOT be ignored');
