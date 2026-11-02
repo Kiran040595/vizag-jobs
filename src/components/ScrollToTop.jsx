@@ -14,6 +14,9 @@ export default function ScrollToTop() {
     if (!window.location.hash) {
       window.scrollTo(0, 0);
     }
+  }, [pathname]);
+
+  useEffect(() => {
     void checkAndTrackNotificationClick();
   }, [pathname, search]);
 

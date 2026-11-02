@@ -1,5 +1,14 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Home-Tab-Scroll-And-Mobile-Polish
+
+- Scope: S007 `/`; `ScrollToTop.jsx`, `JobSourceTabs.jsx`, and `tests/scroll-to-top.test.mjs`. No new route, dialog or data-source behavior.
+- Fixed the page jump when changing source tabs: global scroll restoration now runs only when the pathname changes, while notification-click tracking continues to react to query parameters. Same-page `?tab=` filter updates preserve the current viewport.
+- Reworked the mobile source selector from a tall 2×2 block into a compact four-column segmented control with all tabs visible, equal 68.5px widths, 59px touch heights, short mobile labels, counts, and distinct inactive surfaces. Desktop labels and layout remain unchanged.
+- Functional evidence: Playwright/Edge changed tabs at `scrollY=360` on desktop and 320×740 mobile; both finished at `scrollY=360` (zero movement), with the correct URL, selected tab and results heading. Functional E2E remains In progress because authenticated Jobs for You ranking was not retested.
+- Mobile UI evidence: 320×740 rendered width stayed exactly 320px, the tablist was 296×69px, all four controls remained visible without wrapping or horizontal overflow, and the selected Company state/banner rendered correctly. No Vite overlay or console warnings/errors. Broader device/browser acceptance remains In progress.
+- Automated verification: scroll dependency test 2/2, job publish notification regression test, job filter regression test, changed-file ESLint and `npm run build` passed; existing large-chunk/Browserslist warnings remain.
+
 ## QA-2026-11-02-Home-Four-Job-Source-Tabs
 
 - Scope: S007 `/`; `JobSourceTabs.jsx`, `JobFilters.jsx`, `HomePage.jsx`, `jobDirectPosting.js`, `jobFilters.js`, and focused tests. No new route or dialog.
@@ -586,7 +595,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | In progress | In progress | QA-2026-10-14-UI-Day11: mobile UI verified, full journey pending |
-| S007 | `/` | Home search, categories, four job-source tabs (all, platform posts, official company careers, profile matches), counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-11-02-Home-Four-Job-Source-Tabs: live-data desktop interactions and 320×740 tab layout passed; authenticated profile matching and broader device/browser acceptance pending |
+| S007 | `/` | Home search, categories, four job-source tabs (all, platform posts, official company careers, profile matches), counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-11-02-Home-Tab-Scroll-And-Mobile-Polish: tab changes preserve scroll; compact 320×740 four-column selector passed; authenticated profile matching and broader device/browser acceptance pending |
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day11: mobile UI verified, full journey pending |
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
