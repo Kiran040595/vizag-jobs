@@ -41,6 +41,31 @@ test('SuccessFactors reads result rows once and rejects non-Vizag or external li
   assert.equal(jobs[0].apply_link, 'https://careers.brandix.com/job/Vizag/123/');
 });
 
+test('Wipro official recruiting API retains active exact-city jobs with scoped descriptions', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    const value = String(url);
+    if (value.endsWith('/services/recruiting/v1/jobs')) {
+      assert.equal(options?.method, 'POST');
+      return Response.json({ jobSearchResult: [
+        { response: { id: '207016', unifiedStandardTitle: 'Administrator L0', unifiedUrlTitle: 'ADMINISTRATOR-L0', unifiedStandardEnd: '2999-12-03', sfstd_jobLocation_obj: ['Visakhapatnam'], jobLocationCountry: ['India'], custRMKMappingPicklist: ['Cloud'] } },
+        { response: { id: '207017', unifiedStandardTitle: 'Other City Role', unifiedUrlTitle: 'OTHER-CITY-ROLE', unifiedStandardEnd: '2999-12-03', sfstd_jobLocation_obj: ['Hyderabad'], jobLocationCountry: ['India'] } },
+        { response: { id: '207018', unifiedStandardTitle: 'Expired Role', unifiedUrlTitle: 'EXPIRED-ROLE', unifiedStandardEnd: '2000-01-01', sfstd_jobLocation_obj: ['Visakhapatnam'], jobLocationCountry: ['India'] } },
+      ] });
+    }
+    assert.equal(value, 'https://careers.wipro.com/job/ADMINISTRATOR-L0/207016-en_US/');
+    return new Response('<span itemprop="description" class="rtltextaligneligible"><div><p>Detailed official Wipro responsibilities, required technical skills, service delivery expectations, and candidate qualifications.</p></div></span></div><span>Visakhapatnam</span>');
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.wipro, 'Wipro');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Administrator L0');
+    assert.equal(result.structuredJobs[0].category, 'Cloud');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://careers.wipro.com/job/ADMINISTRATOR-L0/207016-en_US/');
+    assert.match(result.structuredJobs[0].description, /Detailed official Wipro responsibilities/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Verified city-filtered URLs survive canonicalization', () => {
   for (const [name, url] of Object.entries(VERIFIED_VIZAG_PORTALS)) {
     assert.equal(resolveCanonicalCareerPortalUrl(url, name), url);

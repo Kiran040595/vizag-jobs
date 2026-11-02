@@ -24,6 +24,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Innocito | https://innocito.com/careers | Employer-owned page contains server-rendered structured records for 3 current Vizag roles, including stable job numbers, experience, required skills and full descriptions. Native extraction rejects the 4 Hyderabad records and retains the official shared email/application page |
 | Paytm | https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh | Official Paytm Lever board filtered to Vizag. Native Lever API extraction currently returns 1 Paytm role with exact Vizag location, a 3,101-character description and an individual employer application page; separate Paytm Payments Services listings are not merged into this company record |
 | Radisson Hotel Group | https://careers.smartrecruiters.com/RHG?search=Visakhapatnam | Official Radisson Hotel Group SmartRecruiters search. Native API extraction validates the RHG employer identifier and exact Visakhapatnam city; live verification returned 1 role with a 4,831-character cleaned description and direct application page |
+| Wipro | https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam | Official SuccessFactors search API returned 2 active records with exact Visakhapatnam city and India country fields. Native extraction validates current end dates, canonical IDs/detail paths, and scoped employer descriptions |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -46,6 +47,7 @@ Posting IDs from the live check:
   java-integration-expert, system-engineer, security-engineer,
   infrastructure-lead, it-security-lead,
   project-manager-electricity-utility-billing-system-implementation.
+- Wipro: 207016 (Administrator L0 (Contract)), 212142 (Production Agent L1).
 
 ## Other official portals investigated in this batch
 
@@ -65,6 +67,7 @@ Posting IDs from the live check:
 | GITAM | Official careers page lists academic and non-academic openings across campuses; no durable Visakhapatnam-only vacancy filter was found |
 | Pema Wellness | Official site identifies its Visakhapatnam location and broad career categories, but does not publish a current vacancy feed with individual application links |
 | Hetero | Official careers content accepts general resumes by email and links to broad opportunities, but no current Visakhapatnam-only vacancy feed was found |
+| Excel Global Solutions | Official SmartRecruiters API still exposes 11 Visakhapatnam records, but their release dates range from 2015 to 2017. Kept private because the feed appears stale rather than a current vacancy source |
 
 Unverified entries remain private in admin. No outreach, applications or job
 publication was performed during these read-only source checks.

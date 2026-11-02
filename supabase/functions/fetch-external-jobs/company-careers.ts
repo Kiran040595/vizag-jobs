@@ -53,6 +53,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   innocito: 'https://innocito.com/careers',
   paytm: 'https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh',
   'radisson hotel group': 'https://careers.smartrecruiters.com/RHG?search=Visakhapatnam',
+  wipro: 'https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -159,7 +160,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const innocito = ['innocito.com', 'www.innocito.com'].includes(host) && parsedUrl.pathname === '/careers';
   const paytm = host === 'jobs.lever.co' && parsedUrl.pathname === '/paytm' && parsedUrl.searchParams.get('location') === 'Vizag, Andhra Pradesh';
   const radisson = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/RHG' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson) return null;
+  const wipro = host === 'careers.wipro.com' && parsedUrl.pathname === '/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -207,6 +209,52 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
           title: String(posting.name), company,
           location: String(posting.location.fullLocation || 'Visakhapatnam, Andhra Pradesh, India'),
           description, apply_link: applyUrl,
+        } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (wipro) {
+    const search = await fetch('https://careers.wipro.com/services/recruiting/v1/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keywords: '', locale: 'en_US', location: 'Visakhapatnam', pageNumber: 0, sortBy: 'recent' }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const rows = (Array.isArray(payload.jobSearchResult) ? payload.jobSearchResult : []).flatMap((item: Record<string, unknown>) => {
+      const response = item.response as Record<string, unknown> | undefined;
+      const cities = Array.isArray(response?.sfstd_jobLocation_obj) ? response.sfstd_jobLocation_obj.map(String) : [];
+      const countries = Array.isArray(response?.jobLocationCountry) ? response.jobLocationCountry.map(String) : [];
+      const endDate = Date.parse(String(response?.unifiedStandardEnd || ''));
+      if (!cities.some((city) => /^visakhapatnam$/i.test(city)) || !countries.some((country) => /^india$/i.test(country))) return [];
+      if (Number.isFinite(endDate) && endDate < Date.now()) return [];
+      return [response!];
+    });
+    const jobs = (await Promise.all(rows.map(async (row: Record<string, unknown>) => {
+      try {
+        const id = String(row.id || '');
+        const title = String(row.unifiedStandardTitle || '').trim();
+        const urlTitle = String(row.unifiedUrlTitle || '');
+        if (!/^\d+$/.test(id) || !title || !/^[A-Za-z0-9%._~-]+$/.test(urlTitle)) return null;
+        const apply_link = `https://careers.wipro.com/job/${urlTitle}/${id}-en_US/`;
+        const response = await fetch(apply_link, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const detail = await response.text();
+        const description = [...detail.matchAll(/<span\b[^>]*itemprop=["']description["'][^>]*>([\s\S]*?)<\/span>\s*<\/div>/gi)]
+          .map((match) => htmlToCleanMarkdown(match[1], apply_link))
+          .filter((section) => section.length >= 40)
+          .join('\n\n')
+          .slice(0, 20000);
+        if (description.length < 80 || !/\bvisakhapatnam\b/i.test(detail)) return null;
+        return {
+          title,
+          company,
+          location: 'Visakhapatnam, Andhra Pradesh, India',
+          category: Array.isArray(row.custRMKMappingPicklist) ? String(row.custRMKMappingPicklist[0] || '') : '',
+          description,
+          apply_link,
         } as ExtractedCompanyCareerJob;
       } catch { return null; }
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);

@@ -33,6 +33,12 @@ export const CURATED_COMPANIES = {
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
+  'Wipro': {
+    website: 'https://www.wipro.com',
+    careers_url: 'https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',

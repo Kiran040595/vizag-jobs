@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Wipro-Verified-Careers
+
+- Replaced Wipro's generic careers page with its official SuccessFactors search filtered to Visakhapatnam and added native recruiting-API extraction.
+- Live backend verification returned 2 active records with exact Visakhapatnam city, India country, current end dates, canonical detail pages and scoped job descriptions.
+- Scraper tests, defaults and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-01-Radisson-Verified-Careers
 
 - Replaced Radisson Hotel Group's generic careers URL with its official SmartRecruiters Visakhapatnam search and added native API extraction.

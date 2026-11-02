@@ -51,6 +51,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://careers.techmahindra.com/CurrentOpportunity.aspx',
     category: 'IT & Software',
   },
+  'Wipro': {
+    website: 'https://www.wipro.com',
+    careers_url: 'https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam',
+    category: 'IT & Software',
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',
