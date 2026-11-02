@@ -162,6 +162,39 @@ export async function ignoreBug(id, { notes = 'Ignored' } = {}) {
   return { id, status: 'ignored', resolution_notes: notes };
 }
 
+export async function batchUpdateBugs(ids, { status = 'resolved', notes = '', commit = '' } = {}) {
+  if (!ids || ids.length === 0) return [];
+  if (pipelineConfig.supabaseServiceRoleKey) {
+    const client = getAdminClient();
+    const updatePayload = {
+      status,
+      resolution_notes: notes,
+    };
+    if (status === 'resolved') {
+      updatePayload.resolved_at = new Date().toISOString();
+      updatePayload.resolved_in_commit = commit || null;
+    }
+    const { data, error } = await client
+      .from('site_error_logs')
+      .update(updatePayload)
+      .in('id', ids)
+      .select('id, error_message, status');
+    if (error) throw error;
+    return data || [];
+  }
+
+  const safeNotes = String(notes || '').replace(/'/g, "''");
+  const safeCommit = String(commit || '').replace(/'/g, "''");
+  const idsSql = ids.map((id) => `'${id}'`).join(', ');
+  let sql = `update public.site_error_logs set status = '${status}', resolution_notes = '${safeNotes}'`;
+  if (status === 'resolved') {
+    sql += `, resolved_at = now(), resolved_in_commit = '${safeCommit}'`;
+  }
+  sql += ` where id in (${idsSql});`;
+  runCliQuery(sql);
+  return ids.map((id) => ({ id, status, resolution_notes: notes }));
+}
+
 export const AUTO_FIX_RULES = [
   {
     name: 'sw-permission-denial',
@@ -171,7 +204,7 @@ export const AUTO_FIX_RULES = [
   },
   {
     name: 'iab-java-bridge',
-    pattern: /Java object is gone|Java exception was raised|enableButtonsClickedMetaDataLogging/i,
+    pattern: /Java object is gone|Java exception was raised|enableButtonsClickedMetaDataLogging|navigation_performance_logger_android|iabjs:\/\//i,
     action: 'ignore',
     notes: 'Filtered: Meta/Instagram In-App Browser detached Java bridge noise',
   },
@@ -194,8 +227,26 @@ export const AUTO_FIX_RULES = [
     notes: 'Filtered: third-party browser autofill extension noise',
   },
   {
+    name: 'browser-extension-noise',
+    pattern: /chrome-extension:\/\/|moz-extension:\/\/|safari-extension:\/\//i,
+    action: 'ignore',
+    notes: 'Filtered: third-party browser extension script noise',
+  },
+  {
+    name: 'resize-observer-loop',
+    pattern: /ResizeObserver loop/i,
+    action: 'ignore',
+    notes: 'Filtered: benign browser layout timing noise',
+  },
+  {
+    name: 'generic-script-error',
+    pattern: /^Script error\.?$/i,
+    action: 'ignore',
+    notes: 'Filtered: cross-origin script error without stack',
+  },
+  {
     name: 'adsense-telemetry',
-    pattern: /^int64$/i,
+    pattern: /^int64$|pagead2\.googlesyndication\.com/i,
     action: 'ignore',
     notes: 'Filtered: Google AdSense telemetry parse noise',
   },
@@ -225,20 +276,25 @@ export async function autoFixBugs({ commit = '' } = {}) {
   let ignoredCount = 0;
   let unresolvedCount = 0;
   const processed = [];
+  const groupsToBatch = new Map();
 
   for (const bug of bugs) {
     const errorText = `${bug.error_message || ''} ${bug.stack_trace || ''}`;
     const rule = AUTO_FIX_RULES.find((r) => r.pattern.test(errorText));
 
     if (rule) {
+      const groupKey = `${rule.action}:::${rule.notes}`;
+      if (!groupsToBatch.has(groupKey)) {
+        groupsToBatch.set(groupKey, { action: rule.action, notes: rule.notes, ids: [] });
+      }
+      groupsToBatch.get(groupKey).ids.push(bug.id);
+
       if (rule.action === 'resolve') {
-        await resolveBug(bug.id, { notes: rule.notes, commit });
         resolvedCount++;
         processed.push({ id: bug.id, status: 'resolved', rule: rule.name, error: bug.error_message });
         console.log(`  ✅ [RESOLVED] ${bug.id.slice(0, 8)}: ${bug.error_message}`);
         console.log(`     ↳ ${rule.notes}`);
       } else {
-        await ignoreBug(bug.id, { notes: rule.notes });
         ignoredCount++;
         processed.push({ id: bug.id, status: 'ignored', rule: rule.name, error: bug.error_message });
         console.log(`  ⚠️  [IGNORED]  ${bug.id.slice(0, 8)}: ${bug.error_message}`);
@@ -249,6 +305,15 @@ export async function autoFixBugs({ commit = '' } = {}) {
       processed.push({ id: bug.id, status: 'open', rule: null, error: bug.error_message });
       console.log(`  ❓ [MANUAL]   ${bug.id.slice(0, 8)}: ${bug.error_message} (${bug.pathname || '/'}) requires manual code review.`);
     }
+  }
+
+  // Execute grouped batch updates
+  for (const group of groupsToBatch.values()) {
+    await batchUpdateBugs(group.ids, {
+      status: group.action,
+      notes: group.notes,
+      commit,
+    });
   }
 
   console.log(`\n================================================================================`);

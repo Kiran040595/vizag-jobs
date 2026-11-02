@@ -23,6 +23,7 @@ assert.match(queueScript, /listBugs/, 'bugs-queue.mjs must define listBugs');
 assert.match(queueScript, /resolveBug/, 'bugs-queue.mjs must define resolveBug');
 assert.match(queueScript, /ignoreBug/, 'bugs-queue.mjs must define ignoreBug');
 assert.match(queueScript, /autoFixBugs/, 'bugs-queue.mjs must define autoFixBugs');
+assert.match(queueScript, /batchUpdateBugs/, 'bugs-queue.mjs must define batchUpdateBugs');
 assert.match(queueScript, /AUTO_FIX_RULES/, 'bugs-queue.mjs must define AUTO_FIX_RULES');
 
 // 3. package.json exposes npm scripts
