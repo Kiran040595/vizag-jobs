@@ -31,7 +31,8 @@
 - Scope: `.github/workflows/auto-naukri-fetch.yml`, `docs/auto-naukri-pipeline.md`; no route, screen, dialog or mobile layout change.
 - Root cause: Naukri scheduled runs failed from October 27-31 after the Apify account reached its monthly usage hard limit. Commit `a6870f7` then removed the cron trigger on October 31 and left the workflow manual-only, so no Naukri pipeline ran on November 1 or 2.
 - Restored the independent `30 10 * * *` GitHub Actions schedule (4:00 PM IST daily). Each run fetches Naukri jobs, removes existing/duplicate listings, SEO-optimizes eligible jobs, publishes them to `public.jobs`, and uploads its automation report.
-- Functional E2E: reopened/pending a successful live GitHub Actions fetch → SEO → publish run with artifact evidence. Mobile UI: not applicable; no UI changed.
+- Live production test: manually dispatched GitHub Actions run `41476655196` on November 2. The run passed checkout/setup and published at least three fetched and SEO-optimized Naukri listings to `public.jobs`: Diploma Engineer Trainee (Endurance Technologies), Content Operations Trainee (Physicswallah), and Apprentice Customer Service (Voice) (American Express). The batch remained in progress when evidence was recorded.
+- Functional E2E: In progress. The fetch → SEO → publish journey passed for three listings, verified by production rows and timestamps; final workflow conclusion and report artifact remain pending. Mobile UI: not applicable; no UI changed.
 
 ## QA-2026-11-02-Automated-Production-Bug-Fixer-Pipeline
 
