@@ -335,7 +335,13 @@ function AdminLoginPanel() {
         sessionStorage.setItem(ADMIN_LOGIN_DRAFT_KEY, JSON.stringify({ email, password }));
         return;
       }
-      sessionStorage.removeItem(ADMIN_LOGIN_DRAFT_KEY);
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.removeItem(ADMIN_LOGIN_DRAFT_KEY);
+        }
+      } catch {
+        // Ignore storage failure on successful login
+      }
     } catch {
       // Ignore storage failures.
     }
@@ -359,7 +365,13 @@ function AdminLoginPanel() {
     setIsSubmitting(true);
     try {
       await signIn({ email, password });
-      sessionStorage.removeItem(ADMIN_LOGIN_DRAFT_KEY);
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.removeItem(ADMIN_LOGIN_DRAFT_KEY);
+        }
+      } catch {
+        // Ignore storage failure on successful login
+      }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Could not sign in.');
     } finally {

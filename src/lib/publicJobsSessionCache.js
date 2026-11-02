@@ -1,5 +1,33 @@
 import { filterProcessedJobsForPublicDisplay } from './jobDisplayWindow.js';
 
+const getSafeSessionStorage = () => {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      return window.sessionStorage;
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const getSafeLocalStorage = () => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage;
+    }
+    if (typeof localStorage !== 'undefined') {
+      return localStorage;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Shared session-storage TTL for the public listing pages. Bumped from 5 min
  * to 20 min to reduce repeat fetches per session — the public site doesn't
@@ -15,10 +43,11 @@ export const PUBLIC_JOBS_CACHE_KEY = 'vizagJobs_v2';
  * Used for first paint so return visits don't flash the loading spinner.
  */
 export const readCachedPublicJobs = () => {
-  if (typeof sessionStorage === 'undefined') return null;
-
   try {
-    const cachedRaw = sessionStorage.getItem(PUBLIC_JOBS_CACHE_KEY);
+    const storage = getSafeSessionStorage();
+    if (!storage) return null;
+
+    const cachedRaw = storage.getItem(PUBLIC_JOBS_CACHE_KEY);
     if (!cachedRaw) return null;
 
     const { jobs, timestamp } = JSON.parse(cachedRaw);
@@ -38,12 +67,15 @@ export const readCachedPublicJobs = () => {
 };
 
 export const writeCachedPublicJobs = (jobs) => {
-  if (typeof sessionStorage === 'undefined' || !Array.isArray(jobs) || jobs.length === 0) {
+  if (!Array.isArray(jobs) || jobs.length === 0) {
     return;
   }
 
   try {
-    sessionStorage.setItem(
+    const storage = getSafeSessionStorage();
+    if (!storage) return;
+
+    storage.setItem(
       PUBLIC_JOBS_CACHE_KEY,
       JSON.stringify({ jobs, timestamp: Date.now() }),
     );
@@ -62,17 +94,18 @@ const isInstagramListedJob = (job) => Boolean(job?.isInstagram ?? job?.is_instag
  * the shared public list cache (after someone already loaded the home page).
  */
 export const readCachedInstagramJobs = (limit = 10) => {
-  if (typeof sessionStorage === 'undefined') return null;
-
   try {
-    const cachedRaw = sessionStorage.getItem(INSTAGRAM_JOBS_CACHE_KEY);
-    if (cachedRaw) {
-      const { jobs, timestamp } = JSON.parse(cachedRaw);
-      const age = Date.now() - Number(timestamp);
-      if (Array.isArray(jobs) && jobs.length > 0 && age < JOB_LIST_SESSION_CACHE_TTL_MS) {
-        const visibleJobs = filterProcessedJobsForPublicDisplay(jobs).slice(0, limit);
-        if (visibleJobs.length > 0) {
-          return { jobs: visibleJobs, age, timestamp: Number(timestamp) };
+    const storage = getSafeSessionStorage();
+    if (storage) {
+      const cachedRaw = storage.getItem(INSTAGRAM_JOBS_CACHE_KEY);
+      if (cachedRaw) {
+        const { jobs, timestamp } = JSON.parse(cachedRaw);
+        const age = Date.now() - Number(timestamp);
+        if (Array.isArray(jobs) && jobs.length > 0 && age < JOB_LIST_SESSION_CACHE_TTL_MS) {
+          const visibleJobs = filterProcessedJobsForPublicDisplay(jobs).slice(0, limit);
+          if (visibleJobs.length > 0) {
+            return { jobs: visibleJobs, age, timestamp: Number(timestamp) };
+          }
         }
       }
     }
@@ -90,12 +123,15 @@ export const readCachedInstagramJobs = (limit = 10) => {
 };
 
 export const writeCachedInstagramJobs = (jobs) => {
-  if (typeof sessionStorage === 'undefined' || !Array.isArray(jobs) || jobs.length === 0) {
+  if (!Array.isArray(jobs) || jobs.length === 0) {
     return;
   }
 
   try {
-    sessionStorage.setItem(
+    const storage = getSafeSessionStorage();
+    if (!storage) return;
+
+    storage.setItem(
       INSTAGRAM_JOBS_CACHE_KEY,
       JSON.stringify({ jobs, timestamp: Date.now() }),
     );
@@ -105,9 +141,10 @@ export const writeCachedInstagramJobs = (jobs) => {
 };
 
 export const clearCachedInstagramJobs = () => {
-  if (typeof sessionStorage === 'undefined') return;
   try {
-    sessionStorage.removeItem(INSTAGRAM_JOBS_CACHE_KEY);
+    const storage = getSafeSessionStorage();
+    if (!storage) return;
+    storage.removeItem(INSTAGRAM_JOBS_CACHE_KEY);
   } catch {
     // ignore
   }
@@ -123,16 +160,18 @@ export const PUBLIC_COMPANIES_CACHE_KEY = 'vizagJobs_companies_v4_verified_badge
 export const readCachedPublicCompanies = () => {
   const getRaw = () => {
     try {
-      if (typeof localStorage !== 'undefined') {
-        const item = localStorage.getItem(PUBLIC_COMPANIES_CACHE_KEY);
+      const localStore = getSafeLocalStorage();
+      if (localStore) {
+        const item = localStore.getItem(PUBLIC_COMPANIES_CACHE_KEY);
         if (item) return item;
       }
     } catch {
       // LocalStorage might be disabled or restricted
     }
     try {
-      if (typeof sessionStorage !== 'undefined') {
-        return sessionStorage.getItem(PUBLIC_COMPANIES_CACHE_KEY);
+      const sessionStore = getSafeSessionStorage();
+      if (sessionStore) {
+        return sessionStore.getItem(PUBLIC_COMPANIES_CACHE_KEY);
       }
     } catch {
       // ignore
@@ -163,16 +202,18 @@ export const writeCachedPublicCompanies = (companies) => {
   const payload = JSON.stringify({ companies, timestamp: Date.now() });
 
   try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(PUBLIC_COMPANIES_CACHE_KEY, payload);
+    const localStore = getSafeLocalStorage();
+    if (localStore) {
+      localStore.setItem(PUBLIC_COMPANIES_CACHE_KEY, payload);
     }
   } catch (error) {
     console.warn('Could not write companies to localStorage:', error);
   }
 
   try {
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(PUBLIC_COMPANIES_CACHE_KEY, payload);
+    const sessionStore = getSafeSessionStorage();
+    if (sessionStore) {
+      sessionStore.setItem(PUBLIC_COMPANIES_CACHE_KEY, payload);
     }
   } catch (error) {
     console.warn('Could not write companies to sessionStorage:', error);
@@ -181,18 +222,19 @@ export const writeCachedPublicCompanies = (companies) => {
 
 export const clearCachedPublicCompanies = () => {
   try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(PUBLIC_COMPANIES_CACHE_KEY);
+    const localStore = getSafeLocalStorage();
+    if (localStore) {
+      localStore.removeItem(PUBLIC_COMPANIES_CACHE_KEY);
     }
   } catch {
     // ignore
   }
   try {
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem(PUBLIC_COMPANIES_CACHE_KEY);
+    const sessionStore = getSafeSessionStorage();
+    if (sessionStore) {
+      sessionStore.removeItem(PUBLIC_COMPANIES_CACHE_KEY);
     }
   } catch {
     // ignore
   }
 };
-

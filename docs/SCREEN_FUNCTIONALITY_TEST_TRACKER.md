@@ -1,5 +1,31 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Session-Storage-Access-Denied-Fix
+
+- Scope: `src/lib/publicJobsSessionCache.js`, `src/services/adminJobs.js`, `src/lib/employerOAuth.js`, `src/lib/quickApply.js`, `src/pages/UnifiedLoginPage.jsx`, `src/lib/errorReporter.js`, `api/report-error.js`, `scripts/bugs-queue.mjs`, `tests/error-reporter.test.mjs`, `tests/public-jobs-session-cache.test.mjs`.
+- Automated Bug Fixer Execution & Queue Results:
+  - Scanned production error queue `site_error_logs`: 3 open bugs identified:
+    - `61019b64-b8f3-41e9-89a5-3650534684c3`: `Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.` at `/jobs/manufacturing/graduate-trainee-brandix` (React ErrorBoundary).
+    - `d66d9032-6778-47e6-b9ec-3e04edecdf52`: `Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.` at `/` (unhandledrejection).
+    - `93079639-3909-47f5-bf96-be7c2e619e05`: `Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.` at `/` (unhandledrejection).
+  - Root Cause: In privacy/incognito modes, restricted WebView settings, or sandboxed cross-origin contexts, accessing `window.sessionStorage` throws a DOMException `SecurityError`. In `src/lib/publicJobsSessionCache.js`, checks like `if (typeof sessionStorage === 'undefined')` were placed outside of `try { ... }` blocks, causing `useCachedPublicJobs` in `HomePage` and `JobDetailsPage` to crash component mounting.
+  - Fix Applied:
+    - Created safe getters `getSafeSessionStorage()` and `getSafeLocalStorage()` inside `publicJobsSessionCache.js` that trap all DOMException errors and return `null` gracefully.
+    - Wrapped storage calls in `try/catch` across `src/services/adminJobs.js` (`invalidatePublicJobCache`), `src/lib/employerOAuth.js` (`setPendingEmployerCompanyName`), `src/lib/quickApply.js` (`requestTokenForJob`), and `src/pages/UnifiedLoginPage.jsx`.
+    - Expanded noise filter patterns in `src/lib/errorReporter.js` and `api/report-error.js` to suppress benign browser storage access denial telemetry.
+    - Updated `AUTO_FIX_RULES` in `scripts/bugs-queue.mjs` to auto-resolve `sessionStorage` permission errors.
+    - Added unit test in `tests/public-jobs-session-cache.test.mjs` verifying cache resilience when `sessionStorage` throws `SecurityError`.
+  - Queue status after run: **0 open bugs** in `site_error_logs`.
+- Verification:
+  - `node tests/error-reporter.test.mjs`: Pass.
+  - `node tests/bugs-queue.test.mjs`: Pass.
+  - `node tests/public-jobs-session-cache.test.mjs`: Pass (6 tests pass).
+  - `node tests/quickApply.test.mjs`: Pass (6 tests pass).
+  - `node tests/admin-bugs.test.mjs`: Pass.
+  - `npm run lint`: 0 errors.
+  - `npm run build`: Production build verified clean (vite v8.0.10).
+  - `npm run bugs:list`: Confirmed 0 open production bugs.
+
 ## QA-2026-11-02-Naukri-Daily-Automation-Restored
 
 - Scope: `.github/workflows/auto-naukri-fetch.yml`, `docs/auto-naukri-pipeline.md`; no route, screen, dialog or mobile layout change.

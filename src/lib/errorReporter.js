@@ -19,7 +19,9 @@ const IGNORE_PATTERNS = [
   /Attempt to use history\.replaceState\(\) more than/i,
   /_AutofillCallbackHandler/i,
   // Browser privacy modes / blocked storage access / SW permission denial
-  /localStorage.*Access is denied/i,
+  /(?:localStorage|sessionStorage).*Access is denied/i,
+  /Failed to read the '(?:localStorage|sessionStorage)' property from 'Window'/i,
+  /Access is denied for this document/i,
   /The request was denied/i,
   /Registration failed - permission denied/i,
   /Registration failed/i,

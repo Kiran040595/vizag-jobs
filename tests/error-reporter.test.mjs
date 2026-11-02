@@ -36,6 +36,9 @@ assert.equal(shouldIgnoreError(autofillError), true, 'Autofill handler extension
 const storageDeniedError = new Error("Failed to read the 'localStorage' property from 'Window': Access is denied for this document.");
 assert.equal(shouldIgnoreError(storageDeniedError), true, 'Storage access denied noise must be ignored');
 
+const sessionStorageDeniedError = new Error("Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.");
+assert.equal(shouldIgnoreError(sessionStorageDeniedError), true, 'SessionStorage access denied noise must be ignored');
+
 const requestDeniedError = new Error('The request was denied.');
 assert.equal(shouldIgnoreError(requestDeniedError), true, 'Safari private storage denial must be ignored');
 

@@ -554,10 +554,14 @@ export const createSuggestedSlug = ({ title, company, postedAt }) => {
 
 const invalidatePublicJobCache = () => {
   clearJobsCache();
-  if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.removeItem('vizagJobs');
-    sessionStorage.removeItem('vizagJobs_v2');
-    sessionStorage.removeItem('vizagJobs_ig_v1');
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.removeItem('vizagJobs');
+      window.sessionStorage.removeItem('vizagJobs_v2');
+      window.sessionStorage.removeItem('vizagJobs_ig_v1');
+    }
+  } catch {
+    // Storage access may be restricted
   }
   // Keep in sync with PUBLIC_JOBS_CACHE_KEY / INSTAGRAM_JOBS_CACHE_KEY
 };

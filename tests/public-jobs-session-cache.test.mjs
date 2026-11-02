@@ -128,4 +128,26 @@ describe('public jobs session cache', () => {
     assert.equal(cached.jobs[0].id, 'b');
     assert.equal(sessionStorage.getItem(INSTAGRAM_JOBS_CACHE_KEY), null);
   });
+
+  it('handles browser storage access denied (SecurityError) gracefully', () => {
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      get() {
+        throw new Error("Failed to read the 'sessionStorage' property from 'Window': Access is denied for this document.");
+      },
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, 'localStorage', {
+      get() {
+        throw new Error("Failed to read the 'localStorage' property from 'Window': Access is denied for this document.");
+      },
+      configurable: true,
+    });
+
+    assert.doesNotThrow(() => {
+      assert.equal(readCachedPublicJobs(), null);
+      writeCachedPublicJobs([{ id: '1', title: 'Job' }]);
+      assert.equal(readCachedInstagramJobs(), null);
+      writeCachedInstagramJobs([{ id: '1', title: 'Job' }]);
+    });
+  });
 });

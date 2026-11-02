@@ -210,9 +210,9 @@ export const AUTO_FIX_RULES = [
   },
   {
     name: 'storage-access-denied',
-    pattern: /localStorage.*Access is denied|The request was denied/i,
+    pattern: /(?:localStorage|sessionStorage).*Access is denied|Failed to read the '(?:localStorage|sessionStorage)' property|Access is denied for this document|The request was denied/i,
     action: 'resolve',
-    notes: 'Resolved: Wrapped localStorage/sessionStorage in try/catch across auth contexts and app components',
+    notes: 'Resolved: Hardened publicJobsSessionCache, adminJobs, employerOAuth, quickApply, and auth storage accesses with safe guards against SecurityError',
   },
   {
     name: 'replace-state-loop',

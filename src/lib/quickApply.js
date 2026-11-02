@@ -162,10 +162,11 @@ export function answerText(fields, answers) {
 }
 
 // Keep the same receipt across refreshes and network retries for this job.
-export function requestTokenForJob(jobId, storage = globalThis.sessionStorage) {
+export function requestTokenForJob(jobId, storage) {
   const key = `vizagjobs.quick.request.${jobId}`;
   try {
-    const existing = storage?.getItem(key);
+    const activeStorage = storage || (typeof window !== 'undefined' ? window.sessionStorage : null);
+    const existing = activeStorage?.getItem(key);
     if (
       /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(
         existing || "",
@@ -173,7 +174,7 @@ export function requestTokenForJob(jobId, storage = globalThis.sessionStorage) {
     )
       return existing;
     const token = crypto.randomUUID();
-    storage?.setItem(key, token);
+    activeStorage?.setItem(key, token);
     return token;
   } catch {
     return crypto.randomUUID();
