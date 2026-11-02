@@ -69,3 +69,21 @@ test('hasStoredSupabaseSession and getStoredSupabaseSession detect stored sessio
   assert.notEqual(session, null);
   assert.equal(session.user.email, 'kiran@jobsinvizag.in');
 });
+
+test('hasStoredSupabaseSession and getStoredSupabaseSession safely handle SecurityError in private browsing', () => {
+  global.window = {
+    get localStorage() {
+      throw new Error("Failed to read the 'localStorage' property from 'Window': Access is denied for this document.");
+    },
+    location: {
+      hash: '',
+      search: '',
+    },
+  };
+
+  assert.doesNotThrow(() => {
+    assert.equal(hasStoredSupabaseSession(), false);
+    assert.equal(getStoredSupabaseSession(), null);
+  });
+});
+

@@ -5,6 +5,13 @@ import {
 } from './lib/pwaRecovery.js';
 import { initGlobalErrorListeners } from './lib/errorReporter.js';
 
+// Polyfill Object.hasOwn for older mobile browsers (e.g. Android Chrome < 93)
+if (typeof Object.hasOwn !== 'function') {
+  Object.hasOwn = function hasOwn(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key);
+  };
+}
+
 unregisterLegacyServiceWorkers();
 registerStaleAssetRecovery();
 registerPwaAutoUpdate();

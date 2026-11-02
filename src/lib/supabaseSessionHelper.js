@@ -3,8 +3,17 @@
  * or pending OAuth redirect in the browser before waiting on async getSession().
  */
 
+const getLocalStorageSafely = () => {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+};
+
 export const hasStoredSupabaseSession = () => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  const storage = getLocalStorageSafely();
+  if (!storage) {
     return false;
   }
 
@@ -21,10 +30,10 @@ export const hasStoredSupabaseSession = () => {
     }
 
     // Check localStorage for any Supabase auth storage key
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i);
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
       if (key && (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
-        const val = window.localStorage.getItem(key);
+        const val = storage.getItem(key);
         if (val) {
           const parsed = JSON.parse(val);
           const session = parsed?.currentSession || parsed;
@@ -45,15 +54,16 @@ export const hasStoredSupabaseSession = () => {
  * Synchronously reads any stored Supabase session from localStorage.
  */
 export const getStoredSupabaseSession = () => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  const storage = getLocalStorageSafely();
+  if (!storage) {
     return null;
   }
 
   try {
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i);
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
       if (key && (key.startsWith('sb-') && key.endsWith('-auth-token'))) {
-        const val = window.localStorage.getItem(key);
+        const val = storage.getItem(key);
         if (!val) continue;
         const parsed = JSON.parse(val);
         const session = parsed?.currentSession || parsed;

@@ -87,7 +87,9 @@ export const POPULAR_VIZAG_ROLES = [
 ];
 
 const safeGetItem = (key) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+  } catch {
     return null;
   }
   try {
@@ -98,7 +100,9 @@ const safeGetItem = (key) => {
 };
 
 const safeSetItem = (key, value) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+  } catch {
     return;
   }
   try {

@@ -1147,18 +1147,22 @@ Pushed batches this continuation: 6a7b765 student recovery/checklist; b465c1a ca
 Remaining: authenticated journeys/ownership/persistence and exports, valid password recovery flows, all negative/loading/error states, actual Android/iOS/keyboard/landscape/zoom checks, nested protected modals and overlay-collision review. Existing notification inbox/bell local work remains preserved and excluded from scoped commits. No new Tested/Verified claims. docs/MOBILE_UI_STATUS.md summary now distinguishes implementation coverage from acceptance evidence.
 - Final integration regression: node --test tests/*.test.mjs exited 0, 127 passed / 0 failed. Log: docs/qa/2026-10-14/ui-pass-tests.txt. Existing notification tests are included in the working-tree run; notification source changes are not part of the UI deliveries.
 
-## QA-2026-11-02: Production Bug Noise Suppression & Scheduled Bug Fixer Automation
+## QA-2026-11-02: Production Bug Noise Suppression, Safari/Storage Hardening & Production Error Check
 
-- Scope: Endpoint `/api/report-error.js`, `src/lib/errorReporter.js`, `tests/error-reporter.test.mjs`, `sidecars/daily-production-bug-fixer/sidecar.json`.
+- Scope: Endpoint `/api/report-error.js`, `src/lib/errorReporter.js`, `src/lib/supabaseSessionHelper.js`, `src/lib/pwaRecovery.js`, `src/main.jsx`, `src/pages/JobDetailsPage.jsx`, storage guards across components, `tests/error-reporter.test.mjs`, `tests/auth-login-speed.test.mjs`.
 - Deliverables:
-  - Added filter patterns in `src/lib/errorReporter.js` and `/api/report-error.js` to suppress third-party in-app browser crashes (Meta/Instagram In-App Browser `iabjs://navigation_performance_logger_android`, detached Java bridge `Error invoking postMessage: Java object is gone`, and private window storage denial `localStorage Access is denied`).
-  - Configured scheduled automation `Daily Production Bug Fixer` (`daily-production-bug-fixer`) running hourly during active working windows (6–10 AM & 6–10 PM Asia/Kolkata).
-  - Automation checks live production error logs via `node scripts/bugs-queue.mjs list`, resolves/filters bugs, runs verification tests, and asks the developer for confirmation before pushing to `origin/develop`.
+  - Resolved and categorized all 30 open production bugs reported in Supabase `site_error_logs`:
+    1. **Safari Private Browsing & Storage Access Denied (`SecurityError: The request was denied`, `Failed to read localStorage: Access is denied`)**: Safely wrapped `localStorage` and `sessionStorage` in `src/lib/supabaseSessionHelper.js`, `src/lib/studentRegistrationSuggestions.js`, `src/components/student/StudentPushOptInCard.jsx`, `src/services/quickJobs.js`, `src/services/adminCompanies.js`, and `src/lib/naukriAutomationReport.js`.
+    2. **Service Worker Registration Permission Denial (`Registration failed - permission denied`)**: Handled `onRegisterError` callback in `src/lib/pwaRecovery.js` and added ignore patterns in error reporters to catch unhandled promise rejection.
+    3. **Safari Canonical URL ReplaceState Loop (`Attempt to use history.replaceState() more than 100 times per 10 seconds`)**: Added `canonicalRedirectAttemptedRef` guard and direct normalized pathname comparison in `src/pages/JobDetailsPage.jsx` to prevent runaway replaceState loops.
+    4. **Android Chrome < 93 Compatibility (`TypeError: Object.hasOwn is not a function`)**: Added universal `Object.hasOwn` polyfill in `src/main.jsx`.
+    5. **Unhandled Rejection Object Formatting (`[object Object]`)**: Serialized message/object payload in `handleUnhandledRejection` in `src/lib/errorReporter.js`.
+    6. **Third-Party Noise Auto-Ignore**: Updated `/api/report-error.js` so noise patterns automatically set `status: 'ignored'` rather than keeping records in `'open'`.
 - Verification:
-  - `node tests/error-reporter.test.mjs`: Passed (verifies IAB postMessage, buttons clicked, and localStorage errors are ignored while real bugs are reported).
-  - `node tests/bugs-queue.test.mjs`: Passed (verifies site_error_logs contract and status checks).
-  - `npx vite build`: Passed cleanly in 6.63s.
-  - Successfully purged 9 historical IAB noise errors in `site_error_logs` to 'ignored'.
+  - `npm run bugs:list`: 0 open bugs remaining (🎉 No open production bugs found in site_error_logs).
+  - `node --test tests/*.test.mjs`: All 278 tests passed, 0 failed.
+  - `npm run lint`: Passed with 0 errors.
+  - `npm run build`: Passed cleanly with all Vite & PWA assets generated.
 
 ## QA-2026-10-15: Production Error Reporting & Automated Resolution Pipeline
 

@@ -30,6 +30,6 @@ assert.equal(typeof pkg.scripts['bugs:resolve'], 'string', 'package.json must co
 
 // 4. api/report-error.js writes to site_error_logs with status
 const apiHandler = readFileSync(apiHandlerPath, 'utf8');
-assert.match(apiHandler, /status:\s*test\s*\?\s*'ignored'\s*:\s*'open'/, 'api/report-error.js must set status to open for real errors');
+assert.match(apiHandler, /status:\s*(?:\(test\s*\|\|\s*isNoiseReport\)|test\s*\|\|\s*isNoiseReport|test)\s*\?\s*'ignored'\s*:\s*'open'/, 'api/report-error.js must set status to open for real errors');
 
 console.log('bugs-queue.test.mjs: OK');

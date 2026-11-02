@@ -1,6 +1,6 @@
 import JobEligibilityNotice from '../components/student/JobEligibilityNotice';
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -79,6 +79,8 @@ export default function JobDetailsPage() {
   const [appliedHiringProgress, setAppliedHiringProgress] = useState(null);
   const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const [authWelcome] = useState(() => consumeStudentAuthSuccess());
+  const location = useLocation();
+  const canonicalRedirectAttemptedRef = useRef(false);
 
   const routeJobIdentifier = jobSlug || jobId || '';
   const currentPath = jobSlug && jobSegment ? `/jobs/${jobSegment}/${jobSlug}` : null;
@@ -149,17 +151,30 @@ export default function JobDetailsPage() {
   }, [routeJobIdentifier, searchParams]);
 
   useEffect(() => {
+    canonicalRedirectAttemptedRef.current = false;
+  }, [routeJobIdentifier]);
+
+  useEffect(() => {
     if (!job) {
       return;
     }
 
     const canonicalPath = getJobDetailPath(job);
-    if (currentPath === canonicalPath) {
+    const normalizedCurrent = (location.pathname || '').replace(/\/+$/, '');
+    const normalizedCanonical = (canonicalPath || '').replace(/\/+$/, '');
+
+    if (normalizedCurrent === normalizedCanonical) {
       return;
     }
 
-    navigate(canonicalPath, { replace: true });
-  }, [currentPath, job, navigate]);
+    if (canonicalRedirectAttemptedRef.current) {
+      return;
+    }
+
+    canonicalRedirectAttemptedRef.current = true;
+    const targetUrl = location.search ? `${canonicalPath}${location.search}` : canonicalPath;
+    navigate(targetUrl, { replace: true });
+  }, [currentPath, job, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     if (!job?.id || !isInternalApplyJob(job) || !studentSession || !isStudent) {

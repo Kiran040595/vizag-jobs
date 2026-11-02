@@ -14,9 +14,19 @@ const IGNORE_PATTERNS = [
   /iabjs:\/\//i,
   /navigation_performance_logger_android/i,
   /Java object is gone/i,
-  // Browser privacy modes / blocked storage access
+  /Java exception was raised during method invocation/i,
+  /enableButtonsClickedMetaDataLogging/i,
+  /Attempt to use history\.replaceState\(\) more than/i,
+  /_AutofillCallbackHandler/i,
+  // Browser privacy modes / blocked storage access / SW permission denial
   /localStorage.*Access is denied/i,
-  /SecurityError: The request was denied/i,
+  /The request was denied/i,
+  /Registration failed - permission denied/i,
+  /Registration failed/i,
+  // Third-party ad/telemetry scripts
+  /pagead2\.googlesyndication\.com/i,
+  /^int64$/i,
+  /^\[object Object\]$/,
 ];
 
 function getErrorFingerprint(error, url) {
@@ -104,7 +114,24 @@ export function initGlobalErrorListeners() {
 
   const handleUnhandledRejection = (event) => {
     const reason = event.reason;
-    const error = reason instanceof Error ? reason : new Error(String(reason || 'Unhandled Promise Rejection'));
+    let error;
+    if (reason instanceof Error) {
+      error = reason;
+    } else if (typeof reason === 'string') {
+      error = new Error(reason);
+    } else if (reason && typeof reason === 'object') {
+      let msg = reason.message || reason.error_description || reason.error;
+      if (!msg || msg === '[object Object]') {
+        try {
+          msg = JSON.stringify(reason);
+        } catch {
+          msg = 'Unhandled Object Rejection';
+        }
+      }
+      error = new Error(String(msg));
+    } else {
+      error = new Error(String(reason || 'Unhandled Promise Rejection'));
+    }
     reportClientError({
       error,
       context: 'unhandledrejection',

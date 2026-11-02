@@ -623,8 +623,8 @@ export const KNOWN_COMPANY_DEFAULTS = {
 const LOCAL_STORAGE_COMPANIES_KEY = 'vizag_admin_companies_overrides_v1';
 
 function getLocalCompanyOverrides() {
-  if (typeof localStorage === 'undefined') return {};
   try {
+    if (typeof localStorage === 'undefined') return {};
     const raw = localStorage.getItem(LOCAL_STORAGE_COMPANIES_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
@@ -633,8 +633,8 @@ function getLocalCompanyOverrides() {
 }
 
 function setLocalCompanyOverride(name, data) {
-  if (typeof localStorage === 'undefined') return;
   try {
+    if (typeof localStorage === 'undefined') return;
     const all = getLocalCompanyOverrides();
     all[name] = { ...all[name], ...data };
     localStorage.setItem(LOCAL_STORAGE_COMPANIES_KEY, JSON.stringify(all));

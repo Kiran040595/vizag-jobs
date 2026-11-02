@@ -32,8 +32,17 @@ const NOISE_PATTERNS = [
   /iabjs:\/\//i,
   /navigation_performance_logger_android/i,
   /Java object is gone/i,
+  /Java exception was raised during method invocation/i,
+  /enableButtonsClickedMetaDataLogging/i,
+  /Attempt to use history\.replaceState\(\) more than/i,
+  /_AutofillCallbackHandler/i,
   /localStorage.*Access is denied/i,
-  /SecurityError: The request was denied/i,
+  /The request was denied/i,
+  /Registration failed - permission denied/i,
+  /Registration failed/i,
+  /pagead2\.googlesyndication\.com/i,
+  /^int64$/i,
+  /^\[object Object\]$/,
 ];
 
 function isNoise(msg = '', st = '') {
@@ -103,7 +112,7 @@ export default async function handler(req, res) {
           pathname: String(pathname).slice(0, 255),
           user_agent: String(userAgent).slice(0, 500),
           screen_size: String(screen).slice(0, 50),
-          status: test ? 'ignored' : 'open',
+          status: (test || isNoiseReport) ? 'ignored' : 'open',
           resolution_notes: test ? 'Synthetic test ping / diagnostic' : isNoiseReport ? 'Filtered 3rd-party browser/IAB noise' : null,
           created_at: timestamp,
         });

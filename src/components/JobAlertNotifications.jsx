@@ -35,25 +35,30 @@ async function syncPushSubscription(userId) {
     return { ok: false, skipped: true };
   }
 
-  const registration = await Promise.race([
-    waitForServiceWorker(),
-    new Promise((resolve) => {
-      window.setTimeout(() => resolve(null), 8000);
-    }),
-  ]);
-  if (!registration?.pushManager) {
-    return { ok: false, skipped: true, reason: 'no_sw' };
-  }
+  try {
+    const registration = await Promise.race([
+      waitForServiceWorker(),
+      new Promise((resolve) => {
+        window.setTimeout(() => resolve(null), 8000);
+      }),
+    ]);
+    if (!registration?.pushManager) {
+      return { ok: false, skipped: true, reason: 'no_sw' };
+    }
 
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(getVapidPublicKey()),
-    });
-  }
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(getVapidPublicKey()),
+      });
+    }
 
-  return saveWebPushSubscription(subscription, userId);
+    return await saveWebPushSubscription(subscription, userId);
+  } catch (err) {
+    console.warn('[Push] Subscription failed or permission denied:', err);
+    return { ok: false, skipped: true, reason: err?.message || 'subscribe_failed' };
+  }
 }
 
 const HIDDEN_PREFIXES = ['/admin', '/employer', '/oauth'];

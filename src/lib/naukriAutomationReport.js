@@ -131,7 +131,11 @@ export function loadAutomationReport() {
 }
 
 export function clearAutomationReport() {
-  localStorage.removeItem(NAUKRI_AUTOMATION_REPORT_STORAGE_KEY);
+  try {
+    localStorage.removeItem(NAUKRI_AUTOMATION_REPORT_STORAGE_KEY);
+  } catch {
+    /* quota or private mode */
+  }
 }
 
 export const AUTOMATION_STATUS_LABELS = {

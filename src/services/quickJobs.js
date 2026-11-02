@@ -56,7 +56,11 @@ export async function claimQuickApplications() {
     p_token_hashes: hashes,
   });
   if (error) throw new Error(error.message);
-  localStorage.removeItem(RECEIPTS_KEY);
-  sessionStorage.removeItem("vizagjobs.quick.registration");
+  try {
+    localStorage.removeItem(RECEIPTS_KEY);
+    sessionStorage.removeItem("vizagjobs.quick.registration");
+  } catch {
+    // Storage blocked
+  }
   return data;
 }

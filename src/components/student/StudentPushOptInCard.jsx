@@ -14,7 +14,12 @@ export default function StudentPushOptInCard({ userId }) {
 
   useEffect(() => {
     if (!isPushSupported() || permission !== 'default') return;
-    const dismissedUntil = Number(window.localStorage.getItem(DISMISS_KEY) || 0);
+    let dismissedUntil = 0;
+    try {
+      dismissedUntil = Number(window.localStorage?.getItem(DISMISS_KEY) || 0);
+    } catch {
+      // ignore
+    }
     setVisible(dismissedUntil < Date.now());
   }, [permission]);
 
@@ -35,8 +40,12 @@ export default function StudentPushOptInCard({ userId }) {
     try {
       const result = await subscribeStudentToPush(userId);
       if (result.ok) {
-        window.localStorage.setItem('vizag_student_push_preferences_v1', JSON.stringify(preferences));
-        window.localStorage.setItem('vizag_student_push_optin_attempt_v1', new Date().toISOString());
+        try {
+        window.localStorage?.setItem('vizag_student_push_preferences_v1', JSON.stringify(preferences));
+        window.localStorage?.setItem('vizag_student_push_optin_attempt_v1', new Date().toISOString());
+      } catch {
+        // Storage blocked
+      }
         setPermission('granted');
         setVisible(false);
       } else {
@@ -51,7 +60,11 @@ export default function StudentPushOptInCard({ userId }) {
   };
 
   const later = () => {
-    window.localStorage.setItem(DISMISS_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
+    try {
+      window.localStorage?.setItem(DISMISS_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
+    } catch {
+      // Storage blocked
+    }
     setVisible(false);
   };
 

@@ -70,6 +70,9 @@ export const registerPwaAutoUpdate = () => {
         // Poll while the app stays open.
         window.setInterval(checkForUpdate, 15 * 60 * 1000);
       },
+      onRegisterError(error) {
+        console.warn('[PWA] Service worker registration error:', error);
+      },
     });
   } catch (error) {
     console.warn('[PWA] Could not register service worker updates:', error);
