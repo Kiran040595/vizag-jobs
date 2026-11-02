@@ -66,6 +66,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag',
     category: 'Real Estate & Facilities',
   },
+  'Credit Saison India': {
+    website: 'https://creditsaison.in',
+    careers_url: 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
+    category: 'Banking & Finance',
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',

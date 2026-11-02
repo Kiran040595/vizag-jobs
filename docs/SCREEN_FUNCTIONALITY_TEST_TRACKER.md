@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Credit-Saison-India-Verified-Careers
+
+- Replaced Credit Saison India's generic careers page with its official Workday search filtered to Visakhapatnam and added native Workday CXS API extraction.
+- Live backend verification returned 3 active Visakhapatnam roles across credit, sales, and relationship management with validated open application status, requisition IDs, full descriptions and direct Workday application links.
+- Scraper tests, defaults and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-02-Cushman-Wakefield-Verified-Careers
 
 - Replaced Cushman & Wakefield's generic careers page with its official Workday external search filtered to Vizag and added native Workday CXS API extraction.

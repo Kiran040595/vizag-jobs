@@ -479,7 +479,7 @@ export const CURATED_COMPANIES = {
   },
   'Credit Saison India': {
     website: 'https://creditsaison.in',
-    careers_url: 'https://creditsaison.in/careers',
+    careers_url: 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
     category: 'Banking & Finance',
     is_active_for_scrape: true,
   },

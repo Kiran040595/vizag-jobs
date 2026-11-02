@@ -179,6 +179,93 @@ test('Cushman & Wakefield official Workday portal retains active Vizag roles and
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Credit Saison India official Workday portal retains active Vizag roles and rejects closed or non-Vizag roles', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    const value = String(url);
+    if (value.endsWith('/wday/cxs/saison/Credit_Saison_India/jobs')) {
+      assert.equal(options?.method, 'POST');
+      return Response.json({
+        total: 3,
+        jobPostings: [
+          {
+            title: 'Relationship Manager - Secured Direct South ( AP ,TS & TN )',
+            externalPath: '/job/Hyderabad/Relationship-Manager---Secured-Direct_REQ-001807',
+            locationsText: '30 Locations',
+            bulletFields: ['REQ-001807'],
+          },
+          {
+            title: 'Branch Manager - Delhi',
+            externalPath: '/job/Delhi/Branch-Manager_REQ-001808',
+            locationsText: 'Delhi, India',
+            bulletFields: ['REQ-001808'],
+          },
+          {
+            title: 'Closed Manager - Visakhapatnam',
+            externalPath: '/job/Hyderabad/Closed-Manager_REQ-001809',
+            locationsText: 'Visakhapatnam',
+            bulletFields: ['REQ-001809'],
+          },
+        ],
+      });
+    }
+    if (value.includes('REQ-001807')) {
+      return Response.json({
+        jobPostingInfo: {
+          id: 'REQ-001807',
+          title: 'Relationship Manager - Secured Direct South ( AP ,TS & TN )',
+          jobReqId: 'REQ-001807',
+          location: 'Hyderabad',
+          additionalLocations: ['Vijayawada', 'Visakhapatnam', 'Ankapalli'],
+          canApply: true,
+          timeType: 'Full-Time',
+          externalUrl: 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India/job/Hyderabad/Relationship-Manager---Secured-Direct_REQ-001807',
+          jobDescription: '<p>Manage secured loan portfolio, lead customer acquisition, and expand direct retail lending across Visakhapatnam and coastal AP branches.</p>',
+        },
+      });
+    }
+    if (value.includes('REQ-001808')) {
+      return Response.json({
+        jobPostingInfo: {
+          id: 'REQ-001808',
+          title: 'Branch Manager - Delhi',
+          jobReqId: 'REQ-001808',
+          location: 'Delhi, India',
+          canApply: true,
+          timeType: 'Full-Time',
+          externalUrl: 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India/job/Delhi/Branch-Manager_REQ-001808',
+          jobDescription: '<p>Manage Delhi branch lending targets and customer service operations.</p>',
+        },
+      });
+    }
+    if (value.includes('REQ-001809')) {
+      return Response.json({
+        jobPostingInfo: {
+          id: 'REQ-001809',
+          title: 'Closed Manager - Visakhapatnam',
+          jobReqId: 'REQ-001809',
+          location: 'Visakhapatnam',
+          canApply: false,
+          timeType: 'Full-Time',
+          externalUrl: 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India/job/Hyderabad/Closed-Manager_REQ-001809',
+          jobDescription: '<p>This closed requisition is no longer taking candidate applications for Vizag.</p>',
+        },
+      });
+    }
+    throw new Error(`Unexpected URL in test: ${value}`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['credit saison india'], 'Credit Saison India');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Relationship Manager - Secured Direct South ( AP ,TS & TN )');
+    assert.equal(result.structuredJobs[0].company, 'Credit Saison India');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].category, 'Banking & Finance');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India/job/Hyderabad/Relationship-Manager---Secured-Direct_REQ-001807');
+    assert.match(result.structuredJobs[0].description, /Visakhapatnam and coastal AP branches/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Verified city-filtered URLs survive canonicalization', () => {
   for (const [name, url] of Object.entries(VERIFIED_VIZAG_PORTALS)) {
     assert.equal(resolveCanonicalCareerPortalUrl(url, name), url);
