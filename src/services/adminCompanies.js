@@ -496,11 +496,6 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://grihumhousing.com/careers',
     category: 'Banking & Finance',
   },
-  'Credit Saison India': {
-    website: 'https://creditsaison.in',
-    careers_url: 'https://creditsaison.in/careers',
-    category: 'Banking & Finance',
-  },
   'Policybazaar': {
     website: 'https://www.policybazaar.com',
     careers_url: 'https://www.policybazaar.com/careers/',
