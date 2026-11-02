@@ -61,6 +61,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://jobs.concentrix.com/job-search/?country=India&city=Visakhapatnam',
     category: 'BPO & KPO',
   },
+  'Cushman & Wakefield': {
+    website: 'https://www.cushmanwakefield.com',
+    careers_url: 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag',
+    category: 'Real Estate & Facilities',
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',

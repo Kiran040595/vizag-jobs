@@ -26,6 +26,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Radisson Hotel Group | https://careers.smartrecruiters.com/RHG?search=Visakhapatnam | Official Radisson Hotel Group SmartRecruiters search. Native API extraction validates the RHG employer identifier and exact Visakhapatnam city; live verification returned 1 role with a 4,831-character cleaned description and direct application page |
 | Wipro | https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam | Official SuccessFactors search API returned 2 active records with exact Visakhapatnam city and India country fields. Native extraction validates current end dates, canonical IDs/detail paths, and scoped employer descriptions |
 | Concentrix | https://jobs.concentrix.com/job-search/?country=India&city=Visakhapatnam | Employer-owned search embeds current Workday recruitment data. Native extraction validates exact city/country, open status, Concentrix legal employer, listing/application flags, requisition ID and direct Workday application URL; live verification returned 1 Vizag role with a 2,039-character cleaned description |
+| Cushman & Wakefield | https://cw.wd1.myworkdayjobs.com/External?q=Vizag | Official Workday external search filtered to Vizag. Native Workday CXS API extraction validates active open status, requisition ID, and direct application links; live verification returned 5 Vizag roles (including data center, industrial, and retail leasing projects) with 2,467?4,162-character cleaned descriptions |
 
 Fluentgrid vacancies are available in Vizag, but some offer a choice of Vizag or
 Vijayawada. They are not exclusively single-city roles; the public location is
@@ -50,6 +51,7 @@ Posting IDs from the live check:
   project-manager-electricity-utility-billing-system-implementation.
 - Wipro: 207016 (Administrator L0 (Contract)), 212142 (Production Agent L1).
 - Concentrix: R1765090 (Asst Manager, Operations).
+- Cushman & Wakefield: R341772 (Planning Manager - (Data Center) - Vizag), R341771 (Project Lead/Head - (Data Center) - Vizag), R341132 (Manager, Retail Leasing), R321416 (Construction Manager - (Industrial Projects) - Vizag), R321413 (MEP/Electrical - Engineer - (Healthcare/Hospital/Industrial Projects) - Vizag).
 
 ## Other official portals investigated in this batch
 

@@ -94,6 +94,91 @@ test('Concentrix employer job data retains only open exact-city Workday applicat
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Cushman & Wakefield official Workday portal retains active Vizag roles and rejects closed or non-Vizag roles', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    const value = String(url);
+    if (value.endsWith('/wday/cxs/cw/External/jobs')) {
+      assert.equal(options?.method, 'POST');
+      return Response.json({
+        total: 3,
+        jobPostings: [
+          {
+            title: 'Planning Manager - (Data Center) - Vizag',
+            externalPath: '/job/Hyderabad-India/Planning-Manager----Data-Center----Vizag_R341772',
+            locationsText: 'Hyderabad, India',
+            bulletFields: ['R341772'],
+          },
+          {
+            title: 'Project Lead - Pune',
+            externalPath: '/job/Pune-India/Project-Lead_R341773',
+            locationsText: 'Pune, India',
+            bulletFields: ['R341773'],
+          },
+          {
+            title: 'Closed Manager - Vizag',
+            externalPath: '/job/Hyderabad-India/Closed-Manager_R341774',
+            locationsText: 'Hyderabad, India',
+            bulletFields: ['R341774'],
+          },
+        ],
+      });
+    }
+    if (value.includes('R341772')) {
+      return Response.json({
+        jobPostingInfo: {
+          id: 'R341772',
+          title: 'Planning Manager - (Data Center) - Vizag',
+          jobReqId: 'R341772',
+          location: 'Hyderabad, India',
+          canApply: true,
+          timeType: 'Full-Time',
+          externalUrl: 'https://cw.wd1.myworkdayjobs.com/External/job/Hyderabad-India/Planning-Manager----Data-Center----Vizag_R341772',
+          jobDescription: '<p>Oversee project schedules, engineering coordination, site delivery milestones, and commissioning readiness for our Vizag data center development.</p>',
+        },
+      });
+    }
+    if (value.includes('R341773')) {
+      return Response.json({
+        jobPostingInfo: {
+          id: 'R341773',
+          title: 'Project Lead - Pune',
+          jobReqId: 'R341773',
+          location: 'Pune, India',
+          canApply: true,
+          timeType: 'Full-Time',
+          externalUrl: 'https://cw.wd1.myworkdayjobs.com/External/job/Pune-India/Project-Lead_R341773',
+          jobDescription: '<p>Deliver civil engineering works and project management strictly for the Pune site.</p>',
+        },
+      });
+    }
+    if (value.includes('R341774')) {
+      return Response.json({
+        jobPostingInfo: {
+          id: 'R341774',
+          title: 'Closed Manager - Vizag',
+          jobReqId: 'R341774',
+          location: 'Hyderabad, India',
+          canApply: false,
+          timeType: 'Full-Time',
+          externalUrl: 'https://cw.wd1.myworkdayjobs.com/External/job/Hyderabad-India/Closed-Manager_R341774',
+          jobDescription: '<p>This closed requisition is no longer taking candidate applications for Vizag.</p>',
+        },
+      });
+    }
+    throw new Error(`Unexpected URL in test: ${value}`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['cushman & wakefield'], 'Cushman & Wakefield');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Planning Manager - (Data Center) - Vizag');
+    assert.equal(result.structuredJobs[0].company, 'Cushman & Wakefield');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://cw.wd1.myworkdayjobs.com/External/job/Hyderabad-India/Planning-Manager----Data-Center----Vizag_R341772');
+    assert.match(result.structuredJobs[0].description, /Vizag data center development/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Verified city-filtered URLs survive canonicalization', () => {
   for (const [name, url] of Object.entries(VERIFIED_VIZAG_PORTALS)) {
     assert.equal(resolveCanonicalCareerPortalUrl(url, name), url);

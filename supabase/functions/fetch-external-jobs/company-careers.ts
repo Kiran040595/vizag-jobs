@@ -55,6 +55,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'radisson hotel group': 'https://careers.smartrecruiters.com/RHG?search=Visakhapatnam',
   wipro: 'https://careers.wipro.com/search/?q=&locationsearch=Visakhapatnam',
   concentrix: 'https://jobs.concentrix.com/job-search/?country=India&city=Visakhapatnam',
+  'cushman & wakefield': 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -163,7 +164,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const radisson = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/RHG' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
   const wipro = host === 'careers.wipro.com' && parsedUrl.pathname === '/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
   const concentrix = host === 'jobs.concentrix.com' && parsedUrl.pathname === '/job-search/' && parsedUrl.searchParams.get('country') === 'India' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix) return null;
+  const cushman = host === 'cw.wd1.myworkdayjobs.com' && parsedUrl.pathname === '/External' && parsedUrl.searchParams.get('q') === 'Vizag';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman) return null;
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
@@ -294,6 +296,57 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         apply_link: applyLink,
       } as ExtractedCompanyCareerJob];
     });
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (cushman) {
+    const search = await fetch('https://cw.wd1.myworkdayjobs.com/wday/cxs/cw/External/jobs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      },
+      body: JSON.stringify({ appliedFacets: {}, limit: 20, offset: 0, searchText: 'Vizag' }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const rows = (Array.isArray(payload.jobPostings) ? payload.jobPostings : []).filter((posting: Record<string, unknown>) => {
+      const path = String(posting.externalPath || '');
+      const title = String(posting.title || '');
+      return path.startsWith('/job/') && (/\b(vizag|visakhapatnam)\b/i.test(title) || /R\d+/.test(path));
+    });
+    const jobs = (await Promise.all(rows.map(async (row: Record<string, unknown>) => {
+      try {
+        const path = String(row.externalPath || '');
+        const detailRes = await fetch(`https://cw.wd1.myworkdayjobs.com/wday/cxs/cw/External${path}`, {
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!detailRes.ok) return null;
+        const detailData = await detailRes.json();
+        const info = (detailData.jobPostingInfo || {}) as Record<string, unknown>;
+        if (info.canApply !== true) return null;
+        const title = String(info.title || row.title || '').trim();
+        const rawDesc = String(info.jobDescription || '');
+        const applyLink = String(info.externalUrl || `https://cw.wd1.myworkdayjobs.com/External${path}`);
+        const description = htmlToCleanMarkdown(rawDesc, applyLink).slice(0, 20000);
+        const reqId = String(info.jobReqId || (Array.isArray(row.bulletFields) ? row.bulletFields[0] : '') || '');
+        const isVizagRole = /\b(vizag|visakhapatnam)\b/i.test(`${title} ${info.location || ''} ${description}`);
+        if (!title || !isVizagRole || description.length < 80 || !/^R\d+$/.test(reqId)) return null;
+        return {
+          title,
+          company,
+          location: 'Visakhapatnam, Andhra Pradesh, India',
+          job_type: String(info.timeType || 'Full-Time'),
+          description,
+          apply_link: applyLink,
+        } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
   if (sailsSoftware) {
@@ -907,6 +960,14 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerUrl.includes('winspiretech.com')
   ) {
     return 'https://winspiretech.co/careers/';
+  }
+
+  if (
+    lowerName.includes('cushman') ||
+    lowerUrl.includes('cushmanwakefield.com') ||
+    lowerUrl.includes('cw.wd1.myworkdayjobs.com')
+  ) {
+    return 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag';
   }
 
   return trimmed;

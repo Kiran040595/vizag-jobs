@@ -1,5 +1,11 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Cushman-Wakefield-Verified-Careers
+
+- Replaced Cushman & Wakefield's generic careers page with its official Workday external search filtered to Vizag and added native Workday CXS API extraction.
+- Live backend verification returned 5 active roles (including data center, industrial, and retail leasing projects) with validated open application status, requisition IDs, full descriptions and direct Workday application links.
+- Scraper tests, defaults and directory migration updated. Functional E2E and mobile UI remain pending; no production jobs were published for verification.
+
 ## QA-2026-11-02-Concentrix-Verified-Careers
 
 - Replaced Concentrix's generic careers page with its employer-owned India/Visakhapatnam search and added native embedded Workday-record extraction.
