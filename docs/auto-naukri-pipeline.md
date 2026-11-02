@@ -4,12 +4,12 @@
 
 | Channel | Admin UI | CLI | Daily cron (IST) |
 |---------|----------|-----|------------------|
-| **Naukri** | Manual fallback only | `npm run auto:naukri` | **No automatic schedule** |
+| **Naukri** | Fetch/review manually when needed | `npm run auto:naukri` | **Daily, 4:00 PM IST** |
 | **Company careers** | Fetch admin-approved companies directly from their configured career portals | `npm run auto:company-careers` | **Daily, 4:00 PM IST** |
 | **LinkedIn Posts** | Start automation on LinkedIn Posts card (uses preset) | `npm run auto:linkedin-posts` | **6:00 PM** (general preset) |
 | **LinkedIn Jobs** | Start automation on LinkedIn Jobs card | `npm run auto:linkedin-jobs` | **9:00 PM** |
 
-Naukri runs in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. Naukri is a separate workflow because GitHub was delaying that 4:00 PM IST cron by 3–6 hours when five schedules lived in one file. All channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
+Naukri runs daily in `.github/workflows/auto-naukri-fetch.yml`. LinkedIn, the daily blog, and the YouTube Short share `.github/workflows/auto-naukri-daily.yml`. Naukri is a separate workflow because GitHub was delaying that 4:00 PM IST cron by 3–6 hours when five schedules lived in one file. All external channels use the same fetch → SEO (3 min gap) → publish → report → email flow.
 
 ## Flow
 

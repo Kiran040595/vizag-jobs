@@ -1,9 +1,12 @@
 name: Auto daily Naukri fetch
 
-# Naukri is retained as a manual fallback only. Scheduled job collection now uses
-# verified company career portals via auto-company-careers-weekly.yml.
+# Keep this in its own workflow so the long fetch/SEO/publish journey does not
+# delay the other daily content jobs.
 
 on:
+  schedule:
+    # 4:00 PM IST = 10:30 UTC every day
+    - cron: '30 10 * * *'
   workflow_dispatch:
 
 concurrency:

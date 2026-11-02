@@ -1,5 +1,12 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Naukri-Daily-Automation-Restored
+
+- Scope: `.github/workflows/auto-naukri-fetch.yml`, `docs/auto-naukri-pipeline.md`; no route, screen, dialog or mobile layout change.
+- Root cause: Naukri scheduled runs failed from October 27-31 after the Apify account reached its monthly usage hard limit. Commit `a6870f7` then removed the cron trigger on October 31 and left the workflow manual-only, so no Naukri pipeline ran on November 1 or 2.
+- Restored the independent `30 10 * * *` GitHub Actions schedule (4:00 PM IST daily). Each run fetches Naukri jobs, removes existing/duplicate listings, SEO-optimizes eligible jobs, publishes them to `public.jobs`, and uploads its automation report.
+- Functional E2E: reopened/pending a successful live GitHub Actions fetch → SEO → publish run with artifact evidence. Mobile UI: not applicable; no UI changed.
+
 ## QA-2026-11-02-Automated-Production-Bug-Fixer-Pipeline
 
 - Scope: `scripts/bugs-queue.mjs`, `package.json`, `src/services/webPushSubscriptions.js`, `src/components/JobAlertNotifications.jsx`, `src/lib/pwaRecovery.js`, `tests/bugs-queue.test.mjs`.
