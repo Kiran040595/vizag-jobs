@@ -1,5 +1,13 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-02-Home-Four-Job-Source-Tabs
+
+- Scope: S007 `/`; `JobSourceTabs.jsx`, `JobFilters.jsx`, `HomePage.jsx`, `jobDirectPosting.js`, `jobFilters.js`, and focused tests. No new route or dialog.
+- Replaced the three-way feed with four candidate-facing tabs: All Jobs; Posted on VizagJobs (employer/admin posts); Official Company Jobs (verified company-career imports); and Jobs for You (profile matching). Career imports are explicitly excluded from the on-platform classifier instead of relying on display labels alone.
+- Functional evidence: local Playwright/Edge exercised All → Official Company Jobs → Posted on VizagJobs → Jobs for You using live public data. URL state, selected tab, headings, banners, counts (1,005 all / 40 platform / 74 company on the final pass), and signed-out matching prompt passed. Authenticated profile ranking remains pending, so Functional E2E stays In progress.
+- Mobile UI evidence: Playwright/Edge at 320×740 verified a 2×2 tab grid, 139px-wide and 58–61px-high controls, selected Company state, banner, 320px document width with no horizontal overflow, no Vite overlay, and no console warnings/errors. Existing fixed feedback/chat controls can overlay lower-page content while scrolling and remain outside this scoped tab change; broader device/browser acceptance remains In progress.
+- Automated verification: `job-direct-posting.test.mjs` 29/29 and `job-filters.test.mjs` 85/85 passed; changed-file ESLint passed; `npm run build` completed successfully (existing large-chunk warning only).
+
 ## QA-2026-11-02-Session-Storage-Access-Denied-Fix
 
 - Scope: `src/lib/publicJobsSessionCache.js`, `src/services/adminJobs.js`, `src/lib/employerOAuth.js`, `src/lib/quickApply.js`, `src/pages/UnifiedLoginPage.jsx`, `src/lib/errorReporter.js`, `api/report-error.js`, `scripts/bugs-queue.mjs`, `tests/error-reporter.test.mjs`, `tests/public-jobs-session-cache.test.mjs`.
@@ -578,7 +586,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S004 | `/admin/quick-jobs/new` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
 | S005 | `/admin/quick-jobs/:jobId/edit` | Create/edit quick job and dynamic fields; save; open public form and verify field changes | In progress | In progress | QA-2026-10-14-UI-Day10: mobile UI verified, full journey pending |
 | S006 | `/admin/candidates` | Browse quick jobs and candidates; inspect responses and candidate actions; verify data isolation | In progress | In progress | QA-2026-10-14-UI-Day11: mobile UI verified, full journey pending |
-| S007 | `/` | Home search, categories, job sections, counts, recommendations, blog links and calls to action | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
+| S007 | `/` | Home search, categories, four job-source tabs (all, platform posts, official company careers, profile matches), counts, recommendations, blog links and calls to action | In progress | In progress | QA-2026-11-02-Home-Four-Job-Source-Tabs: live-data desktop interactions and 320×740 tab layout passed; authenticated profile matching and broader device/browser acceptance pending |
 | S008 | `/admin/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day11: mobile UI verified, full journey pending |
 | S009 | `/oauth/consent` | Validate OAuth request/session; accept or reject consent; verify callback and error state | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |
 | S010 | `/employer/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day7: mobile UI verified, full journey pending |

@@ -22,7 +22,7 @@ import {
   normalizeJobCategory,
 } from './jobCategoryTaxonomy.js';
 import { ADMIN_SOURCE_OPTIONS, matchesAdminSourceFilter, parseSourceFilter } from './jobSourceFilter.js';
-import { isDirectPosting } from './jobDirectPosting.js';
+import { isCompanyCareerPosting, isDirectPosting } from './jobDirectPosting.js';
 
 export const PAGE_SIZE = 12;
 
@@ -30,8 +30,9 @@ export const CATEGORY_OPTIONS = FILTER_CATEGORY_OPTIONS;
 
 export const TAB_OPTIONS = [
   { id: 'all', label: 'All Jobs' },
-  { id: 'direct', label: 'Direct Company Jobs' },
-  { id: 'matching', label: 'Jobs matching your profile' },
+  { id: 'direct', label: 'Posted on VizagJobs' },
+  { id: 'company', label: 'Official Company Jobs' },
+  { id: 'matching', label: 'Jobs for You' },
 ];
 
 export const JOB_TYPE_OPTIONS = [
@@ -226,9 +227,11 @@ export const applyJobFilters = (jobs, filters, options = {}) => {
   const q = (filters.q ?? '').trim().toLowerCase();
   const targetCompany = (filters.company ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
   const isDirectTab = filters.tab === 'direct';
+  const isCompanyTab = filters.tab === 'company';
   const filtered = jobs.filter(
     (job) =>
       (!isDirectTab || isDirectPosting(job)) &&
+      (!isCompanyTab || isCompanyCareerPosting(job)) &&
       (!targetCompany || (job.company || '').trim().toLowerCase().replace(/\s+/g, ' ') === targetCompany) &&
       matchesCategory(job, filters.category) &&
       matchesJobType(job, filters.jobType) &&

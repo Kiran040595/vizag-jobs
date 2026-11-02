@@ -17,6 +17,13 @@ const KNOWN_AGGREGATOR_PATTERNS = [
   'timesjobs',
 ];
 
+const COMPANY_CAREER_SOURCE_PATTERNS = [
+  'direct company website',
+  'official company website',
+  'company career portal',
+  'company careers',
+];
+
 const normalize = (value) =>
   String(value ?? '')
     .trim()
@@ -61,6 +68,13 @@ export const isEmployerPosting = (job) =>
 export const isInternalApplyPosting = (job) =>
   job?.applyMode === 'internal' || job?.apply_mode === 'internal';
 
+/** True for jobs imported from verified companies' official career pages. */
+export const isCompanyCareerPosting = (job) => {
+  if (!job) return false;
+  const sourceName = normalize(job.source ?? job.source_name);
+  return COMPANY_CAREER_SOURCE_PATTERNS.some((pattern) => sourceName.includes(pattern));
+};
+
 /**
  * Check whether a job is a direct company or admin posting.
  *
@@ -74,6 +88,12 @@ export const isInternalApplyPosting = (job) =>
  */
 export const isDirectPosting = (job) => {
   if (!job) return false;
+
+  // Career-page imports have their own public tab even though their source is
+  // an official company website rather than an aggregator.
+  if (isCompanyCareerPosting(job)) {
+    return false;
+  }
 
   if (isEmployerPosting(job)) {
     return true;
@@ -139,4 +159,9 @@ export const getDirectPostingBadge = (job) => {
 export const countDirectJobs = (jobs) => {
   if (!Array.isArray(jobs) || jobs.length === 0) return 0;
   return jobs.filter(isDirectPosting).length;
+};
+
+export const countCompanyCareerJobs = (jobs) => {
+  if (!Array.isArray(jobs) || jobs.length === 0) return 0;
+  return jobs.filter(isCompanyCareerPosting).length;
 };

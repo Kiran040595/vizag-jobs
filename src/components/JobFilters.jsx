@@ -129,13 +129,19 @@ export default function JobFilters({
       ) : null}
       {filters.tab === 'direct' ? (
         <ActiveFilterChip
-          label="Direct Company Jobs"
+          label="Posted on VizagJobs"
+          onRemove={() => onUpdate({ tab: 'all' })}
+        />
+      ) : null}
+      {filters.tab === 'company' ? (
+        <ActiveFilterChip
+          label="Official Company Jobs"
           onRemove={() => onUpdate({ tab: 'all' })}
         />
       ) : null}
       {filters.tab === 'matching' ? (
         <ActiveFilterChip
-          label="Jobs Matching Profile"
+          label="Jobs for You"
           onRemove={() => onUpdate({ tab: 'all' })}
         />
       ) : null}

@@ -5,9 +5,11 @@
  */
 
 import {
+  countCompanyCareerJobs,
   countDirectJobs,
   getDirectPostingBadge,
   isDirectPosting,
+  isCompanyCareerPosting,
   isEmployerPosting,
   isExternalAggregatorJob,
   isInternalApplyPosting,
@@ -156,6 +158,26 @@ ok(
   }),
   'LinkedIn job is NOT direct',
 );
+ok(
+  !isDirectPosting({
+    title: 'Official Career Opening',
+    source: 'Direct Company Website',
+    sourceUrl: 'https://careers.example.com/jobs/1',
+  }),
+  'company career import is separated from direct postings',
+);
+
+section('isCompanyCareerPosting');
+ok(
+  isCompanyCareerPosting({ source: 'Direct Company Website' }),
+  'recognizes scheduled company-career import source',
+);
+ok(
+  isCompanyCareerPosting({ source_name: 'Official Company Website' }),
+  'recognizes alternate official company source label',
+);
+ok(!isCompanyCareerPosting({ source: 'Admin Post' }), 'admin post is not a company-career import');
+ok(!isCompanyCareerPosting({ source: 'naukri.com' }), 'aggregator job is not a company-career import');
 
 section('getDirectPostingBadge');
 eq(
@@ -185,8 +207,10 @@ const testJobs = [
   { id: '2', source: 'naukri.com', sourceUrl: 'https://naukri.com/1' },
   { id: '3', source: 'linkedin.com', sourceUrl: 'https://linkedin.com/jobs/view/2' },
   { id: '4', source: 'Admin Post' },
+  { id: '5', source: 'Direct Company Website' },
 ];
-eq(countDirectJobs(testJobs), 2, 'correctly counts 2 direct jobs out of 4');
+eq(countDirectJobs(testJobs), 2, 'correctly counts 2 direct jobs out of 5');
+eq(countCompanyCareerJobs(testJobs), 1, 'correctly counts official company-career jobs');
 eq(countDirectJobs([]), 0, 'empty list counts 0');
 
 console.log(trail.join('\n'));

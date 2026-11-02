@@ -105,6 +105,12 @@ section('readFiltersFromSearchParams — defaults & invalid values');
 }
 {
   const r = readFiltersFromSearchParams(
+    new URLSearchParams('tab=company'),
+  );
+  eq(r.tab, 'company', 'tab=company is parsed');
+}
+{
+  const r = readFiltersFromSearchParams(
     new URLSearchParams('tab=for-you'),
   );
   eq(r.tab, 'matching', 'tab=for-you alias is parsed as matching');
@@ -152,6 +158,13 @@ section('writeFiltersToSearchParams — defaults are NEVER serialized');
 {
   const out = writeFiltersToSearchParams({
     ...DEFAULT_FILTERS,
+    tab: 'company',
+  }).toString();
+  ok(out.includes('tab=company'), 'tab=company is serialized');
+}
+{
+  const out = writeFiltersToSearchParams({
+    ...DEFAULT_FILTERS,
     source: 'linkedin_jobs',
   }).toString();
   ok(out.includes('source=linkedin_jobs'), 'admin source filter is serialized');
@@ -186,15 +199,22 @@ ok(isAnyFilterActive({ ...DEFAULT_FILTERS, source: ['naukri'] }), 'array source 
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, source: [] }), 'empty array source -> not active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, source: ['all'] }), 'all in array -> not active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'direct' }), 'tab=direct -> active');
+ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'company' }), 'tab=company -> active');
 ok(isAnyFilterActive({ ...DEFAULT_FILTERS, tab: 'matching' }), 'tab=matching -> active');
 ok(!isAnyFilterActive({ ...DEFAULT_FILTERS, page: 5 }), 'page change alone -> not active');
 
 // ------------------------------------------------------------
-section('applyJobFilters — tab filter (direct company jobs)');
+section('applyJobFilters — source tabs');
 {
   const jobs = [
     fakeJob({ id: 'd1', createdBy: 'employer-1', title: 'Direct Employer Job' }),
     fakeJob({ id: 'd2', source: 'Admin Post', title: 'Admin Job' }),
+    fakeJob({
+      id: 'career',
+      source: 'Direct Company Website',
+      sourceUrl: 'https://careers.example.com/job/123',
+      title: 'Official Career Job',
+    }),
     fakeJob({
       id: 'agg',
       source: 'naukri.com',
@@ -204,13 +224,18 @@ section('applyJobFilters — tab filter (direct company jobs)');
   ];
   eq(
     applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'all' }).map((j) => j.id).sort(),
-    ['agg', 'd1', 'd2'].sort(),
+    ['agg', 'career', 'd1', 'd2'].sort(),
     'tab=all shows all jobs',
   );
   eq(
     applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'direct' }).map((j) => j.id).sort(),
     ['d1', 'd2'].sort(),
     'tab=direct shows only direct employer & admin jobs',
+  );
+  eq(
+    applyJobFilters(jobs, { ...DEFAULT_FILTERS, tab: 'company' }).map((j) => j.id),
+    ['career'],
+    'tab=company shows only official company-career imports',
   );
 }
 

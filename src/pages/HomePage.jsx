@@ -25,7 +25,7 @@ import {
   writeCachedPublicJobs,
 } from '../lib/publicJobsSessionCache';
 import { computeSiteStats } from '../lib/siteStats';
-import { countDirectJobs } from '../lib/jobDirectPosting';
+import { countCompanyCareerJobs, countDirectJobs } from '../lib/jobDirectPosting';
 import {
   CATEGORY_OPTIONS,
   DEFAULT_FILTERS,
@@ -231,6 +231,7 @@ export default function HomePage() {
   }, [allJobs, filters, isStudent, matchingCandidateJobs, profileComplete, session]);
 
   const directJobsCount = useMemo(() => countDirectJobs(allJobs), [allJobs]);
+  const companyCareerJobsCount = useMemo(() => countCompanyCareerJobs(allJobs), [allJobs]);
   const siteStats = useMemo(() => computeSiteStats(allJobs), [allJobs]);
   const pagination = useMemo(
     () => paginate(filteredJobs, filters.page, PAGE_SIZE),
@@ -239,7 +240,8 @@ export default function HomePage() {
 
   const jobListTitle = useMemo(() => {
     if (filters.tab === 'matching') return 'Jobs Matching Your Profile';
-    if (filters.tab === 'direct') return 'Direct Company Job Openings';
+    if (filters.tab === 'direct') return 'Jobs Posted on VizagJobs';
+    if (filters.tab === 'company') return 'Official Company Job Openings';
     return 'Recent Job Openings';
   }, [filters.tab]);
 
@@ -440,6 +442,7 @@ export default function HomePage() {
               onTabChange={(nextTab) => updateFilters({ tab: nextTab })}
               totalCount={allJobs.length}
               directCount={directJobsCount}
+              companyCount={companyCareerJobsCount}
               matchingCount={matchingJobsRanked.length}
               showMatchingTab={!isEmployer}
               isStudent={Boolean(session && isStudent)}

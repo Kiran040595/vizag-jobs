@@ -4,15 +4,17 @@ import { Link } from 'react-router-dom';
 /**
  * Tab switcher component displayed above the job list on the homepage.
  * Allows candidates to toggle between:
- * - "All Openings" (combined feed from all sources)
- * - "Direct Company Jobs" (exclusive jobs posted directly by local employers or admins)
- * - "Jobs Matching Profile" (personalized recommendations based on student's skills & roles)
+ * - "All Jobs" (combined feed from all sources)
+ * - "Posted on VizagJobs" (jobs posted by employers or the VizagJobs team)
+ * - "Official Company Jobs" (imports from verified company career pages)
+ * - "Jobs for You" (personalized recommendations based on student's skills & roles)
  */
 function JobSourceTabs({
   activeTab = 'all',
   onTabChange,
   totalCount = 0,
   directCount = 0,
+  companyCount = 0,
   matchingCount = 0,
   showMatchingTab = true,
   isStudent = false,
@@ -23,11 +25,9 @@ function JobSourceTabs({
       <div
         role="tablist"
         aria-label="Filter job listings by source type"
-        className={`grid w-full ${
-          showMatchingTab ? 'grid-cols-3' : 'grid-cols-2'
-        } gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner sm:inline-flex sm:w-auto sm:gap-2`}
+        className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner sm:inline-flex sm:w-auto sm:gap-2"
       >
-        {/* Tab 1: All Openings */}
+        {/* Tab 1: All Jobs */}
         <button
           type="button"
           role="tab"
@@ -55,7 +55,7 @@ function JobSourceTabs({
             <span className="min-w-0 break-words">
               <span className="min-[400px]:hidden">All</span>
               <span className="hidden min-[400px]:inline sm:hidden">All Jobs</span>
-              <span className="hidden sm:inline">All Openings</span>
+              <span className="hidden sm:inline">All Jobs</span>
             </span>
           </span>
           <span
@@ -69,7 +69,7 @@ function JobSourceTabs({
           </span>
         </button>
 
-        {/* Tab 2: Direct Company & Admin */}
+        {/* Tab 2: Posted by employers or the VizagJobs team */}
         <button
           type="button"
           role="tab"
@@ -99,9 +99,8 @@ function JobSourceTabs({
               />
             </svg>
             <span className="min-w-0 break-words">
-              <span className="min-[400px]:hidden">Direct</span>
-              <span className="hidden min-[400px]:inline sm:hidden">Direct Jobs</span>
-              <span className="hidden sm:inline">Direct Company Jobs</span>
+              <span className="sm:hidden">On VizagJobs</span>
+              <span className="hidden sm:inline">Posted on VizagJobs</span>
             </span>
           </span>
 
@@ -117,12 +116,53 @@ function JobSourceTabs({
 
           {activeTab !== 'direct' && directCount > 0 ? (
             <span className="hidden rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 md:inline-block">
-              Verified
+              Direct
             </span>
           ) : null}
         </button>
 
-        {/* Tab 3: Matching Your Profile */}
+        {/* Tab 3: Jobs imported from verified company career pages */}
+        <button
+          type="button"
+          role="tab"
+          id="tab-company-jobs"
+          aria-selected={activeTab === 'company'}
+          aria-controls="job-list-section"
+          onClick={() => onTabChange('company')}
+          className={`group relative flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold transition-all duration-150 sm:flex-initial sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+            activeTab === 'company'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-indigo-700/20'
+              : 'text-slate-700 hover:bg-indigo-50/70 hover:text-indigo-800'
+          }`}
+        >
+          <span className="flex min-w-0 items-center gap-1 sm:gap-1.5">
+            <svg
+              className={`h-4 w-4 shrink-0 transition-colors ${
+                activeTab === 'company' ? 'text-white' : 'text-indigo-600'
+              }`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M4 3a1 1 0 011-1h10a1 1 0 011 1v14h1a1 1 0 110 2H3a1 1 0 110-2h1V3zm3 2v2h2V5H7zm4 0v2h2V5h-2zM7 9v2h2V9H7zm4 0v2h2V9h-2zm-4 4v4h6v-4H7z" />
+            </svg>
+            <span className="min-w-0 break-words">
+              <span className="sm:hidden">Company</span>
+              <span className="hidden sm:inline">Official Company Jobs</span>
+            </span>
+          </span>
+          <span
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-bold transition-colors sm:px-2 ${
+              activeTab === 'company'
+                ? 'bg-white text-indigo-800'
+                : 'bg-indigo-100 text-indigo-800'
+            }`}
+          >
+            {companyCount}
+          </span>
+        </button>
+
+        {/* Tab 4: Matching Your Profile */}
         {showMatchingTab ? (
           <button
             type="button"
@@ -149,9 +189,8 @@ function JobSourceTabs({
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
               </svg>
               <span className="min-w-0 break-words">
-                <span className="min-[400px]:hidden">For You</span>
-                <span className="hidden min-[400px]:inline sm:hidden">For You</span>
-                <span className="hidden sm:inline">Jobs Matching Profile</span>
+                <span className="sm:hidden">For You</span>
+                <span className="hidden sm:inline">Jobs for You</span>
               </span>
             </span>
 
@@ -185,8 +224,18 @@ function JobSourceTabs({
         <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3.5 py-2 text-xs text-emerald-800 shadow-sm sm:text-sm">
           <span className="text-base">🏢</span>
           <p>
-            <strong className="font-semibold">Direct Openings:</strong> Jobs posted directly by
-            local Visakhapatnam employers and verified by admin. No external redirects.
+            <strong className="font-semibold">Posted on VizagJobs:</strong> Jobs added by registered
+            employers or the VizagJobs team.
+          </p>
+        </div>
+      ) : null}
+
+      {activeTab === 'company' ? (
+        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 px-3.5 py-2 text-xs text-indigo-900 shadow-sm sm:text-sm">
+          <span className="text-base">🏢</span>
+          <p>
+            <strong className="font-semibold">Official Company Jobs:</strong> Openings collected
+            from verified companies and their official career pages.
           </p>
         </div>
       ) : null}
@@ -197,7 +246,7 @@ function JobSourceTabs({
           <div className="flex items-center gap-2">
             <span className="text-base">🎯</span>
             <p>
-              <strong className="font-semibold">Jobs Matching Your Profile:</strong> Ranked from your
+              <strong className="font-semibold">Jobs for You:</strong> Ranked from your
               target roles, skills, fresher status, and preferred locations.
             </p>
           </div>
