@@ -703,7 +703,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
-| S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication (applicant Excel export hidden for employers); verify student sees updates | In progress | In progress | QA-2026-11-03-Employer-Excel-Export-Hidden: Excel export removed from employer view, restricted to admin; component/test verified |
+| S019 | `/employer/jobs/:jobId/applications` | Load candidates; advanced multi-dimensional filtering (experience, skills, availability, interview, notes, search); update pipeline/status/notes; schedule/cancel interview; resume access; communication (applicant Excel export hidden for employers); verify student sees updates | In progress | In progress | QA-2026-11-03-Employer-Candidate-Filters-Toolbar-Modernization: 5-column filter grid, quick-toggle badges, active filter dismiss chips, experience/availability screening; 23 tests passing |
 | S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S021 | `/student/register` | Register account; required matching facts and consent; explicit experience/availability; duplicate account; profile-save failure/retry; persist full profile; shared roles across students; optional salary expectations; optional resume/CV attachment; campaign role query params (?role=delivery, ?role=telecaller); 1-click popular role pills; delivery partner assets, telecalling language cards, and sales & field marketing skill cards | In progress | In progress | QA-2026-10-24-Sales-Talent-Pool-And-Typo-Tolerance: sales & field marketing asset card added with quick toggles for direct sales, client acquisition, negotiation, bike and license; 195 tests passing; build & lint 0 errors |
 | S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | In progress | In progress | UI continuation 2026-10-14: Student recovery pages: bottom navigation clearance and 44px return link |
@@ -1676,6 +1676,29 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Lint: `npm run lint` passed with 0 errors and 0 warnings.
   - Build: `npm run build` completed cleanly.
   - Mobile UI: In progress; compact layout dramatically reduces scrolling on mobile viewports.
+
+## QA-2026-11-03: Employer Advanced Candidate Filters & Modernized Toolbar UI/UX
+
+- Scope: S019 `/employer/jobs/:jobId/applications` (`src/lib/applicationFilters.js`, `src/pages/EmployerJobApplicationsPage.jsx`, `tests/application-filters.test.mjs`).
+- Enhancements:
+  - Added multi-dimensional recruiter filtering options:
+    - **Experience**: Freshers Only vs. Experienced, plus granular brackets (0-6M, 6-12M, 1-2Y, 2-4Y, 4+Y).
+    - **Availability**: Immediate Joiners, Within 15 Days, Within 30 Days, 30+ Days.
+    - **Key Skills**: Dropdown selector populated dynamically from applicant skill pools.
+    - **Interview Scheduled**: Quick-toggle pill showing candidate count.
+    - **Private / Admin Notes**: Quick-toggle pill showing candidate count.
+    - **Deep Recruiter Notes Search**: Candidates can be discovered by words inside recruiter notes.
+  - Elevated Candidate Toolbar UI/UX into a 4-tier responsive panel:
+    - Row 1: Search bar with instant clear button (`✕`), multi-attribute Sort selector (`Newest`, `⭐ Recommended first`, `Earliest registered`, `Name A-Z`, `Has Resume first`), and Cards/Table layout switch.
+    - Row 2: Interactive quick-filter toggle pills with live count badges (`⭐ Recommended`, `📄 Has Resume`, `📞 Has Phone`, `🎓 Freshers`, `💼 Experienced`, `📅 Interview Scheduled`, `📝 Has Notes`).
+    - Row 3: 5-column dropdown filter grid (`Qualification`, `Experience`, `Skill`, `Passout Year`, `Availability`).
+    - Row 4: Active filter status bar with individual dismiss chips (`✕`), candidate match counter (`Showing X of Y candidates`), and a prominent `Clear all filters` button.
+- Verification:
+  - Automated tests: `node --test tests/application-filters.test.mjs tests/employer-linked-job-applications.test.mjs tests/job-suitable-profiles.test.mjs` passed 23/23 tests.
+  - Lint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Build: `npm run build` completed cleanly.
+  - Mobile UI: In progress; responsive toolbar stacks smoothly with touch-friendly pills and full-width dropdown controls on small screens.
+
 
 
 

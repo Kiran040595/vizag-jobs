@@ -213,3 +213,70 @@ test('unstarred candidate is found by name search when starred filter is off', (
   assert.equal(searchResult[0].profileSnapshot.fullName, 'Badamsetti Indrani');
 });
 
+test('filterApplications filters by experience level (fresher vs experienced)', () => {
+  const freshers = filterApplications(mockApplicants, { experienceLevel: 'fresher' });
+  assert.ok(freshers.length > 0);
+
+  const experiencedCandidate = {
+    id: 'app-exp',
+    status: 'applied',
+    profileSnapshot: {
+      fullName: 'Vikram Singh',
+      isFresher: false,
+      roleExperienceLevel: '2_4_years',
+    },
+  };
+  const list = [...mockApplicants, experiencedCandidate];
+
+  const expOnly = filterApplications(list, { experienceLevel: 'experienced' });
+  assert.ok(expOnly.some((a) => a.id === 'app-exp'));
+
+  const specificExp = filterApplications(list, { experienceLevel: '2_4_years' });
+  assert.equal(specificExp.length, 1);
+  assert.equal(specificExp[0].id, 'app-exp');
+});
+
+test('filterApplications filters by interview scheduled status', () => {
+  const withInterview = filterApplications(mockApplicants, { hasInterviewOnly: true });
+  // app-4 has interviewScheduledAt or interview_scheduled status
+  const interviewCandidate = {
+    id: 'app-int',
+    status: 'interview_scheduled',
+    interviewScheduledAt: '2026-11-10T10:00:00Z',
+    profileSnapshot: { fullName: 'Suresh Raina' },
+  };
+  const list = [...mockApplicants, interviewCandidate];
+  const filtered = filterApplications(list, { hasInterviewOnly: true });
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].id, 'app-int');
+});
+
+test('filterApplications filters by availability', () => {
+  const immediateCandidate = {
+    id: 'app-imm',
+    status: 'applied',
+    profileSnapshot: {
+      fullName: 'Kavitha R',
+      availability: 'immediate',
+    },
+  };
+  const laterCandidate = {
+    id: 'app-later',
+    status: 'applied',
+    profileSnapshot: {
+      fullName: 'Mahesh B',
+      availability: 'within_30_days',
+    },
+  };
+  const list = [immediateCandidate, laterCandidate];
+
+  const immOnly = filterApplications(list, { availability: 'immediate' });
+  assert.equal(immOnly.length, 1);
+  assert.equal(immOnly[0].id, 'app-imm');
+
+  const laterOnly = filterApplications(list, { availability: 'within_30_days' });
+  assert.equal(laterOnly.length, 1);
+  assert.equal(laterOnly[0].id, 'app-later');
+});
+
+

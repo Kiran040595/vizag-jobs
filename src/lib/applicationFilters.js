@@ -26,6 +26,25 @@ export const QUALIFICATION_CATEGORIES = [
   { value: 'other', label: 'Other Qualifications' },
 ];
 
+export const EXPERIENCE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Experience' },
+  { value: 'fresher', label: 'Freshers Only' },
+  { value: 'experienced', label: 'Experienced' },
+  { value: '0_6_months', label: '0–6 Months' },
+  { value: '6_12_months', label: '6–12 Months' },
+  { value: '1_2_years', label: '1–2 Years' },
+  { value: '2_4_years', label: '2–4 Years' },
+  { value: '4_plus_years', label: '4+ Years' },
+];
+
+export const AVAILABILITY_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Availability' },
+  { value: 'immediate', label: 'Immediate Joiner' },
+  { value: 'within_15_days', label: 'Within 15 Days' },
+  { value: 'within_30_days', label: 'Within 30 Days' },
+  { value: 'more_than_30_days', label: 'More than 30 Days' },
+];
+
 /**
  * Categorizes a candidate's degree string into standard qualification buckets.
  */
@@ -121,10 +140,14 @@ export const filterApplications = (applications = [], criteria = {}) => {
     qualification = 'all',
     passoutYear = 'all',
     skill = 'all',
+    experienceLevel = 'all',
+    availability = 'all',
     isStarredOnly = false,
     earlyOnly = false,
     hasResumeOnly = false,
     hasPhoneOnly = false,
+    hasInterviewOnly = false,
+    hasNotesOnly = false,
     sortBy = 'newest',
   } = criteria;
 
@@ -216,7 +239,48 @@ export const filterApplications = (applications = [], criteria = {}) => {
       if (!hasSkill) return false;
     }
 
-    // 9. Free-text search query across multiple fields
+    // 9. Experience Level filter
+    if (experienceLevel && experienceLevel !== 'all') {
+      const isFresher =
+        snap.isFresher === true ||
+        snap.roleExperienceLevel === 'fresher' ||
+        snap.experienceLevel === 'fresher' ||
+        (!snap.roleExperienceLevel && snap.isFresher !== false);
+
+      if (experienceLevel === 'fresher') {
+        if (!isFresher) return false;
+      } else if (experienceLevel === 'experienced') {
+        if (isFresher) return false;
+      } else {
+        const candidateExp = String(snap.roleExperienceLevel || snap.experienceLevel || '').toLowerCase().trim();
+        if (candidateExp !== experienceLevel.toLowerCase().trim()) {
+          return false;
+        }
+      }
+    }
+
+    // 10. Availability filter
+    if (availability && availability !== 'all') {
+      const targetAvail = availability.toLowerCase().trim();
+      const candidateAvail = String(snap.availability || '').toLowerCase().trim();
+      if (targetAvail === 'immediate') {
+        if (candidateAvail !== 'immediate' && candidateAvail !== 'within_15_days') return false;
+      } else if (candidateAvail !== targetAvail) {
+        return false;
+      }
+    }
+
+    // 11. Interview Scheduled filter
+    if (hasInterviewOnly && !application.interviewScheduledAt) {
+      return false;
+    }
+
+    // 12. Has Notes filter (recruiter notes or admin notes)
+    if (hasNotesOnly && !application.recruiterNotes && !application.adminNotes) {
+      return false;
+    }
+
+    // 13. Free-text search query across multiple fields
     if (queryTerms.length > 0) {
       const name = (snap.fullName || '').toLowerCase();
       const phone = (snap.phone || '').toLowerCase();
@@ -227,9 +291,10 @@ export const filterApplications = (applications = [], criteria = {}) => {
       const gradYear = String(snap.graduationYear || '').toLowerCase();
       const skillsText = Array.isArray(snap.skills) ? snap.skills.join(' ').toLowerCase() : '';
       const adminNotes = (application.adminNotes || snap.admin_notes || '').toLowerCase();
+      const recruiterNotes = (application.recruiterNotes || '').toLowerCase();
       const coverNote = (application.coverNote || '').toLowerCase();
 
-      const combinedHaystack = `${name} ${phone} ${email} ${college} ${degree} ${branch} ${gradYear} ${skillsText} ${adminNotes} ${coverNote}`;
+      const combinedHaystack = `${name} ${phone} ${email} ${college} ${degree} ${branch} ${gradYear} ${skillsText} ${adminNotes} ${recruiterNotes} ${coverNote}`;
 
       const allTermsMatch = queryTerms.every((term) => combinedHaystack.includes(term));
       if (!allTermsMatch) return false;
@@ -290,6 +355,10 @@ export const extractApplicationFilterOptions = (applications = []) => {
   let starredCount = 0;
   let withResumeCount = 0;
   let withPhoneCount = 0;
+  let freshersCount = 0;
+  let experiencedCount = 0;
+  let withInterviewCount = 0;
+  let withNotesCount = 0;
 
   for (const app of applications) {
     const snap = app.profileSnapshot || {};
@@ -299,6 +368,20 @@ export const extractApplicationFilterOptions = (applications = []) => {
     }
     if (app.resumePath) withResumeCount += 1;
     if (snap.phone) withPhoneCount += 1;
+    if (app.interviewScheduledAt) withInterviewCount += 1;
+    if (app.recruiterNotes || app.adminNotes) withNotesCount += 1;
+
+    const isFresher =
+      snap.isFresher === true ||
+      snap.roleExperienceLevel === 'fresher' ||
+      snap.experienceLevel === 'fresher' ||
+      (!snap.roleExperienceLevel && snap.isFresher !== false);
+
+    if (isFresher) {
+      freshersCount += 1;
+    } else {
+      experiencedCount += 1;
+    }
 
     if (snap.graduationYear) {
       const yr = String(snap.graduationYear).trim();
@@ -339,6 +422,10 @@ export const extractApplicationFilterOptions = (applications = []) => {
     starredCount,
     withResumeCount,
     withPhoneCount,
+    freshersCount,
+    experiencedCount,
+    withInterviewCount,
+    withNotesCount,
     totalCount: applications.length,
   };
 };

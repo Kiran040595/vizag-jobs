@@ -9,7 +9,9 @@ import JobApplicationTable from '../components/jobApplications/JobApplicationTab
 import { normalizeApplicationStatus } from '../lib/applicationStatus';
 import {
   QUALIFICATION_CATEGORIES,
-  getQualificationBucket,
+  EXPERIENCE_FILTER_OPTIONS,
+  AVAILABILITY_FILTER_OPTIONS,
+  filterApplications,
   extractApplicationFilterOptions,
 } from '../lib/applicationFilters';
 import {
@@ -108,6 +110,11 @@ function EmployerJobApplicationsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [hasResumeOnly, setHasResumeOnly] = useState(false);
   const [hasPhoneOnly, setHasPhoneOnly] = useState(false);
+  const [hasInterviewOnly, setHasInterviewOnly] = useState(false);
+  const [hasNotesOnly, setHasNotesOnly] = useState(false);
+  const [experienceFilter, setExperienceFilter] = useState('all');
+  const [skillFilter, setSkillFilter] = useState('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [qualificationFilter, setQualificationFilter] = useState('all');
   const [passoutYearFilter, setPassoutYearFilter] = useState('all');
   const [isStarredOnly, setIsStarredOnly] = useState(false);
@@ -131,6 +138,17 @@ function EmployerJobApplicationsContent() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setStatusFilter('all');
+    setHasResumeOnly(false);
+    setHasPhoneOnly(false);
+    setHasInterviewOnly(false);
+    setHasNotesOnly(false);
+    setIsStarredOnly(false);
+    setQualificationFilter('all');
+    setPassoutYearFilter('all');
+    setExperienceFilter('all');
+    setSkillFilter('all');
+    setAvailabilityFilter('all');
+    setSearchQuery('');
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -252,131 +270,35 @@ function EmployerJobApplicationsContent() {
 
   // Filtered and sorted candidate list
   const filteredCandidates = useMemo(() => {
-    let list = activeCandidates;
-
-    // 1. Stage filter
-    if (statusFilter !== 'all') {
-      list = list.filter((item) => {
-        const s = normalizeApplicationStatus(item.status);
-        if (statusFilter === 'applied') {
-          return s === 'applied' || s === 'external_click';
-        }
-        return s === statusFilter;
-      });
-    }
-
-    // 2. Resume only filter
-    if (hasResumeOnly) {
-      list = list.filter((item) => Boolean(item.resumePath));
-    }
-
-    // 3. Phone only filter
-    if (hasPhoneOnly) {
-      list = list.filter((item) => Boolean(item.profileSnapshot?.phone));
-    }
-
-    // 4. Starred / Recommended only filter
-    if (isStarredOnly) {
-      list = list.filter((item) =>
-        Boolean(
-          item.isStarred ||
-            item.profileSnapshot?.is_starred ||
-            item.profileSnapshot?.isStarred ||
-            (item.isSuitableProfile && Boolean(item.adminNotes))
-        )
-      );
-    }
-
-    // 5. Qualification filter
-    if (qualificationFilter !== 'all') {
-      list = list.filter((item) => {
-        const degree = item.profileSnapshot?.degree || '';
-        const bucket = getQualificationBucket(degree);
-        return (
-          bucket === qualificationFilter.toLowerCase() ||
-          degree.toLowerCase().includes(qualificationFilter.toLowerCase())
-        );
-      });
-    }
-
-    // 6. Passout Year filter
-    if (passoutYearFilter !== 'all') {
-      list = list.filter((item) => {
-        const yr = String(item.profileSnapshot?.graduationYear || '').trim();
-        return yr === String(passoutYearFilter).trim();
-      });
-    }
-
-    // 7. Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter((item) => {
-        const snap = item.profileSnapshot || {};
-        const name = (snap.fullName || '').toLowerCase();
-        const phone = (snap.phone || '').toLowerCase();
-        const email = (snap.contactEmail || '').toLowerCase();
-        const college = (snap.college || '').toLowerCase();
-        const degree = (snap.degree || '').toLowerCase();
-        const branch = (snap.branch || '').toLowerCase();
-        const skills = Array.isArray(snap.skills) ? snap.skills.join(' ').toLowerCase() : '';
-        const adminNotes = (item.adminNotes || '').toLowerCase();
-        return (
-          name.includes(q) ||
-          phone.includes(q) ||
-          email.includes(q) ||
-          college.includes(q) ||
-          degree.includes(q) ||
-          branch.includes(q) ||
-          skills.includes(q) ||
-          adminNotes.includes(q)
-        );
-      });
-    }
-
-    // 8. Sorting
-    return [...list].sort((a, b) => {
-      const timeA = new Date(a.createdAt || a.submittedAt || 0).getTime();
-      const timeB = new Date(b.createdAt || b.submittedAt || 0).getTime();
-
-      if (sortBy === 'oldest') {
-        return timeA - timeB;
-      }
-      if (sortBy === 'starred_first') {
-        const starA = Boolean(
-          a.isStarred ||
-            a.profileSnapshot?.is_starred ||
-            (a.isSuitableProfile && a.adminNotes)
-        );
-        const starB = Boolean(
-          b.isStarred ||
-            b.profileSnapshot?.is_starred ||
-            (b.isSuitableProfile && b.adminNotes)
-        );
-        if (starA !== starB) return starA ? -1 : 1;
-        return timeB - timeA;
-      }
-      if (sortBy === 'name_asc') {
-        const nameA = (a.profileSnapshot?.fullName || '').toLowerCase();
-        const nameB = (b.profileSnapshot?.fullName || '').toLowerCase();
-        return nameA.localeCompare(nameB);
-      }
-      if (sortBy === 'has_resume') {
-        const hasA = Boolean(a.resumePath);
-        const hasB = Boolean(b.resumePath);
-        if (hasA !== hasB) return hasA ? -1 : 1;
-        return timeB - timeA;
-      }
-      return timeB - timeA;
+    return filterApplications(activeCandidates, {
+      search: searchQuery,
+      status: statusFilter,
+      qualification: qualificationFilter,
+      passoutYear: passoutYearFilter,
+      skill: skillFilter,
+      experienceLevel: experienceFilter,
+      availability: availabilityFilter,
+      isStarredOnly,
+      hasResumeOnly,
+      hasPhoneOnly,
+      hasInterviewOnly,
+      hasNotesOnly,
+      sortBy,
     });
   }, [
     activeCandidates,
+    searchQuery,
     statusFilter,
-    hasResumeOnly,
-    hasPhoneOnly,
-    isStarredOnly,
     qualificationFilter,
     passoutYearFilter,
-    searchQuery,
+    skillFilter,
+    experienceFilter,
+    availabilityFilter,
+    isStarredOnly,
+    hasResumeOnly,
+    hasPhoneOnly,
+    hasInterviewOnly,
+    hasNotesOnly,
     sortBy,
   ]);
 
@@ -492,9 +414,14 @@ function EmployerJobApplicationsContent() {
     statusFilter !== 'all' ||
     hasResumeOnly ||
     hasPhoneOnly ||
+    hasInterviewOnly ||
+    hasNotesOnly ||
     isStarredOnly ||
     qualificationFilter !== 'all' ||
     passoutYearFilter !== 'all' ||
+    experienceFilter !== 'all' ||
+    skillFilter !== 'all' ||
+    availabilityFilter !== 'all' ||
     sortBy !== 'newest' ||
     searchQuery.trim() !== '';
 
@@ -502,9 +429,14 @@ function EmployerJobApplicationsContent() {
     setStatusFilter('all');
     setHasResumeOnly(false);
     setHasPhoneOnly(false);
+    setHasInterviewOnly(false);
+    setHasNotesOnly(false);
     setIsStarredOnly(false);
     setQualificationFilter('all');
     setPassoutYearFilter('all');
+    setExperienceFilter('all');
+    setSkillFilter('all');
+    setAvailabilityFilter('all');
     setSortBy('newest');
     setSearchQuery('');
   };
@@ -729,95 +661,264 @@ function EmployerJobApplicationsContent() {
 
       {/* Smart Search & Filter Toolbar */}
       {!isLoading && activeCandidates.length > 0 ? (
-        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-          {/* Live Search input */}
-          <div className="relative flex-1">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-              <SearchIcon />
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by candidate name, phone, email, college, branch, or skills..."
-              aria-label="Search candidates"
-              className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-14 text-base text-slate-900 placeholder-slate-400 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100 sm:text-sm"
-            />
-            {searchQuery ? (
+        <div className="mb-6 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs sm:p-5">
+          {/* Row 1: Search Bar + Sorter + View Mode Switcher */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+                <SearchIcon />
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search candidates by name, skills, college, branch, phone, notes..."
+                aria-label="Search candidates"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-10 text-base text-slate-900 placeholder-slate-400 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-100 sm:text-sm"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-1 flex min-w-11 items-center justify-center text-xs font-bold text-slate-400 hover:text-slate-700"
+                  aria-label="Clear search text"
+                >
+                  ✕
+                </button>
+              ) : null}
+            </div>
+
+            {/* Sorter and Cards/Table switcher */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="candidate-sort-select" className="text-xs font-bold text-slate-500 whitespace-nowrap">
+                  Sort:
+                </label>
+                <select
+                  id="candidate-sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 sm:text-sm"
+                >
+                  <option value="newest">⭐ Recommended first · Newest</option>
+                  <option value="starred_first">⭐ Recommended only first</option>
+                  <option value="oldest">Earliest applied (Early register)</option>
+                  <option value="name_asc">Name (A–Z)</option>
+                  <option value="has_resume">Has Resume first</option>
+                </select>
+              </div>
+
+              {/* View Switcher */}
+              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('cards')}
+                  className={`inline-flex min-h-10 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    viewMode === 'cards' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Card View"
+                >
+                  <span>Cards</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`inline-flex min-h-10 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    viewMode === 'table' ? 'bg-white text-slate-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Table View"
+                >
+                  <span>Table</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Quick Filter Toggle Pills */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">Quick Filters:</span>
+
+            {/* Recommended Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsStarredOnly(!isStarredOnly)}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                isStarredOnly
+                  ? 'border border-amber-400 bg-amber-500 text-white shadow-xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>⭐</span>
+              <span>Recommended ({filterOptions.starredCount})</span>
+              {isStarredOnly ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
+            </button>
+
+            {/* Resume Toggle */}
+            <button
+              type="button"
+              onClick={() => setHasResumeOnly(!hasResumeOnly)}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                hasResumeOnly
+                  ? 'border border-cyan-400 bg-cyan-600 text-white shadow-xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>📄</span>
+              <span>Has Resume ({filterOptions.withResumeCount})</span>
+              {hasResumeOnly ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
+            </button>
+
+            {/* Phone Toggle */}
+            <button
+              type="button"
+              onClick={() => setHasPhoneOnly(!hasPhoneOnly)}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                hasPhoneOnly
+                  ? 'border border-emerald-400 bg-emerald-600 text-white shadow-xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>📞</span>
+              <span>Has Phone ({filterOptions.withPhoneCount})</span>
+              {hasPhoneOnly ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
+            </button>
+
+            {/* Freshers Quick Toggle */}
+            <button
+              type="button"
+              onClick={() => setExperienceFilter(experienceFilter === 'fresher' ? 'all' : 'fresher')}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                experienceFilter === 'fresher'
+                  ? 'border border-indigo-400 bg-indigo-600 text-white shadow-xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>🎓</span>
+              <span>Freshers ({filterOptions.freshersCount})</span>
+              {experienceFilter === 'fresher' ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
+            </button>
+
+            {/* Experienced Quick Toggle */}
+            <button
+              type="button"
+              onClick={() => setExperienceFilter(experienceFilter === 'experienced' ? 'all' : 'experienced')}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                experienceFilter === 'experienced'
+                  ? 'border border-purple-400 bg-purple-600 text-white shadow-xs'
+                  : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <span>💼</span>
+              <span>Experienced ({filterOptions.experiencedCount})</span>
+              {experienceFilter === 'experienced' ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
+            </button>
+
+            {/* Interview Scheduled Quick Toggle */}
+            {filterOptions.withInterviewCount > 0 ? (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-1 flex min-w-11 items-center justify-center text-xs font-bold text-slate-500 hover:text-slate-700"
+                onClick={() => setHasInterviewOnly(!hasInterviewOnly)}
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                  hasInterviewOnly
+                    ? 'border border-violet-400 bg-violet-600 text-white shadow-xs'
+                    : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                }`}
               >
-                ✕
+                <span>📅</span>
+                <span>Interview Scheduled ({filterOptions.withInterviewCount})</span>
+                {hasInterviewOnly ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
+              </button>
+            ) : null}
+
+            {/* Has Notes Quick Toggle */}
+            {filterOptions.withNotesCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setHasNotesOnly(!hasNotesOnly)}
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                  hasNotesOnly
+                    ? 'border border-amber-400 bg-amber-600 text-white shadow-xs'
+                    : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <span>📝</span>
+                <span>Has Notes ({filterOptions.withNotesCount})</span>
+                {hasNotesOnly ? <span className="text-[10px] ml-0.5 font-black">✕</span> : null}
               </button>
             ) : null}
           </div>
 
-          {/* Quick Filters, Sorter & View Toggle */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Starred / Admin Recommended Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsStarredOnly(!isStarredOnly)}
-              className={`inline-flex min-h-11 items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition ${
-                isStarredOnly
-                  ? 'border border-amber-300 bg-amber-500 text-white shadow-xs'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-              title="Show candidates recommended or referred by platform admin"
-            >
-              <span>⭐</span>
-              <span>Recommended ({stageCounts.starred})</span>
-            </button>
-
-            {/* Has Resume Filter Toggle */}
-            <button
-              type="button"
-              onClick={() => setHasResumeOnly(!hasResumeOnly)}
-              className={`inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold transition ${
-                hasResumeOnly
-                  ? 'border border-cyan-400 bg-cyan-50 text-cyan-900'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              📄 Has Resume ({stageCounts.withResume})
-            </button>
-
-            {/* Has Phone Filter Toggle */}
-            <button
-              type="button"
-              onClick={() => setHasPhoneOnly(!hasPhoneOnly)}
-              className={`inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold transition ${
-                hasPhoneOnly
-                  ? 'border border-emerald-400 bg-emerald-50 text-emerald-900'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              📞 Has Phone ({stageCounts.withPhone})
-            </button>
-
-            {/* Qualification Filter */}
-            <select
-              value={qualificationFilter}
-              onChange={(e) => setQualificationFilter(e.target.value)}
-              aria-label="Filter candidates by qualification"
-              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
-            >
-              {QUALIFICATION_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Passout Year Filter */}
-            {filterOptions.availableYears.length > 0 ? (
+          {/* Row 3: Dropdown Filters Grid */}
+          <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5">
+            {/* 1. Qualification Filter */}
+            <div>
+              <label htmlFor="filter-qualification" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Qualification
+              </label>
               <select
+                id="filter-qualification"
+                value={qualificationFilter}
+                onChange={(e) => setQualificationFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              >
+                {QUALIFICATION_CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 2. Experience Level Filter */}
+            <div>
+              <label htmlFor="filter-experience" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Experience
+              </label>
+              <select
+                id="filter-experience"
+                value={experienceFilter}
+                onChange={(e) => setExperienceFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              >
+                {EXPERIENCE_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 3. Skill Filter */}
+            <div>
+              <label htmlFor="filter-skill" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Skill
+              </label>
+              <select
+                id="filter-skill"
+                value={skillFilter}
+                onChange={(e) => setSkillFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+              >
+                <option value="all">All Skills</option>
+                {filterOptions.topSkills.map((s) => (
+                  <option key={s.label} value={s.label}>
+                    {s.label} ({s.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 4. Passout Year Filter */}
+            <div>
+              <label htmlFor="filter-passout-year" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Passout Year
+              </label>
+              <select
+                id="filter-passout-year"
                 value={passoutYearFilter}
                 onChange={(e) => setPassoutYearFilter(e.target.value)}
-                aria-label="Filter candidates by passout year"
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
               >
                 <option value="all">All Passout Years</option>
                 {filterOptions.availableYears.map((yr) => (
@@ -826,66 +927,119 @@ function EmployerJobApplicationsContent() {
                   </option>
                 ))}
               </select>
-            ) : null}
+            </div>
 
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-400 sm:text-sm"
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Earliest applied (Early register)</option>
-              <option value="starred_first">⭐ Recommended first</option>
-              <option value="name_asc">Name (A–Z)</option>
-              <option value="has_resume">Has Resume first</option>
-            </select>
-
-            {/* View Mode Switcher (Cards vs Table) */}
-            <div className="flex items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5">
-              <button
-                type="button"
-                onClick={() => setViewMode('cards')}
-                className={`inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                  viewMode === 'cards' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Detailed Card View"
+            {/* 5. Availability Filter */}
+            <div>
+              <label htmlFor="filter-availability" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Availability
+              </label>
+              <select
+                id="filter-availability"
+                value={availabilityFilter}
+                onChange={(e) => setAvailabilityFilter(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
               >
-                Cards
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`inline-flex min-h-11 items-center rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                  viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="High-Density Table View"
-              >
-                Table
-              </button>
+                {AVAILABILITY_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-        </div>
-      ) : null}
 
-      {/* Showing Count / Reset Filters Info */}
-      {!isLoading && activeCandidates.length > 0 ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-600">
-          <div>
-            Showing <span className="font-black text-slate-950">{filteredCandidates.length}</span> of{' '}
-            <span className="font-black text-slate-950">{activeCandidates.length}</span>{' '}
-            {activeTab === 'suitable' ? 'suitable profiles' : 'candidates'}
-            {isAnyFilterActive ? ' (filtered)' : ''}
+          {/* Row 4: Active Filter Chips Bar & Reset */}
+          <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span>
+                Showing <span className="font-black text-slate-950">{filteredCandidates.length}</span> of{' '}
+                <span className="font-black text-slate-950">{activeCandidates.length}</span>{' '}
+                {activeTab === 'suitable' ? 'suitable profiles' : 'candidates'}
+              </span>
+
+              {/* Individual Active Filter Chips with click-to-remove */}
+              {isStarredOnly ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-300">
+                  ⭐ Recommended
+                  <button type="button" onClick={() => setIsStarredOnly(false)} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {hasResumeOnly ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-cyan-50 px-2 py-0.5 text-[11px] font-bold text-cyan-900 border border-cyan-300">
+                  📄 Resume
+                  <button type="button" onClick={() => setHasResumeOnly(false)} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {hasPhoneOnly ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-900 border border-emerald-300">
+                  📞 Phone
+                  <button type="button" onClick={() => setHasPhoneOnly(false)} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {experienceFilter !== 'all' ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-900 border border-indigo-300">
+                  Exp: {EXPERIENCE_FILTER_OPTIONS.find((o) => o.value === experienceFilter)?.label || experienceFilter}
+                  <button type="button" onClick={() => setExperienceFilter('all')} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {skillFilter !== 'all' ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-800 border border-slate-300">
+                  Skill: {skillFilter}
+                  <button type="button" onClick={() => setSkillFilter('all')} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {qualificationFilter !== 'all' ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-800 border border-slate-300">
+                  Qual: {QUALIFICATION_CATEGORIES.find((o) => o.value === qualificationFilter)?.label?.split(' ')[0] || qualificationFilter}
+                  <button type="button" onClick={() => setQualificationFilter('all')} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {passoutYearFilter !== 'all' ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-800 border border-slate-300">
+                  Class of {passoutYearFilter}
+                  <button type="button" onClick={() => setPassoutYearFilter('all')} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {availabilityFilter !== 'all' ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-900 border border-sky-300">
+                  Avail: {AVAILABILITY_FILTER_OPTIONS.find((o) => o.value === availabilityFilter)?.label || availabilityFilter}
+                  <button type="button" onClick={() => setAvailabilityFilter('all')} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {hasInterviewOnly ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-900 border border-violet-300">
+                  📅 Interview Scheduled
+                  <button type="button" onClick={() => setHasInterviewOnly(false)} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+
+              {hasNotesOnly ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-300">
+                  📝 Notes
+                  <button type="button" onClick={() => setHasNotesOnly(false)} className="hover:text-black">✕</button>
+                </span>
+              ) : null}
+            </div>
+
+            {isAnyFilterActive ? (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="inline-flex items-center font-bold text-cyan-700 hover:text-cyan-800 hover:underline"
+              >
+                Clear all filters
+              </button>
+            ) : null}
           </div>
-          {isAnyFilterActive ? (
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="inline-flex min-h-11 items-center font-bold text-cyan-700 hover:text-cyan-800 hover:underline"
-            >
-              Clear all filters
-            </button>
-          ) : null}
         </div>
       ) : null}
 
