@@ -8,6 +8,7 @@ import {
   clearCachedPublicCompanies,
   COMPANY_DIRECTORY_CACHE_TTL_MS,
 } from '../lib/publicJobsSessionCache.js';
+import { filterVerifiedCareerCompanies } from '../lib/companyCareerVerification.js';
 
 
 export const EXCLUDED_DIRECTORY_COMPANIES = new Set([
@@ -1012,7 +1013,8 @@ export function clearPublicCompaniesCache() {
 
 /**
  * Loads approved companies for the public /companies directory page.
- * Returns only companies where `is_directory_approved = true`.
+ * Returns only directory-approved companies whose saved careers URL exactly matches
+ * the URL verified by an admin. This check is also applied to cached records.
  * Caches in browser storage (localStorage & sessionStorage) and memory for >= 10 minutes.
  */
 export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
@@ -1024,7 +1026,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       Array.isArray(publicCompaniesMemoryCache.companies) &&
       publicCompaniesMemoryCache.companies.length > 0
     ) {
-      return publicCompaniesMemoryCache.companies;
+      return filterVerifiedCareerCompanies(publicCompaniesMemoryCache.companies);
     }
   }
 
@@ -1032,11 +1034,12 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
   if (!forceRefresh) {
     const cached = readCachedPublicCompanies();
     if (cached?.companies?.length > 0) {
+      const verifiedCompanies = filterVerifiedCareerCompanies(cached.companies);
       publicCompaniesMemoryCache = {
-        companies: cached.companies,
+        companies: verifiedCompanies,
         timestamp: cached.timestamp,
       };
-      return cached.companies;
+      return verifiedCompanies;
     }
   }
 
@@ -1045,7 +1048,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
   // Fetch approved companies
   const companiesRes = await supabase
     .from('companies')
-    .select('id, name, website, linkedin_url, careers_url, verified_careers_url, category, location, is_directory_approved, notes')
+    .select('id, name, website, careers_url, verified_careers_url, category, location, is_directory_approved, notes')
     .eq('is_directory_approved', true)
     .limit(1000);
 
@@ -1078,7 +1081,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
   const rawList = companiesRes.data || [];
   const localOverrides = getLocalCompanyOverrides();
 
-  const result = rawList
+  const result = filterVerifiedCareerCompanies(rawList
     .filter((c) => {
       if (!c.careers_url || c.verified_careers_url !== c.careers_url) return false;
       const key = normalizeCompName(c.name);
@@ -1094,7 +1097,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
       const sector = mapCategoryToSector(local.category || c.category || known.category);
       const activeJobsCount = exactJobCounts.get(key) || 0;
       const website = local.website || c.website || known.website || '';
-      const linkedinUrl = local.linkedin_url || c.linkedin_url || '';
+      const linkedinUrl = local.linkedin_url || '';
       const careersUrl = c.verified_careers_url;
 
       return {
@@ -1120,7 +1123,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
         return b.activeJobsCount - a.activeJobsCount;
       }
       return a.name.localeCompare(b.name);
-    });
+    }));
 
 
   // Write to browser storage and memory cache for 10+ minutes

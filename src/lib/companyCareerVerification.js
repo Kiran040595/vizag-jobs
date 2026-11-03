@@ -1,4 +1,17 @@
 export function hasVerifiedCompanyCareers(company) {
-  return Boolean(company?.isDirectoryApproved && company?.verifiedCareersUrl &&
-    company.verifiedCareersUrl === company.careersUrl);
+  const isDirectoryApproved = company?.isDirectoryApproved ?? company?.is_directory_approved;
+  const careersUrl = company?.careersUrl ?? company?.careers_url;
+  const verifiedCareersUrl = company?.verifiedCareersUrl ?? company?.verified_careers_url;
+
+  return Boolean(
+    isDirectoryApproved &&
+    careersUrl &&
+    verifiedCareersUrl &&
+    verifiedCareersUrl === careersUrl,
+  );
+}
+
+export function filterVerifiedCareerCompanies(companies) {
+  if (!Array.isArray(companies)) return [];
+  return companies.filter(hasVerifiedCompanyCareers);
 }

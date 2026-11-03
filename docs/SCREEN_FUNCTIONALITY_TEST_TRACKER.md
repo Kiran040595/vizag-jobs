@@ -1,5 +1,14 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-03-Wipro-Concentrix-Directory-Activation
+
+- Scope: S055 `/companies`; activate the next two high-priority verified employers, Wipro and Concentrix, and restore the public directory query. No new route or dialog.
+- Fresh official-feed verification: Wipro returned 2 active exact-Visakhapatnam roles (207016 and 212142); Concentrix returned 1 open exact-Visakhapatnam role (R1765090). Full descriptions and direct official application URLs passed the existing native validation.
+- Production database verification: both exact career URLs now match `verified_careers_url`; directory approval and scheduled-scrape flags are true. Anonymous REST verification sees both approved records.
+- Initial rendered production retest failed because the deployed public query selected the absent optional `linkedin_url` column and rendered zero companies. The pending scoped fix removes that dependency and enforces verified-only filtering through live, memory, browser-cache and render boundaries.
+- Automated verification: company-directory tests passed 14/14; Wipro and Concentrix native extractor tests passed; targeted ESLint and the Vite production build passed. The broader pre-existing career-pipeline suite remains red at `tests/company-career-fetch.test.mjs:712`, where its mocked legacy publication is no longer classified as an on-platform direct posting (`false !== true`); this assertion is outside the directory/badge change.
+- Evidence: `docs/qa/2026-11-03/wipro-concentrix-directory-activation.md`. Functional E2E and mobile UI remain reopened until the corrected production bundle is deployed and the cards, badges and outbound links are visibly retested.
+
 ## QA-2026-11-03-Admin-Companies-Bulk-Scraper
 
 - Scope: existing admin Companies Directory screen; bulk selection and scraper enable/disable controls. No new route or dialog.
@@ -7,6 +16,14 @@
 - Bulk database writes are deduplicated and chunked in groups of 250, with successful state updates, selection clearing, progress locking and success/error feedback.
 - Automated verification: 4/4 focused selection, eligibility, state-update and 250-row batching tests pass; targeted ESLint passes; production build passes.
 - Functional E2E: pending authenticated Supabase bulk-update journey and persisted refresh verification. Mobile UI: pending because rendered local QA reached the admin login guard; narrow-viewport toolbar/card interaction was not claimed as tested.
+
+## QA-2026-11-02-Verified-Companies-Student-Directory
+
+- Scope: S055 `/companies`; public Companies navigation destination, verified-career filtering, company job links, official careers links and responsive cards. No new route or dialog.
+- The student directory now defensively shows only directory-approved companies whose saved careers URL exactly matches the admin-verified URL. The rule is applied to live database results, in-memory results, browser-cached results and the final rendered list; the cache key was bumped to prevent stale unverified cards.
+- Each company card now presents two clear student choices: the exact-match company openings on VizagJobs (including a transparent no-current-openings state) and the verified official careers page. Company website and LinkedIn remain secondary links.
+- Rendered QA exposed that production has not yet applied the optional `companies.linkedin_url` migration; selecting that absent column caused the entire public query to return HTTP 400. The public query no longer depends on the optional column, so verified companies and required student actions load independently of that migration.
+- Functional E2E: reopened pending rendered navigation and outbound-link verification. Mobile UI: reopened pending narrow-viewport card verification. Automated verification is recorded after the implementation test pass.
 
 ## QA-2026-11-02-Home-Tab-Scroll-And-Mobile-Polish
 
@@ -651,7 +668,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S052 | `/privacy-policy` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
 | S053 | `/terms-of-service` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
 | S054 | `/disclaimer` | Read page; verify navigation, content and available contact/legal links | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
-| S055 | `/companies` | Browse/search companies; company details and career links; empty/error states | In progress | In progress | Direct career portal URLs verified & fixed for all published companies: live portals link directly to active employer careers/search pages; 13/13 tests pass in tests/e2e-companies-directory.test.mjs; 100% production build clean |
+| S055 | `/companies` | Browse/search only approved companies with exact verified career pages; open exact-match VizagJobs listings or official careers; empty/error states | In progress | In progress | QA-2026-11-02-Verified-Companies-Student-Directory: verification enforced across live/cache/render boundaries; functional and mobile rendered retest reopened |
 | S056 | `/jobs` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S057 | `/apply` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | QA-2026-10-14-UI-Day5: mobile UI verified, full journey pending |
 | S058 | `/jobs/latest` | Verify redirect destination, correct role guard, refresh and browser back | In progress | In progress | QA-2026-10-14-UI-Day5: mobile redirect verified, full journey pending |

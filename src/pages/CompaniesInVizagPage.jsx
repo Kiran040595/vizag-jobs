@@ -13,6 +13,7 @@ import { readCachedPublicCompanies } from '../lib/publicJobsSessionCache';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { pushToast } from '../lib/toast';
 import VerifiedCareersBadge from '../components/VerifiedCareersBadge';
+import { filterVerifiedCareerCompanies } from '../lib/companyCareerVerification';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -69,61 +70,51 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
           </div>
         </div>
 
-        {company.activeJobsCount > 0 ? (
-          <Link
-            to={`/jobs?company=${encodeURIComponent(company.name)}`}
-            className="group/jobs mt-3 flex min-h-11 items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-100/90 active:scale-[0.99] sm:mt-3.5 sm:px-3.5"
-            title={`View all ${company.activeJobsCount} live openings at ${company.name}`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              </span>
-              <span>{company.activeJobsCount} live opening{company.activeJobsCount > 1 ? 's' : ''} in Vizag</span>
-            </span>
-            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 transition-transform group-hover/jobs:translate-x-0.5">
-              <span>View jobs</span>
-              <span aria-hidden="true">→</span>
-            </span>
-          </Link>
-        ) : null}
       </div>
 
-      <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs sm:mt-4 sm:pt-3.5">
-        {company.website ? (
-          <a
-            href={company.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1 py-1 font-medium text-slate-600 hover:text-slate-900 hover:underline"
-          >
-            <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-            </svg>
-            Website
-          </a>
-        ) : (
-          <span className="text-slate-400 text-[11px] sm:text-xs">Website not listed</span>
-        )}
-
-        {company.careersUrl ? (
+      <div className="mt-3.5 border-t border-slate-100 pt-3 sm:mt-4 sm:pt-3.5">
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {company.activeJobsCount > 0 ? (
+            <Link
+              to={`/jobs?company=${encodeURIComponent(company.name)}`}
+              className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2 py-2 text-center font-bold text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.98]"
+              title={`View ${company.activeJobsCount} jobs at ${company.name} on VizagJobs`}
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+              <span>{company.activeJobsCount} job{company.activeJobsCount === 1 ? '' : 's'} on VizagJobs</span>
+            </Link>
+          ) : (
+            <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-center font-semibold text-slate-500">
+              No current VizagJobs openings
+            </span>
+          )}
           <a
             href={company.careersUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-cyan-50 px-2.5 py-1.5 font-semibold text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800 active:scale-95"
+            aria-label={`Open ${company.name} official careers page`}
+            className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-xl bg-cyan-600 px-2 py-2 text-center font-bold text-white shadow-sm transition hover:bg-cyan-700 active:scale-[0.98]"
           >
-            <span>Careers Portal</span>
+            <span>Official careers</span>
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
-        ) : null}
-        {company.linkedinUrl ? (
-          <a href={company.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${company.name} on LinkedIn`} className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1.5 font-semibold text-blue-700 transition hover:bg-blue-100 active:scale-95">
-            <span>LinkedIn</span><span aria-hidden="true">↗</span>
-          </a>
+        </div>
+
+        {company.website || company.linkedinUrl ? (
+          <div className="mt-2 flex min-h-8 flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold sm:text-xs">
+            {company.website ? (
+              <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-900 hover:underline">
+                Company website ↗
+              </a>
+            ) : null}
+            {company.linkedinUrl ? (
+              <a href={company.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${company.name} on LinkedIn`} className="text-blue-700 hover:underline">
+                LinkedIn ↗
+              </a>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -165,7 +156,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
 export default function CompaniesInVizagPage() {
   const { isAdmin } = useAdminAuth();
   const [companies, setCompanies] = useState(() => {
-    return readCachedPublicCompanies()?.companies || [];
+    return filterVerifiedCareerCompanies(readCachedPublicCompanies()?.companies);
   });
   const [loading, setLoading] = useState(() => {
     return !(readCachedPublicCompanies()?.companies?.length > 0);
@@ -175,6 +166,11 @@ export default function CompaniesInVizagPage() {
   const deferredSearch = useDeferredValue(searchQuery);
   // Track which company is being toggled to show a spinner on that card only
   const [togglingCompany, setTogglingCompany] = useState(null);
+
+  const verifiedCompanies = useMemo(
+    () => filterVerifiedCareerCompanies(companies),
+    [companies],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -224,18 +220,18 @@ export default function CompaniesInVizagPage() {
   // Compute sector counts
 
   const sectorCounts = useMemo(() => {
-    const counts = { all: companies.length };
+    const counts = { all: verifiedCompanies.length };
     for (const s of DIRECTORY_SECTORS) {
       if (s.id !== 'all') {
-        counts[s.id] = companies.filter((c) => c.sectorId === s.id).length;
+        counts[s.id] = verifiedCompanies.filter((c) => c.sectorId === s.id).length;
       }
     }
     return counts;
-  }, [companies]);
+  }, [verifiedCompanies]);
 
   // Filter companies
   const filteredCompanies = useMemo(() => {
-    let result = companies;
+    let result = verifiedCompanies;
 
     // Filter by sector tab
     if (selectedSector !== 'all') {
@@ -255,7 +251,7 @@ export default function CompaniesInVizagPage() {
     }
 
     return result;
-  }, [companies, selectedSector, deferredSearch]);
+  }, [verifiedCompanies, selectedSector, deferredSearch]);
 
   // Group by sector if "all" is selected and no search
   const isGrouping = selectedSector === 'all' && !deferredSearch.trim();
@@ -264,14 +260,14 @@ export default function CompaniesInVizagPage() {
     if (!isGrouping) return [];
     return DIRECTORY_SECTORS.filter((s) => s.id !== 'all')
       .map((sector) => {
-        const sectorCompanies = companies.filter((c) => c.sectorId === sector.id);
+        const sectorCompanies = verifiedCompanies.filter((c) => c.sectorId === sector.id);
         return {
           ...sector,
           companies: sectorCompanies,
         };
       })
       .filter((group) => group.companies.length > 0);
-  }, [isGrouping, companies]);
+  }, [isGrouping, verifiedCompanies]);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
@@ -298,7 +294,7 @@ export default function CompaniesInVizagPage() {
             </h1>
 
             <p className="mx-auto mt-2.5 max-w-2xl text-sm text-slate-300 sm:mt-4 sm:text-lg">
-              Discover verified premier employers across Rushikonda IT SEZ, Parawada Pharma City, hospitals, banks, and major institutions in Vizag.
+              Explore only companies with verified official career pages. Compare their current VizagJobs openings and apply through trusted company portals.
             </p>
 
             {/* Search Bar */}

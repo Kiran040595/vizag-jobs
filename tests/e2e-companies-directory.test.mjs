@@ -20,6 +20,10 @@ import {
   readFiltersFromSearchParams,
   applyJobFilters,
 } from '../src/lib/jobFilters.js';
+import {
+  filterVerifiedCareerCompanies,
+  hasVerifiedCompanyCareers,
+} from '../src/lib/companyCareerVerification.js';
 
 // Setup Mock Storage for node environment testing
 class MockStorage {
@@ -56,6 +60,43 @@ test('Companies Directory: Sector Taxonomy & Mapping', async (t) => {
     assert.equal(mapCategoryToSector('Logistics').id, 'manufacturing');
     assert.equal(mapCategoryToSector('Hospitality & Retail').id, 'hospitality');
   });
+});
+
+test('Companies Directory: only approved companies with an exact verified careers URL are public', () => {
+  const companies = [
+    {
+      name: 'Verified Company',
+      isDirectoryApproved: true,
+      careersUrl: 'https://company.example/careers',
+      verifiedCareersUrl: 'https://company.example/careers',
+    },
+    {
+      name: 'Changed Careers URL',
+      isDirectoryApproved: true,
+      careersUrl: 'https://company.example/new-careers',
+      verifiedCareersUrl: 'https://company.example/old-careers',
+    },
+    {
+      name: 'Not Approved',
+      isDirectoryApproved: false,
+      careersUrl: 'https://private.example/careers',
+      verifiedCareersUrl: 'https://private.example/careers',
+    },
+    {
+      name: 'Raw Database Company',
+      is_directory_approved: true,
+      careers_url: 'https://raw.example/careers',
+      verified_careers_url: 'https://raw.example/careers',
+    },
+  ];
+
+  assert.equal(hasVerifiedCompanyCareers(companies[0]), true);
+  assert.equal(hasVerifiedCompanyCareers(companies[1]), false);
+  assert.equal(hasVerifiedCompanyCareers(companies[2]), false);
+  assert.deepEqual(
+    filterVerifiedCareerCompanies(companies).map((company) => company.name),
+    ['Verified Company', 'Raw Database Company'],
+  );
 });
 
 test('Companies Directory: Browser Storage Cache (10-minute TTL)', async (t) => {
