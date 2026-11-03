@@ -1725,6 +1725,7 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Lint: `npm run lint` passed with 0 errors and 0 warnings.
   - Build: `npm run build` compiled cleanly.
   - Mobile UI: In progress; modal and action buttons adapt responsively to touch viewports.
+  - Production DB deployment: Applied migration `supabase/migrations/20261103230000_student_placement_payment.sql` to the linked database, reloaded PostgREST schema cache (`NOTIFY pgrst, 'reload schema'`), verified all 7 columns (`is_paid`, `payment_amount`, `payment_date`, `placed_company`, `payment_notes`, `payment_updated_at`, `payment_marked_by`) in `information_schema.columns`, and confirmed PostgREST returns HTTP 200 on queries with `is_paid`.
 
 
 
