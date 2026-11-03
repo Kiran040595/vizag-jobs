@@ -8,6 +8,7 @@
 - Added explicit reporting for handled employer registration and company-profile save failures. These errors previously rendered in the form but bypassed the global unhandled-error listeners, which explains why no `site_error_logs` record or alert email was created.
 - Hardened `/api/report-error` to inspect the Supabase insert result, log storage failures, and return structured `storage` diagnostics while continuing the independent email-alert attempt.
 - Automated verification: focused employer-registration and error-reporter regressions passed; full `node --test tests/*.test.mjs` passed 288/288; `npm run lint` passed with 0 errors; `npm run build` passed (existing large-chunk and stale Browserslist-data warnings only).
+- Deployment verification: Vercel reported successful deployment of commit `785dec5` on 2026-11-03. A live synthetic POST to `https://jobsinvizag.in/api/report-error` returned `storage.stored: true` and `email.sent: true`; Resend accepted the message with an ID. The diagnostic row was intentionally stored as ignored rather than left as an open bug.
 - Functional E2E: reopened and pending a fresh production employer account/profile-save journey after deployment; no test-user personal data was created during local verification. Mobile UI: remains In progress because behavior changed without a layout change and no rendered narrow-viewport retest was performed.
 
 ## QA-2026-11-03-Wipro-Concentrix-Directory-Activation
