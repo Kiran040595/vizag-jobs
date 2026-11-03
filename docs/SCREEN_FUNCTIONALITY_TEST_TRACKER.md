@@ -1,5 +1,13 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-03-Paytm-Cushman-Directory-Activation
+
+- Scope: S055 `/companies`; activate the next two high-priority verified employers, Paytm and Cushman & Wakefield. No new route or dialog.
+- Fresh official-feed verification: Paytm returned 1 current exact-Vizag Lever posting with a 3,099-character description and direct employer application URL; Cushman & Wakefield returned 4 active Workday roles with validated requisition IDs, Vizag evidence, 2,467–3,972-character descriptions and direct application links.
+- Production verification: both exact career URLs now match `verified_careers_url`; directory approval and scheduled-scrape flags are true. Anonymous REST sees both records and 21 approved companies total.
+- Automated verification: company-directory tests passed 14/14 and the complete company-career fetch suite passed 48/48.
+- Evidence: `docs/qa/2026-11-03/paytm-cushman-directory-activation.md`. Functional and mobile rendered retest remain pending because the already-open browser retained its valid 10-minute cache of the previous 19-company response; database/API success is not counted as rendered E2E evidence.
+
 ## QA-2026-11-03-Employer-Registration-Schema-Drift-And-Error-Alerts
 
 - Scope: S011 `/employer/register`, S015 `/employer/profile`, handled client-error reporting, and `/api/report-error`; no new route or dialog and no layout change.
