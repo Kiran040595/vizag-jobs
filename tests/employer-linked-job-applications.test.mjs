@@ -104,10 +104,9 @@ assert.match(
   'EmployerJobApplicationsPage must render JobApplicationCard for each applicant',
 );
 
-assert.match(
-  applicationsPageSrc,
-  /ApplicationExportDialog/,
-  'EmployerJobApplicationsPage must provide Excel export dialog for applicants',
+assert.ok(
+  !applicationsPageSrc.includes('Download Excel') && !applicationsPageSrc.includes('ApplicationExportDialog'),
+  'EmployerJobApplicationsPage must hide Excel export option from employers',
 );
 
 // 7. Verify fetchJobCandidates and updateCandidatePipelineStage in jobApplications.js

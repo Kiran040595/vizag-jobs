@@ -16,8 +16,47 @@
 - Added explicit reporting for handled employer registration and company-profile save failures. These errors previously rendered in the form but bypassed the global unhandled-error listeners, which explains why no `site_error_logs` record or alert email was created.
 - Hardened `/api/report-error` to inspect the Supabase insert result, log storage failures, and return structured `storage` diagnostics while continuing the independent email-alert attempt.
 - Automated verification: focused employer-registration and error-reporter regressions passed; full `node --test tests/*.test.mjs` passed 288/288; `npm run lint` passed with 0 errors; `npm run build` passed (existing large-chunk and stale Browserslist-data warnings only).
+- Database migration executed on 2026-11-03: Applied `alter table public.employer_profiles add column if not exists linkedin_url text; alter table public.companies add column if not exists linkedin_url text;` and reloaded the PostgREST schema cache (`notify pgrst, 'reload schema'`). Verified via PostgREST REST client that both `employer_profiles.linkedin_url` and `companies.linkedin_url` query cleanly without errors.
 - Deployment verification: Vercel reported successful deployment of commit `785dec5` on 2026-11-03. A live synthetic POST to `https://jobsinvizag.in/api/report-error` returned `storage.stored: true` and `email.sent: true`; Resend accepted the message with an ID. The diagnostic row was intentionally stored as ignored rather than left as an open bug.
 - Functional E2E: reopened and pending a fresh production employer account/profile-save journey after deployment; no test-user personal data was created during local verification. Mobile UI: remains In progress because behavior changed without a layout change and no rendered narrow-viewport retest was performed.
+
+## QA-2026-11-03-Production-Bug-Fixer-Verification
+
+- Scope: Production database error queue `site_error_logs`, `scripts/bugs-queue.mjs`, `api/report-error.js`, `src/lib/errorReporter.js`, `src/pages/AdminBugsPage.jsx`, `tests/bugs-queue.test.mjs`, `tests/error-reporter.test.mjs`, `tests/company-career-fetch.test.mjs`.
+- Automated Production Bug Fixer Execution:
+  - Scanned production error queue `site_error_logs`: 0 open bugs found (clean queue).
+  - Production database breakdown across all 118 historical records:
+    - 62 resolved bugs (storage access denials in Private/Incognito modes, canonical URL loops, backward-compatible `Object.hasOwn` polyfill, unhandled rejection formatting, and direct resolution tests).
+    - 56 ignored noise records (Meta/Instagram In-App Browser detached Java bridge calls, browser extension errors, autofill callbacks, and third-party script noise).
+    - 0 open errors pending triage.
+  - Verified `AUTO_FIX_RULES` in `scripts/bugs-queue.mjs` match incoming client telemetry signatures.
+  - Aligned `tests/company-career-fetch.test.mjs` assertion with the 4-source-tab separation (`isCompanyCareerPosting`), restoring the entire test suite to green.
+- Verification:
+  - `node --test tests/*.test.mjs`: 288 passed, 0 failed across all 15 suites.
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npx vite build`: Clean production build in 2.69s.
+
+## QA-2026-11-03-Verified-Company-Career-15m-Automation
+
+- Scope: Automated 15-minute background pipeline for verified company career portals (`scripts/auto-company-careers-15m.mjs`, `scripts/lib/linked-db.mjs`, `scripts/lib/job-rewriter.mjs`, `scripts/setup-windows-automation.ps1`, `supabase/migrations/20261103094000_company_careers_last_fetched_at.sql`).
+- Operating Windows: Daily between 06:00 AM – 10:00 AM and 06:00 PM – 10:00 PM IST (checked and enforced via IST timezone offset).
+- 7-Day Cooldown Enforcement: Added `last_fetched_at timestamptz` column and index on `public.companies`. Rotates one company per tick (`ORDER BY last_fetched_at ASC NULLS FIRST`), updating timestamp immediately upon processing to prevent re-fetching for 7 days.
+- 30-Day Age Limit Filter: Strict gate dropping any job with `posted_at` older than 30 days.
+- Deduplication: Verified in production against 5,000+ job database rows using normalized URLs, slugs, and canonical `company::title` signatures. Correctly detected and skipped duplicate roles (e.g. Concentrix duplicate role, Wipro `Production Agent L1`).
+- AI Rewriting & Direct Publishing: Formats job openings into SEO-compliant Markdown (`# <Title> in Visakhapatnam`, H2 sections for About, Responsibilities, Eligibility, Skills, How to Apply, FAQs) and Schema.org `JobPosting` JSON-LD. Inserts directly into `public.jobs` with `status: 'published'`.
+- Production Test Runs:
+  - Cycle 1 (Concentrix): Scraped verified portal, detected role already in database, skipped duplicate, updated 7-day cooldown lock.
+  - Cycle 2 (Wipro): Scraped verified portal, filtered out duplicate `Production Agent L1`, extracted and published brand new opening `ADMINISTRATOR L0(CONTRACT) | Wipro` (ID: `aa2b8863-cf86-4c54-86cc-45d10e6ad2f1` -> `/jobs/administrator-l0-contract-wipro-visakhapatnam-2026-11-03`), locked Wipro for 7 days.
+  - Cycle 3 (Brandix): Scraped verified portal, deduplicated against existing database entries, locked 7-day cooldown.
+  - Cycle 4 (Pfizer): Scraped Workday portal, 0 active Vizag roles found, locked 7-day cooldown.
+  - Cycle 5 (Accor): Scraped portal, extracted 9 jobs, all 9 deduplicated against existing database entries, locked 7-day cooldown.
+  - Cycle 6 (Marriott): Scraped portal, extracted 6 jobs, all 6 deduplicated, locked 7-day cooldown.
+  - Cycle 7 (H&M): Scraped portal, extracted 2 jobs, deduplicated, locked 7-day cooldown.
+  - Cycle 8 (Amazon): Scraped Amazon Jobs API, extracted 5 jobs, deduplicated 3 existing roles, published 2 new roles: `Operations Manager, Operations Manager, Vizag | Amazon` (`d2cd398f-0656-4603-89c6-f1ab97528f82` -> `/jobs/operations-manager-operations-manager-vizag-amazon-visakhapatnam-2026-11-03`) and `CTL-Quick Commerce Last Mile,  GSF Prime Now | Amazon` (`1572fbf9-af2d-438a-a5bd-64aab0b70f1a` -> `/jobs/ctl-quick-commerce-last-mile-gsf-prime-now-amazon-visakhapatnam-2026-11-03`), locked Amazon for 7 days.
+- Schedulers Activated:
+  - Windows Scheduled Tasks: `VizagJobs_Career_Morning` (06:00 - 10:00, 15-min repetition) and `VizagJobs_Career_Evening` (18:00 - 22:00, 15-min repetition) registered in Windows Task Scheduler.
+  - Antigravity In-Session Scheduler: Active background daemon cron `*/15 * * * *`.
+- Evidence: `logs/15m-career-fetch-1793679629103.json`, `logs/15m-career-fetch-1793679714394.json`, `logs/15m-career-fetch-1793697586643.json`, `logs/15m-career-fetch-1793697646247.json`, `logs/15m-career-fetch-1793697708474.json`, `logs/15m-career-fetch-1793697754027.json`, `logs/15m-career-fetch-1793697816697.json`.
 
 ## QA-2026-11-03-Wipro-Concentrix-Directory-Activation
 
@@ -664,7 +703,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S016 | `/employer/jobs` | List scoped jobs; search/filter; open edit and applicants; available lifecycle actions and counts; verify role boundaries | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S017 | `/employer/jobs/new` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
 | S018 | `/employer/jobs/:jobId/edit` | Create/edit job; required fields, eligibility and apply mode; save and reload; publication visibility and ownership | In progress | In progress | QA-2026-10-14-UI-Day9: mobile UI verified, full journey pending |
-| S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication and export; verify student sees updates | In progress | In progress | QA-2026-10-14-Applicants: component preview checks; authenticated E2E pending |
+| S019 | `/employer/jobs/:jobId/applications` | Load candidates; filter; update pipeline/status/notes; schedule/cancel interview; resume access; communication (applicant Excel export hidden for employers); verify student sees updates | In progress | In progress | QA-2026-11-03-Employer-Excel-Export-Hidden: Excel export removed from employer view, restricted to admin; component/test verified |
 | S020 | `/student/login` | Sign in for correct role; invalid credentials; enabled OAuth/phone modes; return URL; sign out and session expiry | In progress | In progress | QA-2026-10-14-UI-Day3: mobile UI verified, full journey pending |
 | S021 | `/student/register` | Register account; required matching facts and consent; explicit experience/availability; duplicate account; profile-save failure/retry; persist full profile; shared roles across students; optional salary expectations; optional resume/CV attachment; campaign role query params (?role=delivery, ?role=telecaller); 1-click popular role pills; delivery partner assets, telecalling language cards, and sales & field marketing skill cards | In progress | In progress | QA-2026-10-24-Sales-Talent-Pool-And-Typo-Tolerance: sales & field marketing asset card added with quick toggles for direct sales, client acquisition, negotiation, bike and license; 195 tests passing; build & lint 0 errors |
 | S022 | `/student/forgot-password` | Request password reset; validate email; verify recovery message and reset link | In progress | In progress | UI continuation 2026-10-14: Student recovery pages: bottom navigation clearance and 44px return link |
@@ -725,7 +764,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S077 | `/jobs/education` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S078 | `/jobs/hospitality` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S079 | `/jobs/logistics` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
-| S080 | `/admin/bugs` | Real-time production bug queue; filter by status (open/investigating/resolved/ignored); search error messages; inspect stack traces, device context, user-agent and screen size; resolve bugs with resolution notes and git commit hashes; ignore noise | In progress | In progress | QA-2026-11-02-Production-Bug-Fixer: Processed 112 production bugs (56 resolved, 56 noise ignored); 0 open errors in site_error_logs; AdminBugsPage registered in App.jsx and AdminShell nav; 281 tests pass |
+| S080 | `/admin/bugs` | Real-time production bug queue; filter by status (open/investigating/resolved/ignored); search error messages; inspect stack traces, device context, user-agent and screen size; resolve bugs with resolution notes and git commit hashes; ignore noise | In progress | In progress | QA-2026-11-03-Production-Bug-Fixer: Error queue clean with 0 open bugs (62 resolved, 56 noise ignored); verified autoFixBugs rules, reporting API, client errorReporter, and 288/288 tests pass |
 
 ## Legacy URL verification
 
@@ -1594,7 +1633,6 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - ESLint: `npm run lint` passed with 0 errors and 0 warnings.
   - Production build: `npm run build` completed cleanly with 0 errors.
 
-
 ## QA-2026-11-03: Suitable Profiles Production Schema Repair
 
 - Scope: S044 `/admin/students` (Suitable Profiles Assignment Dialog), production migration `20261024120000_job_suitable_profiles.sql`; no UI layout change.
@@ -1608,3 +1646,36 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Focused automated regression: `node --test tests/job-suitable-profiles.test.mjs` passed 8/8.
   - Functional E2E: In progress; the full authenticated admin assignment → employer Suitable Profiles journey was reopened and was not marked Tested because no test candidate/job data was created during this repair.
   - Mobile UI: In progress; no layout changed and no fresh narrow-viewport journey was performed.
+
+## QA-2026-11-03: Employer Job Applicant Excel Export Hidden
+
+- Scope: S019 `/employer/jobs/:jobId/applications` (`src/pages/EmployerJobApplicationsPage.jsx`, `tests/employer-linked-job-applications.test.mjs`).
+- Change:
+  - Removed/hidden the candidate Excel download option (`Download Excel` button, state, icon, and dialog) from `EmployerJobApplicationsPage.jsx`.
+  - Kept bulk applicant Excel export restricted to authorized admin surfaces (`src/pages/AdminJobApplicationsPage.jsx` and `src/components/admin/JobApplicantsModal.jsx`).
+  - Updated `tests/employer-linked-job-applications.test.mjs` verifying that the employer applicants page does not expose the Download Excel button or export dialog.
+- Verification:
+  - Regression tests: `node --test tests/employer-linked-job-applications.test.mjs` passed.
+  - Application suite: `node --test tests/application-export.test.mjs tests/application-filters.test.mjs tests/employer-linked-job-applications.test.mjs` passed 13/13.
+  - Lint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Build: `npm run build` succeeded cleanly.
+  - Mobile UI: In progress; top action bar simplified on mobile viewports by removing the download button.
+
+## QA-2026-11-03: Employer Candidate Card Compact UI Optimization
+
+- Scope: S019 `/employer/jobs/:jobId/applications` and S035 `/admin/jobs/:jobId/applications` (`src/components/jobApplications/JobApplicationCard.jsx`).
+- Issue: Candidate card was excessively tall (~400px+), dominated by empty colored boxes ("Interview Round" and "Private Recruiter Notes" showing even when empty), duplicate "Suitable Profile" badges, bloated button padding caused by child `min-h-11` overrides, and nested card borders.
+- Optimization:
+  - Eliminated the two empty placeholder boxes for Interview Round and Recruiter Notes when no data is set, reducing empty card height by ~50%.
+  - Added streamlined quick action triggers `📅 Schedule Interview` and `📝 Add Note` in the Quick Actions toolbar. When triggered, the respective form smoothly expands into the card.
+  - Deduped the "Suitable Profile" badge in the header so it doesn't repeat on both the left and right side.
+  - Streamlined the contact & resume row with balanced, compact pill buttons and subtle border framing.
+  - Tightened header avatar (40px) and typography for high-density ATS scanning.
+- Verification:
+  - Automated tests: `node --test tests/employer-linked-job-applications.test.mjs tests/job-suitable-profiles.test.mjs` passed 9/9.
+  - Lint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Build: `npm run build` completed cleanly.
+  - Mobile UI: In progress; compact layout dramatically reduces scrolling on mobile viewports.
+
+
+

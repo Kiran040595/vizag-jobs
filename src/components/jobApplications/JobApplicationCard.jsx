@@ -574,28 +574,28 @@ export default function JobApplicationCard({
 
   return (
     <article
-      className={`min-w-0 break-words [&_button]:min-h-11 [&_a]:min-h-11 [&_input]:min-w-0 [&_input]:text-base [&_select]:min-h-11 [&_select]:min-w-0 [&_select]:max-w-full [&_select]:text-base [&_textarea]:text-base overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:shadow-md ${
+      className={`min-w-0 break-words [&_input]:min-w-0 [&_input]:text-base [&_select]:min-w-0 [&_select]:max-w-full [&_select]:text-base [&_textarea]:text-base overflow-hidden rounded-2xl border bg-white shadow-xs transition hover:shadow-md ${
         isCandidateStarred
           ? 'border-amber-300 ring-2 ring-amber-200/70 bg-gradient-to-b from-amber-50/20 to-white shadow-amber-100/50'
           : 'border-slate-200/90 hover:border-slate-300'
       }`}
     >
       {/* Top Header Card Bar */}
-      <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Candidate Avatar & Identity */}
-        <div className="flex min-w-0 items-start gap-3.5">
+        <div className="flex min-w-0 items-center gap-3">
           <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-base font-black text-white shadow-xs`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient} text-sm font-black text-white shadow-xs`}
           >
             {initials}
           </div>
           <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-black text-slate-950">{candidateName}</h3>
+              <h3 className="text-base font-black text-slate-950 sm:text-lg">{candidateName}</h3>
               {isCandidateStarred ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 shadow-2xs">
                   <span>⭐</span>
-                  <span>Admin Recommended</span>
+                  <span>Recommended</span>
                 </span>
               ) : null}
               <span
@@ -604,13 +604,13 @@ export default function JobApplicationCard({
                 {formatApplicationStatus(application.status)}
               </span>
               {typeof snapshot.isFresher === 'boolean' ? (
-                <span className="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
+                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[11px] font-bold text-slate-700">
                   {snapshot.isFresher ? 'Fresher' : 'Experienced'}
                 </span>
               ) : null}
             </div>
 
-            <p className="mt-1 break-words text-sm text-slate-600">
+            <p className="mt-0.5 break-words text-xs text-slate-600 sm:text-sm">
               {[snapshot.degree, snapshot.branch, snapshot.graduationYear ? `Class of ${snapshot.graduationYear}` : null]
                 .filter(Boolean)
                 .join(' · ')}
@@ -626,7 +626,7 @@ export default function JobApplicationCard({
               type="button"
               onClick={handleToggleStar}
               disabled={isUpdatingStar}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
                 isCandidateStarred
                   ? 'border border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200 shadow-2xs'
                   : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -638,12 +638,14 @@ export default function JobApplicationCard({
             </button>
           ) : null}
 
-          <p className="text-xs font-medium text-slate-500">
+          <p className="text-[11px] font-medium text-slate-500">
             {application.isSuitableProfile
               ? `Assigned ${formatApplicationTime(application.createdAt || application.submittedAt)}`
               : `Applied ${formatApplicationTime(application.submittedAt)}`}
           </p>
-          {application.isSuitableProfile ? (
+
+          {/* Render badge only if not already shown in primary status badge */}
+          {application.isSuitableProfile && normalizeApplicationStatus(application.status) !== 'suitable' ? (
             <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-300">
               🌟 Suitable Profile
             </span>
@@ -651,18 +653,18 @@ export default function JobApplicationCard({
             <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-200/60">
               Direct Student Apply
             </span>
-          ) : (
+          ) : !application.isSuitableProfile ? (
             <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-800 border border-blue-200/60">
               Portal Application
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         {/* Admin Recommendation Note */}
         {application.adminNotes ? (
-          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-950 shadow-2xs">
+          <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-950 shadow-2xs">
             <div className="flex items-center justify-between gap-1.5 font-bold">
               <div className="flex items-center gap-1.5">
                 <span>🌟 Admin Recommendation Note</span>
@@ -687,7 +689,7 @@ export default function JobApplicationCard({
             <button
               type="button"
               onClick={() => setIsEditingAdminNote(true)}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-400"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-400"
             >
               <span>⭐</span>
               <span>+ Add Admin Referral Note for Employer</span>
@@ -697,7 +699,7 @@ export default function JobApplicationCard({
 
         {/* Inline Admin Note Editor */}
         {isEditingAdminNote ? (
-          <div className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-3.5 shadow-xs">
+          <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 p-3 shadow-xs">
             <label htmlFor={`admin-note-${application.id}`} className="block text-xs font-bold text-amber-950 mb-1.5">
               Admin Recommendation Note (Visible to Company)
             </label>
@@ -713,7 +715,7 @@ export default function JobApplicationCard({
               <button
                 type="button"
                 onClick={() => setIsEditingAdminNote(false)}
-                className="min-h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Cancel
               </button>
@@ -721,7 +723,7 @@ export default function JobApplicationCard({
                 type="button"
                 onClick={handleSaveAdminNote}
                 disabled={isSavingAdminNote}
-                className="min-h-9 rounded-lg bg-amber-600 px-3.5 py-1 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+                className="rounded-lg bg-amber-600 px-3.5 py-1 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {isSavingAdminNote ? 'Saving…' : 'Save Recommendation Note'}
               </button>
@@ -730,7 +732,7 @@ export default function JobApplicationCard({
         ) : null}
 
         {/* Recruiter Instant Contact & Resume Action Bar */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {/* Phone & Direct Call */}
             {snapshot.phone ? (
@@ -738,13 +740,13 @@ export default function JobApplicationCard({
                 <button
                   type="button"
                   onClick={() => handleRevealAndMarkViewed('phone')}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-cyan-300 bg-cyan-50/80 px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-2xs transition hover:border-cyan-400 hover:bg-cyan-100"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-cyan-300 bg-cyan-50/80 px-3 py-1.5 text-xs font-bold text-cyan-900 shadow-2xs transition hover:border-cyan-400 hover:bg-cyan-100"
                   title="Click to view candidate mobile number (candidate will be notified)"
                   aria-label={`View mobile number for ${candidateName}`}
                 >
                   <PhoneIcon />
                   <span className="font-mono tracking-tight">{maskPhoneNumber(snapshot.phone)}</span>
-                  <span className="rounded-md bg-cyan-200/90 px-1.5 py-0.5 text-[10px] font-black uppercase text-cyan-950">
+                  <span className="rounded bg-cyan-200/90 px-1.5 py-0.5 text-[10px] font-black uppercase text-cyan-950">
                     👁 View
                   </span>
                 </button>
@@ -752,7 +754,7 @@ export default function JobApplicationCard({
                 <a
                   href={`tel:${snapshot.phone}`}
                   onClick={() => handleContactOutreach('call')}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
                   title={`Call ${snapshot.phone} (advances status to Contacted)`}
                 >
                   <PhoneIcon />
@@ -769,7 +771,7 @@ export default function JobApplicationCard({
                 <button
                   type="button"
                   onClick={() => handleContactOutreach('whatsapp', directWhatsAppUrl)}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
                   title="View phone number and message candidate on WhatsApp (advances status to Contacted)"
                   aria-label={`WhatsApp ${candidateName}`}
                 >
@@ -782,7 +784,7 @@ export default function JobApplicationCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => handleContactOutreach('whatsapp')}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
                   title="Message candidate on WhatsApp (advances status to Contacted)"
                 >
                   <WhatsAppIcon />
@@ -797,33 +799,33 @@ export default function JobApplicationCard({
                 <button
                   type="button"
                   onClick={() => handleRevealAndMarkViewed('email')}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-400 hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-400 hover:bg-slate-50"
                   title="Click to view candidate email address (candidate will be notified)"
                   aria-label={`View email address for ${candidateName}`}
                 >
                   <MailIcon />
-                  <span className="max-w-[160px] truncate sm:max-w-[220px] font-mono tracking-tight">
+                  <span className="max-w-[150px] truncate sm:max-w-[200px] font-mono tracking-tight">
                     {maskEmail(snapshot.contactEmail)}
                   </span>
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 border border-slate-200">
                     👁 View
                   </span>
                 </button>
               ) : (
                 <a
                   href={`mailto:${snapshot.contactEmail}`}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
                   title={`Email ${snapshot.contactEmail}`}
                 >
                   <MailIcon />
-                  <span className="max-w-[160px] truncate sm:max-w-[220px]">{snapshot.contactEmail}</span>
+                  <span className="max-w-[150px] truncate sm:max-w-[200px]">{snapshot.contactEmail}</span>
                 </a>
               )
             ) : null}
 
             {!showMasked && isContactRevealed ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                ✓ Contact Revealed
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                ✓ Revealed
               </span>
             ) : null}
           </div>
@@ -835,13 +837,13 @@ export default function JobApplicationCard({
                 type="button"
                 onClick={handleViewResume}
                 disabled={isOpeningResume}
-                className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-cyan-500 disabled:opacity-50"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-cyan-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-cyan-500 disabled:opacity-50"
               >
                 <DocumentIcon />
                 <span>{isOpeningResume ? 'Opening resume…' : 'View Resume (PDF)'}</span>
               </button>
             ) : (
-              <span className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-400">
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-400">
                 <DocumentIcon />
                 <span>No resume attached</span>
               </span>
@@ -850,66 +852,53 @@ export default function JobApplicationCard({
         </div>
 
         {/* Candidate Skills & Cover Note */}
-        <div className="mt-4 space-y-3">
-          {Array.isArray(snapshot.skills) && snapshot.skills.length > 0 ? (
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Key Skills</p>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {(Array.isArray(snapshot.skills) && snapshot.skills.length > 0) || application.coverNote ? (
+          <div className="mt-3 space-y-2">
+            {Array.isArray(snapshot.skills) && snapshot.skills.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">Key Skills:</span>
                 {snapshot.skills.map((skill, index) => (
                   <span
                     key={`${skill}-${index}`}
-                    className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/70 px-2.5 py-1 text-xs font-semibold text-slate-700"
+                    className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/70 px-2 py-0.5 text-xs font-semibold text-slate-700"
                   >
                     {skill}
                   </span>
                 ))}
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {application.coverNote ? (
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-3 text-sm whitespace-pre-wrap break-words text-slate-700">
-              <span className="font-bold text-slate-800">Application details: </span>
-              {application.coverNote}
-            </div>
-          ) : null}
-        </div>
-
-        {/* Recruiter Workspace: Interview Scheduler & Private Notes */}
-        <div className="mt-5 space-y-3">
-          {/* Interview Banner / Schedule Section */}
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-950">
-                <CalendarIcon />
-                <span>Interview Round</span>
+            {application.coverNote ? (
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-2.5 text-xs whitespace-pre-wrap break-words text-slate-700">
+                <span className="font-bold text-slate-800">Application details: </span>
+                {application.coverNote}
               </div>
-              {application.interviewScheduledAt && !showScheduler ? (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowScheduler(true)}
-                    className="text-xs font-semibold text-indigo-700 hover:underline"
-                  >
-                    Reschedule
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelInterview}
-                    className="text-xs font-semibold text-rose-600 hover:underline"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            ) : null}
+          </div>
+        ) : null}
 
-            {/* If Interview is confirmed */}
+        {/* Recruiter Workspace: Interview Details & Private Notes (rendered when active) */}
+        {(application.interviewScheduledAt || showScheduler || recruiterNotes || showNotes) ? (
+          <div className="mt-3 space-y-2.5">
+            {/* 1. Confirmed Interview Card */}
             {application.interviewScheduledAt && !showScheduler ? (
-              <div className="mt-2.5 rounded-xl border border-indigo-100 bg-white p-3.5 shadow-2xs">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3 text-xs text-slate-900 shadow-2xs">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-sm font-black text-slate-900">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-indigo-950 text-[11px]">
+                        <CalendarIcon />
+                        <span>Interview Scheduled</span>
+                      </span>
+                      <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-800">
+                        {application.interviewMode === 'virtual'
+                          ? 'Virtual (Google Meet / Zoom)'
+                          : application.interviewMode === 'telephonic'
+                            ? 'Telephonic Interview'
+                            : 'In-Person (Walk-In / Office)'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-black text-slate-900">
                       {new Date(application.interviewScheduledAt).toLocaleString(undefined, {
                         weekday: 'short',
                         month: 'short',
@@ -919,44 +908,65 @@ export default function JobApplicationCard({
                         minute: '2-digit',
                       })}
                     </p>
-                    <p className="mt-0.5 text-xs font-semibold text-indigo-800">
-                      Mode:{' '}
-                      {application.interviewMode === 'virtual'
-                        ? 'Virtual (Google Meet / Zoom)'
-                        : application.interviewMode === 'telephonic'
-                          ? 'Telephonic Interview'
-                          : 'In-Person (Walk-In / Office)'}
-                    </p>
                     {application.interviewLocation ? (
-                      <p className="mt-1 text-xs text-slate-700">
-                        <span className="font-bold">Venue / Link:</span> {application.interviewLocation}
+                      <p className="mt-0.5 text-slate-700">
+                        <span className="font-semibold">Venue / Link:</span> {application.interviewLocation}
                       </p>
                     ) : null}
                     {application.interviewInstructions ? (
-                      <p className="mt-0.5 text-xs text-slate-600">
-                        <span className="font-bold">Instructions:</span> {application.interviewInstructions}
+                      <p className="mt-0.5 text-slate-600">
+                        <span className="font-semibold">Instructions:</span> {application.interviewInstructions}
                       </p>
                     ) : null}
                   </div>
 
-                  {snapshot.phone ? (
+                  <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">
+                    {snapshot.phone ? (
+                      <button
+                        type="button"
+                        onClick={handleSendWhatsAppPass}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
+                        title="Send formal interview invitation pass to candidate on WhatsApp"
+                      >
+                        <WhatsAppIcon />
+                        <span>Send WhatsApp Pass</span>
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      onClick={handleSendWhatsAppPass}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700"
-                      title="Send formal interview invitation pass to candidate on WhatsApp"
+                      onClick={() => setShowScheduler(true)}
+                      className="rounded-lg border border-indigo-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50"
                     >
-                      <WhatsAppIcon />
-                      <span>Send WhatsApp Pass</span>
+                      Reschedule
                     </button>
-                  ) : null}
+                    <button
+                      type="button"
+                      onClick={handleCancelInterview}
+                      className="rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}
 
-            {/* If Scheduler Form is open */}
+            {/* 2. Scheduler Form */}
             {showScheduler ? (
-              <form onSubmit={handleConfirmSchedule} className="mt-3 space-y-3 rounded-xl border border-indigo-100 bg-white p-3.5 shadow-2xs">
+              <form onSubmit={handleConfirmSchedule} className="space-y-3 rounded-xl border border-indigo-200 bg-white p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-950">
+                    <CalendarIcon />
+                    <span>{application.interviewScheduledAt ? 'Reschedule Interview' : 'Schedule Interview'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduler(false)}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    Close
+                  </button>
+                </div>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700">Interview Date & Time</label>
@@ -1023,39 +1033,22 @@ export default function JobApplicationCard({
               </form>
             ) : null}
 
-            {!application.interviewScheduledAt && !showScheduler ? (
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-xs text-slate-500">No interview scheduled yet.</span>
-                <button
-                  type="button"
-                  onClick={() => setShowScheduler(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs transition hover:bg-indigo-50"
-                >
-                  <CalendarIcon />
-                  <span>Schedule Interview</span>
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Recruiter Private Notes */}
-          <div className="rounded-2xl border border-amber-200/90 bg-amber-50/40 p-3.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-950">
-                <NoteIcon />
-                <span>Private Recruiter Notes</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNotes(!showNotes)}
-                className="text-xs font-semibold text-amber-800 hover:underline"
-              >
-                {showNotes ? 'Collapse note' : recruiterNotes ? 'View note' : '+ Add note'}
-              </button>
-            </div>
-
+            {/* 3. Recruiter Private Notes */}
             {showNotes ? (
-              <div className="mt-2.5">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 shadow-2xs">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
+                    <NoteIcon />
+                    <span>Private Recruiter Note</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowNotes(false)}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    Close
+                  </button>
+                </div>
                 <textarea
                   rows={2}
                   value={recruiterNotes}
@@ -1063,25 +1056,45 @@ export default function JobApplicationCard({
                   placeholder="e.g. Telephonic round done. Strong communication, expects 20k/mo, ready to join immediately..."
                   className="w-full rounded-xl border border-amber-200 bg-white p-2.5 text-xs text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-200 sm:text-sm"
                 />
-                <div className="mt-2 flex justify-end">
+                <div className="mt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowNotes(false)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
                   <button
                     type="button"
                     onClick={handleSaveNotes}
                     disabled={isSavingNotes || recruiterNotes === (application.recruiterNotes || '')}
-                    className="rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-amber-700 disabled:opacity-50"
+                    className="rounded-lg bg-amber-600 px-3.5 py-1 text-xs font-bold text-white shadow-2xs transition hover:bg-amber-700 disabled:opacity-50"
                   >
                     {isSavingNotes ? 'Saving…' : 'Save Note'}
                   </button>
                 </div>
               </div>
             ) : recruiterNotes ? (
-              <p className="mt-1.5 truncate text-xs text-amber-900/80 italic">"{recruiterNotes}"</p>
+              <div className="flex items-center justify-between rounded-xl border border-amber-200/80 bg-amber-50/50 px-3 py-2 text-xs text-amber-950">
+                <div className="flex min-w-0 items-center gap-2">
+                  <NoteIcon />
+                  <span className="font-bold">Note:</span>
+                  <span className="truncate italic">"{recruiterNotes}"</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNotes(true)}
+                  className="shrink-0 text-xs font-bold text-amber-800 underline hover:text-amber-950 ml-2"
+                >
+                  Edit
+                </button>
+              </div>
             ) : null}
           </div>
-        </div>
+        ) : null}
 
         {/* Footer Pipeline Stage Controller */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2.5 border-t border-slate-100 pt-3">
           {/* Quick Stage Action Pills */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Quick Actions:</span>
@@ -1089,7 +1102,7 @@ export default function JobApplicationCard({
               <button
                 type="button"
                 onClick={() => handleQuickStageClick('contacted')}
-                className="rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
+                className="rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
               >
                 📞 Mark Contacted
               </button>
@@ -1100,7 +1113,7 @@ export default function JobApplicationCard({
               <button
                 type="button"
                 onClick={() => handleQuickStageClick('screened')}
-                className="rounded-xl border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 transition hover:bg-purple-100"
+                className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700 transition hover:bg-purple-100"
               >
                 ✓ Shortlist
               </button>
@@ -1109,7 +1122,7 @@ export default function JobApplicationCard({
               <button
                 type="button"
                 onClick={() => setShowScheduler(true)}
-                className="rounded-xl border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
+                className="rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100"
               >
                 📅 Schedule Interview
               </button>
@@ -1117,16 +1130,25 @@ export default function JobApplicationCard({
               <button
                 type="button"
                 onClick={() => handleQuickStageClick('hired')}
-                className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
               >
                 ★ Mark Hired
               </button>
             )}
+            {!recruiterNotes && !showNotes ? (
+              <button
+                type="button"
+                onClick={() => setShowNotes(true)}
+                className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
+              >
+                📝 Add Note
+              </button>
+            ) : null}
             {application.status !== 'rejected' ? (
               <button
                 type="button"
                 onClick={() => handleQuickStageClick('rejected')}
-                className="rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
               >
                 ✕ Reject
               </button>
@@ -1143,7 +1165,7 @@ export default function JobApplicationCard({
                 id={`stage-select-${application.id}`}
                 value={application.status}
                 onChange={handleStatusSelectChange}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100 sm:text-sm"
+                className="rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-800 shadow-2xs transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100 sm:text-sm"
               >
                 {application.status === 'external_click' ? (
                   <option value="external_click">Applied / New Click</option>
@@ -1156,7 +1178,7 @@ export default function JobApplicationCard({
               </select>
             </div>
           ) : (
-            <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusStyle}`}>
+            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusStyle}`}>
               {formatApplicationStatus(application.status)}
             </span>
           )}

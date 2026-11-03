@@ -4,7 +4,6 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
 import EmployerShell from '../components/employer/EmployerShell';
-import ApplicationExportDialog from '../components/jobApplications/ApplicationExportDialog';
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
 import JobApplicationTable from '../components/jobApplications/JobApplicationTable';
 import { normalizeApplicationStatus } from '../lib/applicationStatus';
@@ -46,12 +45,6 @@ const SUITABLE_FUNNEL_STAGES = [
   { id: 'hired', label: '★ Hired' },
   { id: 'rejected', label: '✕ Rejected' },
 ];
-
-const ExcelIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-  </svg>
-);
 
 const SearchIcon = () => (
   <svg
@@ -123,7 +116,6 @@ function EmployerJobApplicationsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [exportOpen, setExportOpen] = useState(false);
 
   // Sync tab with URL if user navigates back/forward
   useEffect(() => {
@@ -568,17 +560,6 @@ function EmployerJobApplicationsContent() {
             <RefreshIcon />
             <span>{isRefreshing ? 'Refreshing…' : 'Refresh'}</span>
           </button>
-
-          {!isLoading && filteredCandidates.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setExportOpen(true)}
-              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-2xl bg-cyan-500 px-4 py-2 text-xs font-black text-slate-950 shadow-2xs transition hover:bg-cyan-400"
-            >
-              <ExcelIcon />
-              <span>Download Excel ({filteredCandidates.length})</span>
-            </button>
-          ) : null}
         </div>
       </div>
 
@@ -1016,13 +997,6 @@ function EmployerJobApplicationsContent() {
           ))}
         </div>
       ) : null}
-
-      <ApplicationExportDialog
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        applications={filteredCandidates}
-        job={job}
-      />
     </EmployerShell>
   );
 }
