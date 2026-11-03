@@ -18,8 +18,7 @@ the public query requested the optional `linkedin_url` column, which is absent i
 production, so the entire directory rendered zero companies. The scoped directory
 fix removes that optional-column dependency and keeps verified-only filtering at
 the database, cache, service and render boundaries. Functional and mobile UI
-verification remain reopened until the corrected production bundle is deployed
-and the two cards and badges are visibly retested.
+verification was reopened until the corrected production bundle was deployed.
 
 Automated verification completed before delivery: the focused company-directory
 suite passed 14/14, both native extractor tests passed, targeted ESLint passed,
@@ -28,3 +27,18 @@ unrelated existing failure at `tests/company-career-fetch.test.mjs:712`: its
 mocked legacy publication expects the on-platform "direct" classifier to return
 true for a company-career import, but the current classifier correctly returns
 false after those source types were separated.
+
+## Post-deployment rendered retest
+
+Commit `44d02b8` deployed successfully. A cache-busted production load returned
+19 verified companies. Desktop accessibility inspection confirmed the Wipro and
+Concentrix cards, visible `Verified careers` labels, exact company-job links and
+the exact official career URLs.
+
+At a 390×844 viewport, searching for `Wipro` and `Concentrix` independently
+returned exactly one card in each case. The verified label and both primary links
+remained available; the document/body scroll widths were 376px within a 391px
+reported inner width, so no horizontal overflow was present. This passes mobile
+UI verification for the scoped cards and badges. The overall S055 functional E2E
+status remains In progress because this retest inspected the exact outbound hrefs
+but did not navigate away from VizagJobs into both third-party career portals.
