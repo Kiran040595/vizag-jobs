@@ -132,6 +132,12 @@
   - `npm run lint`: 0 errors, 0 warnings across all files.
   - `npx vite build`: Clean production build in 2.46s.
 
+## QA-2026-11-03-Growww-Tech-Verified-Careers
+
+- Verified the employer-owned Growww Tech careers page and three active Visakhapatnam roles via live server fetch and JobPosting schema. Added exact-city, employer, deadline and description checks to the scraper, updated defaults and migration.
+- Functional E2E and mobile UI remain pending; this verification covers the backend extraction and regression test only.
+- Verification: live extractor returned 3 roles; Growww regression passed. Full `company-career-fetch` suite had 47 passing tests and 2 failures in the existing pipeline orchestration assertion (`isDirectPosting`), unrelated to this portal; retest remains open.
+
 ## QA-2026-11-02-Credit-Saison-India-Verified-Careers
 
 - Replaced Credit Saison India's generic careers page with its official Workday search filtered to Visakhapatnam and added native Workday CXS API extraction.

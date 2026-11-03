@@ -18,6 +18,24 @@ import {
 import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
 import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, parseInnocitoVizagJobs, scrapeVerifiedVizagPortal, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
+test('Growww Tech reads current exact-city job schema from employer pages', async () => {
+  const originalFetch = globalThis.fetch;
+  const detail = (title, city = 'Visakhapatnam', validThrough = '2027-03-21') => `<script type="application/ld+json">${JSON.stringify({ '@type': 'JobPosting', title, hiringOrganization: { name: 'Growww Tech' }, jobLocation: { address: { addressLocality: city } }, validThrough, description: '<p>Own the customer pipeline, support the team, and deliver reliable outcomes for clients every working day.</p>' })}</script>`;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith('/careers')) return new Response(`<script type="application/ld+json">${JSON.stringify({ '@type': 'ItemList', itemListElement: [{ url: 'https://growwwtech.com/careers/sales-team-lead' }, { url: 'https://growwwtech.com/careers/remote-role' }, { url: 'https://growwwtech.com/careers/expired-role' }] })}</script>`);
+    if (url.endsWith('/sales-team-lead')) return new Response(detail('Sales Team Lead'));
+    if (url.endsWith('/remote-role')) return new Response(detail('Remote Role', 'Hyderabad'));
+    return new Response(detail('Expired Role', 'Visakhapatnam', '2026-01-01'));
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['growww tech'], 'Growww Tech');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Sales Team Lead');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://growwwtech.com/careers/sales-team-lead');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Expired Phenom postings are rejected even when present in search results', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

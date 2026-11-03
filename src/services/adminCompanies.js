@@ -72,6 +72,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
     category: 'Banking & Finance',
   },
+  'Growww Tech': {
+    website: 'https://growwwtech.com',
+    careers_url: 'https://growwwtech.com/careers',
+    category: 'IT & Software',
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',

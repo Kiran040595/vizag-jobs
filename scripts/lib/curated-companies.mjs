@@ -45,6 +45,12 @@ export const CURATED_COMPANIES = {
     category: 'BPO & KPO',
     is_active_for_scrape: true,
   },
+  'Growww Tech': {
+    website: 'https://growwwtech.com',
+    careers_url: 'https://growwwtech.com/careers',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'Cushman & Wakefield': {
     website: 'https://www.cushmanwakefield.com',
     careers_url: 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag',

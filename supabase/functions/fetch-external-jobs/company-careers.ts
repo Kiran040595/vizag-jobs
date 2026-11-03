@@ -58,6 +58,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'cushman & wakefield': 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag',
   'credit saison india': 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
   'credit saison': 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
+  'growww tech': 'https://growwwtech.com/careers',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -168,7 +169,31 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const concentrix = host === 'jobs.concentrix.com' && parsedUrl.pathname === '/job-search/' && parsedUrl.searchParams.get('country') === 'India' && parsedUrl.searchParams.get('city') === 'Visakhapatnam';
   const cushman = host === 'cw.wd1.myworkdayjobs.com' && parsedUrl.pathname === '/External' && parsedUrl.searchParams.get('q') === 'Vizag';
   const creditSaison = host === 'saison.wd102.myworkdayjobs.com' && parsedUrl.pathname === '/Credit_Saison_India' && parsedUrl.searchParams.get('q') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison) return null;
+  const growww = host === 'growwwtech.com' && parsedUrl.pathname === '/careers';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww) return null;
+  if (growww) {
+    const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);
+    const html = await listing.text();
+    const itemList = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((match) => {
+      try { const data = JSON.parse(match[1]); return data['@type'] === 'ItemList' ? [data] : []; } catch { return []; }
+    })[0];
+    const links = (itemList?.itemListElement || []).map((item: { url?: string }) => item.url).filter((link: string) => /^https:\/\/growwwtech\.com\/careers\/[a-z0-9-]+$/.test(link));
+    const jobs = await Promise.all(links.map(async (link: string) => {
+      const response = await fetch(link, { signal: AbortSignal.timeout(15000) });
+      if (!response.ok) return null;
+      const detail = await response.text();
+      const posting = [...detail.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((match) => {
+        try { const data = JSON.parse(match[1]); return data['@type'] === 'JobPosting' ? [data] : []; } catch { return []; }
+      })[0];
+      if (!posting || posting.hiringOrganization?.name !== 'Growww Tech' || posting.jobLocation?.address?.addressLocality !== 'Visakhapatnam' || !posting.title || new Date(posting.validThrough).getTime() < Date.now()) return null;
+      const description = htmlToCleanMarkdown(posting.description || '', link);
+      if (description.length < 80) return null;
+      return { title: posting.title, company, location: 'Visakhapatnam, Andhra Pradesh, India', job_type: posting.employmentType, description, apply_link: link } as ExtractedCompanyCareerJob;
+    }));
+    const verified = jobs.filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs: verified }), structuredJobs: verified, count: verified.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (hm) {
     const search = await fetch('https://api.smartrecruiters.com/v1/companies/HMGroup/postings?q=Vishakhapatnam', { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
