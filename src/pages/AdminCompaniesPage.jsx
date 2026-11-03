@@ -13,6 +13,11 @@ import { fetchAdminPlatformJobs } from '../services/adminJobs';
 import {
   fetchAndClassifyCompanyJobs,
 } from '../lib/companyCareerFetchAutomation';
+import {
+  getBulkScrapeSelection,
+  updateCompanyScrapeFlags,
+} from '../lib/companyBulkScraperSelection';
+import { setCompaniesScrapeStatus } from '../services/adminCompanyBulkScrape';
 import CompanyCareerJobApprovalModal from '../components/admin/CompanyCareerJobApprovalModal';
 import { pushToast } from '../lib/toast';
 import VerifiedCareersBadge from '../components/VerifiedCareersBadge';
@@ -55,6 +60,8 @@ export default function AdminCompaniesPage() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'DIRECTORY_APPROVED' | 'PENDING_APPROVAL' | 'HAS_CAREERS' | 'AUTO_SCRAPE' | 'MISSING_URL'
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCompanyNames, setSelectedCompanyNames] = useState(() => new Set());
+  const [isBulkScrapeUpdating, setIsBulkScrapeUpdating] = useState(false);
 
   // Edit Modal State
   const [editingCompany, setEditingCompany] = useState(null);
@@ -146,6 +153,9 @@ export default function AdminCompaniesPage() {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredCompanies.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredCompanies, currentPage]);
+  const allPageCompaniesSelected =
+    paginatedCompanies.length > 0 &&
+    paginatedCompanies.every((company) => selectedCompanyNames.has(company.name));
 
   // Stats Counters
   const stats = useMemo(() => {
@@ -248,6 +258,14 @@ export default function AdminCompaniesPage() {
 
   const handleToggleAutoScrape = async (comp) => {
     const nextVal = !comp.isActiveForScrape;
+    if (nextVal && !comp.careersUrl) {
+      handleOpenEdit(comp);
+      pushToast({
+        message: `Add a Careers Page URL for ${comp.name} before enabling its scraper.`,
+        type: 'info',
+      });
+      return;
+    }
     try {
       await saveCompanyDetails({
         name: comp.name,
@@ -279,6 +297,84 @@ export default function AdminCompaniesPage() {
         message: 'Could not toggle auto-scrape.',
         type: 'error',
       });
+    }
+  };
+
+  const toggleCompanySelection = (companyName) => {
+    setSelectedCompanyNames((previous) => {
+      const next = new Set(previous);
+      if (next.has(companyName)) next.delete(companyName);
+      else next.add(companyName);
+      return next;
+    });
+  };
+
+  const selectCompanies = (items) => {
+    setSelectedCompanyNames((previous) => {
+      const next = new Set(previous);
+      items.forEach((company) => next.add(company.name));
+      return next;
+    });
+  };
+
+  const togglePageSelection = () => {
+    setSelectedCompanyNames((previous) => {
+      const next = new Set(previous);
+      if (allPageCompaniesSelected) {
+        paginatedCompanies.forEach((company) => next.delete(company.name));
+      } else {
+        paginatedCompanies.forEach((company) => next.add(company.name));
+      }
+      return next;
+    });
+  };
+
+  const clearCompanySelection = () => setSelectedCompanyNames(new Set());
+
+  const handleBulkScrapeStatus = async (isActiveForScrape) => {
+    const { targets, skippedMissingCareersUrl } = getBulkScrapeSelection(
+      companies,
+      selectedCompanyNames,
+      isActiveForScrape,
+    );
+
+    if (targets.length === 0) {
+      pushToast({
+        message: isActiveForScrape
+          ? 'None of the selected companies has a Careers Page URL.'
+          : 'Select at least one company first.',
+        type: 'info',
+      });
+      return;
+    }
+
+    setIsBulkScrapeUpdating(true);
+    try {
+      const targetNames = targets.map((company) => company.name);
+      await setCompaniesScrapeStatus(targetNames, isActiveForScrape);
+      setCompanies((previous) =>
+        updateCompanyScrapeFlags(previous, targetNames, isActiveForScrape),
+      );
+      setSelectedCompanyNames((previous) => {
+        const next = new Set(previous);
+        targetNames.forEach((name) => next.delete(name));
+        return next;
+      });
+
+      const skippedMessage = skippedMissingCareersUrl.length > 0
+        ? ` ${skippedMissingCareersUrl.length} without a Careers URL were skipped.`
+        : '';
+      pushToast({
+        message: `Scraper switched ${isActiveForScrape ? 'ON' : 'OFF'} for ${targetNames.length} compan${targetNames.length === 1 ? 'y' : 'ies'}.${skippedMessage}`,
+        type: 'success',
+      });
+    } catch (err) {
+      pushToast({
+        message: err instanceof Error ? err.message : 'Could not update selected company scrapers.',
+        type: 'error',
+      });
+    } finally {
+      setIsBulkScrapeUpdating(false);
     }
   };
 
@@ -710,13 +806,75 @@ export default function AdminCompaniesPage() {
 
       {!isLoading && filteredCompanies.length > 0 ? (
         <section className="mt-6 space-y-3" aria-label="Companies list">
+          <div className="rounded-3xl border border-violet-200 bg-violet-50/70 p-4 shadow-sm">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <p className="text-sm font-black text-violet-950">
+                  Bulk scraper control
+                  <span className="ml-2 rounded-full bg-violet-200 px-2 py-0.5 text-xs text-violet-900">
+                    {selectedCompanyNames.size} selected
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-violet-700">
+                  Scraper ON skips companies without a Careers Page URL. Scraper OFF applies to every selection.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={togglePageSelection}
+                  className="min-h-11 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+                >
+                  {allPageCompaniesSelected ? 'Deselect page' : `Select page (${paginatedCompanies.length})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectCompanies(filteredCompanies)}
+                  className="min-h-11 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+                >
+                  Select matching ({filteredCompanies.length})
+                </button>
+                {filteredCompanies.length !== companies.length ? (
+                  <button
+                    type="button"
+                    onClick={() => selectCompanies(companies)}
+                    className="min-h-11 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-900 hover:bg-violet-100"
+                  >
+                    Select all companies ({companies.length})
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={selectedCompanyNames.size === 0 || isBulkScrapeUpdating}
+                  onClick={clearCompanySelection}
+                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedCompanyNames.size === 0 || isBulkScrapeUpdating}
+                  onClick={() => handleBulkScrapeStatus(true)}
+                  className="min-h-11 rounded-xl border border-emerald-300 bg-emerald-600 px-3.5 py-2 text-xs font-black text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40"
+                >
+                  {isBulkScrapeUpdating ? 'Updating…' : '⚡ Switch scraper ON'}
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedCompanyNames.size === 0 || isBulkScrapeUpdating}
+                  onClick={() => handleBulkScrapeStatus(false)}
+                  className="min-h-11 rounded-xl border border-rose-300 bg-white px-3.5 py-2 text-xs font-black text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+                >
+                  {isBulkScrapeUpdating ? 'Updating…' : 'Switch scraper OFF'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between px-2 text-xs font-semibold text-slate-500">
-            <span>
-              Showing {paginatedCompanies.length} of {filteredCompanies.length} companies
-            </span>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
+            <span>Showing {paginatedCompanies.length} of {filteredCompanies.length} companies</span>
+            <span>Page {currentPage} of {totalPages}</span>
           </div>
 
           <div className="space-y-3">
@@ -727,11 +885,24 @@ export default function AdminCompaniesPage() {
               return (
                 <article
                   key={comp.name}
-                  className="group rounded-3xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md sm:p-5"
+                  className={`group rounded-3xl border bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 ${
+                    selectedCompanyNames.has(comp.name)
+                      ? 'border-violet-400 ring-2 ring-violet-200'
+                      : 'border-slate-200/90 hover:border-slate-300'
+                  }`}
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     {/* Left: Avatar + Names + Badges */}
                     <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      <label className="flex h-12 shrink-0 cursor-pointer items-center" title={`Select ${comp.name}`}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCompanyNames.has(comp.name)}
+                          onChange={() => toggleCompanySelection(comp.name)}
+                          aria-label={`Select ${comp.name} for bulk scraper update`}
+                          className="h-5 w-5 rounded border-slate-300 text-violet-600 accent-violet-600"
+                        />
+                      </label>
                       <div
                         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-sm font-black tracking-wider text-white shadow-sm`}
                         aria-hidden="true"

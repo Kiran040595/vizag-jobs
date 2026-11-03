@@ -1,5 +1,13 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-03-Admin-Companies-Bulk-Scraper
+
+- Scope: existing admin Companies Directory screen; bulk selection and scraper enable/disable controls. No new route or dialog.
+- Added per-company checkboxes plus page, current-filter and all-company selection actions. Admins can switch the scheduled scraper on or off for the complete selection in one action; enabling safely skips companies without a Careers Page URL.
+- Bulk database writes are deduplicated and chunked in groups of 250, with successful state updates, selection clearing, progress locking and success/error feedback.
+- Automated verification: 4/4 focused selection, eligibility, state-update and 250-row batching tests pass; targeted ESLint passes; production build passes.
+- Functional E2E: pending authenticated Supabase bulk-update journey and persisted refresh verification. Mobile UI: pending because rendered local QA reached the admin login guard; narrow-viewport toolbar/card interaction was not claimed as tested.
+
 ## QA-2026-11-02-Home-Tab-Scroll-And-Mobile-Polish
 
 - Scope: S007 `/`; `ScrollToTop.jsx`, `JobSourceTabs.jsx`, and `tests/scroll-to-top.test.mjs`. No new route, dialog or data-source behavior.
