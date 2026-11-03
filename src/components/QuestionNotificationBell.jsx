@@ -31,6 +31,12 @@ import {
   markReplyNotificationRead,
   replyNotificationKindLabel,
 } from '../services/replyNotifications';
+import {
+  fetchAdminHireAlerts,
+  markHireAlertRead,
+  dismissHireAlert,
+  dismissAllHireAlerts,
+} from '../services/adminPlacements';
 import { supabase } from '../lib/supabaseClient';
 import { isWebNotificationSupported } from '../lib/webPush';
 
@@ -56,6 +62,7 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
   const [questionNotifications, setQuestionNotifications] = useState([]);
   const [feedbackNotifications, setFeedbackNotifications] = useState([]);
   const [replyNotifications, setReplyNotifications] = useState([]);
+  const [hireNotifications, setHireNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -82,6 +89,7 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
       setQuestionNotifications([]);
       setFeedbackNotifications([]);
       setReplyNotifications([]);
+      setHireNotifications([]);
       setUnreadCount(0);
       return;
     }
@@ -93,11 +101,17 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
     try {
       const inbox = await loadNotificationInbox({
         moderatorId: canModerate ? moderatorUser?.id : null, inboxUserId, isAdmin,
-      }, { fetchQuestionNotifications, fetchFeedbackNotifications, fetchReplyNotifications });
+      }, {
+        fetchQuestionNotifications,
+        fetchFeedbackNotifications,
+        fetchReplyNotifications,
+        fetchAdminHireAlerts: isAdmin ? fetchAdminHireAlerts : undefined,
+      });
       if (version !== requestVersion.current) return;
       setQuestionNotifications(inbox.questions);
       setFeedbackNotifications(inbox.feedback);
       setReplyNotifications(inbox.replies);
+      setHireNotifications(inbox.hires || []);
       setUnreadCount(inbox.unreadCount);
     } catch (error) {
       if (version !== requestVersion.current) return;
@@ -175,6 +189,61 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
   }, [authLoading, inboxUserId]);
 
   useEffect(() => {
+    if (authLoading || !isAdmin || !supabase) return undefined;
+
+    const channelName = `admin-hires-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    let channel = null;
+
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'job_applications',
+          },
+          (payload) => {
+            if (payload.new?.status === 'hired' || payload.new?.status === 'joined') {
+              loadNotificationsRef.current?.();
+            }
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'job_suitable_profiles',
+          },
+          (payload) => {
+            if (payload.new?.status === 'hired' || payload.new?.status === 'joined') {
+              loadNotificationsRef.current?.();
+            }
+          },
+        )
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn(`Realtime subscription status for ${channelName}:`, status);
+          }
+        });
+    } catch (error) {
+      console.warn('Realtime subscription failed for admin hire notifications:', error);
+    }
+
+    return () => {
+      if (channel && supabase) {
+        try {
+          void supabase.removeChannel(channel);
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+    };
+  }, [authLoading, isAdmin]);
+
+  useEffect(() => {
     if (!isOpen) return undefined;
 
     const handleClickOutside = (event) => {
@@ -228,6 +297,14 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
         createdAt: notification.createdAt,
         data: notification,
       })),
+      ...hireNotifications.map((hire) => ({
+        kind: 'hire_placement',
+        id: `hire-${hire.id}`,
+        notificationId: hire.id,
+        isRead: hire.isRead,
+        createdAt: hire.updatedAt,
+        data: hire,
+      })),
       ...questionNotifications
         .filter((notification) => notification.question && notification.job && notification.jobPath)
         .map((notification) => ({
@@ -255,7 +332,7 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
       const rightTime = new Date(right.createdAt).getTime();
       return rightTime - leftTime;
     });
-  }, [feedbackNotifications, questionNotifications, replyNotifications]);
+  }, [feedbackNotifications, hireNotifications, questionNotifications, replyNotifications]);
 
   if (authLoading || !canViewBell) {
     return null;
@@ -272,7 +349,12 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
     try {
       await clearNotificationInbox({
         moderatorId: canModerate ? moderatorUser?.id : null, inboxUserId, isAdmin,
-      }, { dismissAllQuestionNotifications, dismissAllFeedbackNotifications, dismissAllReplyNotifications });
+      }, {
+        dismissAllQuestionNotifications,
+        dismissAllFeedbackNotifications,
+        dismissAllReplyNotifications,
+        dismissAllHireAlerts: () => dismissAllHireAlerts(hireNotifications.map((h) => h.id)),
+      });
     } catch (error) {
       console.error('Failed to clear notifications:', error);
       pushToast({ type: 'error', message: 'Some notifications could not be cleared. Please retry.' });
@@ -293,10 +375,14 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
     setIsLoading(false);
     setIsClearing(true);
     try {
-      const dismiss = item.kind === 'reply' ? dismissReplyNotification
-        : item.kind === 'job_question' ? dismissQuestionNotification : dismissFeedbackNotification;
-      const userId = item.kind === 'reply' ? inboxUserId : moderatorUser?.id;
-      await dismiss({ notificationId: item.notificationId, userId });
+      if (item.kind === 'hire_placement') {
+        dismissHireAlert(item.notificationId);
+      } else {
+        const dismiss = item.kind === 'reply' ? dismissReplyNotification
+          : item.kind === 'job_question' ? dismissQuestionNotification : dismissFeedbackNotification;
+        const userId = item.kind === 'reply' ? inboxUserId : moderatorUser?.id;
+        await dismiss({ notificationId: item.notificationId, userId });
+      }
     } catch (error) {
       console.error('Failed to dismiss notification:', error);
       pushToast({ type: 'error', message: 'Notification could not be dismissed. Please retry.' });
@@ -305,6 +391,12 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
       setIsClearing(false);
       await loadNotifications();
     }
+  };
+
+  const handleOpenHireNotification = (hire) => {
+    updateIsOpen(false);
+    markHireAlertRead(hire.id);
+    loadNotifications();
   };
 
   const handleOpenQuestionNotification = async (notification) => {
@@ -488,6 +580,60 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
                           ) : null}
                           <p className="mt-1 text-xs text-slate-500">
                             {formatReplyNotificationTime(notification.createdAt)}
+                          </p>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDismissNotification(e, item)}
+                          className="absolute right-2.5 top-3 flex h-11 w-11 items-center justify-center rounded-md text-slate-400 opacity-60 transition hover:bg-slate-200/70 hover:text-slate-700 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                          disabled={isClearing}
+                          title="Dismiss notification"
+                          aria-label="Dismiss notification"
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  if (item.kind === 'hire_placement') {
+                    const hire = item.data;
+                    return (
+                      <div
+                        key={item.id}
+                        className={`group relative border-b border-slate-100 transition hover:bg-slate-50/80 ${
+                          item.isRead ? 'bg-white' : 'bg-emerald-50/50'
+                        }`}
+                      >
+                        <Link
+                          to="/admin/placements"
+                          onClick={() => handleOpenHireNotification(hire)}
+                          className="block px-4 py-3 pr-16"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                              🎉 Candidate Placed
+                            </span>
+                            {hire.isPaid ? (
+                              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                Fee Paid
+                              </span>
+                            ) : (
+                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                Pending Fee
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1 line-clamp-1 text-sm font-semibold text-slate-900">
+                            {hire.candidateName} hired at {hire.company}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-600">
+                            Role: {hire.jobTitle} · Status: <span className="capitalize">{hire.status}</span>
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatReplyNotificationTime(hire.updatedAt)}
                           </p>
                         </Link>
                         <button

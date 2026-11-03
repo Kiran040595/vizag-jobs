@@ -156,6 +156,12 @@ export default function AdminCandidatePaymentModal({
             {student.phone ? <span>📞 {student.phone}</span> : null}
             {student.contactEmail ? <span>✉️ {student.contactEmail}</span> : null}
             {student.degree ? <span>🎓 {student.degree}</span> : null}
+            {(student.activePlacement || student.company) ? (
+              <span className="font-semibold text-emerald-800">
+                🎉 Hired at {student.activePlacement?.company || student.company}
+                {(student.activePlacement?.jobTitle || student.jobTitle) ? ` (${student.activePlacement?.jobTitle || student.jobTitle})` : ''}
+              </span>
+            ) : null}
           </div>
         </div>
 

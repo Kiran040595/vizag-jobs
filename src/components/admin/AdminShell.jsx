@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Companies', to: '/admin/companies' },
   { label: 'Bills', to: '/admin/bills' },
   { label: 'Student registrations', to: '/admin/students' },
+  { label: '🎉 Placements & Hires', to: '/admin/placements' },
   { label: 'Fetch external jobs', to: '/admin/fetch' },
   { label: 'Blog posts', to: '/admin/blog' },
   { label: 'New post', to: '/admin/blog/new' },

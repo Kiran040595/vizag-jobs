@@ -99,6 +99,14 @@ export default function CandidateSearchCard({
               {student.fullName || 'Name not provided'}
             </h2>
             <div className="flex flex-wrap gap-1.5 text-xs">
+              {student.activePlacement && (
+                <span
+                  className="rounded-lg bg-emerald-50 px-2.5 py-0.5 font-bold text-emerald-950 border border-emerald-300 flex items-center gap-1 shadow-2xs"
+                  title={`Hired by ${student.activePlacement.company} for ${student.activePlacement.jobTitle}`}
+                >
+                  🎉 Placed at {student.activePlacement.company}{student.activePlacement.jobTitle ? ` · ${student.activePlacement.jobTitle}` : ''}
+                </span>
+              )}
               {student.isPaid && (
                 <span
                   className="rounded-lg bg-amber-50 px-2.5 py-0.5 font-bold text-amber-950 border border-amber-300 flex items-center gap-1 shadow-2xs"

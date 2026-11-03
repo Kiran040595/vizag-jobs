@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
+import { fetchCandidateActivePlacements } from './adminPlacements.js';
 import {
   mapStudentProfileRow,
 } from '../lib/adminStudentProfile.js';
@@ -88,7 +89,24 @@ export const fetchAdminStudentProfiles = async () => {
     }
   }
 
-  return allRows.map((row) => mapStudentProfileRow(row));
+  const mappedStudents = allRows.map((row) => mapStudentProfileRow(row));
+  const userIds = mappedStudents.map((s) => s.userId).filter(Boolean);
+  if (userIds.length > 0) {
+    try {
+      const placementsMap = await fetchCandidateActivePlacements(userIds);
+      if (placementsMap && placementsMap.size > 0) {
+        for (const student of mappedStudents) {
+          if (placementsMap.has(student.userId)) {
+            student.activePlacement = placementsMap.get(student.userId);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Candidate placement enrichment warning:', err?.message);
+    }
+  }
+
+  return mappedStudents;
 };
 
 export const updateStudentPlacementPayment = async ({

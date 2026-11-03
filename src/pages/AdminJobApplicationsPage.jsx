@@ -4,6 +4,8 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AdminShell from '../components/admin/AdminShell';
 import ApplicationExportDialog from '../components/jobApplications/ApplicationExportDialog';
+import AdminCandidatePaymentModal from '../components/admin/AdminCandidatePaymentModal';
+import { supabase } from '../lib/supabaseClient';
 import ApplicationFilters from '../components/jobApplications/ApplicationFilters';
 import JobApplicationCard from '../components/jobApplications/JobApplicationCard';
 import { useAdminAuth } from '../hooks/useAdminAuth';
@@ -42,6 +44,7 @@ export default function AdminJobApplicationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [exportOpen, setExportOpen] = useState(false);
+  const [paymentCandidate, setPaymentCandidate] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -53,6 +56,30 @@ export default function AdminJobApplicationsPage() {
           fetchJobCandidates(jobId),
           fetchJobApplyClicks(jobId).catch(() => []),
         ]);
+        const candidateUserIds = (rows || []).map((r) => r.studentUserId).filter(Boolean);
+        if (candidateUserIds.length > 0 && supabase) {
+          try {
+            const { data: stuPayments } = await supabase
+              .from('student_profiles')
+              .select('user_id, is_paid, payment_amount, payment_date, placed_company, payment_notes')
+              .in('user_id', candidateUserIds);
+            if (stuPayments && stuPayments.length > 0) {
+              const payMap = new Map(stuPayments.map((p) => [p.user_id, p]));
+              rows.forEach((r) => {
+                if (payMap.has(r.studentUserId)) {
+                  const p = payMap.get(r.studentUserId);
+                  r.isPaid = Boolean(p.is_paid);
+                  r.paymentAmount = p.payment_amount != null ? Number(p.payment_amount) : null;
+                  r.paymentDate = p.payment_date || null;
+                  r.placedCompany = p.placed_company || '';
+                  r.paymentNotes = p.payment_notes || '';
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('Failed to enrich student payment status:', err?.message);
+          }
+        }
         const clickUserIds = (clicks || []).map((click) => click.user_id).filter(Boolean);
         const profiles = await fetchStudentProfileRowsByUserIds(clickUserIds);
         if (!ignore) {
@@ -312,7 +339,41 @@ export default function AdminJobApplicationsPage() {
         </div>
       ) : null}
 
-      <ApplicationExportDialog
+{paymentCandidate && (
+        <AdminCandidatePaymentModal
+          open={Boolean(paymentCandidate)}
+          onClose={() => setPaymentCandidate(null)}
+          student={{
+            userId: paymentCandidate.studentUserId,
+            fullName: paymentCandidate.profileSnapshot?.fullName || 'Candidate',
+            phone: paymentCandidate.profileSnapshot?.phone || '',
+            contactEmail: paymentCandidate.profileSnapshot?.email || '',
+            isPaid: paymentCandidate.isPaid,
+            paymentAmount: paymentCandidate.paymentAmount,
+            paymentDate: paymentCandidate.paymentDate,
+            placedCompany: paymentCandidate.placedCompany || job?.company || '',
+            paymentNotes: paymentCandidate.paymentNotes || (job ? `Hired for ${job.title}` : ''),
+            activePlacement: { company: job?.company, jobTitle: job?.title },
+          }}
+          onSuccess={(updated) => {
+            setApplications((current) =>
+              current.map((app) =>
+                app.studentUserId === updated.userId
+                  ? {
+                      ...app,
+                      isPaid: updated.isPaid,
+                      paymentAmount: updated.paymentAmount,
+                      paymentDate: updated.paymentDate,
+                      placedCompany: updated.placedCompany,
+                      paymentNotes: updated.paymentNotes,
+                    }
+                  : app
+              )
+            );
+          }}
+        />
+      )}
+            <ApplicationExportDialog
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         applications={exportApplications}

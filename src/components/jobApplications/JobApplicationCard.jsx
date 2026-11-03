@@ -145,6 +145,7 @@ export default function JobApplicationCard({
   canUpdateStatus = true,
   job = null,
   isAdmin = false,
+  onManagePayment = null,
 }) {
   const snapshot = application.profileSnapshot || {};
   const isCandidateStarred = Boolean(
@@ -644,6 +645,11 @@ export default function JobApplicationCard({
               : `Applied ${formatApplicationTime(application.submittedAt)}`}
           </p>
 
+          {isAdmin && application.isPaid ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-950 border border-amber-300 shadow-2xs">
+              💎 Placed &amp; Paid{application.paymentAmount != null ? ` (₹${application.paymentAmount.toLocaleString('en-IN')})` : ''}
+            </span>
+          ) : null}
           {/* Render badge only if not already shown in primary status badge */}
           {application.isSuitableProfile && normalizeApplicationStatus(application.status) !== 'suitable' ? (
             <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-300">
@@ -1142,6 +1148,16 @@ export default function JobApplicationCard({
                 className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
               >
                 📝 Add Note
+              </button>
+            ) : null}
+            {isAdmin && onManagePayment && (application.status === 'hired' || application.status === 'joined' || application.isPaid) ? (
+              <button
+                type="button"
+                onClick={() => onManagePayment(application)}
+                className="rounded-lg border border-amber-400 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-950 transition hover:bg-amber-100 shadow-2xs"
+                title={application.isPaid ? 'Edit placement fee record' : 'Record candidate placement fee'}
+              >
+                💎 {application.isPaid ? 'Edit Fee' : 'Record Placement Fee'}
               </button>
             ) : null}
             {application.status !== 'rejected' ? (

@@ -106,6 +106,16 @@ export default function CandidateTableView({
                   <div className="font-bold text-slate-950 [overflow-wrap:anywhere]">
                     {student.fullName || 'Name not provided'}
                   </div>
+                  {student.activePlacement && (
+                    <div className="mt-1">
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-950 shadow-2xs"
+                        title={`Hired by ${student.activePlacement.company} for ${student.activePlacement.jobTitle}`}
+                      >
+                        🎉 Placed: {student.activePlacement.company}
+                      </span>
+                    </div>
+                  )}
                   {student.isPaid && (
                     <div className="mt-1">
                       <span

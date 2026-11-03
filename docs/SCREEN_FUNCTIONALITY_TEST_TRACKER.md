@@ -1,5 +1,24 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-03-Admin-Placements-And-Hiring-Visibility
+
+- Scope: New Screen S081 `/admin/placements`; updated S044 `/admin/students`, S035 `/admin/jobs/:jobId/applications`, S019 `/employer/jobs/:jobId/applications`; `src/services/adminPlacements.js`, `src/pages/AdminPlacementsPage.jsx`, `src/services/adminStudents.js`, `src/components/admin/AdminShell.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `src/components/admin/AdminCandidatePaymentModal.jsx`, `src/components/jobApplications/JobApplicationCard.jsx`, `src/pages/AdminJobApplicationsPage.jsx`, `src/lib/notificationInbox.js`, `src/components/QuestionNotificationBell.jsx`, `tests/admin-placements.test.mjs`.
+- Problem resolved:
+  - Admin had no central dashboard to view all candidates hired across Vizag companies or verify whether post-placement service fees had been collected.
+  - Placed candidates looked identical to unplaced seekers on `/admin/students`, risking duplicate submissions or recommendations.
+  - Recording placement fees required navigating away from job application pipelines.
+  - Admin had no real-time notification when recruiters hired or joined candidates.
+- Solution delivered:
+  - **Screen S081 `/admin/placements`**: Central recruitment & placement oversight dashboard tracking all candidates hired or joined across all companies (direct job applications and suitable profiles). Provides financial summary cards (Total Hired, Pending Fee Collection count, Paid Placements count, Total Fees Collected in ₹), search by candidate or company name, fee status filters (`All Hires`, `Pending Fee`, `Paid Placements`), mobile-friendly Cards vs Table view toggle, and 1-click WhatsApp/Call/Resume and Payment status actions.
+  - **Candidate Placement Badging on S044 (`/admin/students`)**: Displays `🎉 Placed at [Company] · [Job Title]` badge on candidate cards and table rows with direct click-to-edit placement fee status.
+  - **1-Click Fee Recording on S035 (`/admin/jobs/:jobId/applications`)**: Applications marked as `hired` or `joined` show a `💎 Record Placement Fee` button (or `💎 Edit Fee` if already paid) opening `AdminCandidatePaymentModal` with pre-filled company and job details.
+  - **Real-Time Notification Bell Alerts**: Supabase Realtime listeners on `job_applications` and `job_suitable_profiles` push hire alerts to `QuestionNotificationBell` when an applicant is moved to `hired` or `joined`. Unpaid placements increment the unread badge and link directly to `/admin/placements`.
+- Verification:
+  - `tests/admin-placements.test.mjs`: 3/3 passed.
+  - Full test suite (`node --test tests/admin-placements.test.mjs tests/admin-candidate-search.test.mjs tests/admin-bell-notifications.test.mjs tests/notification-inbox.test.mjs`): 46/46 passed.
+  - ESLint: 0 errors, 0 warnings.
+  - Production build: Vite v8.0.10 production build clean in 3.39s.
+
 ## QA-2026-11-03-Paytm-Cushman-Directory-Activation
 
 - Scope: S055 `/companies`; activate the next two high-priority verified employers, Paytm and Cushman & Wakefield. No new route or dialog.
@@ -765,6 +784,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S078 | `/jobs/hospitality` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S079 | `/jobs/logistics` | Browse correct job category/source; search/filter/reset/page; correct counts; save, details and apply; empty/error/loading states | In progress | In progress | UI continuation 2026-10-14: Category listing hero shows supported controls only; fixed city is read-only; loading and empty-search reset actions; article wrapping |
 | S080 | `/admin/bugs` | Real-time production bug queue; filter by status (open/investigating/resolved/ignored); search error messages; inspect stack traces, device context, user-agent and screen size; resolve bugs with resolution notes and git commit hashes; ignore noise | In progress | In progress | QA-2026-11-03-Production-Bug-Fixer: Error queue clean with 0 open bugs (62 resolved, 56 noise ignored); verified autoFixBugs rules, reporting API, client errorReporter, and 288/288 tests pass |
+| S081 | `/admin/placements` | Central recruitment & placement oversight; track placed/hired candidates across all companies; monitor placement fees, payment status (Paid vs Pending Collection); search by candidate or company; filter by fee status; direct WhatsApp/Call triggers and recording modal | In progress | In progress | QA-2026-11-03-Admin-Placements-And-Hiring-Visibility: Dedicated placements dashboard, placed company badging on candidates, 1-click placement fee modal on applications, and real-time hire notification alerts |
 
 ## Legacy URL verification
 
