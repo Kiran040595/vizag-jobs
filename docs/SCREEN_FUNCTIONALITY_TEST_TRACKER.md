@@ -1595,3 +1595,16 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Production build: `npm run build` completed cleanly with 0 errors.
 
 
+## QA-2026-11-03: Suitable Profiles Production Schema Repair
+
+- Scope: S044 `/admin/students` (Suitable Profiles Assignment Dialog), production migration `20261024120000_job_suitable_profiles.sql`; no UI layout change.
+- Failure: Admin candidate assignment returned `Could not find the table 'public.job_suitable_profiles' in the schema cache` because migration `20261024120000` existed locally but was missing from the linked production migration history.
+- Fix:
+  - Applied only `20261024120000_job_suitable_profiles.sql` to the linked production database, avoiding unrelated pending migrations.
+  - Reloaded the PostgREST schema cache and repaired the production migration-history entry to `applied`.
+- Verification:
+  - Production SQL inspection confirmed `public.job_suitable_profiles`, required `profile_snapshot` assignment column, and `Admins manage suitable profiles` RLS policy.
+  - Production PostgREST request to `job_suitable_profiles?select=id&limit=1` returned HTTP 200 with `[]`, confirming the schema-cache error is resolved.
+  - Focused automated regression: `node --test tests/job-suitable-profiles.test.mjs` passed 8/8.
+  - Functional E2E: In progress; the full authenticated admin assignment → employer Suitable Profiles journey was reopened and was not marked Tested because no test candidate/job data was created during this repair.
+  - Mobile UI: In progress; no layout changed and no fresh narrow-viewport journey was performed.
