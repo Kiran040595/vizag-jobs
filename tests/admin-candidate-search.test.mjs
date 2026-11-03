@@ -493,3 +493,60 @@ test('curated talent pool for sales matches sales roles, categories, and skills'
   assert.equal(res.entries.length, 2);
   assert.ok(res.entries[0].reasons.some((r) => r.includes('Talent Pool: 💼 Sales & Marketing Executives')));
 });
+
+test('filter by paymentStatus (paid vs unpaid) isolates premium placed candidates', () => {
+  const paidStudent = row('paid-1', {
+    is_paid: true,
+    payment_amount: 15000,
+    payment_date: '2026-11-03',
+    placed_company: 'Tech Mahindra',
+    payment_notes: '1st installment received via GPay',
+  });
+  const unpaidStudent = row('unpaid-1', {
+    is_paid: false,
+    payment_amount: null,
+  });
+
+  const list = [paidStudent, unpaidStudent];
+
+  // All candidates
+  const allResult = findAdminCandidates(list, filters({ paymentStatus: 'all' }));
+  assert.equal(allResult.entries.length, 2);
+
+  // Paid only
+  const paidResult = findAdminCandidates(list, filters({ paymentStatus: 'paid' }));
+  assert.equal(paidResult.entries.length, 1);
+  assert.equal(paidResult.entries[0].student.userId, 'paid-1');
+  assert.ok(paidResult.entries[0].reasons.some((r) => r.includes('💎 Placed & Paid')));
+  assert.ok(paidResult.entries[0].reasons.some((r) => r.includes('Tech Mahindra')));
+
+  // Unpaid only
+  const unpaidResult = findAdminCandidates(list, filters({ paymentStatus: 'unpaid' }));
+  assert.equal(unpaidResult.entries.length, 1);
+  assert.equal(unpaidResult.entries[0].student.userId, 'unpaid-1');
+});
+
+test('candidate search matches placed company name and paid keyword in search blob', () => {
+  const paidStudent = row('paid-dev', {
+    full_name: 'Anjali Sharma',
+    is_paid: true,
+    payment_amount: 20000,
+    placed_company: 'Pulsus HealthTech',
+  });
+
+  assert.equal(candidateMatchesSearch(paidStudent, 'Pulsus'), true);
+  assert.equal(candidateMatchesSearch(paidStudent, 'paid'), true);
+  assert.equal(candidateMatchesSearch(paidStudent, 'Infosys'), false);
+});
+
+test('readCandidateFilters and writeCandidateFilters round-trip paymentStatus', () => {
+  const params = new URLSearchParams('paymentStatus=paid');
+  const parsed = readCandidateFilters(params);
+  assert.equal(parsed.paymentStatus, 'paid');
+
+  const written = writeCandidateFilters(parsed);
+  assert.equal(written.get('paymentStatus'), 'paid');
+
+  const emptyParsed = readCandidateFilters(new URLSearchParams());
+  assert.equal(emptyParsed.paymentStatus, 'all');
+});

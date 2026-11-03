@@ -12,6 +12,7 @@ export default function CandidateTableView({
   onShare,
   onToggleActive,
   onEditCredentials,
+  onManagePayment,
   busyUserId,
 }) {
   const isSkillMatched = (skill) => {
@@ -105,6 +106,16 @@ export default function CandidateTableView({
                   <div className="font-bold text-slate-950 [overflow-wrap:anywhere]">
                     {student.fullName || 'Name not provided'}
                   </div>
+                  {student.isPaid && (
+                    <div className="mt-1">
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-950 shadow-2xs"
+                        title={`Placement fee: ₹${student.paymentAmount?.toLocaleString('en-IN') || '0'} on ${student.paymentDate || 'Recorded'}${student.placedCompany ? ` (${student.placedCompany})` : ''}`}
+                      >
+                        💎 Placed &amp; Paid{student.paymentAmount != null ? ` (₹${student.paymentAmount.toLocaleString('en-IN')})` : ''}
+                      </span>
+                    </div>
+                  )}
                   {student.phone ? (
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-600">
                       <a
@@ -302,6 +313,16 @@ export default function CandidateTableView({
                     >
                       📤 Share
                     </button>
+                    {onManagePayment && (
+                      <button
+                        type="button"
+                        onClick={() => onManagePayment(student)}
+                        className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-950 hover:bg-amber-100 shadow-2xs transition"
+                        title={student.isPaid ? 'Edit placement payment details' : 'Record candidate placement payment'}
+                      >
+                        💎 {student.isPaid ? 'Payment' : 'Mark Paid'}
+                      </button>
+                    )}
                     {onEditCredentials && (student.studentUserId || student.candidateSource !== 'quick_apply') && (
                       <button
                         type="button"

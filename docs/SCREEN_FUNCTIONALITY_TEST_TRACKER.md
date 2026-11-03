@@ -728,7 +728,7 @@ Each route variant has its own row, including redirects and category screens. Dy
 | S041 | `/admin/employers` | Search/manage employers; create account and edit profile; link company; verify employer access; bell icon alert on new registrations | In progress | In progress | QA-2026-10-16: Admin bell icon notification and unread badge on new employer registrations verified in AdminShell; links directly to employer management |
 | S042 | `/admin/companies` | Manage companies and career URLs; fetch/review career jobs; approve and verify public directory | In progress | In progress | Resilient career fetch verified across all 122 published companies: 0 404 errors, 0 runtime 502 exceptions; canonical rewrites implemented for all companies (Infosys, Amazon, Conduent, TCS, Pfizer, Miracle, Fluentgrid, Dr. Reddy's, Deccan Fine Chemicals, HomeLane, cult.fit, etc.); empty-scrape/bot-shield graceful fallback implemented with direct portal links; public.companies synchronized via linked SQL; 31/31 tests pass in tests/company-career-fetch.test.mjs; Edge Function deployed |
 | S043 | `/admin/bills` | Edit customer/services/quantity/prices; verify totals; preview, print and reset | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
-| S044 | `/admin/students` | Combine ALL/ANY skills, alternative qualifications, desired role and recruiting facts; 1-click curated Role Talent Pools (Delivery, Telecaller, Sales & Marketing, Teachers, IT Freshers, Accounts); robust typo tolerance ('exicutive' -> 'executive', 'devloper' -> 'developer'); role synonym matching ('sales executive' matches Sales Executive, Field Sales, and BDE); visual bike/DL/language badges in card and table views; college institution and resume filters; accurate experience filtering (handles missing booleans, experience level buckets, and quick apply inputs); explain matches/missing information; reviewed-job checks; shortlist/page/export exact results; 1-click 'Copy for Employer' formatted WhatsApp/Email summaries with vehicle & license line; direct WhatsApp shortlist sharing; company candidate roster Excel preset; direct resume viewing; recruiter table view; 1-click WhatsApp/Call/Email actions; quick targeting presets | In progress | In progress | QA-2026-10-24-Sales-Talent-Pool-And-Typo-Tolerance: curated 💼 Sales & Marketing Executives pool, typo tolerance for role/search, synonym matching (Sales/BDE/Field Sales), accurate experience level filtering, and top sales quick pills verified; 195 tests passing; build & lint 0 errors |
+| S044 | `/admin/students` | Combine ALL/ANY skills, alternative qualifications, desired role and recruiting facts; 1-click curated Role Talent Pools; placement payment tracking (Admin-only 💎 Placed & Paid label, auto-date, amount ₹, placed company, reference notes, and payment filter); robust typo tolerance; role synonym matching; visual badges; candidate roster Excel export with Placement & Payment columns; recruiter table view; 1-click actions | In progress | In progress | QA-2026-11-03-Admin-Placement-Payment-Tracking: Admin-only 💎 Placed & Paid badge, payment recording dialog, auto-picked payment date, revenue metric, paymentStatus filter, Excel columns, and DB security trigger verified; 53 tests passing |
 | S045 | `/admin/notifications` | Inspect push statistics, dispatches, clicks, subscribers and alerts; filters; controlled test-push flow | In progress | In progress | UI continuation 2026-10-14: Management filter labels, moderation text wrapping, employer links, notification table scrolling, bill preview spacing and accessible student export/share dialogs |
 | S046 | `/blog` | Browse published articles; open article; list empty/error states | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
 | S047 | `/blog/:slug` | Load article; markdown, metadata and links; missing/unpublished slug | In progress | In progress | UI continuation 2026-10-14: Public content spacing and long-text wrapping; accessible Q&A modal; company actions and result wording |
@@ -1698,6 +1698,34 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
   - Lint: `npm run lint` passed with 0 errors and 0 warnings.
   - Build: `npm run build` completed cleanly.
   - Mobile UI: In progress; responsive toolbar stacks smoothly with touch-friendly pills and full-width dropdown controls on small screens.
+
+## QA-2026-11-03: Admin-Only Student Placement Payment Tracking & Premium Status
+
+- Scope: S044 `/admin/students` (`supabase/migrations/20261103230000_student_placement_payment.sql`, `src/lib/adminStudentProfile.js`, `src/services/adminStudents.js`, `src/lib/adminCandidateSearch.js`, `src/lib/studentExport.js`, `src/components/admin/AdminCandidatePaymentModal.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `src/components/admin/CandidateFinderFilters.jsx`, `src/components/admin/StudentExportDialog.jsx`, `src/pages/AdminStudentsPage.jsx`, `tests/admin-candidate-search.test.mjs`).
+- Enhancements:
+  - **Database & Security**:
+    - Added columns to `public.student_profiles`: `is_paid`, `payment_amount`, `payment_date`, `placed_company`, `payment_notes`, `payment_updated_at`, `payment_marked_by`.
+    - Added compound index on `(is_paid, payment_date desc)`.
+    - Added PostgreSQL trigger `trg_protect_student_payment_fields` ensuring non-admin callers can never tamper with or set payment fields.
+  - **Admin-Only Visibility**:
+    - Strictly rendered inside Admin candidate management screens; invisible to students and employers.
+  - **Payment Recording Dialog**:
+    - Added `AdminCandidatePaymentModal.jsx`: records placement amount (₹), auto-picks current date (editable with "Set Today" trigger), placed company name, and transaction reference/notes.
+    - Allows updating payment or removing paid status with confirmation.
+  - **Visual Badges & Metrics**:
+    - High-visibility `💎 Placed & Paid (₹XX,XXX) · [Company]` badge on candidate cards and table rows.
+    - Added top summary metric: `💎 Placed & Paid: X (₹Y total revenue)`.
+  - **Filtering & Search**:
+    - Added `Payment status` dropdown selector in Candidate Finder toolbar: `All payment statuses`, `💎 Placed & Paid`, `Unpaid / Not Marked`.
+    - Searching by placed company or "paid" surfaces matched candidates via `studentSearchBlob`.
+  - **Excel Export**:
+    - Added `Placement & Payment` group in `StudentExportDialog.jsx` and `studentExport.js` (`isPaid`, `paymentAmount`, `paymentDate`, `placedCompany`, `paymentNotes`).
+- Verification:
+  - Automated tests: `node --test tests/admin-candidate-search.test.mjs tests/application-filters.test.mjs tests/employer-linked-job-applications.test.mjs tests/job-suitable-profiles.test.mjs` passed 53/53 tests.
+  - Lint: `npm run lint` passed with 0 errors and 0 warnings.
+  - Build: `npm run build` compiled cleanly.
+  - Mobile UI: In progress; modal and action buttons adapt responsively to touch viewports.
+
 
 
 

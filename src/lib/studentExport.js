@@ -203,6 +203,41 @@ export const STUDENT_EXPORT_COLUMNS = /** @type {StudentExportColumn[]} */ ([
     defaultSelected: true,
     getValue: (student) => formatRegisteredAt(student.createdAt),
   },
+  {
+    id: 'isPaid',
+    label: 'Placement payment status',
+    group: 'Placement & Payment',
+    defaultSelected: false,
+    getValue: (student) => (student.isPaid ? 'Paid' : 'Unpaid'),
+  },
+  {
+    id: 'paymentAmount',
+    label: 'Placement fee amount',
+    group: 'Placement & Payment',
+    defaultSelected: false,
+    getValue: (student) => (student.paymentAmount != null ? `₹${student.paymentAmount}` : ''),
+  },
+  {
+    id: 'paymentDate',
+    label: 'Payment date',
+    group: 'Placement & Payment',
+    defaultSelected: false,
+    getValue: (student) => student.paymentDate || '',
+  },
+  {
+    id: 'placedCompany',
+    label: 'Placed company',
+    group: 'Placement & Payment',
+    defaultSelected: false,
+    getValue: (student) => student.placedCompany || '',
+  },
+  {
+    id: 'paymentNotes',
+    label: 'Payment reference & notes',
+    group: 'Placement & Payment',
+    defaultSelected: false,
+    getValue: (student) => student.paymentNotes || '',
+  },
 ]);
 
 export const EMPLOYER_EXPORT_COLUMN_IDS = [

@@ -10,6 +10,7 @@ import ShareStudentDialog from '../components/admin/ShareStudentDialog';
 import StudentExportDialog from '../components/admin/StudentExportDialog';
 import AssignCandidatesDialog from '../components/admin/AssignCandidatesDialog';
 import AdminUserCredentialsModal from '../components/admin/AdminUserCredentialsModal';
+import AdminCandidatePaymentModal from '../components/admin/AdminCandidatePaymentModal';
 import { fetchAdminStudentProfiles, fetchAdminQuickCandidates, setStudentActiveStatus } from '../services/adminStudents';
 import { fetchAllCompanyJobsForAssignment, fetchCandidateMatchingJobs } from '../services/adminJobs';
 import { formatJobCategoryLabel } from '../lib/studentCareerPreferences';
@@ -46,6 +47,7 @@ export default function AdminStudentsPage() {
   const [exportScope, setExportScope] = useState(null);
   const [assignScope, setAssignScope] = useState(null);
   const [credentialsStudent, setCredentialsStudent] = useState(null);
+  const [paymentStudent, setPaymentStudent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [viewMode, setViewMode] = useState('cards');
@@ -107,13 +109,19 @@ export default function AdminStudentsPage() {
   const selectedStudents = useMemo(() => students.filter(student => shortlist.has(student.userId)), [students, shortlist]);
   const selectedOutsideFilters = selectedStudents.filter(student => !filteredIds.has(student.userId)).length;
   const canExport = !isLoading && !loadError && filters === deferredFilters;
-  const summary = useMemo(() => ({
-    total: students.length,
-    registered: students.filter(student => student.candidateSource !== 'quick_apply').length,
-    quick: students.filter(student => student.candidateSource === 'quick_apply').length,
-    active: students.filter(student => student.isActive).length,
-    missing: students.filter(student => candidateMissingFacts(student).length > 0).length,
-  }), [students]);
+  const summary = useMemo(() => {
+    const paidList = students.filter(student => student.isPaid);
+    const totalPaidAmount = paidList.reduce((sum, s) => sum + (Number(s.paymentAmount) || 0), 0);
+    return {
+      total: students.length,
+      registered: students.filter(student => student.candidateSource !== 'quick_apply').length,
+      quick: students.filter(student => student.candidateSource === 'quick_apply').length,
+      active: students.filter(student => student.isActive).length,
+      missing: students.filter(student => candidateMissingFacts(student).length > 0).length,
+      paid: paidList.length,
+      totalPaidAmount,
+    };
+  }, [students]);
   const options = useMemo(() => {
     const scoped = filters.accountStatus === 'all' ? students : students.filter(student => filters.accountStatus === 'active' ? student.isActive : !student.isActive);
     return {
@@ -172,12 +180,13 @@ export default function AdminStudentsPage() {
   return <>
     <SEO title="Student candidate finder" noindex />
     <AdminShell title="Student candidate finder" description="Find students by the skills, qualifications and roles that matter for your vacancy.">
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           ['Total candidates', summary.total],
           ['Registered profiles', summary.registered],
           ['⚡ Quick Apply leads', summary.quick],
-          ['Matching your criteria', result.entries.length],
+          ['💎 Placed & Paid', `${summary.paid} (₹${summary.totalPaidAmount.toLocaleString('en-IN')})`],
+          ['Matching criteria', result.entries.length],
         ].map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-slate-200 bg-white p-3">
             <p className="text-xs font-semibold text-slate-500">{label}</p>
@@ -224,7 +233,7 @@ export default function AdminStudentsPage() {
               <button type="button" disabled={isLoading || filters !== deferredFilters || Boolean(loadError) || !filteredStudents.length} onClick={() => setExportScope({ students: filteredStudents, label: exportLabel })} className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Export matching ({filteredStudents.length})</button>
             </div>
           </div>
-          <div className="grid min-w-0 gap-3 sm:grid-cols-4">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <CandidateSelect
               label="Candidate source"
               value={filters.candidateSource}
@@ -234,6 +243,17 @@ export default function AdminStudentsPage() {
                 { value: 'all', label: `All sources (${summary.total})` },
                 { value: 'registered', label: `Registered students (${summary.registered})` },
                 { value: 'quick_apply', label: `⚡ Quick Apply leads (${summary.quick})` },
+              ]}
+            />
+            <CandidateSelect
+              label="Payment status"
+              value={filters.paymentStatus || 'all'}
+              onChange={(paymentStatus) => updateFilters({ paymentStatus })}
+              emptyLabel={null}
+              options={[
+                { value: 'all', label: `All payment statuses (${summary.total})` },
+                { value: 'paid', label: `💎 Placed & Paid (${summary.paid})` },
+                { value: 'unpaid', label: `Unpaid / Not Marked (${summary.total - summary.paid})` },
               ]}
             />
             <CandidateSelect label="Account status" value={filters.accountStatus} onChange={accountStatus => updateFilters({ accountStatus })} emptyLabel={null} options={[{ value: 'active', label: 'Active accounts' }, { value: 'all', label: 'All accounts' }, { value: 'inactive', label: 'Deactivated accounts' }]} />
@@ -342,10 +362,11 @@ export default function AdminStudentsPage() {
               onShare={setShareStudent}
               onToggleActive={toggleActive}
               onEditCredentials={setCredentialsStudent}
+              onManagePayment={setPaymentStudent}
               busyUserId={busyUserId}
             />
           ) : (
-            <div className="space-y-3">{visibleEntries.map(entry => <CandidateSearchCard key={entry.student.userId} entry={entry} filters={deferredFilters} selected={shortlist.has(entry.student.userId)} onSelect={() => toggleShortlist(entry.student.userId)} onSkill={toggleSkill} onShare={() => setShareStudent(entry.student)} onToggleActive={() => toggleActive(entry.student)} onEditCredentials={setCredentialsStudent} busy={busyUserId === entry.student.userId} />)}</div>
+            <div className="space-y-3">{visibleEntries.map(entry => <CandidateSearchCard key={entry.student.userId} entry={entry} filters={deferredFilters} selected={shortlist.has(entry.student.userId)} onSelect={() => toggleShortlist(entry.student.userId)} onSkill={toggleSkill} onShare={() => setShareStudent(entry.student)} onToggleActive={() => toggleActive(entry.student)} onEditCredentials={setCredentialsStudent} onManagePayment={setPaymentStudent} busy={busyUserId === entry.student.userId} />)}</div>
           )}
           {pageCount > 1 && <nav aria-label="Candidate result pages" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-3"><span className="text-sm">Page {page} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={page <= 1} onClick={() => setCurrentPage(page - 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Previous</button><button type="button" disabled={page >= pageCount} onClick={() => setCurrentPage(page + 1)} className="min-h-11 rounded-xl border px-4 py-2 text-sm disabled:opacity-40">Next</button></div></nav>}
         </>}
@@ -364,6 +385,27 @@ export default function AdminStudentsPage() {
       )}
       {shareStudent && <ShareStudentDialog key={shareStudent.userId} open student={shareStudent} onClose={() => setShareStudent(null)} />}
       <StudentExportDialog open={Boolean(exportScope)} onClose={() => setExportScope(null)} students={exportScope?.students || []} scopeLabel={exportScope?.label || ''} />
+      {paymentStudent && (
+        <AdminCandidatePaymentModal
+          open={Boolean(paymentStudent)}
+          onClose={() => setPaymentStudent(null)}
+          student={paymentStudent}
+          onSuccess={(updatedStudent) => {
+            setStudents((current) =>
+              current.map((stu) =>
+                stu.userId === updatedStudent.userId
+                  ? { ...stu, ...updatedStudent }
+                  : stu
+              )
+            );
+            setNotice(
+              updatedStudent.isPaid
+                ? `💎 Placement payment of ₹${updatedStudent.paymentAmount?.toLocaleString('en-IN')} recorded for ${updatedStudent.fullName || 'Candidate'}.`
+                : `Removed paid placement status for ${updatedStudent.fullName || 'Candidate'}.`
+            );
+          }}
+        />
+      )}
       {credentialsStudent && (
         <AdminUserCredentialsModal
           open={Boolean(credentialsStudent)}

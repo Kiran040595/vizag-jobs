@@ -16,7 +16,7 @@ export const EMPTY_CANDIDATE_FILTERS = {
   category: '', branch: '', year: '', experience: '', college: '', hasResume: 'all',
   city: '', area: '', gender: '', preferredLocation: '', educationStatus: '', relocation: '',
   availability: '', certification: '', accountStatus: 'active', dataStatus: '',
-  job: '', jobStatus: 'eligible', sort: 'relevance', talentPool: '', candidateSource: 'all',
+  job: '', jobStatus: 'eligible', sort: 'relevance', talentPool: '', candidateSource: 'all', paymentStatus: 'all',
 };
 
 export const TALENT_POOL_OPTIONS = [
@@ -55,6 +55,8 @@ export const readCandidateFilters = params => {
   filters.talentPool = params.get('talentPool') || params.get('pool') || '';
   filters.candidateSource = params.get('candidateSource') || params.get('source') || 'all';
   if (!['all', 'registered', 'quick_apply'].includes(filters.candidateSource)) filters.candidateSource = 'all';
+  filters.paymentStatus = params.get('paymentStatus') || params.get('paid') || 'all';
+  if (!['all', 'paid', 'unpaid'].includes(filters.paymentStatus)) filters.paymentStatus = 'all';
   if (!['active', 'inactive', 'all'].includes(filters.accountStatus)) filters.accountStatus = 'active';
   if (!['all', 'any'].includes(filters.skillMode)) filters.skillMode = 'all';
   if (!['eligible', 'needs_information', 'ineligible', 'unverified', 'all'].includes(filters.jobStatus)) filters.jobStatus = 'eligible';
@@ -226,6 +228,8 @@ export const matchesCandidateRequirements = (student, filters) => {
   if (filters.accountStatus === 'inactive' && student.isActive) return false;
   if (filters.candidateSource === 'registered' && student.candidateSource === 'quick_apply') return false;
   if (filters.candidateSource === 'quick_apply' && student.candidateSource !== 'quick_apply') return false;
+  if (filters.paymentStatus === 'paid' && !student.isPaid) return false;
+  if (filters.paymentStatus === 'unpaid' && student.isPaid) return false;
   if (filters.talentPool && !candidateMatchesTalentPool(student, filters.talentPool)) return false;
   if (!candidateMatchesSearch(student, filters.search)) return false;
   if ((filters.role || filters.roleQuery) && !matchingDesiredRoles(student, filters).length) return false;
@@ -281,6 +285,9 @@ export const candidateMatchReasons = (student, filters, job) => {
     const poolOpt = TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool);
     if (poolOpt) reasons.push(`Talent Pool: ${poolOpt.label}`);
   }
+  if (student.isPaid) {
+    reasons.push(`Placement: 💎 Placed & Paid${student.paymentAmount ? ` (₹${student.paymentAmount.toLocaleString('en-IN')})` : ''}${student.placedCompany ? ` at ${student.placedCompany}` : ''}`);
+  }
   if (student.candidateSource === 'quick_apply') {
     reasons.push('Source: ⚡ Quick Apply Lead');
   }
@@ -315,6 +322,8 @@ export const candidateFilterLabels = filters => {
   const labels = [];
   if (filters.candidateSource === 'quick_apply') labels.push('Source: ⚡ Quick Apply Leads');
   if (filters.candidateSource === 'registered') labels.push('Source: 🎓 Registered Students');
+  if (filters.paymentStatus === 'paid') labels.push('Payment: 💎 Placed & Paid');
+  if (filters.paymentStatus === 'unpaid') labels.push('Payment: Unpaid');
   if (filters.talentPool) {
     const poolOpt = TALENT_POOL_OPTIONS.find((p) => p.value === filters.talentPool);
     if (poolOpt) labels.push(`Talent Pool: ${poolOpt.label}`);

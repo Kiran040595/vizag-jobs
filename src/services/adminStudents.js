@@ -91,6 +91,50 @@ export const fetchAdminStudentProfiles = async () => {
   return allRows.map((row) => mapStudentProfileRow(row));
 };
 
+export const updateStudentPlacementPayment = async ({
+  userId,
+  isPaid,
+  paymentAmount = null,
+  paymentDate = null,
+  placedCompany = '',
+  paymentNotes = '',
+}) => {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  if (!userId) {
+    throw new Error('Candidate user ID is required.');
+  }
+
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  const payload = {
+    is_paid: Boolean(isPaid),
+    payment_amount: isPaid && paymentAmount != null ? Math.max(0, Number(paymentAmount)) : null,
+    payment_date: isPaid ? (paymentDate || new Date().toISOString().slice(0, 10)) : null,
+    placed_company: isPaid ? String(placedCompany || '').trim() : null,
+    payment_notes: isPaid ? String(paymentNotes || '').trim() : null,
+    payment_updated_at: new Date().toISOString(),
+    payment_marked_by: authUser?.id || null,
+  };
+
+  const { data, error } = await supabase
+    .from('student_profiles')
+    .update(payload)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw mapError(error, 'Could not update student placement payment details.');
+  }
+
+  return mapStudentProfileRow(data);
+};
+
 export const setStudentActiveStatus = async ({ userId, isActive }) => {
   if (!supabase) {
     throw new Error('Supabase is not configured.');

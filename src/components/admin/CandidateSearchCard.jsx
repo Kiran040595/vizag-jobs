@@ -21,6 +21,7 @@ export default function CandidateSearchCard({
   onShare,
   onToggleActive,
   onEditCredentials,
+  onManagePayment,
   busy,
 }) {
   const { student, reasons, eligibility, missingFacts } = entry;
@@ -98,6 +99,15 @@ export default function CandidateSearchCard({
               {student.fullName || 'Name not provided'}
             </h2>
             <div className="flex flex-wrap gap-1.5 text-xs">
+              {student.isPaid && (
+                <span
+                  className="rounded-lg bg-amber-50 px-2.5 py-0.5 font-bold text-amber-950 border border-amber-300 flex items-center gap-1 shadow-2xs"
+                  title={`Placement fee: ₹${student.paymentAmount?.toLocaleString('en-IN') || '0'} on ${student.paymentDate || 'Recorded'}${student.placedCompany ? ` (${student.placedCompany})` : ''}`}
+                >
+                  💎 Placed &amp; Paid{student.paymentAmount != null ? ` (₹${student.paymentAmount.toLocaleString('en-IN')})` : ''}
+                  {student.placedCompany ? ` · ${student.placedCompany}` : ''}
+                </span>
+              )}
               {student.candidateSource === 'quick_apply' && (
                 <span className="rounded-lg bg-purple-50 px-2 py-0.5 font-bold text-purple-900 border border-purple-200">
                   ⚡ Quick Apply Lead
@@ -360,6 +370,16 @@ export default function CandidateSearchCard({
         >
           📤 Share profile
         </button>
+        {onManagePayment && (
+          <button
+            type="button"
+            onClick={() => onManagePayment(student)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 shadow-2xs transition"
+            title={student.isPaid ? 'Edit placement payment details' : 'Record candidate placement payment'}
+          >
+            💎 {student.isPaid ? 'Edit Payment' : 'Mark Paid'}
+          </button>
+        )}
         {onEditCredentials && (student.studentUserId || student.candidateSource !== 'quick_apply') && (
           <button
             type="button"

@@ -625,6 +625,18 @@ export default function CandidateFinderFilters({
         />
 
         <CandidateSelect
+          label="Placement payment status"
+          value={filters.paymentStatus || 'all'}
+          onChange={(paymentStatus) => onChange({ paymentStatus })}
+          options={[
+            { value: 'all', label: `All candidates (${counts?.total || 0})` },
+            { value: 'paid', label: `💎 Placed & Paid (${counts?.paid || 0})` },
+            { value: 'unpaid', label: `Unpaid / Not Marked (${(counts?.total || 0) - (counts?.paid || 0)})` },
+          ]}
+          emptyLabel={null}
+        />
+
+        <CandidateSelect
           label="Joining availability"
           value={filters.availability}
           onChange={(availability) => onChange({ availability })}

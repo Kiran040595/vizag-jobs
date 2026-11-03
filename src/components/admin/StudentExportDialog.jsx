@@ -7,7 +7,7 @@ import {
   STUDENT_EXPORT_COLUMNS,
 } from '../../lib/studentExport';
 
-const GROUP_ORDER = ['Contact', 'Education', 'Career preference', 'Profile'];
+const GROUP_ORDER = ['Contact', 'Education', 'Career preference', 'Profile', 'Placement & Payment'];
 
 export default function StudentExportDialog({
   open,
