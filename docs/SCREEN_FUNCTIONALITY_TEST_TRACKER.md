@@ -1737,3 +1737,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: Dr. Reddy's scraper regression and `git diff --check` passed. Full scraper suite: 49 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
 
+## QA-2026-11-03-MEDFAR-Verified-Careers
+
+- Verified MEDFAR's employer-linked SmartRecruiters Visakhapatnam feed by direct server fetch. Two current exact-city roles have employer identity, descriptions and direct application links. Added the canonical website, portal defaults and a scoped migration for the exact company record.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: MEDFAR scraper regression and `git diff --check` passed. Full scraper suite: 50 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
+

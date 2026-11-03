@@ -61,6 +61,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'growww tech': 'https://growwwtech.com/careers',
   'dmart - avenue supermarts ltd': 'https://careers.dmartindia.com/ASL/search/?q=&locationsearch=Visakhapatnam',
   "dr. reddy's laboratories": 'https://careers.smartrecruiters.com/DrReddysLaboratoriesLimited?search=Visakhapatnam',
+  medfar: 'https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -174,9 +175,10 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const growww = host === 'growwwtech.com' && parsedUrl.pathname === '/careers';
   const dmart = host === 'careers.dmartindia.com' && parsedUrl.pathname === '/ASL/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
   const drReddy = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/DrReddysLaboratoriesLimited' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy) return null;
-  if (drReddy) {
-    const employer = 'DrReddysLaboratoriesLimited';
+  const medfar = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/Medfar' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar) return null;
+  if (drReddy || medfar) {
+    const employer = medfar ? 'Medfar' : 'DrReddysLaboratoriesLimited';
     const search = await fetch(`https://api.smartrecruiters.com/v1/companies/${employer}/postings?q=Visakhapatnam&limit=100`, { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
     const payload = await search.json();

@@ -520,6 +520,34 @@ test('Dr Reddy official SmartRecruiters feed keeps only employer-owned Vizag pos
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('MEDFAR SmartRecruiters feed validates exact city, employer and description', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    assert.match(value, /api\.smartrecruiters\.com\/v1\/companies\/Medfar\/postings/);
+    if (value.includes('/postings?q=')) return Response.json({ content: [
+      { id: '744000157989454', location: { city: 'Visakhapatnam', country: 'in' } },
+      { id: '744000157988585', location: { city: 'Visakhapatnam', country: 'in' } },
+      { id: '744000157989455', location: { city: 'Montreal', country: 'ca' } },
+      { id: '744000157989456', location: { city: 'Visakhapatnam', country: 'in' } },
+    ] });
+    const id = value.split('/').pop();
+    return Response.json({
+      id, name: id === '744000157989454' ? 'Assistant Manager-Coding and Process Excellence' : 'Software Engineer',
+      company: { identifier: id === '744000157989456' ? 'OtherCompany' : 'Medfar' },
+      location: { city: 'Visakhapatnam', country: 'in' },
+      postingUrl: `https://jobs.smartrecruiters.com/Medfar/${id}-sample-role`,
+      jobAd: { sections: { jobDescription: { text: '<p>Build and improve clinical software, coordinate with healthcare teams, solve customer problems, and document robust delivery practices in Visakhapatnam.</p>' } } },
+    });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.medfar, 'MEDFAR');
+    assert.equal(result.count, 2);
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.smartrecruiters.com/Medfar/744000157989454-sample-role');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

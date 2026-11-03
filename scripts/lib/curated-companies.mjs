@@ -305,6 +305,12 @@ export const CURATED_COMPANIES = {
   },
 
   // Pharma & Healthcare
+  'MEDFAR': {
+    website: 'https://www.medfarsolutions.com',
+    careers_url: 'https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam',
+    category: 'Healthcare',
+    is_active_for_scrape: true,
+  },
   'Pfizer': {
     website: 'https://www.pfizer.com',
     careers_url:

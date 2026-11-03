@@ -229,6 +229,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
 
   // Healthcare & Pharma
+  'MEDFAR': {
+    website: 'https://www.medfarsolutions.com',
+    careers_url: 'https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam',
+    category: 'Healthcare',
+  },
   'Pfizer': {
     website: 'https://www.pfizer.com',
     careers_url:
