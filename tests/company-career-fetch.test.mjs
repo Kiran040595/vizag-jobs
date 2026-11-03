@@ -490,6 +490,36 @@ test('Radisson official SmartRecruiters feed validates employer and exact city',
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Dr Reddy official SmartRecruiters feed keeps only employer-owned Vizag postings', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('/postings?q=')) return Response.json({ content: [
+      { id: '744000159366529', location: { city: 'Visakhapatnam', country: 'in' } },
+      { id: '744000159366530', location: { city: 'Hyderabad', country: 'in' } },
+      { id: '744000159366531', location: { city: 'Visakhapatnam', country: 'in' } },
+    ] });
+    if (value.endsWith('/744000159366531')) return Response.json({
+      id: '744000159366531', name: 'Foreign Employer Role',
+      company: { identifier: 'OtherCompany' }, location: { city: 'Visakhapatnam', country: 'in' },
+    });
+    return Response.json({
+      id: '744000159366529', name: 'Team Leader - QA',
+      company: { identifier: 'DrReddysLaboratoriesLimited' },
+      location: { city: 'Visakhapatnam', country: 'in' },
+      postingUrl: 'https://jobs.smartrecruiters.com/DrReddysLaboratoriesLimited/744000159366529-team-leader-qa',
+      jobAd: { sections: { jobDescription: { text: '<p>Lead quality assurance operations, continuous improvement, compliance reviews, and cross-functional teams at the Visakhapatnam facility.</p>' } } },
+    });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS["dr. reddy's laboratories"], "Dr. Reddy's Laboratories");
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Team Leader - QA');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.smartrecruiters.com/DrReddysLaboratoriesLimited/744000159366529-team-leader-qa');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

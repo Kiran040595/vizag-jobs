@@ -60,6 +60,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'credit saison': 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
   'growww tech': 'https://growwwtech.com/careers',
   'dmart - avenue supermarts ltd': 'https://careers.dmartindia.com/ASL/search/?q=&locationsearch=Visakhapatnam',
+  "dr. reddy's laboratories": 'https://careers.smartrecruiters.com/DrReddysLaboratoriesLimited?search=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -172,7 +173,36 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const creditSaison = host === 'saison.wd102.myworkdayjobs.com' && parsedUrl.pathname === '/Credit_Saison_India' && parsedUrl.searchParams.get('q') === 'Visakhapatnam';
   const growww = host === 'growwwtech.com' && parsedUrl.pathname === '/careers';
   const dmart = host === 'careers.dmartindia.com' && parsedUrl.pathname === '/ASL/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart) return null;
+  const drReddy = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/DrReddysLaboratoriesLimited' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy) return null;
+  if (drReddy) {
+    const employer = 'DrReddysLaboratoriesLimited';
+    const search = await fetch(`https://api.smartrecruiters.com/v1/companies/${employer}/postings?q=Visakhapatnam&limit=100`, { signal: AbortSignal.timeout(20000) });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const rows = (Array.isArray(payload.content) ? payload.content : []).filter((row: Record<string, unknown>) => {
+      const location = row.location as { city?: string; country?: string } | undefined;
+      return /^visakhapatnam$/i.test(location?.city || '') && /^in$/i.test(location?.country || '');
+    });
+    const jobs: ExtractedCompanyCareerJob[] = [];
+    for (let i = 0; i < rows.length; i += 5) {
+      const batch = await Promise.all(rows.slice(i, i + 5).map(async (row: Record<string, unknown>) => {
+        try {
+          const response = await fetch(`https://api.smartrecruiters.com/v1/companies/${employer}/postings/${row.id}`, { signal: AbortSignal.timeout(15000) });
+          if (!response.ok) return null;
+          const posting = await response.json();
+          if (posting.company?.identifier !== employer || !/^visakhapatnam$/i.test(posting.location?.city || '') || !/^in$/i.test(posting.location?.country || '')) return null;
+          const applyUrl = String(posting.postingUrl || '');
+          if (!/^\d+$/.test(String(posting.id || '')) || !applyUrl.startsWith(`https://jobs.smartrecruiters.com/${employer}/${posting.id}-`)) return null;
+          const description = Object.values(posting.jobAd?.sections || {}).map((section) => htmlToCleanMarkdown((section as { text?: string }).text || '', url)).join('\n\n');
+          if (!posting.name || description.length < 80) return null;
+          return { title: String(posting.name), company, location: 'Visakhapatnam, Andhra Pradesh, India', description, apply_link: applyUrl } as ExtractedCompanyCareerJob;
+        } catch { return null; }
+      }));
+      jobs.push(...batch.filter((job): job is ExtractedCompanyCareerJob => job !== null));
+    }
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (dmart) {
     const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
     if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);

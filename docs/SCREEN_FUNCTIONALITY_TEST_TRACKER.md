@@ -1702,3 +1702,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 
 
 
+## QA-2026-11-03-Dr-Reddys-Verified-Careers
+
+- Verified Dr. Reddy's Laboratories' official SmartRecruiters Visakhapatnam feed through a live server request: 19 exact-city rows, 16 retained with employer identity, descriptions, and direct application links; three had empty description sections. Added a scoped migration and default URL for the canonical company record.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: Dr. Reddy's scraper regression and `git diff --check` passed. Full scraper suite: 49 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
+

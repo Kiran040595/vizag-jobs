@@ -321,7 +321,7 @@ export const CURATED_COMPANIES = {
   },
   "Dr. Reddy's Laboratories": {
     website: 'https://www.drreddys.com',
-    careers_url: 'https://careers.drreddys.com',
+    careers_url: 'https://careers.smartrecruiters.com/DrReddysLaboratoriesLimited?search=Visakhapatnam',
     category: 'Healthcare',
     is_active_for_scrape: true,
   },

@@ -243,7 +243,7 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   "Dr. Reddy's Laboratories": {
     website: 'https://www.drreddys.com',
-    careers_url: 'https://careers.drreddys.com',
+    careers_url: 'https://careers.smartrecruiters.com/DrReddysLaboratoriesLimited?search=Visakhapatnam',
     category: 'Healthcare',
   },
   'Hetero': {
