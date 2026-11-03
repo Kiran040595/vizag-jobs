@@ -77,6 +77,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://growwwtech.com/careers',
     category: 'IT & Software',
   },
+  'DMart - Avenue Supermarts Ltd': {
+    website: 'https://www.dmartindia.com',
+    careers_url: 'https://careers.dmartindia.com/ASL/search/?q=&locationsearch=Visakhapatnam',
+    category: 'Retail',
+  },
   'Conduent': {
     website: 'https://www.conduent.com',
     careers_url: 'https://careers.conduent.com/us/en/search-results?keywords=Visakhapatnam',

@@ -132,6 +132,12 @@
   - `npm run lint`: 0 errors, 0 warnings across all files.
   - `npx vite build`: Clean production build in 2.46s.
 
+## QA-2026-11-03-DMart-Verified-Careers
+
+- Verified DMart's official Visakhapatnam-filtered careers search and four active exact-city postings through live server extraction. Added employer, location, deadline and description checks, defaults, and a scoped migration.
+- Functional E2E and mobile UI remain pending; backend extraction is the evidence for this change.
+- Verification: focused DMart regression passed; full scraper suite had 48 passing tests and the same 2 existing pipeline orchestration assertion failures recorded below. `git diff --check` passed.
+
 ## QA-2026-11-03-Growww-Tech-Verified-Careers
 
 - Verified the employer-owned Growww Tech careers page and three active Visakhapatnam roles via live server fetch and JobPosting schema. Added exact-city, employer, deadline and description checks to the scraper, updated defaults and migration.

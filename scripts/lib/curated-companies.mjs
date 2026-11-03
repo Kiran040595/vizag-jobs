@@ -51,6 +51,12 @@ export const CURATED_COMPANIES = {
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
+  'DMart - Avenue Supermarts Ltd': {
+    website: 'https://www.dmartindia.com',
+    careers_url: 'https://careers.dmartindia.com/ASL/search/?q=&locationsearch=Visakhapatnam',
+    category: 'Retail',
+    is_active_for_scrape: true,
+  },
   'Cushman & Wakefield': {
     website: 'https://www.cushmanwakefield.com',
     careers_url: 'https://cw.wd1.myworkdayjobs.com/External?q=Vizag',

@@ -59,6 +59,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'credit saison india': 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
   'credit saison': 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam',
   'growww tech': 'https://growwwtech.com/careers',
+  'dmart - avenue supermarts ltd': 'https://careers.dmartindia.com/ASL/search/?q=&locationsearch=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -170,7 +171,32 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const cushman = host === 'cw.wd1.myworkdayjobs.com' && parsedUrl.pathname === '/External' && parsedUrl.searchParams.get('q') === 'Vizag';
   const creditSaison = host === 'saison.wd102.myworkdayjobs.com' && parsedUrl.pathname === '/Credit_Saison_India' && parsedUrl.searchParams.get('q') === 'Visakhapatnam';
   const growww = host === 'growwwtech.com' && parsedUrl.pathname === '/careers';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww) return null;
+  const dmart = host === 'careers.dmartindia.com' && parsedUrl.pathname === '/ASL/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart) return null;
+  if (dmart) {
+    const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);
+    const html = await listing.text();
+    const links = [...new Set([...html.matchAll(/<a\b[^>]*class="[^"]*jobTitle-link[^"]*"[^>]*href="([^"]+)"/gi)].filter((match) => /-section-location-value">\s*Visakhapatnam, Andhra Pradesh/i.test(html.slice(match.index, match.index + 1800))).map((match) => new URL(match[1], url).href).filter((link) => /^https:\/\/careers\.dmartindia\.com\/ASL\/job\/[^/]+\/\d+\/$/.test(link)))];
+    const jobs: (ExtractedCompanyCareerJob | null)[] = [];
+    for (let i = 0; i < links.length; i += 3) jobs.push(...await Promise.all(links.slice(i, i + 3).map(async (link) => {
+      try {
+      const response = await fetch(link, { signal: AbortSignal.timeout(15000) });
+      if (!response.ok) return null;
+      const detail = await response.text();
+      const location = detail.match(/<span class="jobGeoLocation">\s*([^<]+)/i)?.[1]?.trim();
+      const title = detail.match(/<h1 id="job-title"[^>]*>([^<]+)/i)?.[1]?.trim();
+      const deadline = detail.match(/<meta itemprop="validThrough" content="([^"]+)"/i)?.[1];
+      const employer = detail.match(/<meta itemprop="hiringOrganization" content="([^"]+)"/i)?.[1];
+      const rawDescription = detail.match(/<span itemprop="description" class="jobdescription">([\s\S]*?)<\/span>/i)?.[1] || '';
+      const description = htmlToCleanMarkdown(rawDescription, link);
+      if (!/^Visakhapatnam, Andhra Pradesh$/i.test(location || '') || !title || employer !== 'avenuesupe' || !deadline || new Date(deadline).getTime() <= Date.now() || description.length < 80) return null;
+      return { title, company, location: 'Visakhapatnam, Andhra Pradesh, India', description, apply_link: link } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    })));
+    const verified = jobs.filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs: verified }), structuredJobs: verified, count: verified.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (growww) {
     const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
     if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);

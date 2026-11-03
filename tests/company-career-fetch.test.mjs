@@ -36,6 +36,20 @@ test('Growww Tech reads current exact-city job schema from employer pages', asyn
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('DMart reads active Visakhapatnam roles from its official SuccessFactors pages', async () => {
+  const originalFetch = globalThis.fetch;
+  const link = '/ASL/job/GRN-OFFICERS-Visa/1369732766/';
+  globalThis.fetch = async (input) => String(input).includes('/search/')
+    ? new Response(`<a class="jobTitle-link" href="${link}">GRN OFFICERS</a><div id="job-1369732766-desktop-section-location-value">Visakhapatnam, Andhra Pradesh</div>`)
+    : new Response(`<meta itemprop="validThrough" content="Wed Dec 30 23:59:00 UTC 2026"><meta itemprop="hiringOrganization" content="avenuesupe"><h1 id="job-title" itemprop="title">GRN OFFICERS</h1><span class="jobGeoLocation">Visakhapatnam, Andhra Pradesh</span><span itemprop="description" class="jobdescription"><p>Coordinate store inventory receipts and reconcile records with the team. Review purchase documents and support daily store operations accurately.</p></span>`);
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['dmart - avenue supermarts ltd'], 'DMart - Avenue Supermarts Ltd');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'GRN OFFICERS');
+    assert.equal(result.structuredJobs[0].apply_link, `https://careers.dmartindia.com${link}`);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Expired Phenom postings are rejected even when present in search results', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
