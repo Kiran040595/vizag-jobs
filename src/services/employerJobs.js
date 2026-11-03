@@ -5,6 +5,7 @@ import {
   serializeJobForm,
 } from './adminJobs';
 import { supabase } from '../lib/supabaseClient';
+import { isMissingSchemaColumn } from '../lib/postgrestErrors';
 import { notifyAdminsNewEmployerJob } from './replyNotifications';
 
 const JOBS_TABLE = import.meta.env.VITE_SUPABASE_JOBS_TABLE || 'jobs';
@@ -101,11 +102,21 @@ export const upsertEmployerProfile = async (profile) => {
     throw new Error('Company name is required.');
   }
 
-  const { data, error } = await supabase
+  const saveProfile = (nextPayload) => supabase
     .from('employer_profiles')
-    .upsert(payload, { onConflict: 'user_id' })
+    .upsert(nextPayload, { onConflict: 'user_id' })
     .select('*')
     .single();
+
+  let { data, error } = await saveProfile(payload);
+
+  // Keep registration/profile saving available while older production schemas
+  // are catching up with the optional LinkedIn field migration.
+  if (isMissingSchemaColumn(error, 'employer_profiles', 'linkedin_url')) {
+    const compatiblePayload = { ...payload };
+    delete compatiblePayload.linkedin_url;
+    ({ data, error } = await saveProfile(compatiblePayload));
+  }
 
   if (error) {
     throw mapError(error, 'Could not save your company profile.');

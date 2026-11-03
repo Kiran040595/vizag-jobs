@@ -70,5 +70,7 @@ assert.match(jobDetailsSrc, /canonicalRedirectAttemptedRef/, 'JobDetailsPage mus
 assert.match(apiHandlerSrc, /export default async function handler/, 'api/report-error.js must export default handler');
 assert.match(apiHandlerSrc, /RESEND_API_KEY/, 'api/report-error.js must check RESEND_API_KEY');
 assert.match(apiHandlerSrc, /status: \(test \|\| isNoiseReport\) \? 'ignored' : 'open'/, 'api/report-error.js must mark noise as ignored');
+assert.match(apiHandlerSrc, /storageError/, 'api/report-error.js must inspect Supabase insert errors');
+assert.match(apiHandlerSrc, /storage: storageResult/, 'api/report-error.js must return the bug-storage outcome');
 
 console.log('error-reporter.test.mjs: OK');

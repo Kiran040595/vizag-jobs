@@ -7,6 +7,7 @@ import { upsertEmployerProfile } from '../services/employerJobs';
 import { notifyAdminsNewEmployer } from '../services/replyNotifications';
 import { deferAuthWork } from '../lib/deferAuthWork';
 import { hasStoredSupabaseSession } from '../lib/supabaseSessionHelper';
+import { reportClientError } from '../lib/errorReporter';
 
 const EMPLOYER_ACCESS_CACHE_TTL_MS = 15 * 60 * 1000;
 const EMPLOYER_ACCESS_CACHE_KEY = 'vizagjobs:employer-access-cache';
@@ -315,6 +316,10 @@ export function EmployerAuthProvider({ children }) {
         }).catch(() => {});
       } catch (upsertError) {
         console.warn('Could not immediately upsert employer profile after signup:', upsertError);
+        reportClientError({
+          error: upsertError,
+          context: 'employer_registration_profile_save',
+        });
       }
       await refreshEmployerAccess(data.user.id);
     }

@@ -1,5 +1,15 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-03-Employer-Registration-Schema-Drift-And-Error-Alerts
+
+- Scope: S011 `/employer/register`, S015 `/employer/profile`, handled client-error reporting, and `/api/report-error`; no new route or dialog and no layout change.
+- Reproduced root cause from the supplied production screenshot: `employer_profiles.linkedin_url` is absent from the deployed PostgREST schema cache even though the optional-column migration exists in the repository. Company profile upserts therefore failed before saving any field.
+- Fixed employer profile writes to recognize only the `employer_profiles.linkedin_url` schema-cache error and retry without that optional field. Registration and core company-profile fields can now save while the production database catches up; permission, validation, and unrelated schema errors are not hidden.
+- Added explicit reporting for handled employer registration and company-profile save failures. These errors previously rendered in the form but bypassed the global unhandled-error listeners, which explains why no `site_error_logs` record or alert email was created.
+- Hardened `/api/report-error` to inspect the Supabase insert result, log storage failures, and return structured `storage` diagnostics while continuing the independent email-alert attempt.
+- Automated verification: focused employer-registration and error-reporter regressions passed; full `node --test tests/*.test.mjs` passed 288/288; `npm run lint` passed with 0 errors; `npm run build` passed (existing large-chunk and stale Browserslist-data warnings only).
+- Functional E2E: reopened and pending a fresh production employer account/profile-save journey after deployment; no test-user personal data was created during local verification. Mobile UI: remains In progress because behavior changed without a layout change and no rendered narrow-viewport retest was performed.
+
 ## QA-2026-11-03-Wipro-Concentrix-Directory-Activation
 
 - Scope: S055 `/companies`; activate the next two high-priority verified employers, Wipro and Concentrix, and restore the public directory query. No new route or dialog.

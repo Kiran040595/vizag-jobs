@@ -10,6 +10,7 @@ import {
   isValidEmployerPhone,
   normalizeEmployerPhone,
 } from '../lib/employerProfileOptions';
+import { reportClientError } from '../lib/errorReporter';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 
 export default function EmployerRegisterPage() {
@@ -98,6 +99,10 @@ export default function EmployerRegisterPage() {
         setNotice('Account created successfully! You can sign in now with your email and password.');
       }
     } catch (error) {
+      reportClientError({
+        error,
+        context: 'employer_registration',
+      });
       setSubmitError(error instanceof Error ? error.message : 'Could not create account.');
     } finally {
       setIsSubmitting(false);

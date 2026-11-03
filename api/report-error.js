@@ -101,11 +101,14 @@ export default async function handler(req, res) {
     const isNoiseReport = isNoise(message, stack);
     const isThrottled = test ? false : shouldThrottle(fingerprint);
 
-    // Save to Supabase table if table exists
+    // Save to Supabase and expose the outcome so storage failures are visible
+    // in runtime logs and diagnostic responses instead of being silently lost.
+    let storageResult = { attempted: false, stored: false };
     try {
       const client = createServiceClient();
       if (client) {
-        await client.from('site_error_logs').insert({
+        storageResult.attempted = true;
+        const { error: storageError } = await client.from('site_error_logs').insert({
           error_message: String(message).slice(0, 500),
           stack_trace: String(stack).slice(0, 2000),
           component_stack: String(componentStack).slice(0, 2000),
@@ -118,9 +121,19 @@ export default async function handler(req, res) {
           resolution_notes: test ? 'Synthetic test ping / diagnostic' : isNoiseReport ? 'Filtered 3rd-party browser/IAB noise' : null,
           created_at: timestamp,
         });
+        if (storageError) {
+          storageResult.error = storageError.message || 'Unknown Supabase insert error';
+          console.error('[Client Bug Alert] Could not store site_error_logs row:', storageError);
+        } else {
+          storageResult.stored = true;
+        }
+      } else {
+        storageResult.reason = 'Supabase service client is not configured.';
       }
-    } catch {
-      // Ignore if site_error_logs table does not exist
+    } catch (storageError) {
+      storageResult.attempted = true;
+      storageResult.error = storageError instanceof Error ? storageError.message : String(storageError);
+      console.error('[Client Bug Alert] Unexpected site_error_logs storage failure:', storageError);
     }
 
     // Send email alert via Resend
@@ -279,6 +292,7 @@ export default async function handler(req, res) {
     return sendJson(res, 200, {
       ok: true,
       throttled: isThrottled,
+      storage: storageResult,
       email: emailResult,
     });
   } catch (err) {

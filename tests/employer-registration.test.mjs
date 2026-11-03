@@ -9,6 +9,7 @@ import {
   employerSearchBlob,
   mapEmployerProfileRow,
 } from '../src/lib/adminEmployerProfile.js';
+import { isMissingSchemaColumn } from '../src/lib/postgrestErrors.js';
 
 // 1. Validate Industry & Location Options
 assert.ok(EMPLOYER_INDUSTRY_OPTIONS.length >= 8);
@@ -62,5 +63,15 @@ assert.ok(blob.includes('rushikonda tech labs'));
 assert.ok(blob.includes('sunil varma'));
 assert.ok(blob.includes('it & software'));
 assert.ok(blob.includes('madhurawada'));
+
+// 5. Production schema drift must be recognized narrowly so the optional
+// LinkedIn column can be omitted without hiding unrelated database failures.
+const missingLinkedinColumn = {
+  code: 'PGRST204',
+  message: "Could not find the 'linkedin_url' column of 'employer_profiles' in the schema cache",
+};
+assert.equal(isMissingSchemaColumn(missingLinkedinColumn, 'employer_profiles', 'linkedin_url'), true);
+assert.equal(isMissingSchemaColumn(missingLinkedinColumn, 'companies', 'linkedin_url'), false);
+assert.equal(isMissingSchemaColumn({ code: '42501', message: 'permission denied' }, 'employer_profiles', 'linkedin_url'), false);
 
 console.log('employer-registration.test.mjs: ALL TESTS PASSED! OK');
