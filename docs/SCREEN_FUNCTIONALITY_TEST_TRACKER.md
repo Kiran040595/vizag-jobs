@@ -1769,3 +1769,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: Varex scraper regression and `git diff --check` passed. Full scraper suite: 51 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
 
+## QA-2026-11-04-Rotork-Verified-Careers
+
+- Verified Rotork's official SmartRecruiters Visakhapatnam feed by live server extraction. One current role has employer identity, a full description and a direct application link. Added portal defaults and a scoped migration for the exact company record.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: Rotork scraper regression and `git diff --check` passed. Full scraper suite: 52 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
+

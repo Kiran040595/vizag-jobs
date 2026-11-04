@@ -63,6 +63,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   "dr. reddy's laboratories": 'https://careers.smartrecruiters.com/DrReddysLaboratoriesLimited?search=Visakhapatnam',
   medfar: 'https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam',
   'varex imaging manufacturing india pvt. ltd.': 'https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site?locations=6dd16ee3ba301001dd775f79921c0000',
+  rotork: 'https://careers.smartrecruiters.com/Rotork1?search=Visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -177,8 +178,9 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const dmart = host === 'careers.dmartindia.com' && parsedUrl.pathname === '/ASL/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
   const drReddy = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/DrReddysLaboratoriesLimited' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
   const medfar = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/Medfar' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
+  const rotork = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/Rotork1' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
   const varex = host === 'vareximaging.wd103.myworkdayjobs.com' && parsedUrl.pathname === '/External_Career_Site' && parsedUrl.searchParams.get('locations') === '6dd16ee3ba301001dd775f79921c0000';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !varex) return null;
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex) return null;
   if (varex) {
     const site = 'https://vareximaging.wd103.myworkdayjobs.com';
     const api = `${site}/wday/cxs/vareximaging/External_Career_Site`;
@@ -208,8 +210,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
-  if (drReddy || medfar) {
-    const employer = medfar ? 'Medfar' : 'DrReddysLaboratoriesLimited';
+  if (drReddy || medfar || rotork) {
+    const employer = rotork ? 'Rotork1' : medfar ? 'Medfar' : 'DrReddysLaboratoriesLimited';
     const search = await fetch(`https://api.smartrecruiters.com/v1/companies/${employer}/postings?q=Visakhapatnam&limit=100`, { signal: AbortSignal.timeout(20000) });
     if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
     const payload = await search.json();

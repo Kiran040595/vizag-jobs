@@ -338,6 +338,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
 
   // Manufacturing, Engineering & Infrastructure
+  'Rotork': {
+    website: 'https://www.rotork.com',
+    careers_url: 'https://careers.smartrecruiters.com/Rotork1?search=Visakhapatnam',
+    category: 'Mechanical Engineering',
+  },
   'Adani Group': {
     website: 'https://www.adani.com',
     careers_url: 'https://careers.adani.com',

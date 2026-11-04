@@ -579,6 +579,30 @@ test('MEDFAR SmartRecruiters feed validates exact city, employer and description
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Rotork official SmartRecruiters feed keeps its active Visakhapatnam role', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    assert.match(value, /api\.smartrecruiters\.com\/v1\/companies\/Rotork1\/postings/);
+    if (value.includes('/postings?q=')) return Response.json({ content: [
+      { id: '744000149534300', location: { city: 'Visakhapatnam', country: 'in' } },
+      { id: '744000149534301', location: { city: 'Pune', country: 'in' } },
+    ] });
+    return Response.json({
+      id: '744000149534300', name: 'Service Sales Engineer', company: { identifier: 'Rotork1' },
+      location: { city: 'Visakhapatnam', country: 'in' },
+      postingUrl: 'https://jobs.smartrecruiters.com/Rotork1/744000149534300-service-sales-engineer',
+      jobAd: { sections: { jobDescription: { text: '<p>Develop service sales opportunities across Andhra Pradesh, build customer relationships, manage forecasts, and coordinate engineering support from Visakhapatnam.</p>' } } },
+    });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.rotork, 'Rotork');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Service Sales Engineer');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.smartrecruiters.com/Rotork1/744000149534300-service-sales-engineer');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

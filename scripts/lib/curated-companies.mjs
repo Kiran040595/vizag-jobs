@@ -587,6 +587,12 @@ export const CURATED_COMPANIES = {
   },
 
   // Manufacturing, Industrial, Engineering, Infrastructure
+  'Rotork': {
+    website: 'https://www.rotork.com',
+    careers_url: 'https://careers.smartrecruiters.com/Rotork1?search=Visakhapatnam',
+    category: 'Mechanical Engineering',
+    is_active_for_scrape: true,
+  },
   'Asian Paints': {
     website: 'https://www.asianpaints.com',
     careers_url: 'https://careers.asianpaints.com/search/?q=&locationsearch=Visakhapatnam',
