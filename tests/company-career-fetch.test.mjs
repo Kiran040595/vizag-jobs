@@ -298,6 +298,37 @@ test('Credit Saison India official Workday portal retains active Vizag roles and
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Varex official Workday facet retains open Visakhapatnam roles only', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    const value = String(url);
+    assert.match(value, /vareximaging\.wd103\.myworkdayjobs\.com\/wday\/cxs\/vareximaging\/External_Career_Site/);
+    if (value.endsWith('/jobs')) {
+      assert.deepEqual(JSON.parse(options.body).appliedFacets.locations, ['6dd16ee3ba301001dd775f79921c0000']);
+      return Response.json({ jobPostings: [
+        { title: 'Accountant', externalPath: '/job/Visakhapatnam/Accountant_R0006108', locationsText: 'Visakhapatnam' },
+        { title: 'Closed Role', externalPath: '/job/Visakhapatnam/Closed-Role_R0006109', locationsText: 'Visakhapatnam' },
+        { title: 'Other City', externalPath: '/job/Pune/Other-City_R0006110', locationsText: 'Pune' },
+      ] });
+    }
+    const closed = value.includes('Closed-Role');
+    const path = closed ? '/job/Visakhapatnam/Closed-Role_R0006109' : '/job/Visakhapatnam/Accountant_R0006108';
+    return Response.json({ jobPostingInfo: {
+      title: closed ? 'Closed Role' : 'Accountant', jobReqId: closed ? 'R0006109' : 'R0006108',
+      location: 'Visakhapatnam', country: { descriptor: 'India' }, posted: true, canApply: !closed,
+      timeType: 'Full time',
+      jobDescription: '<p>Manage accounting operations, reconcile records, document compliance procedures, and collaborate with manufacturing teams in Visakhapatnam.</p>',
+      externalUrl: `https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site${path}`,
+    } });
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['varex imaging manufacturing india pvt. ltd.'], 'Varex Imaging Manufacturing India Pvt. Ltd.');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Accountant');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site/job/Visakhapatnam/Accountant_R0006108');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Verified city-filtered URLs survive canonicalization', () => {
   for (const [name, url] of Object.entries(VERIFIED_VIZAG_PORTALS)) {
     assert.equal(resolveCanonicalCareerPortalUrl(url, name), url);

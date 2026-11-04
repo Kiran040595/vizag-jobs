@@ -62,6 +62,7 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'dmart - avenue supermarts ltd': 'https://careers.dmartindia.com/ASL/search/?q=&locationsearch=Visakhapatnam',
   "dr. reddy's laboratories": 'https://careers.smartrecruiters.com/DrReddysLaboratoriesLimited?search=Visakhapatnam',
   medfar: 'https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam',
+  'varex imaging manufacturing india pvt. ltd.': 'https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site?locations=6dd16ee3ba301001dd775f79921c0000',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -176,7 +177,37 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const dmart = host === 'careers.dmartindia.com' && parsedUrl.pathname === '/ASL/search/' && parsedUrl.searchParams.get('locationsearch') === 'Visakhapatnam';
   const drReddy = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/DrReddysLaboratoriesLimited' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
   const medfar = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/Medfar' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar) return null;
+  const varex = host === 'vareximaging.wd103.myworkdayjobs.com' && parsedUrl.pathname === '/External_Career_Site' && parsedUrl.searchParams.get('locations') === '6dd16ee3ba301001dd775f79921c0000';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !varex) return null;
+  if (varex) {
+    const site = 'https://vareximaging.wd103.myworkdayjobs.com';
+    const api = `${site}/wday/cxs/vareximaging/External_Career_Site`;
+    const search = await fetch(`${api}/jobs`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appliedFacets: { locations: ['6dd16ee3ba301001dd775f79921c0000'] }, limit: 20, offset: 0, searchText: '' }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const rows = (Array.isArray(payload.jobPostings) ? payload.jobPostings : []).filter((row: Record<string, unknown>) =>
+      /^\/job\/Visakhapatnam\/[^/]+_R\d+$/.test(String(row.externalPath || '')) && /^visakhapatnam$/i.test(String(row.locationsText || '')));
+    const jobs = (await Promise.all(rows.map(async (row: Record<string, unknown>) => {
+      try {
+        const path = String(row.externalPath);
+        const response = await fetch(`${api}${path}`, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const detail = await response.json();
+        const info = detail.jobPostingInfo || {};
+        const applyLink = String(info.externalUrl || '');
+        const description = htmlToCleanMarkdown(String(info.jobDescription || ''), applyLink).slice(0, 20000);
+        if (info.canApply !== true || info.posted !== true || !/^visakhapatnam$/i.test(String(info.location || '')) || info.country?.descriptor !== 'India') return null;
+        if (!/^R\d+$/.test(String(info.jobReqId || '')) || !path.endsWith(`_${info.jobReqId}`) || !String(info.title || '').trim() || description.length < 80) return null;
+        if (applyLink !== `${site}/External_Career_Site${path}`) return null;
+        return { title: String(info.title), company, location: 'Visakhapatnam, Andhra Pradesh, India', job_type: String(info.timeType || 'Full-Time'), description, apply_link: applyLink } as ExtractedCompanyCareerJob;
+      } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (drReddy || medfar) {
     const employer = medfar ? 'Medfar' : 'DrReddysLaboratoriesLimited';
     const search = await fetch(`https://api.smartrecruiters.com/v1/companies/${employer}/postings?q=Visakhapatnam&limit=100`, { signal: AbortSignal.timeout(20000) });

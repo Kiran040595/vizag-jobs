@@ -1763,3 +1763,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: MEDFAR scraper regression and `git diff --check` passed. Full scraper suite: 50 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
 
+## QA-2026-11-04-Varex-Verified-Careers
+
+- Verified Varex Imaging's official Visakhapatnam Workday location feed through live server extraction. Four open city postings had requisition IDs, descriptions and direct application links. Corrected the exact company record's website and category, added portal defaults, and scoped the migration to that record.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: Varex scraper regression and `git diff --check` passed. Full scraper suite: 51 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
+

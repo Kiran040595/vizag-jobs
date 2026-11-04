@@ -305,6 +305,12 @@ export const CURATED_COMPANIES = {
   },
 
   // Pharma & Healthcare
+  'Varex Imaging Manufacturing India Pvt. Ltd.': {
+    website: 'https://www.vareximaging.com',
+    careers_url: 'https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site?locations=6dd16ee3ba301001dd775f79921c0000',
+    category: 'Healthcare',
+    is_active_for_scrape: true,
+  },
   'MEDFAR': {
     website: 'https://www.medfarsolutions.com',
     careers_url: 'https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam',
