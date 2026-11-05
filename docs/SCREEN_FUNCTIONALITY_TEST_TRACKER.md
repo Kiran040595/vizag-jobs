@@ -1775,3 +1775,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: Rotork scraper regression and `git diff --check` passed. Full scraper suite: 52 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
 
+## QA-2026-11-05-Inventrax-Verified-Careers
+
+- Verified Inventrax's official hiring portal by live server extraction. Three active Visakhapatnam roles have full descriptions and public application pages; two deadline-passed roles were excluded. Added portal defaults and a migration scoped to the exact company record.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: Inventrax scraper regression and `git diff --check` passed. Full scraper suite: 53 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
+

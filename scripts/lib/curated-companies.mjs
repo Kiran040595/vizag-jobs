@@ -3,6 +3,12 @@
  */
 export const CURATED_COMPANIES = {
   // IT & Tech
+  'Inventrax': {
+    website: 'https://www.inventrax.com',
+    careers_url: 'https://pms.inventrax.com/hiring?q=Vishakapatnam',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'Tata Consultancy Services': {
     website: 'https://www.tcs.com',
     careers_url: 'https://www.tcs.com/careers/india',

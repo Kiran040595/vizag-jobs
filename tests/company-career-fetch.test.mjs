@@ -603,6 +603,22 @@ test('Rotork official SmartRecruiters feed keeps its active Visakhapatnam role',
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('Inventrax official hiring feed rejects passed deadlines and other cities', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('?q=')) return new Response('<a href="/hiring/6" class="job-card">SQL</a><a href="/hiring/7" class="job-card">Old</a><a href="/hiring/8" class="job-card">Other</a>');
+    const id = value.split('/').pop();
+    return new Response(`<h1>${id === '6' ? 'DATABASE DEVELOPER' : 'Other Role'}</h1><i data-lucide="map-pin"></i> ${id === '8' ? 'Hyderabad' : 'Vishakapatnam'}<!-- About Role --><div class="prose rich-content">Design PostgreSQL databases, improve query performance, coordinate with developers and document reliable delivery practices in Visakhapatnam.</div><!-- Sidebar --><a href="/hiring/${id}/apply">Apply Now</a>${id === '7' ? 'Deadline passed' : ''}`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.inventrax, 'Inventrax');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'DATABASE DEVELOPER');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://pms.inventrax.com/hiring/6/apply');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
