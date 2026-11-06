@@ -122,7 +122,7 @@ If Gemini fails, filename-based fallback metadata is used so the upload still pr
 
 - Upload **vertical** Shorts-ready videos (9:16). This pipeline does not re-encode or crop.
 - Keep the OAuth app in **Production** in Google Cloud; Testing-mode refresh tokens often expire after 7 days.
-- Re-run `npm run youtube:oauth-setup` whenever you see Drive permission or token errors.
+- Re-run `npm run drive:oauth-setup` (normal Gmail) for Drive permission/token errors; use `npm run youtube:oauth-setup` only for channel/Brand Account upload errors.
 
 ## Related
 
