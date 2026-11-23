@@ -44,10 +44,14 @@ export const PUBLIC_JOBS_CACHE_KEY = 'vizagJobs_v2';
  */
 export const readCachedPublicJobs = () => {
   try {
-    const storage = getSafeSessionStorage();
-    if (!storage) return null;
-
-    const cachedRaw = storage.getItem(PUBLIC_JOBS_CACHE_KEY);
+    const sessionStorage = getSafeSessionStorage();
+    let cachedRaw = sessionStorage ? sessionStorage.getItem(PUBLIC_JOBS_CACHE_KEY) : null;
+    if (!cachedRaw) {
+      const localStorage = getSafeLocalStorage();
+      if (localStorage) {
+        cachedRaw = localStorage.getItem(PUBLIC_JOBS_CACHE_KEY);
+      }
+    }
     if (!cachedRaw) return null;
 
     const { jobs, timestamp } = JSON.parse(cachedRaw);
@@ -71,17 +75,24 @@ export const writeCachedPublicJobs = (jobs) => {
     return;
   }
 
-  try {
-    const storage = getSafeSessionStorage();
-    if (!storage) return;
+  const payload = JSON.stringify({ jobs, timestamp: Date.now() });
 
-    storage.setItem(
-      PUBLIC_JOBS_CACHE_KEY,
-      JSON.stringify({ jobs, timestamp: Date.now() }),
-    );
+  try {
+    const sessionStorage = getSafeSessionStorage();
+    if (sessionStorage) {
+      sessionStorage.setItem(PUBLIC_JOBS_CACHE_KEY, payload);
+    }
   } catch (error) {
-    // QuotaExceeded or private mode — listing still works without the cache.
     console.warn('Could not write jobs session cache:', error);
+  }
+
+  try {
+    const localStorage = getSafeLocalStorage();
+    if (localStorage) {
+      localStorage.setItem(PUBLIC_JOBS_CACHE_KEY, payload);
+    }
+  } catch (error) {
+    console.warn('Could not write jobs local cache:', error);
   }
 };
 

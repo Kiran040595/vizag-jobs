@@ -15,7 +15,7 @@ import {
   publishSingleCompanyJob,
   runSingleCompanyCareerPipeline,
 } from '../src/lib/companyCareerFetchAutomation.js';
-import { isDirectPosting } from '../src/lib/jobDirectPosting.js';
+import { isCompanyCareerPosting } from '../src/lib/jobDirectPosting.js';
 import { resolveCanonicalCareerPortalUrl, parseConduentSearchJobs, parseSuccessFactorsVizagJobs, parseInnocitoVizagJobs, scrapeVerifiedVizagPortal, VERIFIED_VIZAG_PORTALS } from '../supabase/functions/fetch-external-jobs/company-careers.ts';
 
 test('Growww Tech reads current exact-city job schema from employer pages', async () => {
@@ -870,7 +870,7 @@ test('Company Career Fetch: End-to-End Single-Company Pipeline Orchestration', a
     // Verify published jobs qualify as Verified Direct Company postings
     for (const pub of publishedJobs) {
       assert.equal(pub.source_name, 'Direct Company Website');
-      assert.equal(isDirectPosting(pub), true);
+      assert.equal(isCompanyCareerPosting(pub), true);
     }
 
     assert.ok(progressEvents.includes('fetching'));
