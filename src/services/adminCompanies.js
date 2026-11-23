@@ -1078,7 +1078,7 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
   // Fetch approved companies
   const companiesRes = await supabase
     .from('companies')
-    .select('id, name, website, careers_url, verified_careers_url, category, location, is_directory_approved, notes')
+    .select('id, name, website, careers_url, verified_careers_url, category, location, is_directory_approved, notes, last_fetched_at, is_active_for_scrape')
     .eq('is_directory_approved', true)
     .limit(1000);
 
@@ -1137,6 +1137,8 @@ export async function fetchPublicDirectoryCompanies(forceRefresh = false) {
         linkedinUrl,
         careersUrl,
         verifiedCareersUrl: c.verified_careers_url,
+        lastFetchedAt: c.last_fetched_at || null,
+        isActiveForScrape: Boolean(c.is_active_for_scrape),
         category: local.category || c.category || known.category || sector.label,
         sectorId: sector.id,
         sectorLabel: sector.label,
@@ -1196,3 +1198,35 @@ export async function detectCareerPortalFromWebsite(websiteUrl, companyName = ''
   return data;
 }
 
+export async function fetchDirectCompanyJobsTotalCount() {
+  if (!supabase) return 0;
+  try {
+    const { count, error } = await supabase
+      .from('jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('source_name', 'Direct Company Website');
+    if (error) {
+      console.warn('Could not fetch direct company jobs count:', error);
+      return 0;
+    }
+    return count || 0;
+  } catch (err) {
+    console.warn('Error counting direct jobs:', err);
+    return 0;
+  }
+}
+
+export async function updateCompanyLastFetchedAt(companyId) {
+  if (!supabase || !companyId) return;
+  try {
+    await supabase
+      .from('companies')
+      .update({
+        last_fetched_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', companyId);
+  } catch (err) {
+    console.warn('Could not update company last_fetched_at:', err);
+  }
+}

@@ -14,6 +14,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 import { pushToast } from '../lib/toast';
 import VerifiedCareersBadge from '../components/VerifiedCareersBadge';
 import { filterVerifiedCareerCompanies } from '../lib/companyCareerVerification';
+import CompanyCareerFetchAnalytics from '../components/admin/CompanyCareerFetchAnalytics';
 
 function getMonogram(name) {
   if (!name) return 'CO';
@@ -154,7 +155,7 @@ function CompanyDirectoryCard({ company, isAdmin, onTogglePublish, isToggling })
 
 
 export default function CompaniesInVizagPage() {
-  const { isAdmin } = useAdminAuth();
+  const { isAdmin, session } = useAdminAuth();
   const [companies, setCompanies] = useState(() => {
     return filterVerifiedCareerCompanies(readCachedPublicCompanies()?.companies);
   });
@@ -190,6 +191,16 @@ export default function CompaniesInVizagPage() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  const handleRefreshData = useCallback(async () => {
+    clearPublicCompaniesCache();
+    try {
+      const data = await fetchPublicDirectoryCompanies(true);
+      setCompanies(data);
+    } catch (err) {
+      console.error('Failed to reload companies:', err);
+    }
   }, []);
 
   // Admin: toggle a company's directory visibility directly from the public /companies page
@@ -339,6 +350,17 @@ export default function CompaniesInVizagPage() {
             ) : null}
           </div>
         </section>
+
+        {/* Admin Company Career Fetch & Automation Intelligence */}
+        {isAdmin ? (
+          <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+            <CompanyCareerFetchAnalytics
+              companies={companies}
+              onRefresh={handleRefreshData}
+              session={session}
+            />
+          </section>
+        ) : null}
 
         {/* Sector Tabs Navigation */}
         <div className="sticky top-14 z-30 border-b border-slate-200/90 bg-white/90 shadow-sm backdrop-blur-md sm:top-16">

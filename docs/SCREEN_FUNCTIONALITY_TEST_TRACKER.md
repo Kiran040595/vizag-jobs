@@ -1,5 +1,31 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-23-Admin-Company-Career-Fetch-Analytics
+
+- Scope: S055 `/companies` (`CompaniesInVizagPage.jsx`); added dedicated admin company career analytics component `src/components/admin/CompanyCareerFetchAnalytics.jsx`; updated `src/services/adminCompanies.js`.
+- Problem resolved:
+  - When logged in as admin on the `/companies` directory, there was no visibility into direct company career fetch operations, which companies have verified/perfect URLs, last fetched dates, next scheduled fetch dates, or total direct jobs published.
+- Solution delivered:
+  - **Admin Career Fetch Intelligence Dashboard on S055**:
+    - Appears seamlessly above the directory cards on `/companies` exclusively when `isAdmin` is true.
+    - **KPI Summary Cards**:
+      1. *Perfect URLs*: Total companies with exact verified ATS endpoints (18/18 verified).
+      2. *Direct Jobs Fetched*: Total jobs published with `source_name = 'Direct Company Website'` (268 live).
+      3. *Due for Next Fetch*: Instant count of companies where the 7-day cooldown has elapsed or never checked.
+      4. *On 7-Day Cooldown*: Instant count of companies protected under the 7-day anti-bloat cooldown.
+    - **Schedule Overview**: Highlights both GitHub Actions 24/7 cloud runner (4:00 PM IST daily) and local runners (8:30 AM & 6:30 PM IST).
+    - **Interactive Company Breakdown**:
+      - Platform type detection badges (`Workday CXS`, `SmartRecruiters`, `Lever API`, `SuccessFactors`, `Zoho Recruit`, `Inventrax PMS`, `Direct Portal`).
+      - Clickable verified career URL links.
+      - Last fetched relative and full dates.
+      - Next scheduled fetch date with status badges (`Due Now` vs `In X days`).
+      - Live jobs count with direct links to view jobs.
+      - 1-click `⚡ Fetch Now` action enabling admin to manually trigger extraction and publishing for any individual company directly from the browser.
+    - Fully responsive: Desktop table view + mobile card view; collapsible with a single click.
+- Automated verification:
+  - `node --test tests/company-career-fetch.test.mjs`: 55/55 passed.
+  - Production build: `npm run build` compiled clean in 13.59s with zero errors.
+
 ## QA-2026-11-03-Admin-Placements-And-Hiring-Visibility
 
 - Scope: New Screen S081 `/admin/placements`; updated S044 `/admin/students`, S035 `/admin/jobs/:jobId/applications`, S019 `/employer/jobs/:jobId/applications`; `src/services/adminPlacements.js`, `src/pages/AdminPlacementsPage.jsx`, `src/services/adminStudents.js`, `src/components/admin/AdminShell.jsx`, `src/components/admin/CandidateSearchCard.jsx`, `src/components/admin/CandidateTableView.jsx`, `src/components/admin/AdminCandidatePaymentModal.jsx`, `src/components/jobApplications/JobApplicationCard.jsx`, `src/pages/AdminJobApplicationsPage.jsx`, `src/lib/notificationInbox.js`, `src/components/QuestionNotificationBell.jsx`, `tests/admin-placements.test.mjs`.
