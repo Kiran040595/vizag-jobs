@@ -52,7 +52,14 @@ async function main() {
     return;
   }
 
+  let failed = 0;
   for (const item of result.processed) {
+    if (item.failed) {
+      failed += 1;
+      log(`Failed ${item.fileName}: ${item.error}`);
+      continue;
+    }
+
     if (item.skipped) {
       log(`Skip ${item.fileName}: ${item.reason}`);
       if (item.existing?.url) {
@@ -76,6 +83,11 @@ async function main() {
     if (item.movedToUploaded) {
       log('  Moved to Drive Uploaded/ folder');
     }
+  }
+
+  if (failed > 0) {
+    process.exitCode = 1;
+    log(`${failed} file(s) failed; remaining queue items were still attempted.`);
   }
 }
 
