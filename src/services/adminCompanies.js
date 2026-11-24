@@ -182,6 +182,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://cerebra-consulting.com/',
     category: 'IT & Software',
   },
+  'Sri Tech Solutions': {
+    website: 'https://sritechsolutions.com',
+    careers_url: 'https://sritechsolutions.com/job-openings/',
+    category: 'IT & Software',
+  },
   'SRI Tech Solutions Inc.': {
     website: 'https://sritechsolutions.com',
     careers_url: 'https://sritechsolutions.com/job-openings/',

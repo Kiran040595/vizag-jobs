@@ -1859,3 +1859,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: Inventrax scraper regression and `git diff --check` passed. Full scraper suite: 53 passed, 2 existing pipeline orchestration assertion failures (`isDirectPosting`); retest remains open.
 
+## QA-2026-11-24-SRI-Tech-Solutions-Verified-Careers
+
+- Verified SRI Tech Solutions Inc.'s official job openings portal (`https://sritechsolutions.com/job-openings/`) by live server extraction. Three active Visakhapatnam roles (Fresher Video Editor, Process Associate, US IT Recruiter) have full descriptions (2,000+ characters) and public application pages; four non-Vizag roles (Hyderabad and USA) were excluded. Added portal defaults, native extractor, test, and scoped database migration.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: SRI Tech Solutions scraper regression passed. Full company career fetch suite: 63 passed.
+

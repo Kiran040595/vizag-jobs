@@ -219,6 +219,12 @@ export const CURATED_COMPANIES = {
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
+  'Sri Tech Solutions': {
+    website: 'https://sritechsolutions.com',
+    careers_url: 'https://sritechsolutions.com/job-openings/',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'SRI Tech Solutions Inc.': {
     website: 'https://sritechsolutions.com',
     careers_url: 'https://sritechsolutions.com/job-openings/',

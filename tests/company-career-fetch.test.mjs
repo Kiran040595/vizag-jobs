@@ -620,6 +620,25 @@ test('Inventrax official hiring feed rejects passed deadlines and other cities',
   } finally { globalThis.fetch = originalFetch; }
 });
 
+test('SRI Tech Solutions official feed extracts Visakhapatnam jobs and rejects non-Vizag roles', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.endsWith('/job-openings/')) {
+      return new Response('<a href="https://sritechsolutions.com/jobs/hiring-fresher-video-editor-in-vizag/">Job 1</a><a href="https://sritechsolutions.com/jobs/immediate-hiring-for-bench-sales-recruiter-in-hyderabad/">Job 2</a>');
+    }
+    const isVizag = value.includes('-in-vizag');
+    return new Response(`<h1>${isVizag ? 'Hiring Fresher Video Editor in Vizag – Apply Now' : 'Immediate Hiring for Bench Sales Recruiter in Hyderabad | Apply Now'}</h1><div class="entry-content">Join our dynamic team in ${isVizag ? 'Visakhapatnam' : 'Hyderabad'}. Candidates must have proven skills, strong communication, and deliver high quality work.</div>`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['sri tech solutions inc.'], 'SRI Tech Solutions Inc.');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Hiring Fresher Video Editor in Vizag');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://sritechsolutions.com/jobs/hiring-fresher-video-editor-in-vizag/');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('Amazon city feed requires Visakhapatnam in a posting location', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

@@ -65,6 +65,9 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'varex imaging manufacturing india pvt. ltd.': 'https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site?locations=6dd16ee3ba301001dd775f79921c0000',
   rotork: 'https://careers.smartrecruiters.com/Rotork1?search=Visakhapatnam',
   inventrax: 'https://pms.inventrax.com/hiring?q=Vishakapatnam',
+  'sri tech solutions inc.': 'https://sritechsolutions.com/job-openings/',
+  'sri tech solutions': 'https://sritechsolutions.com/job-openings/',
+  'sri tech': 'https://sritechsolutions.com/job-openings/',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -182,7 +185,8 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const rotork = host === 'careers.smartrecruiters.com' && parsedUrl.pathname === '/Rotork1' && parsedUrl.searchParams.get('search') === 'Visakhapatnam';
   const inventrax = host === 'pms.inventrax.com' && parsedUrl.pathname === '/hiring' && parsedUrl.searchParams.get('q') === 'Vishakapatnam';
   const varex = host === 'vareximaging.wd103.myworkdayjobs.com' && parsedUrl.pathname === '/External_Career_Site' && parsedUrl.searchParams.get('locations') === '6dd16ee3ba301001dd775f79921c0000';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex && !inventrax) return null;
+  const sriTech = ['sritechsolutions.com', 'www.sritechsolutions.com'].includes(host) && parsedUrl.pathname.startsWith('/job-openings');
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex && !inventrax && !sriTech) return null;
   if (inventrax) {
     const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
     if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);
@@ -203,6 +207,40 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         if (!/^vishakapatnam$/i.test(city || '') || !title || description.length < 80) return null;
         return { title, company, location: 'Visakhapatnam, Andhra Pradesh, India', description, apply_link: `${link}/apply` } as ExtractedCompanyCareerJob;
       } catch { return null; }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (sriTech) {
+    const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);
+    const html = await listing.text();
+    const detailUrls = [...new Set([...html.matchAll(/href=["'](https:\/\/sritechsolutions\.com\/jobs\/[^"']+)["']/gi)].map((m) => m[1]))];
+    const jobs = (await Promise.all(detailUrls.map(async (link) => {
+      try {
+        const response = await fetch(link, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const detail = await response.text();
+        const rawTitle = detail.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '';
+        const cleanTitle = htmlToCleanMarkdown(rawTitle, link)
+          .replace(/\s*–\s*Apply Now/i, '')
+          .replace(/\s*&#8211;\s*Apply.*/i, '')
+          .replace(/\s*\|\s*Apply Now/i, '')
+          .trim();
+        const content = detail.match(/<div\b[^>]*class=["'][^"']*entry-content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
+        const description = htmlToCleanMarkdown(content, link);
+        const isVizag = /\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(rawTitle) ||
+          (/\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(link) && !/\b(hyderabad|bangalore|bengaluru|chennai|pune|mumbai|delhi|noida|gurgaon|usa|tampa)\b/i.test(rawTitle));
+        if (!isVizag || !cleanTitle || description.length < 80) return null;
+        return {
+          title: cleanTitle,
+          company,
+          location: 'Visakhapatnam, Andhra Pradesh, India',
+          description,
+          apply_link: link,
+        } as ExtractedCompanyCareerJob;
+      } catch {
+        return null;
+      }
     }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
     return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
   }
