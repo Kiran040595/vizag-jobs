@@ -30,6 +30,7 @@ import {
   cleanTitleForDedupe,
   normalizeCompanyTitleKey,
   normalizeUrlForCompare,
+  extractCanonicalJobPostingId,
 } from '../src/lib/companyCareerFetchAutomation.js';
 import { rewriteJobForVizag } from './lib/job-rewriter.mjs';
 
@@ -83,7 +84,7 @@ async function processCompany(company) {
 
   // Fetch existing job keys for deduplication (only for this company to save egress)
   log(`Loading existing job keys for ${company.name} deduplication...`);
-  const existing = fetchExistingJobKeysLinked(company.name);
+  const existing = await fetchExistingJobKeysLinked(company.name);
   log(`Loaded ${existing.slugs.size} existing slugs and ${existing.companyTitleKeys.size} company-title keys.`);
 
   // Scrape company portal
@@ -148,10 +149,18 @@ async function processCompany(company) {
     }
 
     const applyNorm = normalizeUrlForCompare(rawJob.apply_link);
-    if (applyNorm && existing.applyLinks.has(applyNorm)) {
+    if (applyNorm && (existing.applyLinks.has(applyNorm) || existing.applyLinks.has(applyNorm.replace(/\/+$/, '')))) {
       log(`  [SKIP] "${title}" -> Apply link already in database`);
       report.skipped++;
       report.details.push({ title, reason: 'Duplicate apply link' });
+      continue;
+    }
+
+    const postingId = extractCanonicalJobPostingId(rawJob.apply_link);
+    if (postingId && existing.jobPostingIds?.has(postingId)) {
+      log(`  [SKIP] "${title}" -> Job posting ID already in database (${postingId})`);
+      report.skipped++;
+      report.details.push({ title, reason: 'Duplicate job posting ID' });
       continue;
     }
 
@@ -159,19 +168,23 @@ async function processCompany(company) {
     log(`  [REWRITING] "${title}"...`);
     const rewritten = rewriteJobForVizag(rawJob, company);
 
-    // Slug deduplication check
+    // Slug deduplication check - SKIP on collision, NEVER mutate slug to force duplicates!
     if (existing.slugs.has(rewritten.slug.toLowerCase())) {
-      rewritten.slug = `${rewritten.slug}-${Date.now().toString(36).slice(-4)}`;
+      log(`  [SKIP] "${title}" -> Slug "${rewritten.slug}" already published`);
+      report.skipped++;
+      report.details.push({ title, reason: 'Duplicate slug' });
+      continue;
     }
 
     // Post the job to the database
     try {
       log(`  [POSTING] "${rewritten.title}" (${rewritten.slug})...`);
-      const inserted = insertJobDirect(rewritten);
+      const inserted = await insertJobDirect(rewritten);
       log(`  ✅ [PUBLISHED] ID: ${inserted.id} -> /jobs/${inserted.slug}`);
 
       existing.slugs.add(rewritten.slug.toLowerCase());
       if (applyNorm) existing.applyLinks.add(applyNorm);
+      if (postingId) existing.jobPostingIds.add(postingId);
       if (ctKey) existing.companyTitleKeys.add(ctKey);
       if (canonicalKey) existing.companyTitleKeys.add(canonicalKey);
 
@@ -186,7 +199,7 @@ async function processCompany(company) {
 
   // Lock the company for 7 days
   log(`Updating ${company.name} last_fetched_at to enforce 7-day cooldown...`);
-  markCompanyLastFetched(company.id);
+  await markCompanyLastFetched(company.id);
   log(`✅ ${company.name} cooldown set for next 7 days.`);
 
   // Write log report
@@ -214,7 +227,7 @@ async function main() {
   // Query next eligible verified companies (up to 3 per scheduled run)
   const batchSize = 3;
   log(`Checking for eligible verified companies (batch size: ${batchSize}, cooldown: 7 days)...`);
-  const eligible = getEligibleVerifiedCompanies(batchSize);
+  const eligible = await getEligibleVerifiedCompanies(batchSize);
 
   if (!eligible || eligible.length === 0) {
     log('No companies currently due for a fetch. All verified companies have been checked within the last 7 days.');

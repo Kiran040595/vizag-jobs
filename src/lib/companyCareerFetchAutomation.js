@@ -29,6 +29,9 @@ export function normalizeUrlForCompare(url) {
       'source',
       'fbclid',
       'gclid',
+      'locale',
+      'lang',
+      'language',
     ];
     for (const p of trackingParams) {
       parsed.searchParams.delete(p);
@@ -41,6 +44,45 @@ export function normalizeUrlForCompare(url) {
     return parsed.toString().toLowerCase().replace(/\/+$/, '');
   } catch {
     return raw.replace(/\/+$/, '');
+  }
+}
+
+export function extractCanonicalJobPostingId(url) {
+  const raw = String(url || '').trim().toLowerCase();
+  if (!raw) return '';
+  try {
+    const u = new URL(raw);
+    const host = u.hostname.replace(/^www\./, '');
+
+    // LinkedIn
+    if (host.includes('linkedin.com')) {
+      const liMatch = u.pathname.match(/\/jobs\/view\/(?:.*-)?(\d+)/i) || u.pathname.match(/-(\d{8,})(?:\/|\?|$)/i);
+      if (liMatch) return `li:${liMatch[1]}`;
+    }
+
+    // Naukri
+    if (host.includes('naukri.com')) {
+      const nkMatch = u.pathname.match(/-(\d{8,})(?:\/|\?|$)/i);
+      if (nkMatch) return `naukri:${nkMatch[1]}`;
+    }
+
+    // SmartRecruiters
+    if (host.includes('smartrecruiters.com')) {
+      const srMatch = u.pathname.match(/\/(\d{7,})[/-]/i);
+      if (srMatch) return `sr:${srMatch[1]}`;
+    }
+
+    // SuccessFactors (e.g. careers.brandix.com/job/.../61595344/)
+    const sfMatch = u.pathname.match(/\/job\/[^/]+\/(\d+)/i);
+    if (sfMatch) return `sf:${host}:${sfMatch[1]}`;
+
+    // Conduent / generic job id in path (/job/:id)
+    const genericJobMatch = u.pathname.match(/\/job\/(\d+)(?:\/|$)/i);
+    if (genericJobMatch) return `jobid:${host}:${genericJobMatch[1]}`;
+
+    return '';
+  } catch {
+    return '';
   }
 }
 
@@ -115,6 +157,7 @@ export function buildCompanyExistingJobIndex(existingJobs = []) {
   const slugs = new Set();
   const applyLinks = new Set();
   const companyTitleKeys = new Set();
+  const jobPostingIds = new Set();
 
   for (const row of existingJobs || []) {
     const slug = String(row?.slug || '').trim().toLowerCase();
@@ -123,6 +166,17 @@ export function buildCompanyExistingJobIndex(existingJobs = []) {
     const apply = normalizeUrlForCompare(row?.apply_link);
     if (apply && !INVALID_APPLY_TOKENS.test(apply)) {
       applyLinks.add(apply);
+      applyLinks.add(apply.replace(/\/+$/, ''));
+      const postingId = extractCanonicalJobPostingId(apply);
+      if (postingId) jobPostingIds.add(postingId);
+    }
+
+    const source = normalizeUrlForCompare(row?.source_url);
+    if (source && !INVALID_APPLY_TOKENS.test(source)) {
+      applyLinks.add(source);
+      applyLinks.add(source.replace(/\/+$/, ''));
+      const postingId = extractCanonicalJobPostingId(source);
+      if (postingId) jobPostingIds.add(postingId);
     }
 
     const ctKey = normalizeCompanyTitleKey(row?.company, row?.title);
@@ -135,9 +189,25 @@ export function buildCompanyExistingJobIndex(existingJobs = []) {
     if (canonicalCompany && canonicalTitle) {
       companyTitleKeys.add(`${canonicalCompany}::${canonicalTitle}`);
     }
+
+    let tNorm = String(row?.title || '').toLowerCase();
+    if (canonicalCompany) {
+      const words = canonicalCompany.split(/\s+/).filter((w) => w.length > 2);
+      for (const w of words) {
+        tNorm = tNorm.replace(new RegExp(`\\b${w}\\b`, 'gi'), ' ');
+      }
+    }
+    tNorm = tNorm
+      .replace(/\b(visakhapatnam|vishakhapatnam|vizag|vsp|andhra\s+pradesh|india)\b/gi, ' ')
+      .replace(/[()[\]{}|/\\-]+/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (canonicalCompany && tNorm) {
+      companyTitleKeys.add(`${canonicalCompany}::${tNorm}`);
+    }
   }
 
-  return { slugs, applyLinks, companyTitleKeys };
+  return { slugs, applyLinks, companyTitleKeys, jobPostingIds };
 }
 
 /**
@@ -163,27 +233,64 @@ export function shouldSkipCompanyCareerJob(job, companyCareersUrl, existingIndex
     return { skip: true, reason: 'missing apply link' };
   }
 
+  const sourceNorm = normalizeUrlForCompare(job?.source_url);
+
+  // 1. Canonical job posting ID check (e.g. SuccessFactors job ID, SmartRecruiters, Naukri, LinkedIn)
+  const incomingPostingId = extractCanonicalJobPostingId(applyRaw) || extractCanonicalJobPostingId(job?.source_url);
+  if (incomingPostingId && existingIndex?.jobPostingIds?.has(incomingPostingId)) {
+    return { skip: true, reason: `job posting ID already published (${incomingPostingId})` };
+  }
+
+  // 2. Slug check
   const slug = String(job?.slug || '').trim().toLowerCase();
   if (slug && existingIndex?.slugs?.has(slug)) {
     return { skip: true, reason: 'slug already in database' };
   }
 
+  // 3. Company & Title check (exact, canonical, and location-stripped)
   const ctKey = normalizeCompanyTitleKey(company, title);
   const canonicalCompany = cleanCompanyForDedupe(company);
   const canonicalTitle = cleanTitleForDedupe(title);
   const canonicalKey = canonicalCompany && canonicalTitle ? `${canonicalCompany}::${canonicalTitle}` : '';
 
+  let normTitle = title.toLowerCase();
+  if (canonicalCompany) {
+    const words = canonicalCompany.split(/\s+/).filter((w) => w.length > 2);
+    for (const w of words) {
+      normTitle = normTitle.replace(new RegExp(`\\b${w}\\b`, 'gi'), ' ');
+    }
+  }
+  normTitle = normTitle
+    .replace(/\b(visakhapatnam|vishakhapatnam|vizag|vsp|andhra\s+pradesh|india)\b/gi, ' ')
+    .replace(/[()[\]{}|/\\-]+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  const normKey = canonicalCompany && normTitle ? `${canonicalCompany}::${normTitle}` : '';
+
   if (
     (ctKey && existingIndex?.companyTitleKeys?.has(ctKey)) ||
-    (canonicalKey && existingIndex?.companyTitleKeys?.has(canonicalKey))
+    (canonicalKey && existingIndex?.companyTitleKeys?.has(canonicalKey)) ||
+    (normKey && existingIndex?.companyTitleKeys?.has(normKey))
   ) {
     return { skip: true, reason: 'role already published for this company' };
   }
 
+  // 4. Distinct apply_link or source_url check
   const hubNorm = normalizeUrlForCompare(companyCareersUrl);
   const isDistinctJobUrl = !hubNorm || applyNorm !== hubNorm;
-  if (isDistinctJobUrl && existingIndex?.applyLinks?.has(applyNorm)) {
+  if (
+    isDistinctJobUrl &&
+    (existingIndex?.applyLinks?.has(applyNorm) || existingIndex?.applyLinks?.has(applyNorm.replace(/\/+$/, '')))
+  ) {
     return { skip: true, reason: 'apply link already in database' };
+  }
+
+  if (
+    sourceNorm &&
+    (!hubNorm || sourceNorm !== hubNorm) &&
+    (existingIndex?.applyLinks?.has(sourceNorm) || existingIndex?.applyLinks?.has(sourceNorm.replace(/\/+$/, '')))
+  ) {
+    return { skip: true, reason: 'source url already in database' };
   }
 
   const qualityReason = getJobPublishBlockReason(job);
@@ -394,7 +501,16 @@ export async function runSingleCompanyCareerPipeline({
     throw new Error('Company name and Careers Page URL are required.');
   }
 
-  const existingIndex = buildCompanyExistingJobIndex(existingJobs);
+  let resolvedExistingJobs = existingJobs;
+  if ((!resolvedExistingJobs || resolvedExistingJobs.length === 0) && typeof services.fetchAdminPlatformJobs === 'function') {
+    try {
+      resolvedExistingJobs = await services.fetchAdminPlatformJobs();
+    } catch {
+      resolvedExistingJobs = [];
+    }
+  }
+
+  const existingIndex = buildCompanyExistingJobIndex(resolvedExistingJobs);
   const publishedJobs = [];
 
   const report = {
@@ -427,7 +543,7 @@ export async function runSingleCompanyCareerPipeline({
   const classifiedResult = await fetchAndClassifyCompanyJobs({
     company,
     accessToken,
-    existingJobs,
+    existingJobs: resolvedExistingJobs,
     signal,
     services,
   });

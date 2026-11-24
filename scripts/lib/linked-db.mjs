@@ -1,130 +1,147 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { createClient } from '@supabase/supabase-js';
+import { pipelineConfig, applyLocalEnv } from './pipeline-env.mjs';
+import {
+  cleanCompanyForDedupe,
+  cleanTitleForDedupe,
+  normalizeUrlForCompare,
+  extractCanonicalJobPostingId,
+  normalizeCompanyTitleKey,
+} from '../../src/lib/companyCareerFetchAutomation.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '../..');
+applyLocalEnv();
 
-export function queryLinkedDb(sql, retries = 2) {
-  const tmpName = `.tmp_query_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.sql`;
-  const tmpPath = path.join(projectRoot, tmpName);
+let supabaseClient = null;
 
-  for (let attempt = 1; attempt <= retries + 1; attempt++) {
-    try {
-      fs.writeFileSync(tmpPath, sql, 'utf8');
-      const stdout = execSync(`npx supabase db query --linked --file "${tmpPath}"`, {
-        cwd: projectRoot,
-        encoding: 'utf8',
-        timeout: 120_000,
-        maxBuffer: 64 * 1024 * 1024, // 64 MB buffer to prevent ENOBUFS
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+export function getSupabaseClient() {
+  if (!supabaseClient) {
+    if (!pipelineConfig.supabaseUrl) {
+      throw new Error('Supabase URL is required.');
+    }
+    const key = pipelineConfig.supabaseServiceRoleKey || pipelineConfig.supabaseAnonKey;
+    if (!key) {
+      throw new Error('Supabase key (service role or anon) is required.');
+    }
+    supabaseClient = createClient(pipelineConfig.supabaseUrl, key, {
+      auth: { persistSession: false },
+    });
+  }
+  return supabaseClient;
+}
 
-      const jsonStart = stdout.indexOf('{');
-      if (jsonStart !== -1) {
-        const parsed = JSON.parse(stdout.slice(jsonStart));
-        return parsed.rows || [];
-      }
-      return [];
-    } catch (err) {
-      const errMsg = err.stderr ? String(err.stderr).slice(0, 300) : err.message;
-      if (attempt <= retries) {
-        // Sleep 2s before retry
-        const waitUntil = Date.now() + 2000;
-        while (Date.now() < waitUntil) {}
-        continue;
-      }
-      throw new Error(`Linked DB query error (after ${attempt} attempts): ${errMsg}`);
-    } finally {
-      if (fs.existsSync(tmpPath)) {
-        try {
-          fs.unlinkSync(tmpPath);
-        } catch {}
-      }
+export async function getEligibleVerifiedCompanies(limit = 3, cooldownDays = 7) {
+  const supabase = getSupabaseClient();
+  const cooldownCutoff = new Date(Date.now() - cooldownDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from('companies')
+    .select('id, name, website, careers_url, verified_careers_url, category, location, last_fetched_at, is_active_for_scrape, is_directory_approved')
+    .eq('is_directory_approved', true)
+    .eq('is_active_for_scrape', true)
+    .not('verified_careers_url', 'is', null)
+    .or(`last_fetched_at.is.null,last_fetched_at.lt.${cooldownCutoff}`)
+    .order('last_fetched_at', { ascending: true, nullsFirst: true })
+    .limit(limit * 3);
+
+  if (error) {
+    throw new Error(`Failed to query eligible companies: ${error.message}`);
+  }
+
+  // Deduplicate by normalized company name so we don't pick two entries for the same company (e.g. Brandix and brandix)
+  const seenCompanies = new Set();
+  const result = [];
+  for (const c of data || []) {
+    const clean = cleanCompanyForDedupe(c.name);
+    if (!seenCompanies.has(clean)) {
+      seenCompanies.add(clean);
+      result.push(c);
+      if (result.length >= limit) break;
     }
   }
+
+  return result;
 }
 
-export function escapeSqlValue(value) {
-  if (value === null || value === undefined) return 'NULL';
-  if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
-  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'NULL';
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "'{}'::text[]";
-    const escapedItems = value.map((v) => `'${String(v).replace(/'/g, "''")}'`);
-    return `ARRAY[${escapedItems.join(', ')}]::text[]`;
+export async function markCompanyLastFetched(companyId) {
+  const supabase = getSupabaseClient();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('companies')
+    .update({ last_fetched_at: now, updated_at: now })
+    .eq('id', companyId);
+  if (error) {
+    console.error(`Warning: Could not update last_fetched_at for company ${companyId}: ${error.message}`);
   }
-  if (typeof value === 'object') {
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
+}
+
+export async function fetchExistingJobKeysLinked(targetCompanyName = '') {
+  const supabase = getSupabaseClient();
+  let allRows = [];
+  let page = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    let query = supabase
+      .from('jobs')
+      .select('slug, apply_link, source_url, company, title, created_at')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (targetCompanyName) {
+      query = query.ilike('company', `%${targetCompanyName.trim()}%`);
+    } else {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gte('created_at', cutoff);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Could not load jobs: ${error.message}`);
+    }
+
+    allRows = allRows.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    page += 1;
   }
-  return `'${String(value).replace(/'/g, "''")}'`;
-}
-
-export function getEligibleVerifiedCompanies(limit = 1) {
-  const sql = `
-    SELECT id, name, website, careers_url, verified_careers_url, category, location, last_fetched_at
-    FROM public.companies
-    WHERE is_directory_approved = true
-      AND is_active_for_scrape = true
-      AND verified_careers_url IS NOT NULL
-      AND verified_careers_url = careers_url
-      AND (last_fetched_at IS NULL OR last_fetched_at < timezone('utc', now()) - INTERVAL '7 days')
-    ORDER BY last_fetched_at ASC NULLS FIRST
-    LIMIT ${Number(limit) || 1};
-  `;
-  return queryLinkedDb(sql);
-}
-
-export function markCompanyLastFetched(companyId) {
-  const sql = `
-    UPDATE public.companies
-    SET last_fetched_at = timezone('utc', now()),
-        updated_at = timezone('utc', now())
-    WHERE id = ${escapeSqlValue(companyId)};
-  `;
-  return queryLinkedDb(sql);
-}
-
-export function fetchExistingJobKeysLinked(targetCompanyName = '') {
-  let whereClause = '';
-  if (targetCompanyName) {
-    const cleanComp = String(targetCompanyName).trim().replace(/'/g, "''");
-    whereClause = `WHERE company ILIKE '%${cleanComp}%'`;
-  } else {
-    whereClause = "WHERE created_at > timezone('utc', now()) - INTERVAL '30 days'";
-  }
-
-  const sql = `
-    SELECT slug, apply_link, source_url, company, title
-    FROM public.jobs
-    ${whereClause};
-  `;
-  const rows = queryLinkedDb(sql);
 
   const slugs = new Set();
   const applyLinks = new Set();
   const companyTitleKeys = new Set();
+  const jobPostingIds = new Set();
 
-  for (const row of rows) {
+  for (const row of allRows) {
     const slug = String(row.slug || '').trim().toLowerCase();
     if (slug) slugs.add(slug);
 
-    const apply = String(row.apply_link || '').trim().toLowerCase().replace(/\/+$/, '');
-    if (apply) applyLinks.add(apply);
+    const apply = normalizeUrlForCompare(row.apply_link);
+    if (apply) {
+      applyLinks.add(apply);
+      applyLinks.add(apply.replace(/\/+$/, ''));
+      const id = extractCanonicalJobPostingId(apply);
+      if (id) jobPostingIds.add(id);
+    }
 
-    const compClean = String(row.company || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    const titleClean = String(row.title || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const source = normalizeUrlForCompare(row.source_url);
+    if (source) {
+      applyLinks.add(source);
+      applyLinks.add(source.replace(/\/+$/, ''));
+      const id = extractCanonicalJobPostingId(source);
+      if (id) jobPostingIds.add(id);
+    }
+
+    const compClean = cleanCompanyForDedupe(row.company);
+    const titleClean = cleanTitleForDedupe(row.title);
     if (compClean && titleClean) {
       companyTitleKeys.add(`${compClean}::${titleClean}`);
     }
 
-    // Also strip company name and location tokens from existing title for matching
+    const ctKey = normalizeCompanyTitleKey(row.company, row.title);
+    if (ctKey) companyTitleKeys.add(ctKey);
+
     let tNorm = String(row.title || '').toLowerCase();
-    const words = compClean.split(/\s+/).filter((w) => w.length > 2);
-    for (const w of words) {
-      tNorm = tNorm.replace(new RegExp(`\\b${w}\\b`, 'gi'), ' ');
+    if (compClean) {
+      const words = compClean.split(/\s+/).filter((w) => w.length > 2);
+      for (const w of words) {
+        tNorm = tNorm.replace(new RegExp(`\\b${w}\\b`, 'gi'), ' ');
+      }
     }
     tNorm = tNorm
       .replace(/\b(visakhapatnam|vishakhapatnam|vizag|vsp|andhra\s+pradesh|india)\b/gi, ' ')
@@ -136,47 +153,42 @@ export function fetchExistingJobKeysLinked(targetCompanyName = '') {
     }
   }
 
-  return { slugs, applyLinks, companyTitleKeys };
+  return { slugs, applyLinks, companyTitleKeys, jobPostingIds };
 }
 
-export function insertJobDirect(payload) {
-  const columns = [
-    'slug',
-    'title',
-    'company',
-    'location',
-    'category',
-    'job_type',
-    'work_mode',
-    'experience',
-    'is_fresher',
-    'salary',
-    'apply_link',
-    'short_description',
-    'description',
-    'responsibilities',
-    'eligibility',
-    'skills',
-    'warning',
-    'source_name',
-    'source_url',
-    'status',
-    'apply_mode',
-    'json_ld',
-    'seo_meta',
-  ];
+export async function insertJobDirect(payload) {
+  const supabase = getSupabaseClient();
 
-  const values = columns.map((col) => escapeSqlValue(payload[col]));
-
-  const sql = `
-    INSERT INTO public.jobs (${columns.join(', ')})
-    VALUES (${values.join(', ')})
-    RETURNING id, title, slug, status;
-  `;
-
-  const rows = queryLinkedDb(sql);
-  if (!rows || rows.length === 0) {
-    throw new Error('Insert did not return created row.');
+  if (payload.apply_link) {
+    const { data: existingByApply } = await supabase
+      .from('jobs')
+      .select('id, slug, title')
+      .or(`apply_link.eq.${payload.apply_link},source_url.eq.${payload.apply_link}`)
+      .limit(1);
+    if (existingByApply && existingByApply.length > 0) {
+      throw new Error(`Duplicate job rejected: apply_link already exists in database (${existingByApply[0].slug}).`);
+    }
   }
-  return rows[0];
+
+  if (payload.slug) {
+    const { data: existingBySlug } = await supabase
+      .from('jobs')
+      .select('id, slug, title')
+      .eq('slug', payload.slug)
+      .limit(1);
+    if (existingBySlug && existingBySlug.length > 0) {
+      throw new Error(`Duplicate job rejected: slug "${payload.slug}" already exists in database.`);
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('jobs')
+    .insert(payload)
+    .select('id, title, slug, status')
+    .single();
+
+  if (error) {
+    throw new Error(`Could not insert job: ${error.message}`);
+  }
+  return data;
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   normalizeUrlForCompare,
+  extractCanonicalJobPostingId,
   cleanCompanyForDedupe,
   cleanTitleForDedupe,
   normalizeCompanyTitleKey,
@@ -1226,4 +1227,89 @@ test('Company Career Fetch: Resilient Error Handling (No 502/Unhandled Exception
     assert.match(res.message, /No open Visakhapatnam vacancies/);
   });
 });
+
+test('Company Career Fetch: Comprehensive Duplicate Job Prevention & URL Canonicalization', async (t) => {
+  await t.test('extractCanonicalJobPostingId correctly identifies immutable job IDs', () => {
+    // SuccessFactors (Brandix, Asian Paints, etc.)
+    assert.equal(
+      extractCanonicalJobPostingId('https://careers.brandix.com/job/Visakhapatnam-Executive-Cutting-Andh/61595344/'),
+      'sf:careers.brandix.com:61595344'
+    );
+    assert.equal(
+      extractCanonicalJobPostingId('https://careers.brandix.com/job/visakhapatnam-executive-cutting-andh/61595344?locale=en_US'),
+      'sf:careers.brandix.com:61595344'
+    );
+    // SmartRecruiters
+    assert.equal(
+      extractCanonicalJobPostingId('https://jobs.smartrecruiters.com/wnsglobalservices144/744000105344195-associate-operations'),
+      'sr:744000105344195'
+    );
+    // Naukri
+    assert.equal(
+      extractCanonicalJobPostingId('https://www.naukri.com/job-listings-executive-cutting-visakhapatnam-211126504080'),
+      'naukri:211126504080'
+    );
+    // LinkedIn
+    assert.equal(
+      extractCanonicalJobPostingId('https://in.linkedin.com/jobs/view/senior-associate-tech-transfers-at-pfizer-4462798105'),
+      'li:4462798105'
+    );
+  });
+
+  await t.test('deduplicates Brandix jobs with trailing slash or locale variations', () => {
+    const existingIndex = buildCompanyExistingJobIndex([
+      {
+        slug: 'executive-cutting-brandix',
+        company: 'Brandix',
+        title: 'Executive - Cutting',
+        apply_link: 'https://careers.brandix.com/job/Visakhapatnam-Executive-Cutting-Andh/61595344/',
+      },
+    ]);
+
+    // Job with lowercase URL and no trailing slash
+    const job1 = {
+      title: 'Executive - Cutting',
+      company: 'Brandix',
+      location: 'Visakhapatnam',
+      apply_link: 'https://careers.brandix.com/job/visakhapatnam-executive-cutting-andh/61595344',
+    };
+    const res1 = shouldSkipCompanyCareerJob(job1, 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam', existingIndex);
+    assert.equal(res1.skip, true);
+    assert.match(res1.reason, /(already published|already in database)/i);
+
+    // Job with tracking/locale query parameter
+    const job2 = {
+      title: 'Executive - Cutting',
+      company: 'Brandix',
+      location: 'Visakhapatnam',
+      apply_link: 'https://careers.brandix.com/job/Visakhapatnam-Executive-Cutting-Andh/61595344/?locale=en_US',
+    };
+    const res2 = shouldSkipCompanyCareerJob(job2, 'https://careers.brandix.com/search/?q=&locationsearch=Visakhapatnam', existingIndex);
+    assert.equal(res2.skip, true);
+    assert.match(res2.reason, /(already published|already in database)/i);
+  });
+
+  await t.test('deduplicates when incoming apply_link matches existing source_url', () => {
+    const existingIndex = buildCompanyExistingJobIndex([
+      {
+        slug: 'qa-engineer-brandix',
+        company: 'Brandix',
+        title: 'QA Engineer',
+        apply_link: 'https://careers.brandix.com/apply/12345',
+        source_url: 'https://careers.brandix.com/job/qa-engineer/12345/',
+      },
+    ]);
+
+    const incoming = {
+      title: 'Quality Assurance Engineer',
+      company: 'Brandix',
+      location: 'Visakhapatnam',
+      apply_link: 'https://careers.brandix.com/job/qa-engineer/12345',
+    };
+    const res = shouldSkipCompanyCareerJob(incoming, 'https://careers.brandix.com/search', existingIndex);
+    assert.equal(res.skip, true);
+    assert.match(res.reason, /(already in database|already published)/i);
+  });
+});
+
 

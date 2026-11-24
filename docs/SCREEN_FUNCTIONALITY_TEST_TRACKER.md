@@ -1,5 +1,36 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-24-Duplicate-Job-Posting-Fix-And-Cleanup
+
+- Scope: Cross-platform deduplication engine and scrapers (`src/lib/companyCareerFetchAutomation.js`, `src/services/adminJobs.js`, `src/components/admin/CompanyCareerFetchAnalytics.jsx`, `scripts/lib/pipeline-publish.mjs`, `scripts/lib/linked-db.mjs`, `scripts/auto-company-careers-15m.mjs`, `scripts/cleanup-duplicate-jobs.mjs`, `tests/company-career-fetch.test.mjs`).
+- Problem resolved:
+  - User reported duplicate jobs posted repeatedly on the platform with identical application URLs, specifically citing `https://careers.brandix.com/job/Visakhapatnam-Executive-Cutting-Andh/61595344/` and duplicate listing `/jobs/manufacturing/executive-cutting-brandix-tihhs`.
+  - Root cause investigation identified:
+    1. **Artificial Suffix Fallback Bug**: When a unique constraint violation (`23505`) on `slug` occurred during insertion, `adminJobs.js`, `pipeline-publish.mjs`, and `auto-company-careers-15m.mjs` caught the error and appended a 4-5 character base36 random timestamp (e.g. `-tihhs`, `-535dd`, `-bt00h`) and forcibly re-inserted, actively creating duplicate jobs whenever an existing job was re-scraped.
+    2. **PostgREST 1,000 Row Truncation**: `fetchAdminJobs()` and `fetchExistingJobKeys()` queried without pagination, fetching only the first 1,000 of >5,000 jobs, causing in-memory deduplication indexes to miss thousands of existing listings.
+    3. **Empty `existingJobs` in UI Pipeline**: `CompanyCareerFetchAnalytics.jsx` called `runSingleCompanyCareerPipeline()` without passing existing jobs, defaulting to an empty list and treating every role as brand new.
+    4. **URL Canonicalization Gaps**: Missing host-scoped canonical job ID extraction (e.g. SuccessFactors requisition ID `61595344`, SmartRecruiters ID, Naukri ID, LinkedIn ID) and tracking parameter / trailing slash stripping.
+    5. **Duplicate Company Ingestion Targets**: Lowercase `brandix` entry had `last_fetched_at = NULL` and was repeatedly picked by scraper queries.
+- Solution delivered:
+  - **Deduplication Overhaul**:
+    - Added `extractCanonicalJobPostingId(url)` for SuccessFactors, SmartRecruiters, Naukri, LinkedIn, and generic ATS IDs.
+    - Added tracking parameter normalization (`utm_*`, `ref`, `source`, `fbclid`, `gclid`, `locale`, `lang`) and trailing slash removal in `normalizeUrlForCompare`.
+    - Paged Supabase queries in chunks of 1,000 across `fetchAdminJobs`, `fetchExistingJobKeys`, and `fetchExistingJobKeysLinked` to index all 5,000+ platform jobs.
+    - Removed all suffix fallback logic (`${slug}-${Date.now().toString(36)}`); duplicate jobs are strictly rejected.
+    - Added pre-insert database checks against `apply_link`, `source_url`, and `slug` in `adminJobs.js` and `pipeline-publish.mjs`.
+    - Updated `CompanyCareerFetchAnalytics.jsx` to load all platform jobs before running single-company scrape pipelines.
+    - Updated `linked-db.mjs` to filter `is_active_for_scrape = true` and deduplicate target companies by normalized name.
+  - **Safe Production Cleanup**:
+    - Developed `scripts/cleanup-duplicate-jobs.mjs` with full record pre-deletion backups (`logs/duplicate-jobs-full-records-1795492444304.json`), canonical job election (retaining clean slugs and oldest records), and click/application count aggregation.
+    - Executed cleanup via service-role credentials: removed 384 duplicate rows and merged 206 interaction metrics into canonical records.
+    - Verified database state: 0 duplicate groups remain across all 5,224 platform jobs. Specifically, Brandix `Executive - Cutting` retains only 1 canonical official portal job (`executive-cutting-brandix`) and 1 distinct Naukri portal posting.
+    - Regenerated `public/sitemap.xml` (reduced from 1,396 to 1,162 valid unique URLs).
+- Verification:
+  - `node --test tests/company-career-fetch.test.mjs`: 59/59 passed (including 3 new tests for canonical job IDs, trailing slash variations, and apply_link vs source_url cross-checks).
+  - Production build: `npm run build` compiled clean with sitemap generation in 3.22s.
+  - ESLint: 0 errors, 0 warnings across all modified components and scripts.
+  - Verification audit: `node scripts/cleanup-duplicate-jobs.mjs` confirmed 0 duplicate groups.
+
 ## QA-2026-11-23-Admin-Company-Career-Fetch-Analytics
 
 - Scope: S055 `/companies` (`CompaniesInVizagPage.jsx`); added dedicated admin company career analytics component `src/components/admin/CompanyCareerFetchAnalytics.jsx`; updated `src/services/adminCompanies.js`.

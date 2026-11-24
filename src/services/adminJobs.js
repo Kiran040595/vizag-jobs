@@ -857,21 +857,32 @@ export const fetchAdminJobs = async (options = {}) => {
 
   const scope = options.scope || 'all';
 
-  let query = supabase
-    .from(JOBS_TABLE)
-    .select('*')
-    .order('posted_at', { ascending: false })
-    .order('created_at', { ascending: false });
+  let allData = [];
+  let page = 0;
+  const pageSize = 1000;
 
-  query = applyAdminJobScope(query, scope);
+  while (true) {
+    let query = supabase
+      .from(JOBS_TABLE)
+      .select('*')
+      .order('posted_at', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
 
-  const { data, error } = await query;
+    query = applyAdminJobScope(query, scope);
 
-  if (error) {
-    throw mapError(error, 'Could not load admin jobs.');
+    const { data, error } = await query;
+
+    if (error) {
+      throw mapError(error, 'Could not load admin jobs.');
+    }
+
+    allData = allData.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    page += 1;
   }
 
-  return data || [];
+  return allData;
 };
 
 /** Lightweight reviewed-job requirements for the candidate browser. */
@@ -1072,16 +1083,32 @@ export const createAdminJob = async (values, statusOverride) => {
     throw new Error('Missing role. Edit the job before publishing.');
   }
 
+  // Direct duplicate guard: check if apply_link or slug already exists in database
+  if (payload.apply_link) {
+    const { data: existingByApply } = await supabase
+      .from(JOBS_TABLE)
+      .select('id, slug, title')
+      .or(`apply_link.eq.${payload.apply_link},source_url.eq.${payload.apply_link}`)
+      .limit(1);
+    if (existingByApply && existingByApply.length > 0) {
+      throw new Error(`Duplicate job rejected: apply link already exists in job "${existingByApply[0].title}" (${existingByApply[0].slug}).`);
+    }
+  }
+
+  if (payload.slug) {
+    const { data: existingBySlug } = await supabase
+      .from(JOBS_TABLE)
+      .select('id, slug, title')
+      .eq('slug', payload.slug)
+      .limit(1);
+    if (existingBySlug && existingBySlug.length > 0) {
+      throw new Error(`Duplicate job rejected: slug "${payload.slug}" already exists in job "${existingBySlug[0].title}".`);
+    }
+  }
+
   const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();
 
   let { data, error } = await insertOnce(payload);
-
-  if (error?.code === '23505' && payload.slug) {
-    const suffix = Date.now().toString(36).slice(-5);
-    const nextSlug = `${payload.slug}-${suffix}`.replace(/-+/g, '-').slice(0, 160);
-    payload = { ...payload, slug: nextSlug };
-    ({ data, error } = await insertOnce(payload));
-  }
 
   if (error) {
     throw mapError(error, 'Could not create the job.');
@@ -1152,13 +1179,6 @@ export const createAdminJobsFromSql = async (sqlQuery) => {
     const insertOnce = (row) => supabase.from(JOBS_TABLE).insert(row).select('*').single();
 
     let { data, error } = await insertOnce(payload);
-
-    if (error?.code === '23505' && payload.slug) {
-      const suffix = `${Date.now().toString(36).slice(-4)}-${index + 1}`;
-      const nextSlug = `${payload.slug}-${suffix}`.replace(/-+/g, '-').slice(0, 160);
-      payload = { ...payload, slug: nextSlug };
-      ({ data, error } = await insertOnce(payload));
-    }
 
     if (error) {
       throw mapError(error, `Could not create job #${index + 1} (${payload.title}) from SQL.`);

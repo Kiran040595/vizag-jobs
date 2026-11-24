@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchDirectCompanyJobsTotalCount, updateCompanyLastFetchedAt } from '../../services/adminCompanies';
+import { fetchAdminPlatformJobs } from '../../services/adminJobs';
 import { runSingleCompanyCareerPipeline } from '../../lib/companyCareerFetchAutomation';
 import { pushToast } from '../../lib/toast';
 
@@ -84,10 +85,12 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
   const [searchFilter, setSearchFilter] = useState('');
   const [isFetchingSingle, setIsFetchingSingle] = useState(null); // company.name
   const [isLoadingCount, setIsLoadingCount] = useState(true);
+  const [nowTimestamp, setNowTimestamp] = useState(() => Date.now());
 
   // Load exact total direct jobs count from DB
   const loadDirectJobsCount = useCallback(async () => {
     setIsLoadingCount(true);
+    setNowTimestamp(Date.now());
     try {
       const count = await fetchDirectCompanyJobsTotalCount();
       setDirectJobsCount(count);
@@ -114,7 +117,7 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
     let dueCount = 0;
     let cooldownCount = 0;
     let fetchedTodayCount = 0;
-    const now = Date.now();
+    const now = nowTimestamp;
     const oneDayMs = 24 * 60 * 60 * 1000;
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
@@ -143,7 +146,7 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
       fetchedTodayCount,
       totalActiveJobs,
     };
-  }, [verifiedCompanies]);
+  }, [verifiedCompanies, nowTimestamp]);
 
   // Filtered companies based on tabs and search
   const filteredList = useMemo(() => {
@@ -153,13 +156,13 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
       list = list.filter((c) => {
         if (!c.lastFetchedAt) return true;
         const time = new Date(c.lastFetchedAt).getTime();
-        return isNaN(time) || Date.now() - time > 7 * 24 * 60 * 60 * 1000;
+        return isNaN(time) || nowTimestamp - time > 7 * 24 * 60 * 60 * 1000;
       });
     } else if (activeTab === 'COOLDOWN') {
       list = list.filter((c) => {
         if (!c.lastFetchedAt) return false;
         const time = new Date(c.lastFetchedAt).getTime();
-        return !isNaN(time) && Date.now() - time <= 7 * 24 * 60 * 60 * 1000;
+        return !isNaN(time) && nowTimestamp - time <= 7 * 24 * 60 * 60 * 1000;
       });
     } else if (activeTab === 'WITH_JOBS') {
       list = list.filter((c) => (c.activeJobsCount || 0) > 0);
@@ -177,13 +180,13 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
 
     // Sort: Due first, then by live jobs count descending
     return [...list].sort((a, b) => {
-      const aDue = !a.lastFetchedAt || Date.now() - new Date(a.lastFetchedAt).getTime() > 7 * 24 * 60 * 60 * 1000;
-      const bDue = !b.lastFetchedAt || Date.now() - new Date(b.lastFetchedAt).getTime() > 7 * 24 * 60 * 60 * 1000;
+      const aDue = !a.lastFetchedAt || nowTimestamp - new Date(a.lastFetchedAt).getTime() > 7 * 24 * 60 * 60 * 1000;
+      const bDue = !b.lastFetchedAt || nowTimestamp - new Date(b.lastFetchedAt).getTime() > 7 * 24 * 60 * 60 * 1000;
       if (aDue && !bDue) return -1;
       if (!aDue && bDue) return 1;
       return (b.activeJobsCount || 0) - (a.activeJobsCount || 0);
     });
-  }, [verifiedCompanies, activeTab, searchFilter]);
+  }, [verifiedCompanies, activeTab, searchFilter, nowTimestamp]);
 
   // Handle manual single-company fetch trigger
   const handleManualFetch = async (company) => {
@@ -196,6 +199,7 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
         type: 'info',
       });
 
+      const existingJobs = await fetchAdminPlatformJobs().catch(() => []);
       const report = await runSingleCompanyCareerPipeline({
         company: {
           name: company.name,
@@ -205,6 +209,10 @@ export default function CompanyCareerFetchAnalytics({ companies = [], onRefresh,
           location: company.location,
         },
         accessToken: session?.access_token,
+        existingJobs,
+        services: {
+          fetchAdminPlatformJobs,
+        },
       });
 
       // Update cooldown in Supabase

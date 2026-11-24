@@ -12,6 +12,8 @@ import { getJobPublishBlockReason } from '../../src/lib/jobPublishQuality.js';
 import {
   cleanCompanyForDedupe,
   cleanTitleForDedupe,
+  normalizeUrlForCompare,
+  extractCanonicalJobPostingId,
 } from '../../src/lib/companyCareerFetchAutomation.js';
 
 const REQUIRED_DEFAULTS = { location: 'Visakhapatnam', experience: '' };
@@ -191,27 +193,56 @@ function getSupabaseAdmin() {
   return supabaseAdmin;
 }
 
-export async function fetchExistingJobKeys() {
+export async function fetchExistingJobKeys(days = 0) {
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from(pipelineConfig.jobsTable)
-    .select('slug, apply_link, source_url, company, title');
+  let allData = [];
+  let page = 0;
+  const pageSize = 1000;
 
-  if (error) {
-    throw new Error(`Could not load existing jobs: ${error.message}`);
+  while (true) {
+    let query = supabase
+      .from(pipelineConfig.jobsTable)
+      .select('slug, apply_link, source_url, company, title, created_at')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (days > 0) {
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gte('created_at', cutoff);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Could not load existing jobs: ${error.message}`);
+    }
+
+    allData = allData.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    page += 1;
   }
 
   const slugs = new Set();
   const applyLinks = new Set();
   const companyTitleKeys = new Set();
+  const jobPostingIds = new Set();
 
-  for (const row of data || []) {
+  for (const row of allData || []) {
     const slug = normalizeText(row.slug).toLowerCase();
     if (slug) slugs.add(slug);
 
-    const apply = normalizeText(row.apply_link).toLowerCase().replace(/\/+$/, '');
+    const apply = normalizeUrlForCompare(row.apply_link);
     if (apply && !isInvalidApplyLink(apply)) {
       applyLinks.add(apply);
+      applyLinks.add(apply.replace(/\/+$/, ''));
+      const id = extractCanonicalJobPostingId(apply);
+      if (id) jobPostingIds.add(id);
+    }
+
+    const source = normalizeUrlForCompare(row.source_url);
+    if (source && !isInvalidApplyLink(source)) {
+      applyLinks.add(source);
+      applyLinks.add(source.replace(/\/+$/, ''));
+      const id = extractCanonicalJobPostingId(source);
+      if (id) jobPostingIds.add(id);
     }
 
     const cleanComp = normalizeText(row.company).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -225,9 +256,25 @@ export async function fetchExistingJobKeys() {
     if (canonicalComp && canonicalTitle) {
       companyTitleKeys.add(`${canonicalComp}::${canonicalTitle}`);
     }
+
+    let tNorm = String(row.title || '').toLowerCase();
+    if (canonicalComp) {
+      const words = canonicalComp.split(/\s+/).filter((w) => w.length > 2);
+      for (const w of words) {
+        tNorm = tNorm.replace(new RegExp(`\\b${w}\\b`, 'gi'), ' ');
+      }
+    }
+    tNorm = tNorm
+      .replace(/\b(visakhapatnam|vishakhapatnam|vizag|vsp|andhra\s+pradesh|india)\b/gi, ' ')
+      .replace(/[()[\]{}|/\\-]+/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (canonicalComp && tNorm) {
+      companyTitleKeys.add(`${canonicalComp}::${tNorm}`);
+    }
   }
 
-  return { slugs, applyLinks, companyTitleKeys };
+  return { slugs, applyLinks, companyTitleKeys, jobPostingIds };
 }
 
 export function getJobDedupeKey(job) {
@@ -245,17 +292,58 @@ export function shouldSkipJob(job, existing) {
     return { skip: true, reason: 'missing apply link' };
   }
 
+  const applyNorm = normalizeUrlForCompare(applyLink);
+  const sourceNorm = normalizeUrlForCompare(job?.source_url);
+
+  if (applyNorm && (existing.applyLinks.has(applyNorm) || existing.applyLinks.has(applyNorm.replace(/\/+$/, '')))) {
+    return { skip: true, reason: 'apply link already in database' };
+  }
+  if (sourceNorm && (existing.applyLinks.has(sourceNorm) || existing.applyLinks.has(sourceNorm.replace(/\/+$/, '')))) {
+    return { skip: true, reason: 'source url already in database' };
+  }
+
+  const postingId = extractCanonicalJobPostingId(applyLink) || extractCanonicalJobPostingId(job?.source_url);
+  if (postingId && existing.jobPostingIds?.has(postingId)) {
+    return { skip: true, reason: `job posting ID already in database (${postingId})` };
+  }
+
   const slug = normalizeText(job.slug).toLowerCase();
   if (slug && existing.slugs.has(slug)) {
     return { skip: true, reason: 'slug already in database' };
   }
 
-  if (existing.applyLinks.has(applyLink.toLowerCase())) {
-    return { skip: true, reason: 'apply link already in database' };
+  const company = normalizeText(job.company);
+  const title = normalizeText(job.title);
+  if (!company || !title) {
+    return { skip: true, reason: 'missing title or company' };
   }
 
-  if (!normalizeText(job.title) || !normalizeText(job.company)) {
-    return { skip: true, reason: 'missing title or company' };
+  const cleanComp = company.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  if (cleanComp && cleanTitle && existing.companyTitleKeys.has(`${cleanComp}::${cleanTitle}`)) {
+    return { skip: true, reason: 'role already published for this company' };
+  }
+
+  const canonicalComp = cleanCompanyForDedupe(company);
+  const canonicalTitle = cleanTitleForDedupe(title);
+  if (canonicalComp && canonicalTitle && existing.companyTitleKeys.has(`${canonicalComp}::${canonicalTitle}`)) {
+    return { skip: true, reason: 'role already published for this company' };
+  }
+
+  let tNorm = title.toLowerCase();
+  if (canonicalComp) {
+    const words = canonicalComp.split(/\s+/).filter((w) => w.length > 2);
+    for (const w of words) {
+      tNorm = tNorm.replace(new RegExp(`\\b${w}\\b`, 'gi'), ' ');
+    }
+  }
+  tNorm = tNorm
+    .replace(/\b(visakhapatnam|vishakhapatnam|vizag|vsp|andhra\s+pradesh|india)\b/gi, ' ')
+    .replace(/[()[\]{}|/\\-]+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  if (canonicalComp && tNorm && existing.companyTitleKeys.has(`${canonicalComp}::${tNorm}`)) {
+    return { skip: true, reason: 'role already published for this company' };
   }
 
   const qualityReason = getJobPublishBlockReason(job);
@@ -294,17 +382,34 @@ export async function publishJob(job, status = 'published') {
   }
 
   const supabase = getSupabaseAdmin();
+
+  // Direct database duplicate guard before insertion
+  if (payload.apply_link) {
+    const { data: existingByApply } = await supabase
+      .from(pipelineConfig.jobsTable)
+      .select('id, slug, title')
+      .or(`apply_link.eq.${payload.apply_link},source_url.eq.${payload.apply_link}`)
+      .limit(1);
+    if (existingByApply && existingByApply.length > 0) {
+      throw new Error(`Duplicate job rejected: apply_link already exists in database (${existingByApply[0].slug}).`);
+    }
+  }
+
+  if (payload.slug) {
+    const { data: existingBySlug } = await supabase
+      .from(pipelineConfig.jobsTable)
+      .select('id, slug, title')
+      .eq('slug', payload.slug)
+      .limit(1);
+    if (existingBySlug && existingBySlug.length > 0) {
+      throw new Error(`Duplicate job rejected: slug "${payload.slug}" already exists in database.`);
+    }
+  }
+
   const insertOnce = (row) =>
     supabase.from(pipelineConfig.jobsTable).insert(row).select('*').single();
 
   let { data, error } = await insertOnce(payload);
-
-  if (error?.code === '23505' && payload.slug) {
-    const suffix = Date.now().toString(36).slice(-5);
-    const nextSlug = `${payload.slug}-${suffix}`.replace(/-+/g, '-').slice(0, 160);
-    payload = { ...payload, slug: nextSlug };
-    ({ data, error } = await insertOnce(payload));
-  }
 
   if (error) {
     throw new Error(error.message || 'Could not publish job.');
