@@ -15,35 +15,71 @@ const mapReplyNotification = (row) => {
   };
 };
 
-export const fetchReplyNotifications = async (userId) => {
+const replyNotificationsCache = new Map();
+const inFlightReplyPromises = new Map();
+const REPLY_NOTIFICATIONS_TTL_MS = 60 * 1000; // 60 seconds
+
+export const invalidateReplyNotificationsCache = (userId = null) => {
+  if (userId) {
+    replyNotificationsCache.delete(userId);
+    inFlightReplyPromises.delete(userId);
+  } else {
+    replyNotificationsCache.clear();
+    inFlightReplyPromises.clear();
+  }
+};
+
+export const fetchReplyNotifications = async (userId, options = {}) => {
+  const { forceRefresh = false } = options;
   if (!isSupabaseConfigured || !supabase || !userId) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('reply_notifications')
-    .select('id, kind, ref_id, title, preview, link_path, is_read, is_dismissed, created_at')
-    .eq('user_id', userId)
-    .eq('is_dismissed', false)
-    .order('created_at', { ascending: false })
-    .limit(30);
-
-  if (error) {
-    throw new Error(error.message);
+  if (!forceRefresh) {
+    const cached = replyNotificationsCache.get(userId);
+    if (cached && Date.now() - cached.timestamp < REPLY_NOTIFICATIONS_TTL_MS) {
+      return cached.data;
+    }
+    if (inFlightReplyPromises.has(userId)) {
+      return inFlightReplyPromises.get(userId);
+    }
   }
 
-  // Filter out any broadcast Q&A spam so students only see notifications directed to them
-  const rows = (data || []).filter((row) => {
-    if (row.kind === 'job_question') {
-      const title = String(row.title || '');
-      if (title.startsWith('New Q&A:') || title.startsWith('New Q&A answered for')) {
-        return false;
-      }
-    }
-    return true;
-  });
+  const fetchPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reply_notifications')
+        .select('id, kind, ref_id, title, preview, link_path, is_read, is_dismissed, created_at')
+        .eq('user_id', userId)
+        .eq('is_dismissed', false)
+        .order('created_at', { ascending: false })
+        .limit(30);
 
-  return rows.map(mapReplyNotification);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Filter out any broadcast Q&A spam so students only see notifications directed to them
+      const rows = (data || []).filter((row) => {
+        if (row.kind === 'job_question') {
+          const title = String(row.title || '');
+          if (title.startsWith('New Q&A:') || title.startsWith('New Q&A answered for')) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      const mapped = rows.map(mapReplyNotification);
+      replyNotificationsCache.set(userId, { timestamp: Date.now(), data: mapped });
+      return mapped;
+    } finally {
+      inFlightReplyPromises.delete(userId);
+    }
+  })();
+
+  inFlightReplyPromises.set(userId, fetchPromise);
+  return fetchPromise;
 };
 
 export const fetchUnreadReplyNotificationCount = async (userId) => {
@@ -65,6 +101,7 @@ export const markReplyNotificationRead = async ({ notificationId, userId }) => {
   if (error) {
     throw new Error(error.message);
   }
+  invalidateReplyNotificationsCache(userId);
 };
 
 export const dismissReplyNotification = async ({ notificationId, userId }) => {
@@ -81,6 +118,7 @@ export const dismissReplyNotification = async ({ notificationId, userId }) => {
   if (error) {
     throw new Error(error.message);
   }
+  invalidateReplyNotificationsCache(userId);
 };
 
 export const dismissAllReplyNotifications = async (userId) => {
@@ -97,6 +135,7 @@ export const dismissAllReplyNotifications = async (userId) => {
   if (error) {
     throw new Error(error.message);
   }
+  invalidateReplyNotificationsCache(userId);
 };
 
 export const formatReplyNotificationTime = (value) => {

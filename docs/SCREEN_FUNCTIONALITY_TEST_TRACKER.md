@@ -1,5 +1,35 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-24-Supabase-Egress-PostgREST-Throttling-And-Caching
+
+- Scope: Database query throttling, response payload optimization, and client caching (`src/services/jobApplications.js`, `src/hooks/useAppliedJobsCount.js`, `src/services/jobQuestions.js`, `src/services/replyNotifications.js`, `src/components/QuestionNotificationBell.jsx`, `tests/query-throttling-and-caching.test.mjs`, `tests/applied-jobs-count-cache.test.mjs`).
+- Problem resolved:
+  - Supabase dashboard flagged Egress overage (6.817 GB / 5 GB limit) and Log Ingestion overage (1.25 GB / 1 GB limit), with grace period active until 16 Dec 2026.
+  - Analysis of daily egress confirmed PostgREST API traffic accounts for **97.4%** (141.6 MB on Nov 24 alone).
+  - Log analysis of `supabase_logs (1).json` revealed 1,000 HTTP requests in an 18-minute window (40+ requests/min per active mobile user) hitting 5 specific endpoints:
+    1. `/rest/v1/job_questions` (221 calls): Uncached repeated fetches on job details views.
+    2. `/rest/v1/job_applications` (189 calls) & `/auth/v1/user` (174 calls): `useAppliedJobsCount` hook in navbar fired on every route change, calling `supabase.auth.getUser()` and querying full `job_applications` (18 columns + joined `jobs` table) just to read array length for an integer badge.
+    3. Double-mounting in `Navbar.jsx`: Desktop (`hidden lg:flex`) and mobile (`lg:hidden`) instances of `NavbarAppliedJobsLink` and `QuestionNotificationBell` both mounted simultaneously in the DOM, doubling every network fetch and WebSocket connection.
+    4. `/rest/v1/reply_notifications` (143 calls): Dual bells polling every 60s and maintaining duplicate Realtime channels without background tab pausing.
+- Solution delivered:
+  - **Zero-Payload Application Count & In-Memory Cache**:
+    - Replaced heavy `fetchMyApplications()` in `useAppliedJobsCount.js` with `fetchMyApplicationsCount(userId)` querying `select('id', { count: 'exact', head: true })`. Drops network payload from ~100 KB to ~200 bytes per call.
+    - Added in-flight Promise deduplication and 3-minute TTL cache in `jobApplications.js` with cross-component listener subscriptions so desktop and mobile links share a single request.
+    - Added automatic cache invalidation on new job application submission.
+  - **Job Questions Client Caching**:
+    - Added 3-minute in-memory cache and in-flight Promise deduplication to `fetchPublishedJobQuestions(jobId)` in `jobQuestions.js`.
+    - Browsing between job listings or revisiting tabs now reads from memory with 0 network calls.
+    - Added cache invalidation on question submission, answer publishing, and deletion.
+  - **Notification Polling & Realtime Channel Deduplication**:
+    - Added 60s in-memory cache and in-flight Promise deduplication to `fetchReplyNotifications(userId)` in `replyNotifications.js`.
+    - Added `sharedReplyChannels` map in `QuestionNotificationBell.jsx` so desktop and mobile bell components share a single Realtime WebSocket channel per user.
+    - Added `document.hidden` guard and `visibilitychange` listener to suspend the 60s polling interval whenever the tab is in the background or phone screen is locked.
+- Verification:
+  - `node --test tests/query-throttling-and-caching.test.mjs`: PASSED (verified all TTLs, caching maps, head count queries, and visibility guards).
+  - `node --test tests/applied-jobs-count-cache.test.mjs`: PASSED.
+  - `node --test tests/admin-bell-notifications.test.mjs tests/navbar-mobile-notifications.test.mjs tests/notification-inbox.test.mjs`: 18/18 PASSED.
+  - `npm run build`: Production build compiled cleanly in 9.15s (1,158 sitemap URLs).
+
 ## QA-2026-11-24-GitHub-Actions-And-Local-Runner-7-Day-Cooldown-Sync
 
 - Scope: Cloud and local career fetch pipelines (`scripts/auto-company-careers.mjs`, `scripts/lib/linked-db.mjs`, `tests/company-career-fetch.test.mjs`, `.github/workflows/auto-company-careers-weekly.yml`).

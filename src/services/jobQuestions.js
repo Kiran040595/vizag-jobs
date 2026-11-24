@@ -208,6 +208,10 @@ export const insertPendingJobQuestion = async ({
     throw new Error(error.message);
   }
 
+  if (jobId) {
+    invalidatePublishedJobQuestionsCache(jobId);
+  }
+
   return { submitted: true };
 };
 
@@ -548,24 +552,61 @@ export const fetchAdminAllJobQuestions = async ({
   return (data || []).map(mapQuestion);
 };
 
-export const fetchPublishedJobQuestions = async (jobId) => {
+const publishedQuestionsCache = new Map();
+const inFlightQuestionPromises = new Map();
+const PUBLISHED_QUESTIONS_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
+export const invalidatePublishedJobQuestionsCache = (jobId = null) => {
+  if (jobId) {
+    publishedQuestionsCache.delete(jobId);
+    inFlightQuestionPromises.delete(jobId);
+  } else {
+    publishedQuestionsCache.clear();
+    inFlightQuestionPromises.clear();
+  }
+};
+
+export const fetchPublishedJobQuestions = async (jobId, options = {}) => {
+  const { forceRefresh = false } = options;
+
   if (!isSupabaseConfigured || !supabase || !jobId) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('job_questions')
-    .select(QUESTION_COLUMNS)
-    .eq('job_id', jobId)
-    .eq('status', 'published')
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
+  if (!forceRefresh) {
+    const cached = publishedQuestionsCache.get(jobId);
+    if (cached && Date.now() - cached.timestamp < PUBLISHED_QUESTIONS_TTL_MS) {
+      return cached.data;
+    }
+    if (inFlightQuestionPromises.has(jobId)) {
+      return inFlightQuestionPromises.get(jobId);
+    }
   }
 
-  return (data || []).map(mapQuestion);
+  const fetchPromise = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('job_questions')
+        .select(QUESTION_COLUMNS)
+        .eq('job_id', jobId)
+        .eq('status', 'published')
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const mapped = (data || []).map(mapQuestion);
+      publishedQuestionsCache.set(jobId, { timestamp: Date.now(), data: mapped });
+      return mapped;
+    } finally {
+      inFlightQuestionPromises.delete(jobId);
+    }
+  })();
+
+  inFlightQuestionPromises.set(jobId, fetchPromise);
+  return fetchPromise;
 };
 
 export const fetchModeratorJobQuestions = async (jobId) => {
@@ -651,6 +692,9 @@ export const saveJobQuestionAnswer = async ({ questionId, answerBody, userId }) 
     status: mapped.status,
   });
 
+  if (mapped.jobId) {
+    invalidatePublishedJobQuestionsCache(mapped.jobId);
+  }
   return mapped;
 };
 
@@ -705,6 +749,9 @@ export const publishJobQuestion = async ({ questionId, userId, answerBody }) => 
     status: mapped.status,
   });
 
+  if (mapped.jobId) {
+    invalidatePublishedJobQuestionsCache(mapped.jobId);
+  }
   return mapped;
 };
 
@@ -724,7 +771,11 @@ export const deleteJobQuestion = async (questionId) => {
     throw new Error(error.message);
   }
 
-  return mapQuestion(data);
+  const deleted = mapQuestion(data);
+  if (deleted?.jobId) {
+    invalidatePublishedJobQuestionsCache(deleted.jobId);
+  }
+  return deleted;
 };
 
 export const ignoreJobQuestion = async ({ questionId, userId }) => {

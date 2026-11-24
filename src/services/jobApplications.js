@@ -1,14 +1,14 @@
-import { enrichQuickCandidate } from '../lib/quickApply';
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
-import { getJobDetailPath } from '../lib/jobRoutes';
+import { enrichQuickCandidate } from '../lib/quickApply.js';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+import { getJobDetailPath } from '../lib/jobRoutes.js';
 import {
   APPLICATION_STATUSES,
   normalizeApplicationStatus,
-} from '../lib/applicationStatus';
-import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume';
-import { fetchStudentProfile } from './studentJobs';
-import { mapHiringProgressRow } from '../lib/hiringProgress';
-import { notifyApplicationStatusChange } from '../lib/applicationPushNotify';
+} from '../lib/applicationStatus.js';
+import { createResumeSignedUrl, saveResumePathOnProfile, uploadStudentResume } from './studentResume.js';
+import { fetchStudentProfile } from './studentJobs.js';
+import { mapHiringProgressRow } from '../lib/hiringProgress.js';
+import { notifyApplicationStatusChange } from '../lib/applicationPushNotify.js';
 
 const APPLICATION_COLUMNS = `
   id,
@@ -135,14 +135,120 @@ export const fetchMyApplicationForJob = async (jobId) => {
   return mapApplication(data);
 };
 
+const COUNT_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
+let countCache = {
+  userId: null,
+  count: 0,
+  expiresAt: 0,
+};
+
+let inFlightCountPromise = null;
+const countListeners = new Set();
+
+export const subscribeAppliedJobsCount = (listener) => {
+  countListeners.add(listener);
+  return () => {
+    countListeners.delete(listener);
+  };
+};
+
+export const getCachedAppliedJobsCount = (userId) => {
+  if (userId && countCache.userId === userId && Date.now() < countCache.expiresAt) {
+    return countCache.count;
+  }
+  return null;
+};
+
+export const setCachedAppliedJobsCount = (userId, count) => {
+  countCache = {
+    userId,
+    count: Number(count) || 0,
+    expiresAt: Date.now() + COUNT_CACHE_TTL_MS,
+  };
+  countListeners.forEach((fn) => {
+    try {
+      fn(countCache.count);
+    } catch {
+      // ignore
+    }
+  });
+};
+
+export const invalidateAppliedJobsCount = (userId = null) => {
+  if (!userId || countCache.userId === userId) {
+    countCache = {
+      userId: null,
+      count: 0,
+      expiresAt: 0,
+    };
+  }
+  inFlightCountPromise = null;
+};
+
+export const fetchMyApplicationsCount = async (userId = null, options = {}) => {
+  const { forceRefresh = false } = options;
+
+  if (!isSupabaseConfigured || !supabase) {
+    return 0;
+  }
+
+  let resolvedUserId = userId;
+  if (!resolvedUserId) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    resolvedUserId = sessionData?.session?.user?.id || null;
+  }
+
+  if (!resolvedUserId) {
+    return 0;
+  }
+
+  if (!forceRefresh) {
+    const cached = getCachedAppliedJobsCount(resolvedUserId);
+    if (cached !== null) {
+      return cached;
+    }
+    if (inFlightCountPromise) {
+      return inFlightCountPromise;
+    }
+  }
+
+  inFlightCountPromise = (async () => {
+    try {
+      const { count, error } = await supabase
+        .from('job_applications')
+        .select('id', { count: 'exact', head: true })
+        .eq('student_user_id', resolvedUserId);
+
+      if (error) {
+        console.warn('[jobApplications] Failed to fetch count:', error.message);
+        return 0;
+      }
+
+      const total = count ?? 0;
+      setCachedAppliedJobsCount(resolvedUserId, total);
+      return total;
+    } finally {
+      inFlightCountPromise = null;
+    }
+  })();
+
+  return inFlightCountPromise;
+};
+
 export const fetchMyApplications = async () => {
   if (!isSupabaseConfigured || !supabase) {
     return [];
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData?.session?.user) {
+    user = sessionData.session.user;
+  } else {
+    const { data } = await supabase.auth.getUser();
+    user = data?.user || null;
+  }
 
   if (!user) {
     return [];
@@ -167,7 +273,9 @@ export const fetchMyApplications = async () => {
     throw new Error(error.message);
   }
 
-  return (data || []).map(mapApplication);
+  const mapped = (data || []).map(mapApplication);
+  setCachedAppliedJobsCount(user.id, mapped.length);
+  return mapped;
 };
 
 export const fetchJobApplications = async (jobId) => {
@@ -402,6 +510,7 @@ export const submitJobApplication = async ({ jobId, coverNote, resumeFile, exist
     throw new Error(error.message);
   }
 
+  invalidateAppliedJobsCount(user.id);
   return mapApplication(data);
 };
 
@@ -609,7 +718,7 @@ export const cancelApplicationInterview = async ({
 export const getApplicationResumeUrl = async (application) =>
   createResumeSignedUrl(application?.resumePath);
 
-export { formatApplicationStatus } from '../lib/applicationStatus';
+export { formatApplicationStatus } from '../lib/applicationStatus.js';
 
 export const formatApplicationTime = (value) => {
   if (!value) {

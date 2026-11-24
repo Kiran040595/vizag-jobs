@@ -40,6 +40,8 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import { isWebNotificationSupported } from '../lib/webPush';
 
+const sharedReplyChannels = new Map();
+
 export default function QuestionNotificationBell(props) {
   const admin = useAdminAuth();
   const employer = useEmployerAuth();
@@ -138,11 +140,26 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
     loadNotifications();
 
     const intervalId = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        return;
+      }
       loadNotificationsRef.current?.();
     }, 60_000);
 
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        loadNotificationsRef.current?.();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
     return () => {
       window.clearInterval(intervalId);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
       requestVersion.current += 1;
     };
   }, [authLoading, loadNotifications]);
@@ -150,39 +167,58 @@ function NotificationBellInbox({ className = '', onOpenChange }) {
   useEffect(() => {
     if (authLoading || !inboxUserId || !supabase) return undefined;
 
-    const channelName = `reply-inbox-${inboxUserId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    let channel = null;
-
-    try {
-      channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'reply_notifications',
-            filter: `user_id=eq.${inboxUserId}`,
-          },
-          () => {
-            loadNotificationsRef.current?.();
-          },
-        )
-        .subscribe((status) => {
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn(`Realtime subscription status for ${channelName}:`, status);
-          }
-        });
-    } catch (error) {
-      console.warn('Realtime subscription failed for reply notifications:', error);
+    let entry = sharedReplyChannels.get(inboxUserId);
+    if (!entry) {
+      const channelName = `reply-inbox-${inboxUserId}`;
+      let channel = null;
+      try {
+        channel = supabase
+          .channel(channelName)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'reply_notifications',
+              filter: `user_id=eq.${inboxUserId}`,
+            },
+            () => {
+              const currentEntry = sharedReplyChannels.get(inboxUserId);
+              currentEntry?.listeners.forEach((listener) => listener());
+            },
+          )
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              console.warn(`Realtime subscription status for ${channelName}:`, status);
+            }
+          });
+      } catch (error) {
+        console.warn('Realtime subscription failed for reply notifications:', error);
+      }
+      entry = { channel, refCount: 0, listeners: new Set() };
+      sharedReplyChannels.set(inboxUserId, entry);
     }
 
+    entry.refCount += 1;
+    const onNotificationChange = () => {
+      loadNotificationsRef.current?.();
+    };
+    entry.listeners.add(onNotificationChange);
+
     return () => {
-      if (channel && supabase) {
-        try {
-          void supabase.removeChannel(channel);
-        } catch {
-          // ignore cleanup errors
+      const currentEntry = sharedReplyChannels.get(inboxUserId);
+      if (currentEntry) {
+        currentEntry.listeners.delete(onNotificationChange);
+        currentEntry.refCount -= 1;
+        if (currentEntry.refCount <= 0) {
+          sharedReplyChannels.delete(inboxUserId);
+          if (currentEntry.channel && supabase) {
+            try {
+              void supabase.removeChannel(currentEntry.channel);
+            } catch {
+              // ignore cleanup errors
+            }
+          }
         }
       }
     };
