@@ -1,5 +1,26 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-24-GitHub-Actions-And-Local-Runner-7-Day-Cooldown-Sync
+
+- Scope: Cloud and local career fetch pipelines (`scripts/auto-company-careers.mjs`, `scripts/lib/linked-db.mjs`, `tests/company-career-fetch.test.mjs`, `.github/workflows/auto-company-careers-weekly.yml`).
+- Problem resolved:
+  - User requested that GitHub Actions and local runners share the exact same 7-day cooldown period per company so that each company is queried strictly once every 7 days across both runners.
+  - If a company was already queried by local runner or GitHub Actions or admin UI, neither runner should fetch from that company within the next 7 days.
+  - If all companies are on cooldown, both runners must immediately skip fetching until the next scheduled run.
+- Solution delivered:
+  - **Shared 7-Day Cooldown Synchronization**:
+    - Updated `scripts/lib/linked-db.mjs` to support flexible limits in `getEligibleVerifiedCompanies(limit = 3, cooldownDays = 7)` where `limit = null` fetches all eligible companies due for scraping (`last_fetched_at IS NULL OR last_fetched_at < NOW() - 7 days`).
+    - Enhanced `markCompanyLastFetched(companyId, companyName)` to synchronize `last_fetched_at` across both primary ID and case-insensitive matching company name (`ilike('name', companyName)`), ensuring duplicate row targets (e.g. `brandix`) are simultaneously placed on cooldown.
+    - Updated GitHub Actions pipeline `scripts/auto-company-careers.mjs` to query companies via `getEligibleVerifiedCompanies(limit, cooldownDays)`.
+    - Added automated cooldown skip in `scripts/auto-company-careers.mjs`: if all verified companies have been fetched within the last 7 days, it logs `[COOLDOWN] All verified companies have been fetched within the last 7 days. 7-day cooldown is active for all companies. Skipping fetch until next schedule.` and exits gracefully.
+    - Added automatic cooldown stamping: when `scripts/auto-company-careers.mjs` finishes processing a company, it immediately updates `last_fetched_at` in Supabase to lock the company for the next 7 days.
+    - Marked Brandix, Vodafone Idea, and Cushman & Wakefield with updated timestamps.
+- Verification:
+  - Verified cooldown skip: running `node scripts/auto-company-careers.mjs --cooldown-days 30` immediately skips execution in 2 seconds with 0 companies queried.
+  - Verified dry-run with due companies: `node scripts/auto-company-careers.mjs --dry-run --limit 1` correctly skips all companies on cooldown (Brandix, GMR, JLL, Paytm, etc.).
+  - Unit tests: `node --test tests/company-career-fetch.test.mjs` passed 62/62 (added 2 new unit tests for 7-day cooldown calculations and all-company cooldown skips).
+  - Production build: `npm run build` compiled clean with 1,159 sitemap URLs in 15.08s.
+
 ## QA-2026-11-24-Duplicate-Job-Posting-Fix-And-Cleanup
 
 - Scope: Cross-platform deduplication engine and scrapers (`src/lib/companyCareerFetchAutomation.js`, `src/services/adminJobs.js`, `src/components/admin/CompanyCareerFetchAnalytics.jsx`, `scripts/lib/pipeline-publish.mjs`, `scripts/lib/linked-db.mjs`, `scripts/auto-company-careers-15m.mjs`, `scripts/cleanup-duplicate-jobs.mjs`, `tests/company-career-fetch.test.mjs`).

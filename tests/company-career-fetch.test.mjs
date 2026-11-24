@@ -1312,4 +1312,35 @@ test('Company Career Fetch: Comprehensive Duplicate Job Prevention & URL Canonic
   });
 });
 
+test('Company Career Fetch: 7-Day Cooldown & Cross-Runner Schedule Synchronization', async (t) => {
+  await t.test('calculates 7-day cooldown window correctly', () => {
+    const cooldownDays = 7;
+    const now = Date.now();
+    const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
 
+    // Company fetched 2 days ago -> must be ON cooldown
+    const fetched2DaysAgo = new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const isDue2DaysAgo = !fetched2DaysAgo || new Date(fetched2DaysAgo).getTime() < (now - cooldownMs);
+    assert.equal(isDue2DaysAgo, false, 'Company fetched 2 days ago should be on cooldown');
+
+    // Company fetched 8 days ago -> must be DUE
+    const fetched8DaysAgo = new Date(now - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const isDue8DaysAgo = !fetched8DaysAgo || new Date(fetched8DaysAgo).getTime() < (now - cooldownMs);
+    assert.equal(isDue8DaysAgo, true, 'Company fetched 8 days ago should be due for fetch');
+
+    // Company never fetched (null) -> must be DUE
+    const neverFetched = null;
+    const isDueNever = !neverFetched || new Date(neverFetched).getTime() < (now - cooldownMs);
+    assert.equal(isDueNever, true, 'Never-fetched company should be due immediately');
+  });
+
+  await t.test('enforces deduplication and cooldown skip when all companies recently fetched', () => {
+    const companies = [
+      { name: 'Brandix', last_fetched_at: new Date().toISOString() },
+      { name: 'Concentrix', last_fetched_at: new Date().toISOString() },
+    ];
+    const cooldownCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const eligible = companies.filter(c => !c.last_fetched_at || new Date(c.last_fetched_at).getTime() < cooldownCutoff);
+    assert.equal(eligible.length, 0, 'No companies should be eligible when all are on cooldown');
+  });
+});

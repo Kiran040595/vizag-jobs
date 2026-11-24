@@ -32,15 +32,20 @@ export async function getEligibleVerifiedCompanies(limit = 3, cooldownDays = 7) 
   const supabase = getSupabaseClient();
   const cooldownCutoff = new Date(Date.now() - cooldownDays * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('companies')
     .select('id, name, website, careers_url, verified_careers_url, category, location, last_fetched_at, is_active_for_scrape, is_directory_approved')
     .eq('is_directory_approved', true)
     .eq('is_active_for_scrape', true)
     .not('verified_careers_url', 'is', null)
     .or(`last_fetched_at.is.null,last_fetched_at.lt.${cooldownCutoff}`)
-    .order('last_fetched_at', { ascending: true, nullsFirst: true })
-    .limit(limit * 3);
+    .order('last_fetched_at', { ascending: true, nullsFirst: true });
+
+  if (limit && limit > 0) {
+    query = query.limit(limit * 3);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Failed to query eligible companies: ${error.message}`);
@@ -54,22 +59,33 @@ export async function getEligibleVerifiedCompanies(limit = 3, cooldownDays = 7) 
     if (!seenCompanies.has(clean)) {
       seenCompanies.add(clean);
       result.push(c);
-      if (result.length >= limit) break;
+      if (limit && limit > 0 && result.length >= limit) break;
     }
   }
 
   return result;
 }
 
-export async function markCompanyLastFetched(companyId) {
+export async function markCompanyLastFetched(companyId, companyName = '') {
   const supabase = getSupabaseClient();
   const now = new Date().toISOString();
-  const { error } = await supabase
-    .from('companies')
-    .update({ last_fetched_at: now, updated_at: now })
-    .eq('id', companyId);
-  if (error) {
-    console.error(`Warning: Could not update last_fetched_at for company ${companyId}: ${error.message}`);
+  if (companyId) {
+    const { error } = await supabase
+      .from('companies')
+      .update({ last_fetched_at: now, updated_at: now })
+      .eq('id', companyId);
+    if (error) {
+      console.error(`Warning: Could not update last_fetched_at for company ${companyId}: ${error.message}`);
+    }
+  }
+  if (companyName) {
+    const { error: nameErr } = await supabase
+      .from('companies')
+      .update({ last_fetched_at: now, updated_at: now })
+      .ilike('name', companyName.trim());
+    if (nameErr) {
+      console.error(`Warning: Could not update last_fetched_at by company name "${companyName}": ${nameErr.message}`);
+    }
   }
 }
 

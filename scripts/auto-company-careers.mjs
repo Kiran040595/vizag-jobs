@@ -21,6 +21,11 @@ import {
   publishJob,
 } from './lib/pipeline-publish.mjs';
 import {
+  getEligibleVerifiedCompanies,
+  markCompanyLastFetched,
+  getSupabaseClient,
+} from './lib/linked-db.mjs';
+import {
   cleanCompanyForDedupe,
   cleanTitleForDedupe,
   normalizeCompanyTitleKey,
@@ -297,74 +302,62 @@ async function parseJobsWithGemini(company, pageContent, lookbackDays = 6) {
 
 async function main() {
   const isDryRun = process.argv.includes('--dry-run');
+  const isForce = process.argv.includes('--force');
   const targetCompanyArg = process.argv.find((_, i, arr) => arr[i - 1] === '--company');
   const daysArgIndex = process.argv.indexOf('--days');
   const lookbackDays =
     daysArgIndex !== -1 && process.argv[daysArgIndex + 1]
       ? Math.max(1, parseInt(process.argv[daysArgIndex + 1], 10))
       : 6;
+  const cooldownArgIndex = process.argv.indexOf('--cooldown-days');
+  const cooldownDays =
+    cooldownArgIndex !== -1 && process.argv[cooldownArgIndex + 1]
+      ? parseInt(process.argv[cooldownArgIndex + 1], 10)
+      : 7;
+  const limitArgIndex = process.argv.indexOf('--limit');
+  const limit =
+    limitArgIndex !== -1 && process.argv[limitArgIndex + 1]
+      ? parseInt(process.argv[limitArgIndex + 1], 10)
+      : null;
 
-  log(`Starting Direct Company Careers Pipeline (DryRun: ${isDryRun}, LookbackDays: ${lookbackDays})...`);
+  log(`Starting Direct Company Careers Pipeline (DryRun: ${isDryRun}, LookbackDays: ${lookbackDays}, CooldownDays: ${cooldownDays}, Force: ${isForce})...`);
 
-  // 1. Load active companies from Supabase `companies` table, or fall back to catalog JSON
+  // 1. Load active companies respecting the 7-day cooldown
   let companies = [];
   try {
-    const { createClient } = await import('@supabase/supabase-js');
-    const readKey = pipelineConfig.supabaseServiceRoleKey || pipelineConfig.supabaseAnonKey;
-    if (pipelineConfig.supabaseUrl && readKey) {
-      const client = createClient(pipelineConfig.supabaseUrl, readKey);
-      let dbCompanies = [];
-      let from = 0;
-      const pageSize = 1000;
-      while (true) {
-        const { data: page, error } = await client
-          .from('companies')
-          .select('*')
-          // Only scrape URLs that an admin/curation process has approved.
-          // The companies table also contains imported job-card names with
-          // generated or placeholder career URLs; those must never become
-          // direct fetch targets.
-          .eq('is_directory_approved', true)
-          .eq('is_active_for_scrape', true)
-          .not('careers_url', 'is', null)
-          .range(from, from + pageSize - 1);
-
-        if (error) throw error;
-        if (!page || page.length === 0) break;
-        dbCompanies = dbCompanies.concat(page);
-        if (page.length < pageSize) break;
-        from += pageSize;
-      }
-
-      if (Array.isArray(dbCompanies) && dbCompanies.length > 0) {
-        log(`Loaded ${dbCompanies.length} active target(s) from Supabase 'companies' table.`);
-        companies = dbCompanies.map((c) => ({
-          name: c.name,
-          careers_url: c.careers_url,
-          category: c.category || 'General',
-          location_hint: c.location || 'Visakhapatnam',
-          active: c.verified_careers_url === c.careers_url,
-        }));
-      }
-    }
-  } catch (dbErr) {
-    throw new Error(`Cannot verify approved company targets: ${dbErr.message}`);
-  }
-
-  if (companies.length === 0) {
-    log('No approved company portals available. No jobs will be published.');
-  }
-
-  companies = companies.filter((c) => {
-    if (c.active === false) return false;
-    if (!c.careers_url) return false;
     if (targetCompanyArg) {
-      return c.name.toLowerCase().includes(targetCompanyArg.toLowerCase());
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, name, website, careers_url, verified_careers_url, category, location, last_fetched_at, is_active_for_scrape, is_directory_approved')
+        .ilike('name', `%${targetCompanyArg.trim()}%`);
+      if (error) throw error;
+      companies = data || [];
+      log(`Targeted fetch for "${targetCompanyArg}": found ${companies.length} matching company(ies).`);
+    } else if (isForce) {
+      companies = await getEligibleVerifiedCompanies(limit, 0);
+      log(`Forced fetch (bypassing cooldown): found ${companies.length} verified company(ies).`);
+    } else {
+      companies = await getEligibleVerifiedCompanies(limit, cooldownDays);
     }
-    return true;
-  });
+  } catch (err) {
+    throw new Error(`Cannot load approved company targets: ${err.message}`);
+  }
 
-  log(`Loaded ${companies.length} active company target(s).`);
+  if (!companies || companies.length === 0) {
+    if (targetCompanyArg) {
+      log(`No matching company found for "${targetCompanyArg}".`);
+    } else {
+      log(`[COOLDOWN] All verified companies have been fetched within the last ${cooldownDays} days.`);
+      log(`[COOLDOWN] 7-day cooldown is active for all companies. Skipping fetch until next schedule.`);
+    }
+    return;
+  }
+
+  log(`Loaded ${companies.length} active company target(s) due for fetch:`);
+  for (const c of companies) {
+    log(`  • ${c.name} (Last fetched: ${c.last_fetched_at ? c.last_fetched_at.slice(0, 16) : 'Never'})`);
+  }
 
   // 2. Fetch existing job keys to avoid duplicates
   let existing = { slugs: new Set(), applyLinks: new Set(), companyTitleKeys: new Set() };
@@ -396,12 +389,18 @@ async function main() {
   };
 
   for (const company of companies) {
+    const careersUrl = company.verified_careers_url || company.careers_url;
+    if (!careersUrl) {
+      log(`Skipping ${company.name}: no career URL configured.`);
+      continue;
+    }
+
     log(`\n========================================`);
-    log(`Checking: ${company.name} (${company.careers_url})`);
+    log(`Checking: ${company.name} (${careersUrl}) - Last fetched: ${company.last_fetched_at || 'Never'}`);
 
     const companyReport = {
       company: company.name,
-      careersUrl: company.careers_url,
+      careersUrl,
       jobsFound: 0,
       published: 0,
       skipped: 0,
@@ -503,6 +502,21 @@ async function main() {
     } catch (compErr) {
       log(`Error processing ${company.name}: ${compErr.message}`);
       companyReport.error = compErr.message;
+    }
+
+    // Update company last_fetched_at in Supabase to enforce 7-day cooldown across runners
+    if (!isDryRun && company.id) {
+      try {
+        await markCompanyLastFetched(company.id, company.name);
+        const nextFetchDate = new Date(Date.now() + cooldownDays * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        log(`[COOLDOWN] Marked ${company.name} last_fetched_at. Cooldown locked until ${nextFetchDate}.`);
+      } catch (markErr) {
+        log(`Warning: Could not update cooldown for ${company.name}: ${markErr.message}`);
+      }
     }
 
     report.details.push(companyReport);
