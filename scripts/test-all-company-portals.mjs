@@ -43,7 +43,7 @@ const PUBLISHED_COMPANIES = [
   },
   {
     name: 'Miracle Software Systems',
-    careers_url: 'https://careers.miraclesoft.com/',
+    careers_url: 'https://careers.miraclesoft.com/open-positions/',
     category: 'IT & Software',
     location: 'Visakhapatnam, Miracle City, Bhogapuram',
   },

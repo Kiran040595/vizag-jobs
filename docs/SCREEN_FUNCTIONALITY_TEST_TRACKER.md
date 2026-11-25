@@ -1895,9 +1895,10 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: SRI Tech Solutions scraper regression passed. Full company career fetch suite: 63 passed.
 
-## QA-2026-11-25-Miracle-Software-Systems-Verified-Careers
+## QA-2026-11-25-Miracle-Software-Systems-Portal-Fix
 
-- Verified the official careers listing and three current Miracle Heights postings through direct server requests. Updated the native parser to decode HTML entities in posting titles, added a regression case, and added a migration scoped to the exact unapproved company row.
-- Functional E2E: Not tested. Mobile UI: Not tested. Unit tests and direct source fetches do not establish an authenticated end-to-end publish journey.
-- Verification: Miracle scraper regression and `git diff --check` passed. Full company-career suite: 63 passed, 0 failed.
+- Fixed Miracle Software Systems in Supabase (`careers_url` updated to `https://careers.miraclesoft.com/open-positions/`, approved canonical `Miracle Software Systems` record with `is_directory_approved = true`, `is_active_for_scrape = true`, and disabled duplicate variants).
+- Updated [`scrapeVerifiedVizagPortal`](file:///d:/School%20Project/VIzagJobs/supabase/functions/fetch-external-jobs/company-careers.ts) to decode HTML entities in Miracle job titles (e.g., `&amp;` to `&`) and aligned `data/vizag-company-careers.json` and `scripts/test-all-company-portals.mjs`.
+- Live check verified 2 Miracle Heights (Visakhapatnam) postings (`MSSJ3090`, `MSSJ3089`) extracted cleanly while non-Vizag campus postings are excluded.
+- Verification: Full company career fetch suite (`node --test tests/company-career-fetch.test.mjs`): 63 passed, 0 failed.
 
