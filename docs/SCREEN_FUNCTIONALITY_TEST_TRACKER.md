@@ -1913,3 +1913,4 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Live-verified **MEDFAR** (`https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam`) returning 2 active Visakhapatnam roles (*Assistant Manager-Coding and Process Excellence*, *Software Engineer*) and synced `is_directory_approved = true`, `is_active_for_scrape = true` in Supabase.
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
 
+

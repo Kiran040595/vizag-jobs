@@ -18,7 +18,6 @@
     "drive:oauth-setup": "node scripts/drive-oauth-setup.mjs",
     "auto:company-careers": "node scripts/auto-company-careers.mjs",
     "auto:fetch-career-portals": "node scripts/fetch-company-career-portals.mjs",
-    "auto:verify-portals": "node scripts/auto-verify-company-portals-daily.mjs",
     "prune:jobs": "node scripts/prune-stale-jobs.mjs",
     "audit:daily-function": "node scripts/daily-code-audit.mjs",
     "bugs:list": "node scripts/bugs-queue.mjs list",
