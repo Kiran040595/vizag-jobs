@@ -1902,3 +1902,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Live check verified 2 Miracle Heights (Visakhapatnam) postings (`MSSJ3090`, `MSSJ3089`) extracted cleanly while non-Vizag campus postings are excluded.
 - Verification: Full company career fetch suite (`node --test tests/company-career-fetch.test.mjs`): 63 passed, 0 failed.
 
+## QA-2026-11-25-Software-Portals-Live-Sync
+
+- Live-verified and synced **Growww Tech** (`https://growwwtech.com/careers` — 3 active Vizag roles), **Innocito** (`https://innocito.com/careers` — 3 active Vizag roles), **Sails Software** (`https://careers.sailssoftware.com/sailssoftware/` — 0 active open roles on live check, portal verified), and **XTGlobal** (`https://xtglobal.zohorecruit.in/jobs/Careers` — 63 active Vizag/hybrid roles) to the Supabase publish list (`is_directory_approved = true`, `is_active_for_scrape = true`).
+- Disabled `is_active_for_scrape` on duplicate/variant company rows for Sails Software and XTGlobal to prevent duplicate scraping.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
+
