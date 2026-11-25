@@ -1913,4 +1913,11 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Live-verified **MEDFAR** (`https://careers.smartrecruiters.com/Medfar?search=Visakhapatnam`) returning 2 active Visakhapatnam roles (*Assistant Manager-Coding and Process Excellence*, *Software Engineer*) and synced `is_directory_approved = true`, `is_active_for_scrape = true` in Supabase.
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
 
+## QA-2026-11-25-Infinite-And-PBL-Live-Sync
+
+- Live-verified and synced **Infinite Computer Solutions** (`a5c59cbe-11aa-41d4-a0ca-c2a94326687d`, `https://sjobs.brassring.com/TGNewUI/Search/Home/Home?partnerid=26656&siteid=5008#keyWord=Visakhapatnam` — 1 active exact Visakhapatnam role *Senior Network Engineer*, `60458`, excluding non-Vizag roles) and **PBL Transport Corporation** (`040c50a3-7411-4c6d-9f58-e5a8e574d52c`, `https://jobs.pbltransport.co.in/jobs/Careers` — 21 active exact Visakhapatnam roles, excluding 23 non-Vizag roles) with `verified_careers_url`, `is_directory_approved = true`, and `is_active_for_scrape = true` in Supabase.
+- Added native BrassRing and Zoho Recruit extractors in [`supabase/functions/fetch-external-jobs/company-careers.ts`](file:///d:/School%20Project/VIzagJobs/supabase/functions/fetch-external-jobs/company-careers.ts), unit tests in [`tests/company-career-fetch.test.mjs`](file:///d:/School%20Project/VIzagJobs/tests/company-career-fetch.test.mjs), defaults in [`src/services/adminCompanies.js`](file:///d:/School%20Project/VIzagJobs/src/services/adminCompanies.js) and [`scripts/lib/curated-companies.mjs`](file:///d:/School%20Project/VIzagJobs/scripts/lib/curated-companies.mjs), and migration [`supabase/migrations/20261125083000_verified_infinite_and_pbl_vizag_careers.sql`](file:///d:/School%20Project/VIzagJobs/supabase/migrations/20261125083000_verified_infinite_and_pbl_vizag_careers.sql).
+- Verification: `node --test tests/company-career-fetch.test.mjs` (65 passed, 0 failed) and `git diff --check` passed.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
+
 

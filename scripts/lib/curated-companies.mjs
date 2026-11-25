@@ -243,6 +243,12 @@ export const CURATED_COMPANIES = {
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
+  'Infinite Computer Solutions': {
+    website: 'https://www.infinite.com',
+    careers_url: 'https://sjobs.brassring.com/TGNewUI/Search/Home/Home?partnerid=26656&siteid=5008#keyWord=Visakhapatnam',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'Kairos Technologies': {
     website: 'https://kairostech.com',
     careers_url: 'https://kairostech.com/careers/',

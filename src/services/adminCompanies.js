@@ -202,6 +202,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://tekwissen.com/career/india/',
     category: 'IT & Software',
   },
+  'Infinite Computer Solutions': {
+    website: 'https://www.infinite.com',
+    careers_url: 'https://sjobs.brassring.com/TGNewUI/Search/Home/Home?partnerid=26656&siteid=5008#keyWord=Visakhapatnam',
+    category: 'IT & Software',
+  },
   'Niyukti Systems, Inc': {
     website: 'https://niyukti.ai',
     careers_url: 'https://niyukti.ai/',

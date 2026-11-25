@@ -1363,3 +1363,93 @@ test('Company Career Fetch: 7-Day Cooldown & Cross-Runner Schedule Synchronizati
     assert.equal(eligible.length, 0, 'No companies should be eligible when all are on cooldown');
   });
 });
+
+test('Infinite Computer Solutions official BrassRing portal retains exact Visakhapatnam roles and rejects non-Vizag roles', async () => {
+  const originalFetch = globalThis.fetch;
+  const encodeAttr = (obj) => JSON.stringify(obj)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+  globalThis.fetch = async (input, options) => {
+    const url = String(input);
+    if (url.endsWith('/TGNewUI/Search/Ajax/ProcessSortAndShowMoreJobs')) {
+      assert.equal(options?.method, 'POST');
+      return Response.json({
+        Jobs: {
+          Job: [
+            { Link: 'https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=26656&siteid=5008&PageType=JobDetails&jobid=60458' },
+            { Link: 'https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=26656&siteid=5008&PageType=JobDetails&jobid=60459' },
+          ],
+        },
+      });
+    }
+    const isVizag = url.includes('jobid=60458');
+    const preLoad = {
+      Jobdetails: {
+        JobDetailQuestions: [
+          { VerityZone: 'jobtitle', AnswerValue: isVizag ? 'Senior Network Engineer' : 'Bengaluru Engineer' },
+          { VerityZone: 'autoreq', AnswerValue: isVizag ? '53868BR' : '53869BR' },
+          { VerityZone: 'reqid', AnswerValue: isVizag ? '60458' : '60459' },
+          { VerityZone: 'formtext4', AnswerValue: isVizag ? 'Visakhapatnam ' : 'Bengaluru' },
+          { VerityZone: 'formtext8', AnswerValue: 'Infinite Computer Solutions (India) Limited' },
+          { VerityZone: 'formtext11', AnswerValue: 'Network Routing Protocols (OSPF, BGP, EIGRP, RIP)' },
+          { VerityZone: 'jobdescription', AnswerValue: '<p>Configure Juniper and Cisco routing/switching, Palo Alto firewalls, and SDWAN deployments for enterprise clients in Visakhapatnam.</p>' },
+        ],
+      },
+    };
+    return new Response(`<input type="hidden" id="preLoadJSON" value="${encodeAttr(preLoad)}" />`);
+  };
+  try {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.infinitecomputersolutions.com/careers', 'Infinite Computer Solutions'),
+      VERIFIED_VIZAG_PORTALS['infinite computer solutions'],
+    );
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['infinite computer solutions'], 'Infinite Computer Solutions');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Senior Network Engineer');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=26656&siteid=5008&PageType=JobDetails&jobid=60458');
+    assert.match(result.structuredJobs[0].description, /Juniper and Cisco routing/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('PBL Transport Corporation Zoho Recruit portal retains exact Visakhapatnam roles and excludes non-Vizag roles', async () => {
+  const originalFetch = globalThis.fetch;
+  const escapeJsSingle = (s) => JSON.stringify(s).replace(/\\"/g, '\\x22').replace(/'/g, "\\'");
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url === 'https://jobs.pbltransport.co.in/jobs/Careers') {
+      const categories = [{ id: '1', name: 'Operations' }];
+      const listings = [
+        { id: '80871000000355005', Posting_Title: 'HR - Recruiter', City: 'Visakhapatnam', Country: 'India', Publish: true, Is_Locked: false },
+        { id: '80871000005148068', Posting_Title: 'Logistics Executive (Chennai)', City: 'Chennai', Country: 'India', Publish: true, Is_Locked: false },
+        { id: '80871000006757206', Posting_Title: 'Operations Executive', City: 'Anakapalle', Country: 'India', Publish: true, Is_Locked: false },
+      ];
+      const enc = (v) => JSON.stringify(v).replaceAll('"', '&#34;');
+      return new Response(`<input type="hidden" value="${enc(categories)}"><input type="hidden" value="${enc(listings)}">`);
+    }
+    assert.equal(url, 'https://jobs.pbltransport.co.in/jobs/Careers/80871000000355005');
+    const detailRecords = [{
+      id: '80871000000355005',
+      Posting_Title: 'HR - Recruiter',
+      City: 'Visakhapatnam',
+      Country: 'India',
+      Publish: true,
+      Is_Locked: false,
+      Job_Type: 'Full time',
+      Work_Experience: '2-5 years',
+      Salary: '2 - 4 L p.a.',
+      Job_Description: '<p>Handle end-to-end non-IT recruitment across Visakhapatnam project sites, screen resumes, conduct interviews, and coordinate onboarding.</p>',
+    }];
+    return new Response(`<script>var jobs = JSON.parse('${escapeJsSingle(detailRecords)}');\n</script>`);
+  };
+  try {
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['pbl transport corporation'], 'PBL Transport Corporation');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'HR - Recruiter');
+    assert.equal(result.structuredJobs[0].salary, '2 - 4 L p.a.');
+    assert.equal(result.structuredJobs[0].experience, '2-5 years');
+    assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.pbltransport.co.in/jobs/Careers/80871000000355005');
+  } finally { globalThis.fetch = originalFetch; }
+});

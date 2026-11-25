@@ -68,7 +68,44 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'sri tech solutions inc.': 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
   'sri tech solutions': 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
   'sri tech': 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
+  'infinite computer solutions': 'https://sjobs.brassring.com/TGNewUI/Search/Home/Home?partnerid=26656&siteid=5008#keyWord=Visakhapatnam',
+  'pbl transport corporation': 'https://jobs.pbltransport.co.in/jobs/Careers',
+  'pbl transport corporation private limited': 'https://jobs.pbltransport.co.in/jobs/Careers',
 };
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#34;', '"')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&#39;', "'");
+}
+
+function decodeJsSingleQuotedJson(text: string): string {
+  return text.replace(/\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|.)/g, (_match, esc: string) => {
+    if (esc.startsWith('x')) return String.fromCharCode(parseInt(esc.slice(1), 16));
+    if (esc.startsWith('u')) return String.fromCharCode(parseInt(esc.slice(1), 16));
+    if (esc === 'n') return '\n';
+    if (esc === 'r') return '\r';
+    if (esc === 't') return '\t';
+    if (esc === '\\') return '\\';
+    return esc;
+  });
+}
+
+function parseZohoRecruitListingJobs(html: string): Record<string, unknown>[] {
+  for (const match of html.matchAll(/<input\b[^>]*type=["']hidden["'][^>]*value=["'](\[\{[^"']+)["']/gi)) {
+    try {
+      const decoded = decodeHtmlEntities(match[1]);
+      if (!decoded.includes('"Posting_Title"')) continue;
+      const records = JSON.parse(decoded);
+      if (Array.isArray(records)) return records as Record<string, unknown>[];
+    } catch { /* Continue checking other hidden JSON inputs. */ }
+  }
+  return [];
+}
 
 function embeddedCareerData(html: string, key: string) {
   const marker = `"${key}":`;
@@ -186,7 +223,123 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const inventrax = host === 'pms.inventrax.com' && parsedUrl.pathname === '/hiring' && parsedUrl.searchParams.get('q') === 'Vishakapatnam';
   const varex = host === 'vareximaging.wd103.myworkdayjobs.com' && parsedUrl.pathname === '/External_Career_Site' && parsedUrl.searchParams.get('locations') === '6dd16ee3ba301001dd775f79921c0000';
   const sriTech = ['sritechsolutions.com', 'www.sritechsolutions.com'].includes(host) && parsedUrl.pathname.startsWith('/job-openings');
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex && !inventrax && !sriTech) return null;
+  const infinite = host === 'sjobs.brassring.com' && parsedUrl.searchParams.get('partnerid') === '26656' && parsedUrl.searchParams.get('siteid') === '5008';
+  const pblTransport = host === 'jobs.pbltransport.co.in' && parsedUrl.pathname === '/jobs/Careers';
+  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex && !inventrax && !sriTech && !infinite && !pblTransport) return null;
+  if (infinite) {
+    const search = await fetch('https://sjobs.brassring.com/TGNewUI/Search/Ajax/ProcessSortAndShowMoreJobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ partnerId: '26656', siteId: '5008', keyword: 'Visakhapatnam', pageNumber: 1 }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!search.ok) throw new Error(`Official careers API returned ${search.status}`);
+    const payload = await search.json();
+    const jobIds = [...new Set(
+      (Array.isArray(payload?.Jobs?.Job) ? payload.Jobs.Job : [])
+        .map((row: Record<string, unknown>) => {
+          const link = String(row.Link || '');
+          const match = link.match(/[?&]jobid=(\d+)/i);
+          return link.startsWith('https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=26656&siteid=5008&PageType=JobDetails&jobid=') && match ? match[1] : '';
+        })
+        .filter((id: string) => /^\d+$/.test(id)),
+    )];
+    const jobs = (await Promise.all(jobIds.map(async (jobId) => {
+      try {
+        const apply_link = `https://sjobs.brassring.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=26656&siteid=5008&PageType=JobDetails&jobid=${jobId}`;
+        const response = await fetch(apply_link, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) return null;
+        const detail = await response.text();
+        const tag = detail.match(/<input\b[^>]*id=["']preLoadJSON["'][^>]*>/i)?.[0] || '';
+        const rawValue = tag.match(/value=["']([^"']+)["']/i)?.[1] || '';
+        if (!rawValue) return null;
+        const preLoad = JSON.parse(decodeHtmlEntities(rawValue));
+        const questions = Array.isArray(preLoad?.Jobdetails?.JobDetailQuestions)
+          ? (preLoad.Jobdetails.JobDetailQuestions as Array<{ QuestionName?: string; VerityZone?: string; AnswerValue?: string }>)
+          : [];
+        const byZone = new Map<string, string>();
+        for (const q of questions) {
+          const key = String(q.VerityZone || q.QuestionName || '').trim().toLowerCase();
+          if (key && q.AnswerValue !== undefined && q.AnswerValue !== null) {
+            byZone.set(key, String(q.AnswerValue));
+          }
+        }
+        const employer = (byZone.get('formtext8') || '').trim();
+        const locationText = `${byZone.get('formtext4') || ''} ${byZone.get('formtext24') || ''}`.trim();
+        const title = htmlToCleanMarkdown(byZone.get('jobtitle') || '', apply_link).replace(/\s+/g, ' ').trim();
+        const reqId = (byZone.get('reqid') || '').trim();
+        const autoReq = (byZone.get('autoreq') || '').trim();
+        const rawDesc = byZone.get('jobdescription') || byZone.get('job description') || '';
+        const description = htmlToCleanMarkdown(rawDesc, apply_link).slice(0, 20000);
+        if (employer && !/^Infinite Computer Solutions\b/i.test(employer)) return null;
+        if (reqId && reqId !== jobId) return null;
+        if (!autoReq || !/\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(locationText) || !title || description.length < 80) return null;
+        const skillsText = (byZone.get('formtext11') || '').trim();
+        return {
+          title,
+          company,
+          location: 'Visakhapatnam, Andhra Pradesh, India',
+          skills: skillsText ? [skillsText] : [],
+          description,
+          apply_link,
+        } as ExtractedCompanyCareerJob;
+      } catch {
+        return null;
+      }
+    }))).filter((job): job is ExtractedCompanyCareerJob => job !== null);
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
+  if (pblTransport) {
+    const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);
+    const html = await listing.text();
+    const candidates = parseZohoRecruitListingJobs(html).filter((row) => {
+      const id = String(row.id || '').trim();
+      const city = String(row.City || '').trim();
+      const country = String(row.Country || '').trim();
+      return /^\d+$/.test(id)
+        && row.Publish !== false
+        && row.Is_Locked !== true
+        && (!country || /^india$/i.test(country))
+        && /\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(city);
+    });
+    const jobs: ExtractedCompanyCareerJob[] = [];
+    for (let i = 0; i < candidates.length; i += 5) {
+      const batch = await Promise.all(candidates.slice(i, i + 5).map(async (row) => {
+        try {
+          const id = String(row.id).trim();
+          const apply_link = `https://jobs.pbltransport.co.in/jobs/Careers/${id}`;
+          const response = await fetch(apply_link, { signal: AbortSignal.timeout(15000) });
+          if (!response.ok) return null;
+          const detail = await response.text();
+          const jsonMatch = detail.match(/var jobs = JSON\.parse\('([\s\S]*?)'\);\s*\r?\n/);
+          if (!jsonMatch) return null;
+          const parsed = JSON.parse(decodeJsSingleQuotedJson(jsonMatch[1]));
+          const record = Array.isArray(parsed) ? parsed[0] : null;
+          if (!record || String(record.id || '') !== id || record.Publish === false || record.Is_Locked === true) return null;
+          const city = String(record.City || '').trim();
+          const title = String(record.Posting_Title || '').trim();
+          const description = htmlToCleanMarkdown(String(record.Job_Description || ''), apply_link).slice(0, 20000);
+          if (!/\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(city) || !title || description.length < 80) return null;
+          const rawSalary = String(record.Salary || '').trim();
+          return {
+            title,
+            company,
+            location: 'Visakhapatnam, Andhra Pradesh, India',
+            job_type: String(record.Job_Type || '').trim() || undefined,
+            experience: String(record.Work_Experience || '').trim() || undefined,
+            salary: rawSalary && !/^not disclosed$/i.test(rawSalary) ? rawSalary : undefined,
+            description,
+            apply_link,
+          } as ExtractedCompanyCareerJob;
+        } catch {
+          return null;
+        }
+      }));
+      jobs.push(...batch.filter((job): job is ExtractedCompanyCareerJob => job !== null));
+    }
+    return { content: JSON.stringify({ jobs }), structuredJobs: jobs, count: jobs.length, resolvedUrl: url, source: 'direct_portal' as const };
+  }
   if (inventrax) {
     const listing = await fetch(url, { signal: AbortSignal.timeout(20000) });
     if (!listing.ok) throw new Error(`Official careers page returned ${listing.status}`);
