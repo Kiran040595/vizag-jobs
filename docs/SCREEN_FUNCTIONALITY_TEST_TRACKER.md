@@ -1908,3 +1908,11 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Disabled `is_active_for_scrape` on duplicate/variant company rows for Sails Software and XTGlobal to prevent duplicate scraping.
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
 
+## QA-2026-11-25-Daily-Portal-Verification-Automation
+
+- Added automated daily 10-company strict Vizag portal verification & publish pipeline:
+  - [`scripts/auto-verify-company-portals-daily.mjs`](file:///d:/School%20Project/VIzagJobs/scripts/auto-verify-company-portals-daily.mjs) (`npm run auto:verify-portals`): checks up to 10 unapproved companies per day for strict Visakhapatnam-filtered URLs (SmartRecruiters, Lever, WP Job Openings, SuccessFactors, and verified native portals), approves qualifying portals in Supabase, and records evidence.
+  - [`scripts/run-daily-portal-verification.ps1`](file:///d:/School%20Project/VIzagJobs/scripts/run-daily-portal-verification.ps1): once-per-day wrapper that runs the verifier, executes `tests/company-career-fetch.test.mjs`, commits doc/tracker updates, and pushes to `origin/develop`.
+  - Registered `VizagJobs_Portal_Verify_Daily` in Windows Task Scheduler (Daily 09:00 AM + AtLogOn, with `StartWhenAvailable` on wake).
+- Verification: Dry-run (`node scripts/auto-verify-company-portals-daily.mjs --limit 5 --dry-run --force`) and `setup-windows-automation.ps1` task registration passed with 0 errors.
+
