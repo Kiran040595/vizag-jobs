@@ -7,6 +7,7 @@ import { getInstagramBioJobsDisplayUrl } from '../lib/instagramBioJobsPath';
 import { pushToast } from '../lib/toast';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { sendJobPushBroadcast } from '../lib/notifyNewJob';
+import JobPosterModal from './JobPosterModal';
 
 const buildSharePayload = (job = {}) => {
   const path = getJobDetailPath(job);
@@ -64,6 +65,7 @@ export default function JobShareButtons({ job }) {
   const { isAdmin } = useAdminAuth();
   const [copyStatus, setCopyStatus] = useState('idle');
   const [pushStatus, setPushStatus] = useState('idle');
+  const [isPosterOpen, setIsPosterOpen] = useState(false);
   const { url, title, text, fullMessage } = useMemo(() => buildSharePayload(job), [job]);
 
   const canNativeShare =
@@ -189,6 +191,21 @@ export default function JobShareButtons({ job }) {
         </svg>
       </ShareButton>
 
+      <button
+        type="button"
+        onClick={() => setIsPosterOpen(true)}
+        className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-bold text-cyan-900 transition hover:border-cyan-300 hover:bg-cyan-100 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+        aria-label="Create and download job share poster"
+        title="Create WhatsApp / Instagram Job Poster"
+      >
+        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="m21 15-5-5L5 21" />
+        </svg>
+        <span>Poster</span>
+      </button>
+
       {isAdmin ? (
         <ShareButton
           label={pushLabel}
@@ -239,6 +256,13 @@ export default function JobShareButtons({ job }) {
             </svg>
           )}
         </ShareButton>
+      ) : null}
+      {isPosterOpen ? (
+        <JobPosterModal
+          job={job}
+          isOpen={isPosterOpen}
+          onClose={() => setIsPosterOpen(false)}
+        />
       ) : null}
     </div>
   );

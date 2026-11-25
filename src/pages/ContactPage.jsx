@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import LegalPageLayout from '../components/LegalPageLayout';
 import {
   SITE_CONTACT_EMAIL,
@@ -8,6 +8,12 @@ import {
 } from '../lib/siteLegal';
 
 export default function ContactPage() {
+  const [searchParams] = useSearchParams();
+  const prefilledSubject = (searchParams.get('subject') || '').trim();
+  const mailtoHref = prefilledSubject
+    ? `mailto:${SITE_CONTACT_EMAIL}?subject=${encodeURIComponent(prefilledSubject)}`
+    : `mailto:${SITE_CONTACT_EMAIL}`;
+
   return (
     <LegalPageLayout
       title="Contact Us"
@@ -21,6 +27,15 @@ export default function ContactPage() {
         corrections, or general feedback on {SITE_LEGAL_NAME}. If you found an incorrect listing, want a job
         removed, or need account help, please reach out.
       </p>
+
+      {prefilledSubject ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 shadow-sm">
+          <p className="font-semibold">Selected request subject: {prefilledSubject}</p>
+          <p className="mt-1 text-amber-800">
+            Tap our email below to launch your mail app with this subject pre-filled.
+          </p>
+        </div>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-lg font-bold text-slate-900">Publisher details</h2>
@@ -44,7 +59,7 @@ export default function ContactPage() {
         <h2 className="text-lg font-bold text-slate-900">Email</h2>
         <p className="mt-2">
           <a
-            href={`mailto:${SITE_CONTACT_EMAIL}`}
+            href={mailtoHref}
             className="inline-flex min-h-11 items-center break-all text-base font-semibold text-cyan-700 sm:text-lg hover:text-cyan-800"
           >
             {SITE_CONTACT_EMAIL}

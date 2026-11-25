@@ -28,6 +28,7 @@ import {
   resolveOnPlatformApplicationCount,
 } from '../lib/jobApplicationCount';
 import CopyInstagramCaptionButton from '../components/CopyInstagramCaptionButton';
+import JobPosterModal from '../components/JobPosterModal';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../lib/instagramBioJobsPath';
 import JobApplicantsModal from '../components/admin/JobApplicantsModal';
 import LinkCompanyModal from '../components/admin/LinkCompanyModal';
@@ -112,6 +113,7 @@ export default function AdminJobsPage({ scope = 'employer' }) {
   const [rejectReason, setRejectReason] = useState('');
   const [modalJob, setModalJob] = useState(null);
   const [linkingJob, setLinkingJob] = useState(null);
+  const [posterJob, setPosterJob] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -767,15 +769,26 @@ export default function AdminJobsPage({ scope = 'employer' }) {
 
                     <div className="flex flex-wrap gap-2">
                       {job.status === 'published' ? (
-                        <CopyInstagramCaptionButton
-                          job={job}
-                          disabled={isBusy}
-                          onInstagramMarked={() => {
-                            setJobs((currentJobs) =>
-                              upsertJob(currentJobs, { ...job, is_instagram: true }),
-                            );
-                          }}
-                        />
+                        <>
+                          <CopyInstagramCaptionButton
+                            job={job}
+                            disabled={isBusy}
+                            onInstagramMarked={() => {
+                              setJobs((currentJobs) =>
+                                upsertJob(currentJobs, { ...job, is_instagram: true }),
+                              );
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => setPosterJob(job)}
+                            className="rounded-2xl border border-cyan-200 bg-cyan-50 px-3.5 py-2 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Generate and download WhatsApp / Instagram job poster"
+                          >
+                            🖼️ Poster
+                          </button>
+                        </>
                       ) : null}
                       {job.apply_mode === 'internal' ? (
                         <button
@@ -955,6 +968,14 @@ export default function AdminJobsPage({ scope = 'employer' }) {
           companyName={modalJob.company}
           isOpen={Boolean(modalJob)}
           onClose={() => setModalJob(null)}
+        />
+      ) : null}
+
+      {posterJob ? (
+        <JobPosterModal
+          job={posterJob}
+          isOpen={Boolean(posterJob)}
+          onClose={() => setPosterJob(null)}
         />
       ) : null}
 

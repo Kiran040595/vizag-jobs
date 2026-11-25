@@ -1,5 +1,25 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-25-Job-Poster-Generator-And-Employer-Feature-Request
+
+- Scope: Branded WhatsApp / Instagram Job Poster Generator with scannable QR code for Students, Public Visitors, Employers, and Admins (`src/lib/jobPosterGenerator.js`, `src/components/JobPosterModal.jsx`, `src/components/JobShareButtons.jsx`, `src/components/admin/AdminJobActionsBar.jsx`, `src/pages/AdminJobsPage.jsx`, `src/pages/EmployerJobsListPage.jsx`, `src/pages/ContactPage.jsx`, `src/index.css`, `src/lib/instagramJobCaption.js`, `package.json`, `package-lock.json`, `tests/job-poster-generator.test.mjs`).
+- Feature delivered:
+  - **Client-Side Canvas Poster Renderer (`src/lib/jobPosterGenerator.js`)**:
+    - Renders branded job cards with dynamic word-wrapping, highlight tiles (Job Type, Experience, Compensation / Work Mode, Category), top skill chips, canonical URL, and a lazy-loaded scannable `qrcode` linking straight to the job page.
+    - Supports 3 aspect ratios: `Portrait (4:5)` (1080×1350), `Status / Story (9:16)` (1080×1920), and `Square (1:1)` (1080×1080), plus 3 color themes (`Vizag Cyan`, `Direct Emerald`, `Royal Indigo`).
+    - Handles both camelCase public job models and raw snake_case DB rows from Admin/Employer dashboards.
+  - **Accessible Poster Preview Modal (`src/components/JobPosterModal.jsx`)**:
+    - Built with native `<dialog closedby="any">` + `showModal()` + pointer-coordinate light-dismiss fallback and CSS `dialog:modal` / `dialog::backdrop` `overscroll-behavior: contain`.
+    - Supports 1-click **Download PNG**, mobile **Share Image** (`navigator.share({ files })` when supported), and **Copy Caption & Link**.
+  - **Role-Wide Access**:
+    - **Students & Public Visitors**: Added `Poster` button directly inside `JobShareButtons.jsx` on `JobDetailsPage` (desktop & mobile).
+    - **Employers**: Added `Share Poster` button on published jobs + `Feature Job` shortcut linking to `/contact?subject=...` (`ContactPage.jsx` pre-fills `mailto:` subject).
+    - **Admins**: Added `Share Poster` / `Poster` buttons inside `AdminJobActionsBar.jsx` and `AdminJobsPage.jsx`.
+- Verification:
+  - `node --test tests/job-poster-generator.test.mjs`: PASSED.
+  - `npx eslint` across all 9 modified/created JS/JSX files: PASSED (0 errors, 0 warnings).
+  - `npm run build`: PASSED cleanly in 6.72s (`qrcode` code-split into an 8.84 kB gzipped lazy chunk).
+
 ## QA-2026-11-25-Server-Side-Pagination-And-Stats-Counts-Across-Listings
 
 - Scope: Server-side pagination, filtering, and aggregate stats RPCs across all public listing pages (`supabase/migrations/20261125210000_public_pagination_and_stats_rpc.sql`, `src/services/jobs.js`, `src/hooks/usePaginatedPublicJobs.js`, `src/hooks/usePaginatedCategoryRoute.js`, `src/components/SimilarJobs.jsx`, `src/components/JobSourceTabs.jsx`, `src/pages/HomePage.jsx`, `src/pages/JobsInVizagPage.jsx`, `src/pages/ItJobsInVizagPage.jsx`, `src/pages/FresherJobsInVizagPage.jsx`, `src/pages/DirectJobsInVizagPage.jsx`, `src/pages/PartTimeJobsVizagPage.jsx`, `src/pages/BranchJobsInVizagPage.jsx`, `tests/server-side-pagination-and-stats.test.mjs`).

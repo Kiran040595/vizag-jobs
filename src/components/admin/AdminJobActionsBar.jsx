@@ -17,6 +17,7 @@ import { buildGeminiSeoKeySelectOptions, parseGeminiSeoKeySelectValue } from '..
 import CopyInstagramCaptionButton from '../CopyInstagramCaptionButton';
 import { INSTAGRAM_BIO_JOBS_PATH } from '../../lib/instagramBioJobsPath';
 import LinkCompanyModal from './LinkCompanyModal';
+import JobPosterModal from '../JobPosterModal';
 
 /**
  * Floating admin action bar shown on the public job detail page when the
@@ -65,6 +66,7 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
   const [seoGeminiKeyIndex, setSeoGeminiKeyIndex] = useState(0);
   const [seoGeminiKeys, setSeoGeminiKeys] = useState([]);
   const [isLinkCompanyOpen, setIsLinkCompanyOpen] = useState(false);
+  const [isPosterOpen, setIsPosterOpen] = useState(false);
 
   const isLinkedInPostJob =
     job?.sourceKind === 'linkedin_post' || job?.source_kind === 'linkedin_post';
@@ -321,12 +323,23 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
             🔗 Link Company
           </button>
           {isPublished ? (
-            <CopyInstagramCaptionButton
-              job={job}
-              disabled={Boolean(busyAction)}
-              onInstagramMarked={() => onPatch?.({ isInstagram: true })}
-              className={`${baseBtn} border-pink-200 bg-pink-50 text-pink-800 hover:bg-pink-100 disabled:opacity-50`}
-            />
+            <>
+              <CopyInstagramCaptionButton
+                job={job}
+                disabled={Boolean(busyAction)}
+                onInstagramMarked={() => onPatch?.({ isInstagram: true })}
+                className={`${baseBtn} border-pink-200 bg-pink-50 text-pink-800 hover:bg-pink-100 disabled:opacity-50`}
+              />
+              <button
+                type="button"
+                className={`${baseBtn} border-cyan-200 bg-cyan-50 text-cyan-900 hover:bg-cyan-100 disabled:opacity-50`}
+                onClick={() => setIsPosterOpen(true)}
+                disabled={Boolean(busyAction)}
+                title="Generate and download WhatsApp / Instagram job poster"
+              >
+                🖼️ Share Poster
+              </button>
+            </>
           ) : null}
           <select
             value={String(seoGeminiKeyIndex || 0)}
@@ -427,6 +440,14 @@ export default function AdminJobActionsBar({ job, onPatch, onRefetch }) {
           isApplying={busyAction === 'seo-apply'}
           onApply={handleApplySeo}
           onCancel={handleCancelSeo}
+        />
+      ) : null}
+
+      {isPosterOpen ? (
+        <JobPosterModal
+          job={job}
+          isOpen={isPosterOpen}
+          onClose={() => setIsPosterOpen(false)}
         />
       ) : null}
 

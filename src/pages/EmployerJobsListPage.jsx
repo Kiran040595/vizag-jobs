@@ -4,6 +4,7 @@ import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmployerRoute from '../components/employer/EmployerRoute';
 import EmployerShell from '../components/employer/EmployerShell';
+import JobPosterModal from '../components/JobPosterModal';
 import { useEmployerAuth } from '../hooks/useEmployerAuth';
 import {
   formatApplicationStatus,
@@ -45,6 +46,7 @@ function EmployerJobsListContent() {
   const [suitableCounts, setSuitableCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [posterJob, setPosterJob] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -251,6 +253,25 @@ function EmployerJobsListContent() {
                         View applications ({candidateCount})
                       </Link>
                     ) : null}
+                    {job.status === 'published' ? (
+                      <button
+                        type="button"
+                        onClick={() => setPosterJob(job)}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-bold text-cyan-900 hover:bg-cyan-100 w-full sm:w-auto"
+                      >
+                        <span>🖼️</span>
+                        <span>Share Poster</span>
+                      </button>
+                    ) : null}
+                    {['published', 'pending'].includes(job.status) && !job.is_featured ? (
+                      <Link
+                        to={`/contact?subject=${encodeURIComponent(`Request Featured Slot: ${job.title}`)}`}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 w-full sm:w-auto text-center"
+                      >
+                        <span>⭐</span>
+                        <span>Feature Job</span>
+                      </Link>
+                    ) : null}
                     {['pending', 'draft'].includes(job.status) ? (
                       <button
                         type="button"
@@ -267,6 +288,13 @@ function EmployerJobsListContent() {
           })}
         </div>
       )}
+      {posterJob ? (
+        <JobPosterModal
+          job={posterJob}
+          isOpen={Boolean(posterJob)}
+          onClose={() => setPosterJob(null)}
+        />
+      ) : null}
     </EmployerShell>
   );
 }

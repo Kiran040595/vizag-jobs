@@ -1,7 +1,7 @@
-import { getJobDetailPath } from './jobRoutes';
-import { toAbsoluteUrl } from './site';
-import { displayCompanyName, displayLocation } from './jobDisplayLabels';
-import { getInstagramBioJobsDisplayUrl } from './instagramBioJobsPath';
+import { getJobDetailPath } from './jobRoutes.js';
+import { toAbsoluteUrl } from './site.js';
+import { displayCompanyName, displayLocation } from './jobDisplayLabels.js';
+import { getInstagramBioJobsDisplayUrl } from './instagramBioJobsPath.js';
 
 /** Absolute public job URL for sharing (clean link, no tracking params). */
 export const buildJobShareUrl = (job = {}) => toAbsoluteUrl(getJobDetailPath(job));
