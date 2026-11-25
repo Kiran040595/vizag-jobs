@@ -624,7 +624,7 @@ test('SRI Tech Solutions official feed extracts Visakhapatnam jobs and rejects n
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
     const value = String(url);
-    if (value.endsWith('/job-openings/')) {
+    if (value.includes('/job-openings/')) {
       return new Response('<a href="https://sritechsolutions.com/jobs/hiring-fresher-video-editor-in-vizag/">Job 1</a><a href="https://sritechsolutions.com/jobs/immediate-hiring-for-bench-sales-recruiter-in-hyderabad/">Job 2</a>');
     }
     const isVizag = value.includes('-in-vizag');

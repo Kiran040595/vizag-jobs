@@ -65,9 +65,9 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'varex imaging manufacturing india pvt. ltd.': 'https://vareximaging.wd103.myworkdayjobs.com/External_Career_Site?locations=6dd16ee3ba301001dd775f79921c0000',
   rotork: 'https://careers.smartrecruiters.com/Rotork1?search=Visakhapatnam',
   inventrax: 'https://pms.inventrax.com/hiring?q=Vishakapatnam',
-  'sri tech solutions inc.': 'https://sritechsolutions.com/job-openings/',
-  'sri tech solutions': 'https://sritechsolutions.com/job-openings/',
-  'sri tech': 'https://sritechsolutions.com/job-openings/',
+  'sri tech solutions inc.': 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
+  'sri tech solutions': 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
+  'sri tech': 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
 };
 
 function embeddedCareerData(html: string, key: string) {
@@ -1137,7 +1137,7 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerName.includes('sri tech') ||
     lowerUrl.includes('sritechsolutions.com/careers')
   ) {
-    return 'https://sritechsolutions.com/job-openings/';
+    return 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam';
   }
 
   if (

@@ -189,12 +189,12 @@ export const KNOWN_COMPANY_DEFAULTS = {
   },
   'Sri Tech Solutions': {
     website: 'https://sritechsolutions.com',
-    careers_url: 'https://sritechsolutions.com/job-openings/',
+    careers_url: 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
   },
   'SRI Tech Solutions Inc.': {
     website: 'https://sritechsolutions.com',
-    careers_url: 'https://sritechsolutions.com/job-openings/',
+    careers_url: 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
   },
   'TekWissen India': {

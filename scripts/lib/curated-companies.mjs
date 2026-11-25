@@ -227,13 +227,13 @@ export const CURATED_COMPANIES = {
   },
   'Sri Tech Solutions': {
     website: 'https://sritechsolutions.com',
-    careers_url: 'https://sritechsolutions.com/job-openings/',
+    careers_url: 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
   'SRI Tech Solutions Inc.': {
     website: 'https://sritechsolutions.com',
-    careers_url: 'https://sritechsolutions.com/job-openings/',
+    careers_url: 'https://sritechsolutions.com/job-openings/?job__location_spec=visakhapatnam',
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
