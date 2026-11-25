@@ -438,7 +438,7 @@ test('Miracle official listing extracts Miracle Heights jobs and rejects its non
     return new Response(`<script type="application/ld+json">${JSON.stringify({
       '@type': 'JobTitle',
       ID: vizag ? 'MSSJ1001' : 'MSSJ1002',
-      title: vizag ? 'GCP Data Engineer' : 'Technical Program Manager',
+      title: vizag ? 'GCP Data &amp; Cloud Engineer' : 'Technical Program Manager',
       experience: '8-12 years',
       location: vizag ? 'India-Miracle Heights' : 'India-Miracle City',
       description: '<p>Detailed official responsibilities, qualifications, technical skills, and delivery expectations for this current vacancy.</p>',
@@ -447,7 +447,7 @@ test('Miracle official listing extracts Miracle Heights jobs and rejects its non
   try {
     const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS['miracle software systems'], 'Miracle Software Systems');
     assert.equal(result.count, 1);
-    assert.equal(result.structuredJobs[0].title, 'GCP Data Engineer');
+    assert.equal(result.structuredJobs[0].title, 'GCP Data & Cloud Engineer');
     assert.equal(result.structuredJobs[0].location, 'Miracle Heights, Visakhapatnam, Andhra Pradesh, India');
     assert.equal(result.structuredJobs[0].apply_link, 'https://careers.miraclesoft.com/open-positions/open-positions-sub?jobId=MSSJ1001');
   } finally {

@@ -102,6 +102,11 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://careers.miraclesoft.com/open-positions/',
     category: 'IT & Software',
   },
+  'Miracle software systems': {
+    website: 'https://www.miraclesoft.com',
+    careers_url: 'https://careers.miraclesoft.com/open-positions/',
+    category: 'IT & Software',
+  },
   'Miraclesoft': {
     website: 'https://www.miraclesoft.com',
     careers_url: 'https://careers.miraclesoft.com/open-positions/',

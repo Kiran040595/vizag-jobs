@@ -20,7 +20,7 @@ prove the authenticated browser fetch → SEO → publish journey.
 | Celestinfo Software Solutions | https://www.celestinfo.com/careers.html | Company-owned page exposes individual current applications; native extraction follows each company-owned detail page, validates Celestinfo JobPosting employer schema, and keeps only roles whose posting location explicitly includes Visakhapatnam |
 | XTGlobal | https://xtglobal.zohorecruit.in/jobs/Careers | Official Zoho Recruit portal embeds 61 current roles explicitly mentioning Visakhapatnam/Vizag across hybrid and direct office postings; native extractor parses structured records and direct application links |
 | Sails Software | https://careers.sailssoftware.com/sailssoftware/ | Official Zwayam recruitment portal and API; native extraction validates active application status, extracts verified Visakhapatnam role (Junior AI Software Engineer) with full description, salary range, and direct application link while rejecting closed positions |
-| Miracle Software Systems | https://careers.miraclesoft.com/open-positions/ | Official current-jobs listing exposes individual posting IDs and full descriptions. Native extraction keeps 2 current Miracle Heights roles after the employer's official Vizag page identifies that campus as its Vizag APAC headquarters; the current Miracle City role is rejected because that campus is in Vizianagaram |
+| Miracle Software Systems | https://careers.miraclesoft.com/open-positions/ | On 2026-11-25, direct server fetch returned 3 current cards dated 2026-11-23. Individual job pages returned HTTP 200 with JSON-LD details, IDs MSSJ3088–MSSJ3090, Miracle Heights location, and 1,683–2,047 character descriptions; the official Vizag careers page identifies Miracle Heights as its Vizag APAC headquarters. The native extractor rejects roles for Miracle City in Vizianagaram. |
 | Innocito | https://innocito.com/careers | Employer-owned page contains server-rendered structured records for 3 current Vizag roles, including stable job numbers, experience, required skills and full descriptions. Native extraction rejects the 4 Hyderabad records and retains the official shared email/application page |
 | Paytm | https://jobs.lever.co/paytm?by=location&location=Vizag%2C+Andhra+Pradesh | Official Paytm Lever board filtered to Vizag. Native Lever API extraction currently returns 1 Paytm role with exact Vizag location, a 3,101-character description and an individual employer application page; separate Paytm Payments Services listings are not merged into this company record |
 | Radisson Hotel Group | https://careers.smartrecruiters.com/RHG?search=Visakhapatnam | Official Radisson Hotel Group SmartRecruiters search. Native API extraction validates the RHG employer identifier and exact Visakhapatnam city; live verification returned 1 role with a 4,831-character cleaned description and direct application page |
@@ -67,14 +67,14 @@ Posting IDs from the live check:
 
 | Company | Finding / next verification needed |
 | --- | --- |
-| Miracle Software Systems | Jobs loaded through employer JavaScript/API; no verified city-filtered public URL yet |
+| Miracle Software Systems | The general open-positions interface has client-side filters, but its server-rendered response includes current individual posting links. The detail pages are server-fetchable and expose JSON-LD job data; the native extractor filters by the employer's Miracle Heights location. |
 | Patra India | Official Jibe API (`/api/jobs?location=Visakhapatnam`) returns 200 but ignores city parameter and lists US/Canada roles; no active Vizag openings verified |
 | Mouri Tech | India careers page uses Ceipal ATS widget with API key, but Ceipal blocks external server requests (`400 This method is not allowed from outside of the Career Portal`); direct feed remains unverified |
 | Symbiosys Technologies | Careers page is a general resume intake/mailto portal rather than an individual job vacancy feed |
 | Biocon | Official locationsearch returned no rows; no live Vizag vacancy verified |
 | Adani | SuccessFactors-style search URL returns 404; actual employer ATS city filter remains unverified |
 | KONE | Official Workday Careers search for Visakhapatnam returns zero jobs; no current Vizag vacancy verified |
-| Miracle Software Systems | Official build-your-career-vizag page accepts Vizag-only resumes, but is not a vacancy feed; kept private pending a working filtered job search |
+| Miracle Software Systems | The Vizag page identifies Miracle Heights as the Vizag campus but is not itself a vacancy feed; use the separate server-fetchable open-positions listing and its individual detail pages. |
 | Dr. Reddy's Laboratories | Employer-owned `/jobs?options=3678&page=1` returns 403 to server-side fetching; the official public SmartRecruiters board and API now provide a fetchable city feed (verified above). |
 | Cognizant | Official locations page confirms a Visakhapatnam office and links to a coordinate search, but that search currently ignores its location parameters and returns about 2,099 global jobs; direct backend access is Cloudflare-blocked |
 | Stantec | Official India index contains 3 Visakhapatnam roles, but the stable page mixes 54 India-wide jobs and the city-search backend fails to return a durable filtered page. Kept private pending a working city endpoint |
@@ -85,3 +85,10 @@ Posting IDs from the live check:
 
 Unverified entries remain private in admin. No outreach, applications or job
 publication was performed during these read-only source checks.
+
+## QA-2026-11-25-Miracle-Software-Systems-Verified-Careers
+
+- Verified the official Miracle Software Systems open-positions listing and current Miracle Heights roles by direct server fetch. Three job detail pages returned HTTP 200 with structured titles, location, experience and descriptions; the native parser retains the exact Vizag campus and rejects other campuses. Added an exact-record migration for `Miracle software systems` (Supabase ID `fa85ccd8-f0e1-4b61-aba9-3ee90e4b221a`) and activated that company for directory publication.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
+- Verification: Miracle regression and `git diff --check` passed. This records source and unit-test checks only, not E2E evidence.
+- Full company-career suite: 63 passed, 0 failed.

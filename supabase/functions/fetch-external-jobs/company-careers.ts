@@ -696,7 +696,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         const description = htmlToCleanMarkdown(String(block.description || ''), apply_link).slice(0, 20000);
         if (!block.title || description.length < 80) return null;
         return {
-          title: String(block.title).trim(),
+          title: htmlToCleanMarkdown(String(block.title), apply_link).replace(/\s+/g, ' ').trim(),
           company,
           location: 'Miracle Heights, Visakhapatnam, Andhra Pradesh, India',
           experience: String(block.experience || '').trim(),

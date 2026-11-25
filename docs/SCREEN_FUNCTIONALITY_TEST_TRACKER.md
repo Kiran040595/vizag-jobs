@@ -1895,3 +1895,9 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and scraper verification are recorded separately.
 - Verification: SRI Tech Solutions scraper regression passed. Full company career fetch suite: 63 passed.
 
+## QA-2026-11-25-Miracle-Software-Systems-Verified-Careers
+
+- Verified the official careers listing and three current Miracle Heights postings through direct server requests. Updated the native parser to decode HTML entities in posting titles, added a regression case, and added a migration scoped to the exact unapproved company row.
+- Functional E2E: Not tested. Mobile UI: Not tested. Unit tests and direct source fetches do not establish an authenticated end-to-end publish journey.
+- Verification: Miracle scraper regression and `git diff --check` passed. Full company-career suite: 63 passed, 0 failed.
+

@@ -87,6 +87,12 @@ export const CURATED_COMPANIES = {
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
+  'Miracle software systems': {
+    website: 'https://www.miraclesoft.com',
+    careers_url: 'https://careers.miraclesoft.com/open-positions/',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'Miracle Software Systems Inc.': {
     website: 'https://www.miraclesoft.com',
     careers_url: 'https://careers.miraclesoft.com/open-positions/',
