@@ -1,15 +1,14 @@
-import { useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
+import Pagination from '../components/Pagination';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { getJobCategoryPageConfig, JOB_CATEGORY_PAGES } from '../lib/jobCategoryPages';
-import { sortJobsForListing } from '../lib/jobFilters';
 import { toAbsoluteUrl } from '../lib/site';
-import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
+import { usePaginatedCategoryRoute } from '../hooks/usePaginatedCategoryRoute';
 
 const RELATED_LINKS = [
   { to: '/jobs/it', label: 'IT jobs' },
@@ -21,17 +20,19 @@ const RELATED_LINKS = [
 
 export default function BranchJobsInVizagPage({ categoryId }) {
   const config = getJobCategoryPageConfig(categoryId);
-  const [searchTerm, setSearchTerm] = useState('');
-  const { allJobs, isLoading, loadError } = useCachedPublicJobs();
-
-  const filteredJobs = useMemo(() => {
-    if (!config) return [];
-    return sortJobsForListing(
-      allJobs.filter(
-        (job) => config.matchesJob(job) && jobMatchesSearchText(job, searchTerm),
-      ),
-    );
-  }, [allJobs, config, searchTerm]);
+  const {
+    searchTerm,
+    setSearchTerm,
+    resetSearch,
+    items,
+    total,
+    page,
+    totalPages,
+    isLoading,
+    loadError,
+    listRef,
+    handlePageChange,
+  } = usePaginatedCategoryRoute({ category: config?.id || 'all' });
 
   if (!config) {
     return <Navigate to="/jobs" replace />;
@@ -82,11 +83,12 @@ export default function BranchJobsInVizagPage({ categoryId }) {
         ) : null}
 
         <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
-          {isLoading ? 'Loading' : filteredJobs.length} {config.countLabel} jobs match your search
+          {isLoading ? 'Loading' : total} {config.countLabel} jobs match your search
         </p>
 
-        <h2 className="text-2xl font-semibold text-slate-800">Latest {config.label} in Vizag</h2>
-        <JobList jobs={filteredJobs} isLoading={isLoading} onResetFilters={searchTerm ? () => setSearchTerm('') : undefined} />
+        <h2 ref={listRef} className="text-2xl font-semibold text-slate-800">Latest {config.label} in Vizag</h2>
+        <JobList jobs={items} isLoading={isLoading} onResetFilters={searchTerm ? resetSearch : undefined} />
+        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
 
         <article className="prose prose-slate mx-auto min-w-0 max-w-4xl [overflow-wrap:anywhere]">
           <h2>{config.introTitle}</h2>

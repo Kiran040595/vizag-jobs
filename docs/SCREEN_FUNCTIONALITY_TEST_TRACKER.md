@@ -1,5 +1,29 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-25-Server-Side-Pagination-And-Stats-Counts-Across-Listings
+
+- Scope: Server-side pagination, filtering, and aggregate stats RPCs across all public listing pages (`supabase/migrations/20261125210000_public_pagination_and_stats_rpc.sql`, `src/services/jobs.js`, `src/hooks/usePaginatedPublicJobs.js`, `src/hooks/usePaginatedCategoryRoute.js`, `src/components/SimilarJobs.jsx`, `src/components/JobSourceTabs.jsx`, `src/pages/HomePage.jsx`, `src/pages/JobsInVizagPage.jsx`, `src/pages/ItJobsInVizagPage.jsx`, `src/pages/FresherJobsInVizagPage.jsx`, `src/pages/DirectJobsInVizagPage.jsx`, `src/pages/PartTimeJobsVizagPage.jsx`, `src/pages/BranchJobsInVizagPage.jsx`, `tests/server-side-pagination-and-stats.test.mjs`).
+- Problem resolved:
+  - Public listing pages and `SimilarJobs` previously called `fetchJobs()` / `useCachedPublicJobs()`, downloading the entire published catalog (1,113+ rows across 37 columns) on every fresh visitor session and in-app browser open, driving ~90.87 MB/day (98.4%) of Supabase PostgREST egress.
+  - `HomePage` also fired an eager background full-list refresh immediately even when SSR middleware had already bootstrapped the first 24 jobs.
+  - Category listing pages (`/jobs`, `/jobs/it`, `/jobs/fresher`, `/jobs/vizagjobs`, `/jobs/part-time`, `/jobs/:branch`) lacked server-side pagination.
+- Solution delivered:
+  - **Postgres RPCs (`get_public_job_stats`, `query_public_jobs`)**:
+    - Applied migration `20261125210000_public_pagination_and_stats_rpc.sql` to the linked Supabase database and granted execute to `anon, authenticated`.
+    - `get_public_job_stats()` computes `activeJobs`, `companies`, `newThisWeek`, `categories`, `postedToday`, `directCount`, and `companyCount` in a 123-byte payload (cached 5 min client-side + `sessionStorage`).
+    - `query_public_jobs(...)` executes tab, category/branch, jobType, freshness, source, exact company, and multi-token search filtering in Postgres and returns only the requested 12-row slice (~16 KB) plus exact `total` and `totalPages`.
+  - **SSR & Matching Optimization (`HomePage.jsx`)**:
+    - Unfiltered Page 1–2 on `HomePage` serves directly from the 24-job SSR bootstrap without downloading the full catalog; Pages 3+ and filtered/searched queries fetch 12-row slices via `usePaginatedPublicJobs`.
+    - Personalized `Jobs for You` matching pool loads on demand (capped at 250 recent jobs) only when an authenticated student with a complete profile opens that tab.
+  - **Targeted `SimilarJobs.jsx` & Sub-Page Pagination**:
+    - `SimilarJobs.jsx` checks `readCachedPublicJobs()` first and otherwise fetches only 18 category-matched candidates via `fetchPaginatedPublicJobs`.
+    - Added `<Pagination />` and server-side pagination via `usePaginatedCategoryRoute` / `usePaginatedPublicJobs` across `JobsInVizagPage`, `ItJobsInVizagPage`, `FresherJobsInVizagPage`, `DirectJobsInVizagPage`, `PartTimeJobsVizagPage`, and `BranchJobsInVizagPage`.
+- Verification:
+  - Live anon RPC verification on Supabase: `get_public_job_stats()` returned 123 bytes (`activeJobs: 1113`, `directCount: 44`, `companyCount: 205`); `query_public_jobs` Page 1 returned 12 items (16,212 bytes, `totalPages: 93`).
+  - `node --test tests/server-side-pagination-and-stats.test.mjs tests/public-jobs-session-cache.test.mjs tests/site-stats.test.mjs tests/job-filters.test.mjs tests/job-category-taxonomy.test.mjs tests/job-direct-posting.test.mjs`: 12/12 test files passed.
+  - `npx eslint` on all 12 modified/created files: passed with 0 errors/warnings.
+  - `npm run build`: passed cleanly (1,163 sitemap URLs).
+
 ## QA-2026-11-24-Supabase-Egress-PostgREST-Throttling-And-Caching
 
 - Scope: Database query throttling, response payload optimization, and client caching (`src/services/jobApplications.js`, `src/hooks/useAppliedJobsCount.js`, `src/services/jobQuestions.js`, `src/services/replyNotifications.js`, `src/components/QuestionNotificationBell.jsx`, `tests/query-throttling-and-caching.test.mjs`, `tests/applied-jobs-count-cache.test.mjs`).

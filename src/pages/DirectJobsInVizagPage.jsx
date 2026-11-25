@@ -1,29 +1,28 @@
-import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
+import Pagination from '../components/Pagination';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { sortJobsForListing } from '../lib/jobFilters';
-import { isDirectPosting } from '../lib/jobDirectPosting';
 import { toAbsoluteUrl } from '../lib/site';
-import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
+import { usePaginatedCategoryRoute } from '../hooks/usePaginatedCategoryRoute';
 
 export default function DirectJobsInVizagPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const { allJobs, isLoading, loadError } = useCachedPublicJobs();
-
-  const directJobs = useMemo(
-    () =>
-      sortJobsForListing(
-        allJobs.filter(
-          (job) => isDirectPosting(job) && jobMatchesSearchText(job, searchTerm),
-        ),
-      ),
-    [allJobs, searchTerm],
-  );
+  const {
+    searchTerm,
+    setSearchTerm,
+    resetSearch,
+    items,
+    total,
+    page,
+    totalPages,
+    isLoading,
+    loadError,
+    listRef,
+    handlePageChange,
+  } = usePaginatedCategoryRoute({ tab: 'direct' });
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -85,12 +84,13 @@ export default function DirectJobsInVizagPage() {
         ) : null}
 
         <p className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-sm font-medium text-emerald-900 shadow-sm">
-          <strong className="font-semibold">{directJobs.length}</strong> verified direct company{' '}
-          {directJobs.length === 1 ? 'opening' : 'openings'} available in Visakhapatnam
+          <strong className="font-semibold">{isLoading ? '…' : total}</strong> verified direct company{' '}
+          {total === 1 ? 'opening' : 'openings'} available in Visakhapatnam
         </p>
 
-        <h2 className="text-2xl font-bold text-slate-800">Featured Direct Openings</h2>
-        <JobList jobs={directJobs} isLoading={isLoading} onResetFilters={searchTerm ? () => setSearchTerm('') : undefined} />
+        <h2 ref={listRef} className="text-2xl font-bold text-slate-800">Featured Direct Openings</h2>
+        <JobList jobs={items} isLoading={isLoading} onResetFilters={searchTerm ? resetSearch : undefined} />
+        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
 
         <div className="prose prose-slate mx-auto min-w-0 max-w-4xl [overflow-wrap:anywhere] pt-6">
           <h2>Why Apply to Direct Company Jobs on Vizag Jobs?</h2>

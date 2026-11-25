@@ -1,28 +1,27 @@
-import { useMemo, useState } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
+import Pagination from '../components/Pagination';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { sortJobsForListing } from '../lib/jobFilters';
 import { toAbsoluteUrl } from '../lib/site';
-import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
+import { usePaginatedCategoryRoute } from '../hooks/usePaginatedCategoryRoute';
 
 export default function PartTimeJobsVizagPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const { allJobs, isLoading, loadError } = useCachedPublicJobs();
-
-  const filteredJobs = useMemo(
-    () =>
-      sortJobsForListing(
-        allJobs.filter(
-          (job) =>
-            job.tags.includes('Part-time') && jobMatchesSearchText(job, searchTerm)
-        ),
-      ),
-    [allJobs, searchTerm]
-  );
+  const {
+    searchTerm,
+    setSearchTerm,
+    resetSearch,
+    items,
+    total,
+    page,
+    totalPages,
+    isLoading,
+    loadError,
+    listRef,
+    handlePageChange,
+  } = usePaginatedCategoryRoute({ jobType: 'part-time' });
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -60,11 +59,12 @@ export default function PartTimeJobsVizagPage() {
           </p>
         ) : null}
         <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
-          {filteredJobs.length} part-time jobs match your search
+          {isLoading ? 'Loading' : total} part-time jobs match your search
         </p>
 
-        <h2 className="text-2xl font-semibold text-slate-800">Latest Part-time Jobs in Vizag</h2>
-        <JobList jobs={filteredJobs} isLoading={isLoading} onResetFilters={searchTerm ? () => setSearchTerm('') : undefined} />
+        <h2 ref={listRef} className="text-2xl font-semibold text-slate-800">Latest Part-time Jobs in Vizag</h2>
+        <JobList jobs={items} isLoading={isLoading} onResetFilters={searchTerm ? resetSearch : undefined} />
+        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
 
         <div className="prose prose-slate mx-auto min-w-0 max-w-4xl [overflow-wrap:anywhere]">
           <h2>Part-Time and Flexible Work Opportunities in Visakhapatnam</h2>

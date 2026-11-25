@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import JobCard from './JobCard';
-import { useCachedPublicJobs } from '../lib/useCachedPublicJobs';
+import { readCachedPublicJobs } from '../lib/publicJobsSessionCache';
+import { fetchPaginatedPublicJobs } from '../services/jobs';
+import { JOB_CATEGORIES, normalizeJobCategory } from '../lib/jobCategoryTaxonomy';
 import { getJobCategorySegment, getJobDetailPath } from '../lib/jobRoutes';
 import { stripMarkdownForPlainText } from '../lib/jobDescriptionDisplay';
 import { buildCardHighlightItems, cardCompanyName } from '../lib/jobCardDisplay';
@@ -64,17 +66,58 @@ const scoreSimilarity = (job, candidate, baseSegment, baseSkills) => {
  * public job list against the current job and shows the closest matches.
  * Renders nothing until at least one relevant match is found.
  */
+const resolveCategoryFilterId = (job) => {
+  const normalized = normalizeJobCategory(job?.category);
+  const match = JOB_CATEGORIES.find((c) => c.value === normalized);
+  if (match && match.id !== 'general') return match.id;
+  return 'all';
+};
+
 export default function SimilarJobs({ job }) {
-  const { allJobs } = useCachedPublicJobs();
+  const [candidates, setCandidates] = useState(() => readCachedPublicJobs()?.jobs || []);
   const { isAdmin } = useAdminAuth();
 
+  useEffect(() => {
+    if (!job?.id) return undefined;
+
+    const cached = readCachedPublicJobs();
+    if (cached?.jobs?.length) {
+      setCandidates(cached.jobs);
+      return undefined;
+    }
+
+    let isMounted = true;
+    const categoryId = resolveCategoryFilterId(job);
+
+    fetchPaginatedPublicJobs({ category: categoryId, page: 1, pageSize: 18 })
+      .then((res) => {
+        if (!isMounted) return;
+        const items = Array.isArray(res?.items) ? res.items : [];
+        if (items.length > 1 || categoryId === 'all') {
+          setCandidates(items);
+          return;
+        }
+        return fetchPaginatedPublicJobs({ category: 'all', page: 1, pageSize: 18 }).then((fallbackRes) => {
+          if (!isMounted) return;
+          setCandidates(Array.isArray(fallbackRes?.items) ? fallbackRes.items : []);
+        });
+      })
+      .catch(() => {
+        if (isMounted) setCandidates([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [job]);
+
   const similarJobs = useMemo(() => {
-    if (!job || !Array.isArray(allJobs) || allJobs.length === 0) return [];
+    if (!job || !Array.isArray(candidates) || candidates.length === 0) return [];
 
     const baseSegment = getJobCategorySegment(job);
     const baseSkills = toSkillSet(job.skills);
 
-    return allJobs
+    return candidates
       .filter((candidate) => candidate && candidate.id !== job.id)
       .map((candidate) => ({
         job: candidate,
@@ -84,7 +127,7 @@ export default function SimilarJobs({ job }) {
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SIMILAR_JOBS)
       .map((entry) => entry.job);
-  }, [allJobs, job]);
+  }, [candidates, job]);
 
   if (similarJobs.length === 0) {
     return null;

@@ -193,7 +193,7 @@ function JobSourceTabs({
               </span>
             </span>
 
-            {isStudent && profileComplete ? (
+            {isStudent && profileComplete && matchingCount !== null && matchingCount !== undefined ? (
               <span
                 className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold transition-colors sm:px-2 sm:text-xs ${
                   activeTab === 'matching'

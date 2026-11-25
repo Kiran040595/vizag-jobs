@@ -1,29 +1,53 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import JobList from '../components/JobList';
+import Pagination from '../components/Pagination';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { sortJobsForListing } from '../lib/jobFilters';
+import { PAGE_SIZE } from '../lib/jobFilters';
 import { toAbsoluteUrl } from '../lib/site';
-import { jobMatchesSearchText, useCachedPublicJobs } from '../lib/useCachedPublicJobs';
+import { usePaginatedPublicJobs } from '../hooks/usePaginatedPublicJobs';
+import { fetchPublicJobStats, readCachedPublicJobStats } from '../services/jobs';
 
 export default function JobsInVizagPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const companyQuery = searchParams.get('company') || '';
   const textQuery = searchParams.get('search') || searchParams.get('q') || '';
+  const urlPageNum = Number(searchParams.get('page'));
+  const currentPage = Number.isFinite(urlPageNum) && urlPageNum > 0 ? Math.floor(urlPageNum) : 1;
+
   const urlQuery = companyQuery || textQuery;
   const [searchTerm, setSearchTerm] = useState(urlQuery);
   const lastUrlQueryRef = useRef(urlQuery);
   const listHeadingRef = useRef(null);
 
-  const { allJobs, isLoading, loadError } = useCachedPublicJobs();
+  const [publicStats, setPublicStats] = useState(() => readCachedPublicJobStats());
+
+  useEffect(() => {
+    if (readCachedPublicJobStats()) return undefined;
+    let mounted = true;
+    fetchPublicJobStats()
+      .then((s) => {
+        if (mounted && s) setPublicStats(s);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const { items, total, page, totalPages, isLoading, loadError } = usePaginatedPublicJobs({
+    company: companyQuery,
+    search: companyQuery ? '' : searchTerm,
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+  });
 
   // Sync searchTerm when URL query params change (e.g. navigation from companies directory or back/forward)
   useEffect(() => {
-    // Keep spaces in active typing; only external URL changes replace the draft.
     if (urlQuery === lastUrlQueryRef.current) return;
     lastUrlQueryRef.current = urlQuery;
     setSearchTerm(urlQuery);
@@ -37,9 +61,9 @@ export default function JobsInVizagPage() {
     const nextParams = new URLSearchParams(searchParams);
     const trimmed = val.trim();
     lastUrlQueryRef.current = trimmed;
-    // User typing clears exact company mode and switches to global text search
     nextParams.delete('company');
     nextParams.delete('q');
+    nextParams.delete('page');
     if (trimmed) {
       nextParams.set('search', trimmed);
     } else {
@@ -55,32 +79,33 @@ export default function JobsInVizagPage() {
     nextParams.delete('search');
     nextParams.delete('q');
     nextParams.delete('company');
+    nextParams.delete('page');
     setSearchParams(nextParams, { replace: true });
   };
 
-  const filteredJobs = useMemo(() => {
-    // If exact company name is specified via ?company=, match ONLY exact company name
-    if (companyQuery) {
-      const target = companyQuery.trim().toLowerCase().replace(/\s+/g, ' ');
-      return sortJobsForListing(
-        allJobs.filter(
-          (job) => (job.company || '').trim().toLowerCase().replace(/\s+/g, ' ') === target,
-        ),
-      );
+  const handlePageChange = (nextPage) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextPage > 1) {
+      nextParams.set('page', String(nextPage));
+    } else {
+      nextParams.delete('page');
     }
-
-    return sortJobsForListing(
-      allJobs.filter((job) => jobMatchesSearchText(job, searchTerm)),
-    );
-  }, [allJobs, companyQuery, searchTerm]);
+    setSearchParams(nextParams);
+    window.requestAnimationFrame(() => {
+      listHeadingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Jobs in Vizag",
-    "url": toAbsoluteUrl('/jobs'),
-    "description": "Browse all available jobs in Visakhapatnam including IT, fresher, part-time and experienced positions."
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Jobs in Vizag',
+    url: toAbsoluteUrl('/jobs'),
+    description:
+      'Browse all available jobs in Visakhapatnam including IT, fresher, part-time and experienced positions.',
   };
+
+  const allJobsLabel = publicStats?.activeJobs ? ` (${publicStats.activeJobs})` : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50/30 to-white">
@@ -101,9 +126,7 @@ export default function JobsInVizagPage() {
           onSearch={handleSearchChange}
         />
 
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : null}
+        {isLoading ? <LoadingSpinner /> : null}
         {loadError ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 shadow-sm">
             {loadError}
@@ -122,7 +145,7 @@ export default function JobsInVizagPage() {
                   Showing jobs for company: <strong className="font-bold text-cyan-950">&quot;{companyQuery}&quot;</strong>
                 </p>
                 <p className="text-xs text-cyan-700">
-                  {filteredJobs.length} {filteredJobs.length === 1 ? 'live opening' : 'live openings'} in Visakhapatnam (exact match)
+                  {total} {total === 1 ? 'live opening' : 'live openings'} in Visakhapatnam (exact match)
                 </p>
               </div>
             </div>
@@ -131,7 +154,7 @@ export default function JobsInVizagPage() {
               onClick={handleClearSearch}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
             >
-              <span>✕ Show all jobs ({allJobs.length})</span>
+              <span>✕ Show all jobs{allJobsLabel}</span>
             </button>
           </div>
         ) : searchTerm ? (
@@ -145,7 +168,7 @@ export default function JobsInVizagPage() {
                   Showing jobs matching <strong className="font-bold text-cyan-950">&quot;{searchTerm}&quot;</strong>
                 </p>
                 <p className="text-xs text-cyan-700">
-                  {filteredJobs.length} {filteredJobs.length === 1 ? 'opening' : 'openings'} found in Visakhapatnam
+                  {total} {total === 1 ? 'opening' : 'openings'} found in Visakhapatnam
                 </p>
               </div>
             </div>
@@ -154,12 +177,12 @@ export default function JobsInVizagPage() {
               onClick={handleClearSearch}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-cyan-300 bg-white px-3.5 py-2 text-xs font-bold text-cyan-900 shadow-sm transition hover:bg-cyan-100 hover:text-cyan-950"
             >
-              <span>✕ Show all jobs ({allJobs.length})</span>
+              <span>✕ Show all jobs{allJobsLabel}</span>
             </button>
           </div>
         ) : (
           <p className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm">
-            {filteredJobs.length} jobs match your search
+            {total} jobs match your search
           </p>
         )}
 
@@ -173,7 +196,7 @@ export default function JobsInVizagPage() {
           </h2>
         </div>
 
-        {filteredJobs.length === 0 && !isLoading && !loadError ? (
+        {items.length === 0 && !isLoading && !loadError ? (
           <div className="break-words [overflow-wrap:anywhere] rounded-2xl border border-dashed border-slate-300 bg-white p-4 sm:p-8 text-center">
             <p className="text-base font-semibold text-slate-800">
               {companyQuery || searchTerm
@@ -192,9 +215,11 @@ export default function JobsInVizagPage() {
             </button>
           </div>
         ) : !isLoading && !loadError ? (
-          <JobList jobs={filteredJobs} />
+          <>
+            <JobList jobs={items} />
+            <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+          </>
         ) : null}
-
       </main>
 
       <Footer />

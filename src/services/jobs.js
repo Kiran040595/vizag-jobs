@@ -451,9 +451,196 @@ export const getJobsByType = async (jobType, limit, forceRefresh = false) =>
 export const searchJobs = async (searchTerm, limit, forceRefresh = false) =>
   fetchJobs(limit ? { search: searchTerm, limit } : { search: searchTerm }, forceRefresh);
 
+const PUBLIC_STATS_CACHE_KEY = 'vizagJobs_public_stats_v1';
+const PUBLIC_STATS_TTL_MS = 5 * 60 * 1000;
+const PAGINATED_JOBS_TTL_MS = 3 * 60 * 1000;
+
+let statsMemoryCache = { data: null, timestamp: 0 };
+let inFlightStatsPromise = null;
+const paginatedJobsCache = new Map();
+const inFlightPaginatedPromises = new Map();
+
+export const readCachedPublicJobStats = () => {
+  if (statsMemoryCache.data && Date.now() - statsMemoryCache.timestamp < PUBLIC_STATS_TTL_MS) {
+    return statsMemoryCache.data;
+  }
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const raw = window.sessionStorage.getItem(PUBLIC_STATS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.data && Date.now() - Number(parsed.timestamp) < PUBLIC_STATS_TTL_MS) {
+          statsMemoryCache = { data: parsed.data, timestamp: Number(parsed.timestamp) };
+          return parsed.data;
+        }
+      }
+    }
+  } catch {
+    // ignore storage read errors
+  }
+  return null;
+};
+
+export const fetchPublicJobStats = async (options = {}) => {
+  const { forceRefresh = false } = options;
+  const client = getPublicClient();
+  if (!isSupabaseConfigured || !client) {
+    return null;
+  }
+
+  if (!forceRefresh) {
+    const cached = readCachedPublicJobStats();
+    if (cached) {
+      return cached;
+    }
+    if (inFlightStatsPromise) {
+      return inFlightStatsPromise;
+    }
+  }
+
+  inFlightStatsPromise = (async () => {
+    try {
+      const { data, error } = await client.rpc('get_public_job_stats');
+      if (error || !data || typeof data !== 'object') {
+        if (error) {
+          console.warn('[jobs] get_public_job_stats failed:', error.message);
+        }
+        return null;
+      }
+
+      const normalized = {
+        activeJobs: Number(data.activeJobs) || 0,
+        companies: Number(data.companies) || 0,
+        newThisWeek: Number(data.newThisWeek) || 0,
+        categories: Number(data.categories) || 0,
+        postedToday: Number(data.postedToday) || 0,
+        directCount: Number(data.directCount) || 0,
+        companyCount: Number(data.companyCount) || 0,
+      };
+
+      const now = Date.now();
+      statsMemoryCache = { data: normalized, timestamp: now };
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem(
+            PUBLIC_STATS_CACHE_KEY,
+            JSON.stringify({ data: normalized, timestamp: now }),
+          );
+        }
+      } catch {
+        // ignore storage quota errors
+      }
+      return normalized;
+    } finally {
+      inFlightStatsPromise = null;
+    }
+  })();
+
+  return inFlightStatsPromise;
+};
+
+const normalizePaginatedKey = (params) => JSON.stringify(params);
+
+export const readCachedPaginatedJobs = (filters = {}) => {
+  const params = {
+    tab: String(filters.tab || 'all').toLowerCase(),
+    category: String(filters.category || 'all').toLowerCase(),
+    jobType: String(filters.jobType || 'all').toLowerCase(),
+    freshness: String(filters.freshness || 'all').toLowerCase(),
+    source: String(filters.source || 'all').toLowerCase(),
+    company: String(filters.company || '').trim(),
+    search: String(filters.q ?? filters.search ?? '').trim(),
+    page: Math.max(1, Math.floor(Number(filters.page) || 1)),
+    pageSize: Math.max(1, Math.min(100, Math.floor(Number(filters.pageSize) || 12))),
+  };
+  const key = normalizePaginatedKey(params);
+  const cached = paginatedJobsCache.get(key);
+  if (cached && Date.now() - cached.timestamp < PAGINATED_JOBS_TTL_MS) {
+    return cached.result;
+  }
+  return null;
+};
+
+export const fetchPaginatedPublicJobs = async (filters = {}, options = {}) => {
+  const { forceRefresh = false } = options;
+  const client = getPublicClient();
+  if (!isSupabaseConfigured || !client) {
+    throw new Error(
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
+    );
+  }
+
+  const params = {
+    tab: String(filters.tab || 'all').toLowerCase(),
+    category: String(filters.category || 'all').toLowerCase(),
+    jobType: String(filters.jobType || 'all').toLowerCase(),
+    freshness: String(filters.freshness || 'all').toLowerCase(),
+    source: String(filters.source || 'all').toLowerCase(),
+    company: String(filters.company || '').trim(),
+    search: String(filters.q ?? filters.search ?? '').trim(),
+    page: Math.max(1, Math.floor(Number(filters.page) || 1)),
+    pageSize: Math.max(1, Math.min(100, Math.floor(Number(filters.pageSize) || 12))),
+  };
+
+  const key = normalizePaginatedKey(params);
+
+  if (!forceRefresh) {
+    const cached = paginatedJobsCache.get(key);
+    if (cached && Date.now() - cached.timestamp < PAGINATED_JOBS_TTL_MS) {
+      return cached.result;
+    }
+    if (inFlightPaginatedPromises.has(key)) {
+      return inFlightPaginatedPromises.get(key);
+    }
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const data = await retryWithBackoff(async () => {
+        const { data: rpcData, error } = await client.rpc('query_public_jobs', {
+          p_tab: params.tab,
+          p_category: params.category,
+          p_job_type: params.jobType,
+          p_freshness: params.freshness,
+          p_source: params.source,
+          p_company: params.company,
+          p_search: params.search,
+          p_page: params.page,
+          p_page_size: params.pageSize,
+        });
+
+        if (error) {
+          throw new Error(`Supabase paginated jobs query failed: ${error.message}`);
+        }
+        return rpcData;
+      });
+
+      const rawItems = Array.isArray(data?.items) ? data.items : [];
+      const result = {
+        total: Number(data?.total) || 0,
+        page: Math.max(1, Number(data?.page) || params.page),
+        pageSize: Number(data?.pageSize) || params.pageSize,
+        totalPages: Math.max(1, Number(data?.totalPages) || 1),
+        items: rawItems.map((row, index) => processJobData(row, index)),
+      };
+
+      paginatedJobsCache.set(key, { result, timestamp: Date.now() });
+      return result;
+    } finally {
+      inFlightPaginatedPromises.delete(key);
+    }
+  })();
+
+  inFlightPaginatedPromises.set(key, fetchPromise);
+  return fetchPromise;
+};
+
 export const clearJobsCache = () => {
   jobsCache.clear();
   jobByIdCache.clear();
+  paginatedJobsCache.clear();
+  inFlightPaginatedPromises.clear();
+  statsMemoryCache = { data: null, timestamp: 0 };
   instagramJobsCache.jobs = null;
   instagramJobsCache.timestamp = 0;
 };
