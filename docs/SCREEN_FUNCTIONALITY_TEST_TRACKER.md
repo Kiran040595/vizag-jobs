@@ -1,5 +1,18 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-27-Hide-Admin-Login-From-Public-UI
+
+- Scope: Security hardening to remove public visibility of the Admin login route (`src/pages/UnifiedLoginPage.jsx`, `public/robots.txt`, `tests/hide-admin-login.test.mjs`).
+- Changes delivered:
+  - Removed the `Admin` role toggle button from the public Student / Company login screen in `src/pages/UnifiedLoginPage.jsx` (renders only the 2-column `Student | Company` toggle when `role !== 'admin'`, and hides the toggle bar completely when visiting `/admin/login` directly).
+  - Set `noindex={role === 'admin'}` on `<SEO />` for `/admin/login` so search engines do not index the admin login route.
+  - Added `Disallow: /admin` and `Disallow: /admin/` to `public/robots.txt`.
+  - Admin access remains reachable directly via bookmarking `/admin/login` or navigating to `/admin` (while still gated by `AdminAuthContext` + Supabase `admin_users` RLS).
+- Verification:
+  - `node --test tests/hide-admin-login.test.mjs tests/employer-login-redirect.test.mjs`: PASSED.
+  - `npx eslint src/pages/UnifiedLoginPage.jsx tests/hide-admin-login.test.mjs`: 0 errors, 0 warnings.
+  - `npm run build`: compiled cleanly in 2.48s (1,165 sitemap URLs).
+
 ## QA-2026-11-27-Pagination-Loop-Fix-And-RPC-Query-Speed
 
 - Scope: Resolved production `React #185` pagination loop reported in `site_error_logs` and optimized `query_public_jobs` slow queries highlighted in Supabase Observability (`supabase/migrations/20261127072500_optimize_public_pagination_indexes_and_speed.sql`, `src/hooks/usePaginatedPublicJobs.js`, `src/pages/HomePage.jsx`, `tests/server-side-pagination-and-stats.test.mjs`).

@@ -483,17 +483,18 @@ export default function UnifiedLoginPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_55%,_#f1f5f9_100%)] px-3 py-6 pb-mobile-chrome sm:px-4 sm:py-14">
-      <SEO title={seo.title} description={seo.description} canonical={seo.canonical} />
+      <SEO title={seo.title} description={seo.description} canonical={seo.canonical} noindex={role === 'admin'} />
 
       <div className="mx-auto w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/60 sm:p-8">
         <h1 className="text-2xl font-black text-slate-950 sm:text-3xl">{seo.heading}</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">{seo.hint}</p>
 
-        <div className="mt-5 grid grid-cols-3 gap-2" role="group" aria-label="Account type">
-          <RoleToggle label="Student" active={role === 'student'} onChange={() => setRole('student')} />
-          <RoleToggle label="Company" active={role === 'employer'} onChange={() => setRole('employer')} />
-          <RoleToggle label="Admin" active={role === 'admin'} onChange={() => setRole('admin')} />
-        </div>
+        {role !== 'admin' ? (
+          <div className="mt-5 grid grid-cols-2 gap-2" role="group" aria-label="Account type">
+            <RoleToggle label="Student" active={role === 'student'} onChange={() => setRole('student')} />
+            <RoleToggle label="Company" active={role === 'employer'} onChange={() => setRole('employer')} />
+          </div>
+        ) : null}
 
         {role === 'student' ? <StudentLoginPanel searchParams={searchParams} /> : null}
         {role === 'employer' ? <EmployerLoginPanel searchParams={searchParams} /> : null}

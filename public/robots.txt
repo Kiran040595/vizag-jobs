@@ -38,5 +38,7 @@ Disallow: /
 # Allow general search engines (Google, Bing) and social preview bots
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
 
 Sitemap: https://jobsinvizag.in/sitemap.xml
