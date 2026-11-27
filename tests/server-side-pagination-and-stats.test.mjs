@@ -26,10 +26,12 @@ assert.match(jobsServiceSrc, /export const readCachedPaginatedJobs/);
 assert.match(jobsServiceSrc, /client\.rpc\('get_public_job_stats'\)/);
 assert.match(jobsServiceSrc, /client\.rpc\('query_public_jobs'/);
 
-// 3. Shared pagination hooks exist and debounce search
+// 3. Shared pagination hooks exist, debounce search, and expose synchronous settled state
 const paginatedHookSrc = readFileSync(path.join(repoRoot, 'src/hooks/usePaginatedPublicJobs.js'), 'utf8');
 assert.match(paginatedHookSrc, /fetchPaginatedPublicJobs/);
 assert.match(paginatedHookSrc, /SEARCH_DEBOUNCE_MS/);
+assert.match(paginatedHookSrc, /settledKey/);
+assert.match(paginatedHookSrc, /isSettled/);
 
 const categoryRouteHookSrc = readFileSync(path.join(repoRoot, 'src/hooks/usePaginatedCategoryRoute.js'), 'utf8');
 assert.match(categoryRouteHookSrc, /usePaginatedPublicJobs/);
@@ -41,11 +43,12 @@ assert.doesNotMatch(similarJobsSrc, /useCachedPublicJobs/);
 assert.match(similarJobsSrc, /fetchPaginatedPublicJobs/);
 assert.match(similarJobsSrc, /pageSize:\s*18/);
 
-// 5. HomePage.jsx uses server-side pagination + stats RPC and does not call fetchJobs() eagerly on load
+// 5. HomePage.jsx uses server-side pagination + stats RPC, waits for isSettled before clamping page, and does not call fetchJobs() eagerly on load
 const homePageSrc = readFileSync(path.join(repoRoot, 'src/pages/HomePage.jsx'), 'utf8');
 assert.match(homePageSrc, /usePaginatedPublicJobs/);
 assert.match(homePageSrc, /fetchPublicJobStats/);
 assert.match(homePageSrc, /canServeFromSsr/);
+assert.match(homePageSrc, /paginatedResult\.isSettled/);
 assert.doesNotMatch(homePageSrc, /fetchJobs\(\{\}, true\)/);
 
 // 6. All listing sub-pages use server-side pagination and render <Pagination />

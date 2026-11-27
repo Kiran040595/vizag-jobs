@@ -45,6 +45,7 @@ export function usePaginatedPublicJobs({
     page: Math.max(1, Math.floor(Number(page) || 1)),
     pageSize,
   };
+  const activeKey = JSON.stringify(queryParams);
 
   const initialCached = enabled ? readCachedPaginatedJobs(queryParams) : null;
 
@@ -56,6 +57,7 @@ export function usePaginatedPublicJobs({
     isLoading: Boolean(enabled && !initialCached),
     isFetching: false,
     loadError: '',
+    settledKey: initialCached ? activeKey : null,
   }));
 
   useEffect(() => {
@@ -66,14 +68,20 @@ export function usePaginatedPublicJobs({
     let isMounted = true;
     const cached = readCachedPaginatedJobs(queryParams);
     if (cached) {
-      setState({
-        items: cached.items,
-        total: cached.total,
-        page: cached.page,
-        totalPages: cached.totalPages,
-        isLoading: false,
-        isFetching: false,
-        loadError: '',
+      setState((prev) => {
+        if (prev.settledKey === activeKey && !prev.isLoading && !prev.isFetching) {
+          return prev;
+        }
+        return {
+          items: cached.items,
+          total: cached.total,
+          page: cached.page,
+          totalPages: cached.totalPages,
+          isLoading: false,
+          isFetching: false,
+          loadError: '',
+          settledKey: activeKey,
+        };
       });
       return undefined;
     }
@@ -96,6 +104,7 @@ export function usePaginatedPublicJobs({
           isLoading: false,
           isFetching: false,
           loadError: '',
+          settledKey: activeKey,
         });
       })
       .catch((error) => {
@@ -108,6 +117,7 @@ export function usePaginatedPublicJobs({
             error instanceof Error
               ? error.message
               : 'Could not load jobs. Please check your connection.',
+          settledKey: activeKey,
         }));
       });
 
@@ -115,18 +125,14 @@ export function usePaginatedPublicJobs({
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    enabled,
-    queryParams.tab,
-    queryParams.category,
-    queryParams.jobType,
-    queryParams.freshness,
-    queryParams.source,
-    queryParams.company,
-    queryParams.q,
-    queryParams.page,
-    queryParams.pageSize,
-  ]);
+  }, [enabled, activeKey]);
 
-  return state;
+  const isSettled = Boolean(enabled && state.settledKey === activeKey);
+
+  return {
+    ...state,
+    isLoading: enabled ? (state.isLoading || (!isSettled && state.items.length === 0)) : false,
+    isFetching: enabled ? (state.isFetching || !isSettled) : false,
+    isSettled,
+  };
 }

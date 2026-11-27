@@ -1,5 +1,23 @@
 # Screen, functionality and mobile UI tracker
 
+## QA-2026-11-27-Pagination-Loop-Fix-And-RPC-Query-Speed
+
+- Scope: Resolved production `React #185` pagination loop reported in `site_error_logs` and optimized `query_public_jobs` slow queries highlighted in Supabase Observability (`supabase/migrations/20261127072500_optimize_public_pagination_indexes_and_speed.sql`, `src/hooks/usePaginatedPublicJobs.js`, `src/pages/HomePage.jsx`, `tests/server-side-pagination-and-stats.test.mjs`).
+- Problem resolved:
+  - `site_error_logs` recorded 4 `Minified React error #185` (maximum update depth) crashes on `https://jobsinvizag.in/?tab=direct&page=2`, `/?category=it&page=2`, and `/?category=banking&page=2`. Root cause: on the render frame when `filters.page` changed to `2`, `HomePage`'s page-clamp `useEffect` read stale `paginatedResult.page` (`1`) before `usePaginatedPublicJobs` marked `isFetching: true`, repeatedly snapping `setSearchParams` back and forth. Also fixed `matchingPool` empty-array refetch guard in `HomePage.jsx`.
+  - Supabase Observability showed 303 slow queries (with `query_public_jobs` averaging ~550 ms due to scanning full rows, unindexed PL/pgSQL visibility checks, and reading TOASTed `description` text).
+- Solution delivered:
+  - **Synchronous `isSettled` Tracking (`usePaginatedPublicJobs.js`, `HomePage.jsx`)**: Added `settledKey` vs `activeKey` comparison so `isSettled` drops synchronously to `false` the instant page/filter parameters change; `HomePage.jsx` now only clamps out-of-bounds pages once `paginatedResult.isSettled` is `true`.
+  - **Database Index & Zero-TOAST RPC (`20261127072500_optimize_public_pagination_indexes_and_speed.sql`)**:
+    - Added partial index `jobs_public_listing_idx` on `(is_featured DESC, posted_at DESC, created_at DESC) WHERE status = 'published'`.
+    - Updated `query_public_jobs` to filter/paginate IDs first and join full slim columns only for the 12 winning rows.
+    - Removed TOASTed `description` decompression from `is_public_it_job` and `matches_public_job_category` (matching client `LIST_COLUMNS` behavior) and skipped category helper execution when `p_category = 'all'`.
+- Verification:
+  - Applied migration `20261127072500` to linked Supabase DB and repaired remote migration history; `EXPLAIN ANALYZE` for `query_public_jobs(..., 'it', ..., page=2)` dropped from ~395–550 ms to **84.36 ms**.
+  - `node --test tests/server-side-pagination-and-stats.test.mjs tests/job-filters.test.mjs`: 87/87 assertions passed.
+  - `npx eslint` on touched files: 0 errors, 0 warnings.
+  - `npm run build`: compiled cleanly in 14.12s (1,165 sitemap URLs).
+
 ## QA-2026-11-25-Job-Poster-Generator-And-Employer-Feature-Request
 
 - Scope: Branded WhatsApp / Instagram Job Poster Generator with scannable QR code for Students, Public Visitors, Employers, and Admins (`src/lib/jobPosterGenerator.js`, `src/components/JobPosterModal.jsx`, `src/components/JobShareButtons.jsx`, `src/components/admin/AdminJobActionsBar.jsx`, `src/pages/AdminJobsPage.jsx`, `src/pages/EmployerJobsListPage.jsx`, `src/pages/ContactPage.jsx`, `src/index.css`, `src/lib/instagramJobCaption.js`, `package.json`, `package-lock.json`, `tests/job-poster-generator.test.mjs`).

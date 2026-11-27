@@ -140,7 +140,7 @@ export default function HomePage() {
     if (filters.tab !== 'matching' || !session || !isStudent || !profileComplete) {
       return undefined;
     }
-    if (Array.isArray(matchingPool) && matchingPool.length > 0) {
+    if (Array.isArray(matchingPool)) {
       return undefined;
     }
 
@@ -367,15 +367,30 @@ export default function HomePage() {
     return null;
   }, [filters.tab, isMatchingLoading, isStudent, matchingCandidateJobs.length, profileComplete, session]);
 
-  // Snap back only after loading finishes so direct ?page=3 visits don't reset early
+  // Snap back only after active query is settled for the current page & filters
   useEffect(() => {
-    if (isLoading || isBackgroundRefreshing) return;
+    if (isLoading || isBackgroundRefreshing || loadError) return;
+    if (filters.tab === 'matching') {
+      if (!Array.isArray(matchingPool)) return;
+    } else if (!canServeFromSsr && !paginatedResult.isSettled) {
+      return;
+    }
     if (pagination.page !== filters.page) {
       const next = writeFiltersToSearchParams({ ...filters, page: pagination.page });
       setSearchParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, isBackgroundRefreshing, pagination.page, filters.page]);
+  }, [
+    canServeFromSsr,
+    filters.page,
+    filters.tab,
+    isBackgroundRefreshing,
+    isLoading,
+    loadError,
+    matchingPool,
+    paginatedResult.isSettled,
+    pagination.page,
+  ]);
 
   // ---------- Filter mutators ----------
   const updateFilters = useCallback(
