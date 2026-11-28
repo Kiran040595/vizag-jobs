@@ -207,6 +207,16 @@ export const KNOWN_COMPANY_DEFAULTS = {
     careers_url: 'https://sjobs.brassring.com/TGNewUI/Search/Home/Home?partnerid=26656&siteid=5008#keyWord=Visakhapatnam',
     category: 'IT & Software',
   },
+  'Phenom': {
+    website: 'https://www.phenom.com',
+    careers_url: 'https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam',
+    category: 'IT & Software',
+  },
+  'Phenom People': {
+    website: 'https://www.phenom.com',
+    careers_url: 'https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam',
+    category: 'IT & Software',
+  },
   'Niyukti Systems, Inc': {
     website: 'https://niyukti.ai',
     careers_url: 'https://niyukti.ai/',

@@ -71,6 +71,8 @@ export const VERIFIED_VIZAG_PORTALS: Record<string, string> = {
   'infinite computer solutions': 'https://sjobs.brassring.com/TGNewUI/Search/Home/Home?partnerid=26656&siteid=5008#keyWord=Visakhapatnam',
   'pbl transport corporation': 'https://jobs.pbltransport.co.in/jobs/Careers',
   'pbl transport corporation private limited': 'https://jobs.pbltransport.co.in/jobs/Careers',
+  phenom: 'https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam',
+  'phenom people': 'https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam',
 };
 
 function decodeHtmlEntities(text: string): string {
@@ -201,6 +203,9 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const celestinfo = ['celestinfo.com', 'www.celestinfo.com'].includes(host) && parsedUrl.pathname === '/careers.html';
   const successFactors = ['careers.brandix.com', 'careers.gmrgroup.in', 'careers.asianpaints.com', 'careers.vodafoneidea.com'].includes(host);
   const idfc = host === 'careers.idfcfirst.bank.in';
+  const phenom = ['careers.phenom.com', 'careers.phenompeople.com'].includes(host)
+    && parsedUrl.pathname === '/global/en/search-results'
+    && /\b(visakhapatnam|vishakhapatnam|vizag)\b/i.test(parsedUrl.searchParams.get('keywords') || '');
   const marriott = host === 'careers.marriott.com' && new URL(url).pathname === '/jobs';
   const accor = host === 'careers.accor.com' && new URL(url).pathname === '/global/en/jobs';
   const wns = host === 'careers.smartrecruiters.com' && new URL(url).pathname === '/WNSGlobalServices144';
@@ -225,7 +230,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   const sriTech = ['sritechsolutions.com', 'www.sritechsolutions.com'].includes(host) && parsedUrl.pathname.startsWith('/job-openings');
   const infinite = host === 'sjobs.brassring.com' && parsedUrl.searchParams.get('partnerid') === '26656' && parsedUrl.searchParams.get('siteid') === '5008';
   const pblTransport = host === 'jobs.pbltransport.co.in' && parsedUrl.pathname === '/jobs/Careers';
-  if (!successFactors && !wns && !fluentgrid && !idfc && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex && !inventrax && !sriTech && !infinite && !pblTransport) return null;
+  if (!successFactors && !wns && !fluentgrid && !idfc && !phenom && !marriott && !accor && !amazon && !hm && !celestinfo && !xtglobal && !sailsSoftware && !miracle && !innocito && !paytm && !radisson && !wipro && !concentrix && !cushman && !creditSaison && !growww && !dmart && !drReddy && !medfar && !rotork && !varex && !inventrax && !sriTech && !infinite && !pblTransport) return null;
   if (infinite) {
     const search = await fetch('https://sjobs.brassring.com/TGNewUI/Search/Ajax/ProcessSortAndShowMoreJobs', {
       method: 'POST',
@@ -889,7 +894,7 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
   }
   const rows = celestinfo ? [...new Set([...html.matchAll(/href=["'](https:\/\/nebula\.celestinfo\.com\/careers\/[^"'?]+)\/apply(?:\?[^"']*)?["']/gi)].map((m) => m[1]))]
     .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : marriott || accor ? [...new Set([...html.matchAll(/href=["'](\/[^"']*\/job\/[^"']+)["']/g)].map((m) => new URL(m[1], url).href))]
-    .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
+    .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) : idfc ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.idfcfirst.bank.in/in/en' }) : phenom ? parseConduentSearchJobs(html, { company, baseUrl: 'https://careers.phenom.com/global/en' }) : successFactors ? parseSuccessFactorsVizagJobs(html, url, company) : fluentgrid ?
     [...new Set([...html.matchAll(/href=["'](https:\/\/fluentgrid\.com\/jobs\/[^"'#]+)["']/g)].map((m) => m[1]))]
       .map((apply_link) => ({ apply_link, company } as ExtractedCompanyCareerJob)) :
     [...new Set([...html.matchAll(/href=["'](https:\/\/jobs\.smartrecruiters\.com\/WNSGlobalServices144\/[^"']+)["']/g)].map((m) => m[1]))]
@@ -916,12 +921,21 @@ export async function scrapeVerifiedVizagPortal(url: string, company: string) {
         let description = htmlToCleanMarkdown(detail, row.apply_link!).slice(0, 20000);
         let title = row.title;
         let location = row.location;
-        if (idfc) {
+        if (idfc || phenom) {
           const posting = embeddedCareerData(detail, 'jobDetail')?.data?.job;
           if (!posting?.description || !posting?.title) return null;
           const expiry = Date.parse(posting.expiryDate || '');
           if (Number.isFinite(expiry) && expiry < Date.now()) return null;
           title = String(posting.title);
+          if (phenom) {
+            if (posting.companyName && !/^Phenom\b/i.test(String(posting.companyName))) return null;
+            if (posting.country && !/^india$/i.test(String(posting.country))) return null;
+            row.job_type = String(posting.type || row.job_type || '').trim() || undefined;
+            row.category = String(posting.category || row.category || '').trim() || undefined;
+            if (Array.isArray(posting.ml_skills) && posting.ml_skills.length > 0) {
+              row.skills = posting.ml_skills.map(String);
+            }
+          }
           location = String(posting.location || posting.city || '');
           description = htmlToCleanMarkdown(posting.description, row.apply_link!).slice(0, 20000);
         }
@@ -971,7 +985,7 @@ export function parseConduentSearchJobs(html: string, options = { company: 'Cond
       try {
         const rows = JSON.parse(html.slice(start, i + 1))?.data?.jobs;
         if (!Array.isArray(rows)) return [];
-        return rows.filter((row) => /^visakhapatnam$/i.test(String(row.city)) && row.title && /^(P-)?\d+$/.test(String(row.jobId)))
+        return rows.filter((row) => /^(visakhapatnam|vishakhapatnam|vizag)$/i.test(String(row.city || '')) && row.title && /^(P-)?\d+$/.test(String(row.jobId)))
           .map((row) => ({
             title: String(row.title), company: options.company,
             location: String(row.location || row.city),
@@ -1363,6 +1377,15 @@ export function resolveCanonicalCareerPortalUrl(rawUrl: string, companyName = ''
     lowerUrl.includes('saison.wd102.myworkdayjobs.com')
   ) {
     return 'https://saison.wd102.myworkdayjobs.com/Credit_Saison_India?q=Visakhapatnam';
+  }
+
+  if (
+    lowerName.includes('phenom') ||
+    lowerUrl.includes('phenom.com/careers') ||
+    lowerUrl.includes('careers.phenom.com') ||
+    lowerUrl.includes('careers.phenompeople.com')
+  ) {
+    return VERIFIED_VIZAG_PORTALS.phenom;
   }
 
   return trimmed;

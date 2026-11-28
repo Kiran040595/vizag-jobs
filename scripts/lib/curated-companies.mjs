@@ -249,6 +249,18 @@ export const CURATED_COMPANIES = {
     category: 'IT & Software',
     is_active_for_scrape: true,
   },
+  'Phenom': {
+    website: 'https://www.phenom.com',
+    careers_url: 'https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
+  'Phenom People': {
+    website: 'https://www.phenom.com',
+    careers_url: 'https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam',
+    category: 'IT & Software',
+    is_active_for_scrape: true,
+  },
   'Kairos Technologies': {
     website: 'https://kairostech.com',
     careers_url: 'https://kairostech.com/careers/',

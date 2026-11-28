@@ -1995,4 +1995,12 @@ Remaining: authenticated journeys/ownership/persistence and exports, valid passw
 - Verification: `node --test tests/company-career-fetch.test.mjs` (65 passed, 0 failed) and `git diff --check` passed.
 - Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
 
+## QA-2026-11-28-Phenom-Live-Sync
+
+- Live-verified and synced **Phenom** (`4c6e8508-b20a-40da-bf67-96e4841fda20`, `https://careers.phenom.com/global/en/search-results?keywords=Visakhapatnam` — 1 active exact Visakhapatnam role *Technical Support Engineer - IX*, `P-104741`, `Phenom People Pvt Ltd`, 4,028-character cleaned description, excluding non-Vizag and expired roles) with `verified_careers_url`, `is_directory_approved = true`, and `is_active_for_scrape = true` in Supabase via two-step PATCH and verified anon REST visibility.
+- Inspected 9 additional unapproved companies and kept them unapproved (no durable, verified server-fetchable Vizag vacancy feed): DBS Bank (Workday `Vizag` returned `total: 4` then HTTP 429 rate-limit on detail checks), Cyient (Zwayam: 247 jobs, 0 Vizag), Sutherland (Shazamme: 431 jobs, 0 Vizag), Cactus Communications (Jibe: 0 Vizag), Infinx (JazzHR: 12 jobs, 0 Vizag), 3i Infotech & Larsen & Toubro (PeopleStrong SPA/Incapsula), Airtel (`careersapi.airtel.com` auth-gated / Darwinbox 403), Laurus Labs (404 on `/careers`).
+- Added native Phenom extractor support in [`supabase/functions/fetch-external-jobs/company-careers.ts`](file:///d:/School%20Project/VIzagJobs/supabase/functions/fetch-external-jobs/company-careers.ts), unit test in [`tests/company-career-fetch.test.mjs`](file:///d:/School%20Project/VIzagJobs/tests/company-career-fetch.test.mjs), defaults in [`src/services/adminCompanies.js`](file:///d:/School%20Project/VIzagJobs/src/services/adminCompanies.js) and [`scripts/lib/curated-companies.mjs`](file:///d:/School%20Project/VIzagJobs/scripts/lib/curated-companies.mjs), migration [`supabase/migrations/20261128082000_verified_phenom_vizag_careers.sql`](file:///d:/School%20Project/VIzagJobs/supabase/migrations/20261128082000_verified_phenom_vizag_careers.sql), and QA evidence in [`docs/qa/2026-11-01/company-career-verification.md`](file:///d:/School%20Project/VIzagJobs/docs/qa/2026-11-01/company-career-verification.md).
+- Verification: `node --test tests/company-career-fetch.test.mjs` (66 passed, 0 failed) and `git diff --check` passed.
+- Functional E2E: Not tested. Mobile UI: Not tested. Source and live extractor verification recorded separately.
+
 

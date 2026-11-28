@@ -1453,3 +1453,53 @@ test('PBL Transport Corporation Zoho Recruit portal retains exact Visakhapatnam 
     assert.equal(result.structuredJobs[0].apply_link, 'https://jobs.pbltransport.co.in/jobs/Careers/80871000000355005');
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phenom official careers portal retains active exact Visakhapatnam roles and rejects non-Vizag or expired roles', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes('/search-results')) {
+      return new Response(`{"eagerLoadRefineSearch":${JSON.stringify({
+        data: {
+          jobs: [
+            { jobId: 'P-104741', title: 'Technical Support Engineer - IX', city: 'Visakhapatnam', ml_skills: ['api', 'troubleshooting'] },
+            { jobId: 'P-104742', title: 'Expired Vizag Role', city: 'Visakhapatnam' },
+            { jobId: 'P-104847', title: 'Hyderabad Engineer', city: 'Hyderabad' },
+          ],
+        },
+      })}}`);
+    }
+    const isExpired = url.includes('/P-104742/');
+    return new Response(`{"jobDetail":${JSON.stringify({
+      data: {
+        job: {
+          title: isExpired ? 'Expired Vizag Role' : 'Technical Support Engineer - IX',
+          companyName: 'Phenom People Pvt Ltd',
+          country: 'India',
+          city: 'Visakhapatnam',
+          location: 'Visakhapatnam, Andhra Pradesh, India',
+          type: 'Full-Time',
+          category: 'Customer Support',
+          ml_skills: ['api', 'troubleshooting'],
+          expiryDate: isExpired ? '2020-01-01' : null,
+          description: '<p>Provide expert technical support for Phenom recruitment software, troubleshoot API integrations, and partner with product engineering teams in Visakhapatnam.</p>',
+        },
+      },
+    })}}`);
+  };
+  try {
+    assert.equal(
+      resolveCanonicalCareerPortalUrl('https://www.phenom.com/careers', 'Phenom'),
+      VERIFIED_VIZAG_PORTALS.phenom,
+    );
+    const result = await scrapeVerifiedVizagPortal(VERIFIED_VIZAG_PORTALS.phenom, 'Phenom');
+    assert.equal(result.count, 1);
+    assert.equal(result.structuredJobs[0].title, 'Technical Support Engineer - IX');
+    assert.equal(result.structuredJobs[0].location, 'Visakhapatnam, Andhra Pradesh, India');
+    assert.equal(result.structuredJobs[0].job_type, 'Full-Time');
+    assert.equal(result.structuredJobs[0].category, 'Customer Support');
+    assert.deepEqual(result.structuredJobs[0].skills, ['api', 'troubleshooting']);
+    assert.equal(result.structuredJobs[0].apply_link, 'https://careers.phenom.com/global/en/job/P-104741/Technical-Support-Engineer-IX');
+    assert.match(result.structuredJobs[0].description, /Provide expert technical support/);
+  } finally { globalThis.fetch = originalFetch; }
+});
